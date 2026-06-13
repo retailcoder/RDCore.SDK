@@ -1,6 +1,8 @@
-﻿using RDCore.SDK.Model.Types;
+﻿using RDCore.SDK.Model.AST.Abstract;
+using RDCore.SDK.Model.Types;
 using RDCore.SDK.Model.Types.Abstract;
 using RDCore.SDK.Runtime;
+using RDCore.SDK.Semantics.Runtime.Abstract;
 
 namespace RDCore.SDK.Semantics.Static.Abstract
 {
@@ -9,19 +11,28 @@ namespace RDCore.SDK.Semantics.Static.Abstract
     /// </summary>
     public record class BinaryLogicalOperatorStaticSemantics : StaticSemantics, IStaticSemantics
     {
-        public override VBType? DetermineDeclaredType(IVBExecutionContext context, params VBType[] operandDeclaredTypes)
-            => DetermineOperatorStaticType(operandDeclaredTypes[0], operandDeclaredTypes[1]);
-
         /// <summary>
-        /// MS-VBAL 5.6.9.8 Logical Operators (static semantics) 
+        /// MS-VBAL 5.6.9.3 Arithmetic Operators (static semantics) 
         /// The operator has the declared type returned by this method, based on the declared type of its operands.
         /// </summary>
+        /// <param name="resolver">The static context containing the available static memory space.</param>
+        /// <param name="expression">The <em>expression node</em> being evaluated.</param>
+        /// <param name="operandDeclaredTypes">The declared type of the operands.</param>
+        public override StaticSemanticsEvaluationResult DetermineDeclaredType(
+            ISymbolResolver resolver,
+            BoundExpression expression, 
+            params VBType[] operandDeclaredTypes)
+            => DetermineOperatorStaticType(expression, operandDeclaredTypes[(int)OperandIndex.BinaryLeftOperand], operandDeclaredTypes[(int)OperandIndex.BinaryRightOperand]);
+
+        /// <summary>
+        /// MS-VBAL 5.6.9.3 Arithmetic Operators (static semantics) 
+        /// The operator has the declared type returned by this method, based on the declared type of its operands.
+        /// </summary>
+        /// <param name="expression">The <em>expression node</em> being evaluated.</param>
         /// <param name="lhs">The declared type of the LHS operand.</param>
         /// <param name="rhs">The declared type of the RHS operand.</param>
-        /// <returns><c>null</c> if no type is statically valid.</returns>
-        protected virtual VBType? DetermineOperatorStaticType(VBType lhs, VBType rhs)
-        {
-            return lhs switch
+        protected virtual StaticSemanticsEvaluationResult DetermineOperatorStaticType(BoundExpression expression, VBType lhs, VBType rhs)
+            => lhs switch
             {
                 VBByteType when rhs is VBByteType => VBByteType.TypeInfo,
                 VBBooleanType when rhs is VBBooleanType => VBBooleanType.TypeInfo,
@@ -36,10 +47,14 @@ namespace RDCore.SDK.Semantics.Static.Abstract
                 VBLongLongType when rhs is VBNumericType or VBFixedStringType or VBStringType or VBDateType => VBLongLongType.TypeInfo,
                 VBNumericType or VBFixedStringType or VBStringType or VBDateType when rhs is VBLongLongType => VBLongLongType.TypeInfo,
 
-                not VBArrayType and not VBUserDefinedType when rhs is VBVariantType => VBVariantType.TypeInfo,
+                // NOTE: MS-VBAL is actually missing the LHS Variant case, which is present in 5.6.9.3 arithmetic operators;
+                // this asymetry is not justifiable otherwise than by considering it an unintended omission.
+                VBVariantType when rhs is not (VBArrayType or VBUserDefinedType) => VBVariantType.TypeInfo,
+                not (VBArrayType or VBUserDefinedType) when rhs is VBVariantType => VBVariantType.TypeInfo,
 
-                _ => default
-            };
-        }
+                _ => (VBType?)null
+            } is VBType result
+                ? StaticSemanticsEvaluationResult.Success(result)
+                : StaticSemanticsEvaluationResult.Error(GetStaticTypeMismatchErrorInfo(expression, [lhs, rhs]));
     }
 }

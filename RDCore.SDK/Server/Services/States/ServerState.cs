@@ -75,7 +75,7 @@ namespace RDCore.SDK.Server.Services.States
     /// <br/><a href="https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#initialize">Server lifecycle § Initialize Request</a>
     /// </remarks>
     public record class RunningServerState(InitializeTrace Trace = InitializeTrace.Messages) 
-        : ServerState(Trace == InitializeTrace.Off ? ServerStateValue.RunningTraceless : ServerStateValue.Running)
+        : ServerState(Trace == InitializeTrace.Off ? ServerStateValue.RunningTraceless : Trace == InitializeTrace.Verbose ? ServerStateValue.RunningVerbose : ServerStateValue.Running)
     {
         /// <summary>
         /// The current server <c>Trace</c> level.

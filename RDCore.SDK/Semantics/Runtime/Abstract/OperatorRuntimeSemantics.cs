@@ -169,7 +169,7 @@ namespace RDCore.SDK.Semantics.Runtime.Abstract
         /// <param name="resolver">A read-only interface over the current execution context..</param>
         /// <param name="context">The semantic context of this operation, built by <c>Analyze</c>.</param>
         /// <param name="expression">The operator expression being evaluated.</param>
-        /// <param name="operands">The operand(s) of the operator expression.</param>
+        /// <param name="frame">The evaluation frame encapsulating the operation inputs.</param>
         protected RuntimeSemanticsEvaluationResult Evaluate(
             ISymbolResolver resolver, 
             SemanticContext<TFlags> context, 

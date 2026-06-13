@@ -91,12 +91,10 @@ namespace RDCore.SDK.Server.Services.States
             _processTokenSource.Cancel();
         }
 
-        public void OnTraceOff()
-        {
-            _state = State is RunningServerState ? ServerState.RunningTraceless : throw new InvalidServerStateException(State.Value);
-        }
+        public void OnTraceOff() => _state = State is RunningServerState ? ServerState.RunningTraceless : throw new InvalidServerStateException(State.Value);
 
-        public void OnTraceMessages() => _state = State is RunningServerState ? ServerState.Running : throw new InvalidServerStateException(State.Value);
+        public void OnTraceMessages() => _state = State is RunningServerState ? ServerState.Running: throw new InvalidServerStateException(State.Value);
+
         public void OnTraceVerbose() => _state = State is RunningServerState ? ServerState.RunningVerbose : throw new InvalidServerStateException(State.Value);
 
         public ServerInfo ServerInfo { get; } = new()

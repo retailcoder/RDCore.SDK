@@ -207,4 +207,10 @@
   <data name="LanguageServerProtocolSdkException_ClientNotInitialized" xml:space="preserve">
     <value>Le client LSP n'est pas encore initialisé.</value>
   </data>
+  <data name="VBCompileError_TypeMismatch_Verbose" xml:space="preserve">
+    <value>Aucune des règles sémantiques applicables pour cette opération ne correspond au(x) type(s) spécifié(s) en intrant : {$INPUTS}</value>
+  </data>
+  <data name="VBCompileError_LetCoercionTypeMismatch_Verbose" xml:space="preserve">
+    <value>La coercion implicite (let-coercion) est statiquement invalide pour les intrants spécifiés pour cette expression.</value>
+  </data>
 </root>

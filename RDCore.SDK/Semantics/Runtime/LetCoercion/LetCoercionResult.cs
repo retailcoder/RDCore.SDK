@@ -10,7 +10,7 @@ namespace RDCore.SDK.Semantics.Runtime.LetCoercion
     /// </summary>
     /// <param name="IsApplicable"><c>true</c> if the let-coercion strategy is applicable for the specified inputs, <c>false</c> otherwise (another implementation shall then handle the conversion).</param>
     /// <param name="Result">The let-coerced result of the conversion operation, if one was produced.</param>
-    /// <param name="ErrorInfo">The error metadata for the run-time error to be thrown, if applicable.</param>
+    /// <param name="ErrorInfo">The error metadata for the <em>run-time</em> error to be reported, if applicable.</param>
     /// <param name="Frames">The let-coercion evaluation frames associated with this result, if any.</param>
     public readonly record struct LetCoercionResult(
         bool IsApplicable, 

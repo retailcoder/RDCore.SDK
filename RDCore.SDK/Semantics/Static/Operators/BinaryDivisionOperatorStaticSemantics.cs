@@ -1,4 +1,6 @@
-﻿using RDCore.SDK.Model.Types;
+﻿using RDCore.SDK.Model.AST.Abstract;
+using RDCore.SDK.Model.Errors;
+using RDCore.SDK.Model.Types;
 using RDCore.SDK.Model.Types.Abstract;
 using RDCore.SDK.Runtime;
 using RDCore.SDK.Semantics.Static.Abstract;
@@ -10,18 +12,32 @@ namespace RDCore.SDK.Semantics.Static.Operators
     /// </summary>
     public sealed record class BinaryDivisionOperatorStaticSemantics : BinaryArithmeticOperatorStaticSemantics
     {
-        protected override VBType? DetermineOperatorStaticType(IVBExecutionContext context, VBType lhs, VBType rhs)
-        {
-            return lhs switch
+        /// <summary>
+        /// Determines a static <see cref="VBType"/> from specified operands.
+        /// </summary>
+        /// <param name="resolver">The static context containing the available static memory space.</param>
+        /// <param name="expression">The <em>expression node</em> being evaluated.</param>
+        /// <param name="lhs">The declared type of the <em>left-hand side</em> (LHS) operand involved in the evaluation.</param>
+        /// <param name="rhs">The declared type of the <em>right-hand side</em> (RHS) operand involved in the evaluation.</param>
+        /// <returns>
+        /// A <see cref="StaticSemanticsEvaluationResult"/> encapsulating the resulting <see cref="VBType"/> if successful, or <see cref="VBCompileErrorInfo"/> error metadata otherwise.
+        /// </returns>
+        protected override StaticSemanticsEvaluationResult DetermineOperatorStaticType(ISymbolResolver resolver, BoundExpression expression, VBType lhs, VBType rhs) 
+            => lhs switch
             {
-                VBByteType or VBBooleanType or VBIntegerType or VBLongType or VBLongLongType 
-                    when rhs is VBByteType or VBBooleanType or VBIntegerType or VBLongType or VBLongLongType => VBDoubleType.TypeInfo,
+                VBByteType or VBBooleanType or VBIntegerType or VBLongType or VBLongLongType
+                    when rhs is VBByteType or VBBooleanType or VBIntegerType or VBLongType or VBLongLongType
+                    => StaticSemanticsEvaluationResult.Success(VBDoubleType.TypeInfo),
 
-                VBDoubleType or VBFixedStringType or VBStringType or VBCurrencyType or VBDateType when rhs is VBNumericType or VBFixedStringType or VBStringType or VBDateType => VBDoubleType.TypeInfo,
-                VBNumericType or VBFixedStringType or VBStringType or VBDateType when rhs is VBDoubleType or VBFixedStringType or VBStringType or VBCurrencyType or VBDateType => VBDoubleType.TypeInfo,
+                VBDoubleType or VBFixedStringType or VBStringType or VBCurrencyType or VBDateType
+                    when rhs is VBNumericType or VBFixedStringType or VBStringType or VBDateType
+                    => StaticSemanticsEvaluationResult.Success(VBDoubleType.TypeInfo),
 
-                _ => base.DetermineOperatorStaticType(context, lhs, rhs)
+                VBNumericType or VBFixedStringType or VBStringType or VBDateType
+                    when rhs is VBDoubleType or VBFixedStringType or VBStringType or VBCurrencyType or VBDateType
+                    => StaticSemanticsEvaluationResult.Success(VBDoubleType.TypeInfo),
+
+                _ => base.DetermineOperatorStaticType(resolver, expression, lhs, rhs)
             };
-        }
     }
 }

@@ -178,6 +178,24 @@ namespace RDCore.SDK {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Implicit let-coercion is statically invalid for the specified inputs of this expression..
+        /// </summary>
+        public static string VBCompileError_LetCoercionTypeMismatch_Verbose {
+            get {
+                return ResourceManager.GetString("VBCompileError_LetCoercionTypeMismatch_Verbose", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to None of the static semantic applicable rules for this operation matched the data type(s) of the provided input(s): {$INPUTS}.
+        /// </summary>
+        public static string VBCompileError_TypeMismatch_Verbose {
+            get {
+                return ResourceManager.GetString("VBCompileError_TypeMismatch_Verbose", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to This operation is dividing by zero. Consider adding a conditional check to avoid this..
         /// </summary>
         public static string VBDivisionOp_DivisionByZero {

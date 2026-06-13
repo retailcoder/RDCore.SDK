@@ -139,6 +139,7 @@ namespace RDCore.SDK.Model.Values
         public static VBTypedValue? CreateValue(VBType type, Symbol symbol) =>
             type switch
             {
+                VBStringType => new VBStringValue(symbol),
                 VBBooleanType => new VBBooleanValue(symbol),
                 VBByteType => new VBByteValue(symbol),
                 VBIntegerType => new VBIntegerValue(symbol),

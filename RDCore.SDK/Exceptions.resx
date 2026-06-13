@@ -207,4 +207,10 @@
   <data name="LanguageServerProtocolSdkException_ClientNotInitialized" xml:space="preserve">
     <value>Language client was not initialized.</value>
   </data>
+  <data name="VBCompileError_TypeMismatch_Verbose" xml:space="preserve">
+    <value>None of the static semantic applicable rules for this operation matched the data type(s) of the provided input(s): {$INPUTS}</value>
+  </data>
+  <data name="VBCompileError_LetCoercionTypeMismatch_Verbose" xml:space="preserve">
+    <value>Implicit let-coercion is statically invalid for the specified inputs of this expression.</value>
+  </data>
 </root>
