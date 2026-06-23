@@ -12,7 +12,6 @@
 /// <param name="Publisher">The name of the publisher.</param>
 /// <param name="PublisherWebUrl">The publisher's web URL.</param>
 /// <param name="Description">A short description of the extension.</param>
-/// <param name="AppId"> The <em>application ID</em> of a registered extension that authenticates with the RDCore cloud infrastructure, if applicable.</param>
 /// <param name="Signature">The <em>binary signature</em> of the extension executable.</param>
 public record class ExtensionInfo(
     string Name,
@@ -21,5 +20,4 @@ public record class ExtensionInfo(
     string Publisher,
     string PublisherWebUrl,
     string Description,
-    string? AppId,
     string Signature);

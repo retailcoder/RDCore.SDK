@@ -18,7 +18,6 @@ public record class VBCollectionType : VBClassType, IEnumerableType
         NewEnumMember = newEnumMember;
     }
 
-    public bool IsArray { get; } = false;
     /// <summary>
     /// The member that provides the enumerator for this collection.
     /// </summary>

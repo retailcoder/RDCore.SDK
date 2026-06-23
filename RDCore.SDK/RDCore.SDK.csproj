@@ -13,10 +13,13 @@
 
   <ItemGroup>
     <Compile Remove="Logger\**" />
+    <Compile Remove="Model\Types\Builders\**" />
     <Compile Remove="_site\**" />
     <EmbeddedResource Remove="Logger\**" />
+    <EmbeddedResource Remove="Model\Types\Builders\**" />
     <EmbeddedResource Remove="_site\**" />
     <None Remove="Logger\**" />
+    <None Remove="Model\Types\Builders\**" />
     <None Remove="_site\**" />
   </ItemGroup>
 
@@ -38,7 +41,6 @@
   <ItemGroup>
     <Folder Include="Model\AST\Statements\" />
     <Folder Include="Model\Symbols\Statements\" />
-    <Folder Include="Model\Types\Builders\" />
   </ItemGroup>
 
   <ItemGroup>

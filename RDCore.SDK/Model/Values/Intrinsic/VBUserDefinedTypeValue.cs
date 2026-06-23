@@ -9,13 +9,11 @@ namespace RDCore.SDK.Model.Values.Intrinsic;
 public record class VBUserDefinedTypeValue : VBTypedValue,
     IVBTypedValue<VBUserDefinedTypeValue, VBLongPtrValue>
 {
-    // primary ctor type mismatch VBUserDefinedType->VBType
-    public VBUserDefinedTypeValue(VBUserDefinedType typeInfo, Symbol symbol)
-        : base(typeInfo, symbol) { }
+    public VBUserDefinedTypeValue(VBUserDefinedType typeInfo, Symbol symbol) : base(typeInfo, symbol) { }
 
     public VBLongPtrValue Value { get; } = VBLongPtrType_x64.Zero;
 
-    // +padding...
+    // NOTE: this isn't accurate, there should be some padding involved.
     public override int Size => ((IVBMemberOwnerType)TypeInfo).Members.OfType<VBUserDefinedTypeMemberSymbol>()
         .Sum(member => member.ResolvedType!.DefaultValue.Size);
 

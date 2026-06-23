@@ -1,4 +1,5 @@
 ﻿using RDCore.SDK.Model.Symbols.Abstract;
+using RDCore.SDK.Model.Symbols.VBProject;
 using RDCore.SDK.Model.Types.Abstract;
 using RDCore.SDK.Model.Values;
 using RDCore.SDK.Model.Values.Abstract;
@@ -36,6 +37,7 @@ public record class VBStdModuleType(string Name, bool IsHidden = false) : VBType
     public override int Size => 0; // TODO compute the size of the address space of the module?
 
     public IVBMemberOwnerType WithMembers(IEnumerable<VBTypeMemberSymbol> members) => this with { Members = [.. members] };
+    ImmutableArray<VBDeferredTypeMemberSymbol> IVBMemberOwnerType.DeferredMembers { get; init; } = [];
 }
 
 public record class VBDeferredModuleType(string Name, Uri Uri) : VBDeferredType(Name, Uri)

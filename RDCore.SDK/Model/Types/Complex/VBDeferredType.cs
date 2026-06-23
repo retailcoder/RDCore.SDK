@@ -1,4 +1,5 @@
-﻿using RDCore.SDK.Model.Symbols.VBProject;
+﻿using RDCore.SDK.Model.Symbols.Abstract;
+using RDCore.SDK.Model.Symbols.VBProject;
 using RDCore.SDK.Model.Types.Abstract;
 using System.Collections.Immutable;
 
@@ -69,7 +70,7 @@ public interface IVBDeferrableType : IVBInferableType
     /// <summary>
     /// Gets the <em>deferred type</em> that can be materialized from this <em>infered type</em>.
     /// </summary>
-    IVBMemberOwnerType? DeferredVBType { get; init; }
+    IVBMemberOwnerType? DeferredVBTypeInfo { get; init; }
     /// <summary>
     /// Gets a copy of this deferrable data type with the specified target <em>deferred type</em>.
     /// </summary>
@@ -99,9 +100,10 @@ public abstract record class VBDeferredType : VBType, IVBDeferrableType
     public ImmutableHashSet<VBDeferredTypeMemberSymbol> Members { get; init; } = [];
     public VBDeferredType WithMembers(IEnumerable<VBDeferredTypeMemberSymbol> members) => this with { Members = [.. members] };
 
-    public IVBMemberOwnerType? DeferredVBType { get; init; }
-    public VBDeferredType WithDeferredVBType(IVBMemberOwnerType vbType) => this with { DeferredVBType = vbType };
+    public IVBMemberOwnerType? DeferredVBTypeInfo { get; init; }
+    public VBDeferredType WithDeferredVBType(IVBMemberOwnerType vbType) => this with { DeferredVBTypeInfo = vbType };
 
     public ImmutableHashSet<VBType> CandidateTypes { get; init; } = [];
+
     public IVBInferableType WithCandidateType(VBType vbType) => this with { CandidateTypes = [.. CandidateTypes, vbType] };
 }

@@ -1,4 +1,5 @@
 ﻿using RDCore.SDK.Model.Symbols.Abstract;
+using RDCore.SDK.Model.Symbols.VBProject;
 using RDCore.SDK.Model.Types.Abstract;
 using RDCore.SDK.Model.Values;
 using RDCore.SDK.Model.Values.Abstract;
@@ -18,8 +19,10 @@ namespace RDCore.SDK.Model.Types;
 public record class VBUserDefinedType(Symbol Symbol, ImmutableArray<VBTypeMemberSymbol> Members) : VBType(typeof(Type), Symbol.Name), 
     IVBMemberOwnerType, IEquatable<VBUserDefinedType>
 {
-    public override VBTypedValue DefaultValue => VBVoidValue.Void;
+    public override VBTypedValue DefaultValue => VBVoidValue.Void; // FIXME there should be a static default value defined for each UDT definition; this may not be possible to implement here.
     public override int Size => Members.Sum(member => member.ResolvedType.Size); // FIXME this is wrong, there's actually some padding going on
+
+    ImmutableArray<VBDeferredTypeMemberSymbol> IVBMemberOwnerType.DeferredMembers { get; init; } = [];
 
     public IVBMemberOwnerType WithMembers(IEnumerable<VBTypeMemberSymbol> members) => this with { Members = [.. members] };
 

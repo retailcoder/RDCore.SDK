@@ -43,7 +43,7 @@ public enum SymbolKindExt
     /* 128+: extensions */
 
     /// <summary>
-    /// (Extension) A public kind of symbol that does not reach the client; see <see cref="Model.Symbols.IgnoredSymbol"/>
+    /// (Extension) A public kind of symbol that does not reach the client.
     /// </summary>
     Ignored = 128,
 

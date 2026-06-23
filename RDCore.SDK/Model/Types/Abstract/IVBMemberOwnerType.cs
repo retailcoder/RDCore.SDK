@@ -1,4 +1,5 @@
 ﻿using RDCore.SDK.Model.Symbols.Abstract;
+using RDCore.SDK.Model.Symbols.VBProject;
 using System.Collections.Immutable;
 
 namespace RDCore.SDK.Model.Types.Abstract;
@@ -17,4 +18,9 @@ public interface IVBMemberOwnerType
     /// </summary>
     /// <param name="members">The members of the new type.</param>
     IVBMemberOwnerType WithMembers(IEnumerable<VBTypeMemberSymbol> members);
+
+    /// <summary>
+    /// Gets the <em>deferred members</em> of this type, if any.
+    /// </summary>
+    ImmutableArray<VBDeferredTypeMemberSymbol> DeferredMembers { get; init; }
 }

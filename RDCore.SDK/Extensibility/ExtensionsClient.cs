@@ -5,6 +5,8 @@ using RDCore.SDK.Client;
 using RDCore.SDK.Server;
 using RDCore.SDK.Server.Configuration;
 using System.IO.Abstractions;
+using System.Reflection;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 
@@ -65,6 +67,39 @@ public class ExtensionsClient(
     }
 
     /// <summary>
+    /// Creates a serializable <see cref="ExtensionInfo"/> model for the specified extension executable <c>name</c>, with the specified <c>description</c>.
+    /// </summary>
+    /// <param name="name">The name of the executable extension.</param>
+    /// <param name="description">A short description of the extension.</param>
+    /// <remarks>
+    /// The implementation validates that it is executing this method inside the target extension folder.
+    /// </remarks>
+    /// <returns><c>null</c> if the specified extension cannot be described.</returns>
+    public ExtensionInfo? Describe(string name, string description)
+    {
+        var currentDirectory = fileSystem.DirectoryInfo.New(fileSystem.Directory.GetCurrentDirectory());
+        var currentParentFolder = currentDirectory.Parent?.Name;
+        var expected = fileSystem.Path.GetDirectoryName(options.Value.Platform.Extensions.Path);
+        if (!string.Equals(currentParentFolder, expected, StringComparison.InvariantCultureIgnoreCase))
+        {
+            return null;
+        }
+
+        var signatureBytes = SHA512.HashData(fileSystem.File.OpenRead(name));
+        var signature = Convert.ToBase64String(signatureBytes);
+
+        var assembly = Assembly.LoadFile(name);
+        var assemblyName = assembly.GetName()!;
+
+        var version = assemblyName.Version ?? new Version(0, 0, 0);
+        var title = currentDirectory.Name;
+
+        // TODO read company (publisher) and description metadata (if empty) from assembly attributes.
+
+        return new(name, title, version, string.Empty, string.Empty, description, signature);
+    }
+
+    /// <summary>
     /// Scans the <em>extensions folder</em> for subfolders containing an <em>extension manifest</em>.
     /// </summary>
     /// <returns>
@@ -119,7 +154,6 @@ public class ExtensionsClient(
         AppendValidationFlagMessage(flags, ExtensionValidationFlags.LocationMismatch, builder, Exceptions.ValidationFlags_LocationMismatch);
         AppendValidationFlagMessage(flags, ExtensionValidationFlags.FileNotFound, builder, Exceptions.ValidationFlags_FileNotFound);
         AppendValidationFlagMessage(flags, ExtensionValidationFlags.SignatureMismatch, builder, Exceptions.ValidationFlags_SignatureMismatch);
-        AppendValidationFlagMessage(flags, ExtensionValidationFlags.InvalidCertificate, builder, Exceptions.ValidationFlags_InvalidCertificate);
 
         return builder.ToString();
     }

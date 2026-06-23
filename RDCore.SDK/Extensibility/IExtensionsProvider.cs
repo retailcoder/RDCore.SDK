@@ -8,6 +8,17 @@ namespace RDCore.LanguageServer.Extensibility;
 public interface IExtensionsProvider
 {
     /// <summary>
+    /// Creates a serializable <see cref="ExtensionInfo"/> model for the specified extension executable <c>name</c>, with the specified <c>description</c>.
+    /// </summary>
+    /// <param name="name">The name of the executable extension.</param>
+    /// <param name="description">A short description of the extension.</param>
+    /// <remarks>
+    /// 🧩 The implementation must validate that it is executing this method inside the target extension folder.
+    /// </remarks>
+    /// <returns><c>null</c> if the specified extension cannot be described.</returns>
+    ExtensionInfo? Describe(string name, string description);
+
+    /// <summary>
     /// Scans the <em>extensions folder</em> for subfolders containing an <em>extension manifest</em>.
     /// </summary>
     IEnumerable<ExtensionInfo> Discover();

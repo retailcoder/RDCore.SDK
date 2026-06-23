@@ -51,13 +51,27 @@ public enum ExtensionValidationFlags
     /// The server executable may have been tampered with.
     /// </remarks>
     SignatureMismatch = 1 << 4,
+
+}
+
+/// <summary>
+/// A service that provides platform extension capabilities.
+/// </summary>
+public interface IExtensionCapabilityProvider
+{
     /// <summary>
-    /// The certificate associated with the extension is invalid.
+    /// Asynchronously validates the availability of the specified <em>capability</em> type.
     /// </summary>
-    /// <remarks>
-    /// The server executable <em>and</em> the extension manifest may have been tampered with.
-    /// </remarks>
-    InvalidCertificate = 1 << 5,
+    /// <typeparam name="TCapability">The <em>capability</em> type requested.</typeparam>
+    /// <returns>An asynchronous <c>Task</c> that yields a <c>bool</c> that is <c>true</c> if the requested capability is available from thie provider.</returns>
+    Task<bool> IsAvailableAsync<TCapability>();
+    /// <summary>
+    /// Asynchronously requests metadata associated with the specified <em>capability</em> type.
+    /// </summary>
+    /// <typeparam name="TCapability">The <em>capability</em> type requested.</typeparam>
+    /// <typeparam name="T">The type of capability metadata to get from this provider.</typeparam>
+    /// <returns>The metadata associated with the requested <em>capability</em> type.</returns>
+    Task<T> GetAsync<TCapability,T>() where T : class, new();
 }
 
 /// <summary>
@@ -78,9 +92,9 @@ public interface IExtensionManifestValidationService
 /// </summary>
 /// <param name="options">The <em>extensions</em> configuration settings.</param>
 /// <param name="fileSystem">Abstracts the <em>file system</em>.</param>
-public class ExtensionManifestValidationService(IOptions<ExtensionsOptions> options, IFileSystem fileSystem) : IExtensionManifestValidationService
+public class ExtensionManifestValidationService(IOptions<SdkAppOptions> options, IFileSystem fileSystem) : IExtensionManifestValidationService
 {
-    private IDirectoryInfo ExtensionsFolder => fileSystem.DirectoryInfo.New(options.Value.Path);
+    private IDirectoryInfo ExtensionsFolder => fileSystem.DirectoryInfo.New(options.Value.Platform.Extensions.Path);
 
     /// <summary>
     /// Validates the specified <see cref="ExtensionInfo"/>.
@@ -98,12 +112,7 @@ public class ExtensionManifestValidationService(IOptions<ExtensionsOptions> opti
             {// the extension exists in the expected location.
 
                 flags |= FlagSignatureMismatch(manifest);
-                if (flags == ExtensionValidationFlags.NoFlags)
-                {// the extension executable matches the file hash specified in the manifest.
-
-                    flags |= FlagCertificateMismatch(manifest); // FIXME no-op.
-                    // if we made it here, this extension is certified.
-                }
+                // the extension executable matches the file hash specified in the manifest.
             }
         }
 
@@ -111,12 +120,12 @@ public class ExtensionManifestValidationService(IOptions<ExtensionsOptions> opti
     }
 
     private ExtensionValidationFlags FlagNotAllowed(ExtensionInfo manifest)
-        => options.Value.Allowed.Contains(manifest.Title)
+        => options.Value.Platform.Extensions.Allowed.Contains(manifest.Title)
             ? ExtensionValidationFlags.NoFlags
             : ExtensionValidationFlags.NotAllowed;
 
     private ExtensionValidationFlags FlagBlocked(ExtensionInfo manifest)
-        => !options.Value.Blocked.Any(e => e.Title == manifest.Title)
+        => !options.Value.Platform.Extensions.Blocked.Any(e => e.Title == manifest.Title)
             ? ExtensionValidationFlags.NoFlags
             : ExtensionValidationFlags.Blocked;
 
@@ -134,14 +143,11 @@ public class ExtensionManifestValidationService(IOptions<ExtensionsOptions> opti
                 : ExtensionValidationFlags.FileNotFound;
 
     private ExtensionValidationFlags FlagSignatureMismatch(ExtensionInfo manifest)
-        => ExtensionsFolder.GetDirectories(manifest.Title, SearchOption.TopDirectoryOnly).Single()
+        => options.Value.Server.UnsafeDevMode || ExtensionsFolder.GetDirectories(manifest.Title, SearchOption.TopDirectoryOnly).Single()
             .GetFiles(manifest.Name, SearchOption.TopDirectoryOnly)
             .SingleOrDefault(file => GetSignature(file) == manifest.Signature) != default
                 ? ExtensionValidationFlags.NoFlags
                 : ExtensionValidationFlags.SignatureMismatch;
-
-    private static ExtensionValidationFlags FlagCertificateMismatch(ExtensionInfo manifest)
-        => ExtensionValidationFlags.NoFlags; // TODO (+remove static as needed)
 
     private static string GetSignature(IFileInfo file)
         => Encoding.UTF8.GetString(GetFileHash(file, SHA512.Create()));

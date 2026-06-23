@@ -24,5 +24,6 @@ public sealed record class VBEnumType(Symbol Symbol, bool IsHidden = false) : VB
     public override int Size => sizeof(int);
 
     public ImmutableArray<VBTypeMemberSymbol> Members { get; init; }
+    ImmutableArray<VBDeferredTypeMemberSymbol> IVBMemberOwnerType.DeferredMembers { get; init; } = [];
     public IVBMemberOwnerType WithMembers(IEnumerable<VBTypeMemberSymbol> members) => this with { Members = [.. members] };
 }

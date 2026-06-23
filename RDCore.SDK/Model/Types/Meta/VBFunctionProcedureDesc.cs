@@ -10,7 +10,7 @@ namespace RDCore.SDK.Model.Types.Meta;
 /// Describes a <c>Function</c> procedure.
 /// </summary>
 /// <param name="Name">The name of the member.</param>
-public record class VBFunctionProcedureDesc(string Name, ImmutableArray<VBParameterSymbol> Parameters) : VBMemberDesc(Name, Parameters)
+public record class VBFunctionProcedureDesc(string Name, ImmutableArray<VBParameterSymbol> Parameters) : VBReturningMemberDesc(Name, Parameters)
 {
     private static readonly Lazy<VBFunctionProcedureDesc> _instance = new(() => new(nameof(VBType), []), LazyThreadSafetyMode.PublicationOnly);
     /// <summary>

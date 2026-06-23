@@ -1,6 +1,5 @@
 ﻿using RDCore.SDK.Model.Errors;
 using RDCore.SDK.Model.Types.Abstract;
-using RDCore.SDK.Model.Values.Intrinsic;
 
 namespace RDCore.SDK.Model.Values.Abstract;
 
@@ -10,7 +9,7 @@ namespace RDCore.SDK.Model.Values.Abstract;
 public interface INumericValue
 {
     /// <summary>
-    /// Gets the managed (.net) internal representation the numeric value. This is always a <c>double</c>.
+    /// Gets a managed (.net) internal representation the numeric value. This is always a <c>double</c>.
     /// </summary>
     double ManagedValue { get; }
 
@@ -20,49 +19,19 @@ public interface INumericValue
     /// <remarks>
     /// 💥<see cref="VBRuntimeErrorId.Overflow"/> may be raised as specified in the appropraite <em>run-time semantics</em> if the specified value is outside the bounds representable by the <see cref="VBType"/>.
     /// </remarks>
-    /// <param name="value">The underlying value of the numeric value to be produced.</param>
+    /// <param name="value">The <em>managed value</em> of the numeric value to be produced.</param>
     INumericValue WithValue(double value);
 }
 
 /// <summary>
-/// Represents any numeric value with a generic interface mapping it to a specific <c>VBType</c>.
+/// Represents any numeric value with a generic interface mapping it to a specific <see cref="VBType"/>.
 /// </summary>
 /// <typeparam name="VBTValue"></typeparam>
 public interface INumericValue<VBTValue> : INumericValue
     where VBTValue : VBTypedValue
 {
     /// <summary>
-    /// The numeric <c>VBType</c> of this value.
+    /// The numeric <see cref="VBType"/> of this value.
     /// </summary>
     VBType TypeInfo { get; }
-}
-
-[Obsolete("This interface should be removed once let-coercion semantics are encapsulated in their own class.")]
-public interface INumericCoercion
-{
-    [Obsolete("TODO: refactor to use the centralized let-coercion semantics instead.")]
-    VBDoubleValue? AsCoercedDouble(ref int depth);
-}
-
-[Obsolete("This interface should be removed once let-coercion semantics are encapsulated in their own class.")]
-public interface IStringCoercion
-{
-    [Obsolete("TODO: refactor to use the centralized let-coercion semantics instead.")]
-    VBStringValue? AsCoercedString(ref int depth);
-    [Obsolete("TODO: refactor to use the centralized let-coercion semantics instead.")]
-    VBFixedStringValue? AsCoercedFixedLengthString(int length, ref int depth);
-}
-
-[Obsolete("This interface should be removed once let-coercion semantics are encapsulated in their own class.")]
-public interface IBooleanCoercion
-{
-    [Obsolete("TODO: refactor to use the centralized let-coercion semantics instead.")]
-    VBBooleanValue AsCoercedBoolean(ref int depth);
-}
-
-[Obsolete("This interface should be removed once let-coercion semantics are encapsulated in their own class.")]
-public interface IDateCoercion
-{
-    [Obsolete("TODO: refactor to use the centralized let-coercion semantics instead.")]
-    VBDateValue AsCoercedDate(ref int depth);
 }

@@ -7,7 +7,7 @@ namespace RDCore.SDK.Model.Types.Complex;
 /// <summary>
 /// Represents the <c>void</c> semantic data type.
 /// </summary>
-public record class VBVoidType() : VBType(typeof(void), VBTypeNames.VBVoid, isHidden: true)
+public record class VBVoidType() : VBType(typeof(int), VBTypeNames.VBVoid, isHidden: true)
 {
     private static readonly Lazy<VBVoidType> _instance = new(() => new(), LazyThreadSafetyMode.PublicationOnly);
     /// <summary>
