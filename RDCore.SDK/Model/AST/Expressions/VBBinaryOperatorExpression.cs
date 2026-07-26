@@ -3,6 +3,7 @@ using RDCore.SDK.Model.AST.Abstract;
 using RDCore.SDK.Model.Symbols.Abstract;
 using RDCore.SDK.Model.Values.Abstract;
 using RDCore.SDK.Semantics.Context.Abstract;
+using System.Collections.Immutable;
 
 namespace RDCore.SDK.Model.AST.Expressions;
 
@@ -18,12 +19,25 @@ namespace RDCore.SDK.Model.AST.Expressions;
 /// <param name="Location">The <c>Location</c> (holds the document <c>Uri</c> and a <c>Range</c>) of the bound expression.</param>
 /// <param name="Left">The left-hand side (LHS) operand of this <em>binary operator expression</em></param>
 /// <param name="Right">The right-hand side (RHS) operand of this <em>binary operator expression</em></param>
-public record class VBBinaryOperatorExpression<TContext, TFlags>(Uri SemanticId, 
-    OperatorSymbol<TContext, TFlags> Symbol, 
-    OperatorExpressionValueSymbol ResultSymbol,
-    SourceLocation Location, 
-    BoundExpression Left, 
-    BoundExpression Right) 
-    : VBOperatorExpression<TContext, TFlags>(SemanticId, Symbol, ResultSymbol, Location) 
+public record class VBBinaryOperatorExpression<TContext, TFlags>
+    : VBOperatorExpression<TContext, TFlags>
     where TContext : SemanticContext<TFlags>, new()
-    where TFlags : struct, Enum { }
+    where TFlags : struct, Enum
+{
+    public VBBinaryOperatorExpression(string token, Uri semanticId, SourceLocation location, BoundExpression left, BoundExpression right) 
+        : base(token, semanticId, location, [left, right])
+    {
+        Left = left;
+        Right = right;
+    }
+
+    public VBBinaryOperatorExpression(Uri semanticId, OperatorSymbol<TContext, TFlags> symbol, OperatorExpressionValueSymbol resultSymbol, SourceLocation location, BoundExpression left, BoundExpression right) 
+        : base(semanticId, symbol, resultSymbol, location, [left, right])
+    {
+        Left = left;
+        Right = right;
+    }
+
+    public BoundExpression Left { get; }
+    public BoundExpression Right { get; }
+}

@@ -1,5 +1,7 @@
 ﻿namespace RDCore.SDK.Model.AST.Directives;
 
+public record class DefTypeUniversalPrefixMapping() : DefTypePrefixMapping('A', 'Z');
+
 /// <summary>
 /// Maps a range of prefix characters to a <c>Def&lt;Type&gt;</c> directive.
 /// </summary>

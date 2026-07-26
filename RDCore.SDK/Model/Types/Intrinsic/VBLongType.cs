@@ -23,7 +23,7 @@ public record class VBLongType() : VBNumericType<int>(VBTypeNames.VBLong), IInte
     public static VBLongType TypeInfo => _instance.Value;
 
     private static readonly Lazy<VBLongValue> _minValue = new(() 
-        => new VBLongValue(GlobalSymbols.ExtensionSymbols.VBLongMinValue) { ManagedValue = new(ManagedInteropValue<int>.Int32MinValue) }, LazyThreadSafetyMode.PublicationOnly);
+        => new VBLongValue(int.MinValue), LazyThreadSafetyMode.PublicationOnly);
     /// <summary>
     /// Gets the minimum representable value for this data type.
     /// </summary>
@@ -31,7 +31,7 @@ public record class VBLongType() : VBNumericType<int>(VBTypeNames.VBLong), IInte
     public override double ManagedMinValue => (double)_minValue.Value.ManagedValue.InteropValue!.BoxedValue;
 
     private static readonly Lazy<VBLongValue> _maxValue = new(()
-        => new VBLongValue(GlobalSymbols.ExtensionSymbols.VBLongMaxValue) { ManagedValue = new(ManagedInteropValue<int>.Int32MaxValue) }, LazyThreadSafetyMode.PublicationOnly);
+        => new VBLongValue(int.MaxValue), LazyThreadSafetyMode.PublicationOnly);
     /// <summary>
     /// Gets the maximum representable value for this data type.
     /// </summary>
@@ -39,7 +39,7 @@ public record class VBLongType() : VBNumericType<int>(VBTypeNames.VBLong), IInte
     public override double ManagedMaxValue => (double)_maxValue.Value.ManagedValue.InteropValue!.BoxedValue;
 
     private static readonly Lazy<VBLongValue> _zero = new(()
-        => new VBLongValue(GlobalSymbols.ExtensionSymbols.VBLongZeroValue) { ManagedValue = new(ManagedInteropValue<int>.Int32ZeroValue) }, LazyThreadSafetyMode.PublicationOnly);
+        => new VBLongValue(0), LazyThreadSafetyMode.PublicationOnly);
     /// <summary>
     /// Gets the value <c>0</c> (zero) representation of this data type.
     /// </summary>

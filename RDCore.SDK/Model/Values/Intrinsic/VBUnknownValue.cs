@@ -1,6 +1,4 @@
-﻿using RDCore.SDK.Model.Symbols;
-using RDCore.SDK.Model.Symbols.Abstract;
-using RDCore.SDK.Model.Types;
+﻿using RDCore.SDK.Model.Types;
 using RDCore.SDK.Model.Values.Abstract;
 
 namespace RDCore.SDK.Model.Values.Intrinsic;
@@ -8,10 +6,9 @@ namespace RDCore.SDK.Model.Values.Intrinsic;
 /// <summary>
 /// Represents the placeholder runtime value of an unresolved symbol.
 /// </summary>
-/// <param name="Symbol"></param>
-public sealed record class VBUnknownValue(Symbol Symbol) : VBTypedValue(VBUnknownType.TypeInfo, Symbol), IVBTypedValue<VBUnknownValue, object>
+public sealed record class VBUnknownValue() : VBTypedValue(VBUnknownType.TypeInfo), IVBTypedValue<VBUnknownValue, object>
 {
-    private static readonly Lazy<VBUnknownValue> _defaultValue = new(() => new(GlobalSymbols.StaticSymbols.VBUnknown), LazyThreadSafetyMode.PublicationOnly);
+    private static readonly Lazy<VBUnknownValue> _defaultValue = new(() => new(), LazyThreadSafetyMode.PublicationOnly);
     public static VBUnknownValue DefaultValue => _defaultValue.Value;
 
     public override int Size => sizeof(int);

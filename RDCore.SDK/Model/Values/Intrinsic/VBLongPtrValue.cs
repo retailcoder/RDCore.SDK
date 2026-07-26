@@ -1,6 +1,6 @@
-﻿using RDCore.SDK.Model.Symbols.Abstract;
-using RDCore.SDK.Model.Types;
+﻿using RDCore.SDK.Model.Types;
 using RDCore.SDK.Model.Values.Abstract;
+using RDCore.SDK.Model.Values.Interop;
 
 namespace RDCore.SDK.Model.Values.Intrinsic;
 
@@ -8,14 +8,24 @@ namespace RDCore.SDK.Model.Values.Intrinsic;
 /// Represents a <c>LongPtr</c> value.
 /// </summary>
 /// <param name="Is64Bit">Indicates whether the pointer is a 32-bit (<c>false</c>) or 64-bit (<c>true</c>) pointer.</param>
-/// <param name="Symbol">The symbol associated with this value.</param>
-public sealed record class VBLongPtrValue(bool Is64Bit, Symbol Symbol) 
-    : VBNumericTypedValue(Is64Bit ? VBLongPtrType_x64.TypeInfo : VBLongPtrType_x86.TypeInfo, Symbol), 
+public sealed record class VBLongPtrValue(bool Is64Bit) 
+    : VBNumericTypedValue(Is64Bit ? VBLongPtrType_x64.TypeInfo : VBLongPtrType_x86.TypeInfo), 
     IVBTypedValue<VBLongPtrValue, long>, INumericValue<VBLongPtrValue>
 {
-    public long Value => (long)ManagedValue.InteropValue!.BoxedValue;
-    public override int Size => Is64Bit ? VBLongPtrType_x64.TypeInfo.Size : VBLongPtrType_x86.TypeInfo.Size;
+    public VBLongPtrValue(long value) : this(true)
+    {
+        ManagedValue = new(new ManagedInteropValue<long>(value));
+        Size = VBLongPtrType_x64.TypeInfo.Size;
+    }
+    public VBLongPtrValue(int value) : this(true)
+    {
+        ManagedValue = new(new ManagedInteropValue<int>(value));
+        Size = VBLongPtrType_x86.TypeInfo.Size;
+    }
 
-    public bool Equals(IVBTypedValue<VBLongPtrValue, long>? other) => Value == other?.Value;
+    public long Value => (long)ManagedValue.InteropValue!.BoxedValue;
+    public override int Size { get; }
+
+    public bool Equals(IVBTypedValue<VBLongPtrValue, long>? other) => Value.Equals(other?.Value);
     public override int GetHashCode() => Value.GetHashCode();
 }

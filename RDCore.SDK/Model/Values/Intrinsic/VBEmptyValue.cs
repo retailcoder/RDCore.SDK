@@ -1,5 +1,4 @@
 ﻿using RDCore.SDK.Model.Symbols;
-using RDCore.SDK.Model.Symbols.Abstract;
 using RDCore.SDK.Model.Types;
 using RDCore.SDK.Model.Values.Abstract;
 
@@ -8,11 +7,10 @@ namespace RDCore.SDK.Model.Values.Intrinsic;
 /// <summary>
 /// Represents an <c>Empty</c> value.
 /// </summary>
-/// <param name="Symbol">The symbol associated with this value.</param>
-public sealed record class VBEmptyValue(Symbol Symbol) : VBTypedValue(VBEmptyType.TypeInfo, Symbol), 
+public sealed record class VBEmptyValue() : VBTypedValue(VBEmptyType.TypeInfo), 
     IVBTypedValue<VBEmptyValue, int>
 {
-    private static readonly Lazy<VBEmptyValue> _emptyValue = new(() => new(GlobalSymbols.StaticSymbols.Empty), LazyThreadSafetyMode.PublicationOnly);
+    private static readonly Lazy<VBEmptyValue> _emptyValue = new(() => new(), LazyThreadSafetyMode.PublicationOnly);
     public static VBEmptyValue Empty { get; } = _emptyValue.Value;
 
     public int Value => 0;

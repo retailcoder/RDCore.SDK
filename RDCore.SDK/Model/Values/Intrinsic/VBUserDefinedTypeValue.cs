@@ -1,5 +1,4 @@
-﻿using RDCore.SDK.Model.Symbols.Abstract;
-using RDCore.SDK.Model.Symbols.VBProject;
+﻿using RDCore.SDK.Model.Symbols.VBProject;
 using RDCore.SDK.Model.Types;
 using RDCore.SDK.Model.Types.Abstract;
 using RDCore.SDK.Model.Values.Abstract;
@@ -9,7 +8,7 @@ namespace RDCore.SDK.Model.Values.Intrinsic;
 public record class VBUserDefinedTypeValue : VBTypedValue,
     IVBTypedValue<VBUserDefinedTypeValue, VBLongPtrValue>
 {
-    public VBUserDefinedTypeValue(VBUserDefinedType typeInfo, Symbol symbol) : base(typeInfo, symbol) { }
+    public VBUserDefinedTypeValue(VBUserDefinedType typeInfo) : base(typeInfo) { }
 
     public VBLongPtrValue Value { get; } = VBLongPtrType_x64.Zero;
 

@@ -1,9 +1,8 @@
-﻿using RDCore.SDK.Model.Symbols.Abstract;
-using RDCore.SDK.Model.Types;
+﻿using RDCore.SDK.Model.Types;
 
 namespace RDCore.SDK.Model.Values.Abstract;
 
-public abstract record class VBDeferredMemberValue(Symbol Symbol) : VBTypedValue(VBVariantType.TypeInfo, Symbol)
+public abstract record class VBDeferredMemberValue() : VBTypedValue(VBVariantType.TypeInfo)
 {
     public override int Size => sizeof(int);
 

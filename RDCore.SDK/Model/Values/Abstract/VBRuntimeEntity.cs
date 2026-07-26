@@ -8,10 +8,10 @@ namespace RDCore.SDK.Model.Values.Abstract;
 /// </summary>
 /// <param name="TypeInfo">The <c>VBType</c> of the entity.</param>
 /// <param name="ResolvedSymbol">The resolved <c>Symbol</c> represented by the <c>SymbolUri</c>.</param>
-public abstract record class VBRuntimeEntity(VBType TypeInfo, Symbol ResolvedSymbol) 
+public abstract record class VBRuntimeEntity(VBType TypeInfo, Symbol? ResolvedSymbol = default) 
 {
     /// <summary>
     /// Gets a unique <em>semantic ID</em> for this entity.
     /// </summary>
-    public Uri SemanticId => ResolvedSymbol.Uri;
+    public Uri SemanticId => ResolvedSymbol?.Uri; // FIXME
 }

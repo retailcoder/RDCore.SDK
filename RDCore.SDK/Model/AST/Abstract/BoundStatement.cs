@@ -11,4 +11,4 @@ namespace RDCore.SDK.Model.AST.Abstract;
 /// <param name="Token">The <c>string</c> <em>token</em> of the statement, e.g. <c>Open</c>, <c>Input</c>, <c>Print</c>, <c>Assert</c>, etc..</param>
 /// <param name="Inputs">The <em>inputs</em> of the executable statement; expressions evaluated immediately before the call.</param>
 public abstract record class BoundStatement(Uri SemanticId, SourceLocation Location, string Token, ImmutableArray<BoundExpression> Inputs)
-    : BoundNode(SemanticId, Location), IExecutableNode;
+    : BoundNode(SemanticId, Location, [.. Inputs.Cast<BoundNode>()]), IExecutableNode;

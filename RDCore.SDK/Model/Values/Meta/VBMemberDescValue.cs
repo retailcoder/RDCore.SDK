@@ -6,8 +6,8 @@ namespace RDCore.SDK.Model.Values.Meta;
 /// <summary>
 /// A meta-value that represents a <see cref="VBTypeMemberSymbol"/>.
 /// </summary>
-public record class VBMemberDescValue(Symbol Symbol, VBTypeMemberSymbol Member, params VBParameterDescValue[] Parameters)
-    : VBTypedValue(Member.ResolvedType, Symbol)
+public record class VBMemberDescValue(VBTypeMemberSymbol Member, params VBParameterDescValue[] Parameters)
+    : VBTypedValue(Member.ResolvedType)
 {
     public override int Size => sizeof(int);
 }

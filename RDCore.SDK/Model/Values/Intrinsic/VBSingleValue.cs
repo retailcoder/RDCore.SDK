@@ -1,6 +1,6 @@
-﻿using RDCore.SDK.Model.Symbols.Abstract;
-using RDCore.SDK.Model.Types;
+﻿using RDCore.SDK.Model.Types;
 using RDCore.SDK.Model.Values.Abstract;
+using RDCore.SDK.Model.Values.Bindings;
 using RDCore.SDK.Model.Values.Interop;
 
 namespace RDCore.SDK.Model.Values.Intrinsic;
@@ -9,10 +9,15 @@ namespace RDCore.SDK.Model.Values.Intrinsic;
 /// Represents a <c>Single</c> numeric value.
 /// </summary>
 /// <param name="Symbol">The symbol associated with this value.</param>
-public sealed record class VBSingleValue(Symbol Symbol) : VBNumericTypedValue(VBSingleType.TypeInfo, Symbol),
+public sealed record class VBSingleValue() : VBNumericTypedValue(VBSingleType.TypeInfo),
     IVBTypedValue<VBSingleValue, float>,
     INumericValue<VBSingleValue>
 {
+    public VBSingleValue(float value) : this()
+    {
+        Handle = new ValueBindingHandle(new ManagedInteropValue<float>(value));
+    }
+
     public float Value => ((ManagedInteropValue<float>)ManagedValue.InteropValue!).Value;
     public override int Size => sizeof(float);
     public bool Equals(IVBTypedValue<VBSingleValue, float>? other) => Value == other?.Value;

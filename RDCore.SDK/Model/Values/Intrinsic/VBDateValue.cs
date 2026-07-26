@@ -1,6 +1,6 @@
-﻿using RDCore.SDK.Model.Symbols.Abstract;
-using RDCore.SDK.Model.Types;
+﻿using RDCore.SDK.Model.Types;
 using RDCore.SDK.Model.Values.Abstract;
+using RDCore.SDK.Model.Values.Bindings;
 using RDCore.SDK.Model.Values.Interop;
 
 namespace RDCore.SDK.Model.Values.Intrinsic;
@@ -8,19 +8,23 @@ namespace RDCore.SDK.Model.Values.Intrinsic;
 /// <summary>
 /// Represents a runtime value of the <see cref="VBDateType"/> data type.
 /// </summary>
-/// <param name="Symbol">The <see cref="Symbol"/> associated with this value.</param>
-public sealed record class VBDateValue(Symbol Symbol) 
-    : VBTypedValue(VBDateType.TypeInfo, Symbol), IVBTypedValue<VBDateValue, DateTime>
+public sealed record class VBDateValue() 
+    : VBTypedValue(VBDateType.TypeInfo), IVBTypedValue<VBDateValue, DateTime>
 {
+    public VBDateValue(double value) : this()
+    {
+        Handle = new ValueBindingHandle(new ManagedInteropValue<double>(value));
+    }
+
     /// <summary>
     /// Gets the <c>DateSerial</c> (<c>double</c>) underlying numeric representation of the date value.
     /// </summary>
     /// <remarks>
     /// This representation is natively compatible with how dates are represented in <em>Microsoft Excel</em>.
     /// </remarks>
-    public double SerialValue => (double)ManagedValue.InteropValue!.BoxedValue;
+    public double SerialValue => ((ManagedInteropValue<double>)ManagedValue.InteropValue!).StoredValue;
 
-    public DateTime Value => DateTime.FromOADate(((ManagedInteropValue<double>)ManagedValue.InteropValue!).Value);
+    public DateTime Value => DateTime.FromOADate(((ManagedInteropValue<double>)ManagedValue.InteropValue!).StoredValue);
     public override int Size => sizeof(double);
 
     public bool Equals(IVBTypedValue<VBDateValue, DateTime>? other) => Value == other?.Value;

@@ -1,5 +1,4 @@
-﻿using RDCore.SDK.Model.Symbols.Abstract;
-using RDCore.SDK.Model.Types;
+﻿using RDCore.SDK.Model.Types;
 using RDCore.SDK.Model.Values.Abstract;
 using RDCore.SDK.Model.Values.Interop;
 
@@ -8,11 +7,15 @@ namespace RDCore.SDK.Model.Values.Intrinsic;
 /// <summary>
 /// Represents a <c>LongLong</c> value.
 /// </summary>
-/// <param name="Symbol">The symbol associated with this value.</param>
-public sealed record class VBLongLongValue(Symbol Symbol) : VBNumericTypedValue(VBLongLongType.TypeInfo, Symbol),
+public sealed record class VBLongLongValue() : VBNumericTypedValue(VBLongLongType.TypeInfo),
     IVBTypedValue<VBLongLongValue, long>, 
     INumericValue<VBLongLongValue>
 {
+    public VBLongLongValue(long value) : this()
+    {
+        ManagedValue = new(new ManagedInteropValue<long>(value));
+    }
+
     public long Value => ((ManagedInteropValue<long>)ManagedValue.InteropValue!).Value;
     public override int Size => sizeof(long);
 

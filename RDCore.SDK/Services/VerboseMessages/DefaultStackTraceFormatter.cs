@@ -38,7 +38,7 @@ public class DefaultStackTraceFormatter : IStackTraceFormatter
         builder
             .WithIndent(_options.TopStackFrameMarker)
             .WithWhitespace()
-            .Append(frame.StaticSymbol.Name);
+            .Append(frame.NodeUri.ToString());
     
         FormatOperands(builder, frame, withValues);
     }
@@ -56,7 +56,7 @@ public class DefaultStackTraceFormatter : IStackTraceFormatter
             .WithIndent(_options.StackFrameMarker)
             .Append(Exceptions.Verbose_FrameDetails)
             .WithWhitespace()
-            .Append(frame.StaticSymbol.Name);
+            .Append(frame.NodeUri.ToString());
     
         FormatOperands(builder, frame, withValues);
     }

@@ -13,7 +13,7 @@ namespace RDCore.SDK.Model.Values.Intrinsic;
 /// </remarks>
 public sealed record class VBResizableByteArrayValue : VBResizableArrayValue
 {
-    private static readonly Lazy<VBResizableByteArrayValue> _defaultValue = new(() => new(GlobalSymbols.StaticSymbols.EmptyResizableByteArray, []));
+    private static readonly Lazy<VBResizableByteArrayValue> _defaultValue = new(() => new([]));
     /// <summary>
     /// Gets an empty <c>VBResizableArrayValue</c> with the <c>EmptyResizableByteArray</c> static symbol.
     /// </summary>
@@ -22,10 +22,9 @@ public sealed record class VBResizableByteArrayValue : VBResizableArrayValue
     /// <summary>
     /// Creates a new empty resizable array for the specified symbol, containing <c>VBByteValue</c> elements.
     /// </summary>
-    /// <param name="symbol">The <c>Symbol</c> associated with this value.</param>
     /// <param name="dimensions">An array of value tuples containing the lower and upper boundaries of each dimension.</param>
-    public VBResizableByteArrayValue(Symbol symbol, (int lBound, int uBound)[] dimensions)
-        : base(symbol, dimensions, VBByteType.TypeInfo) { }
+    public VBResizableByteArrayValue((int lBound, int uBound)[] dimensions)
+        : base(dimensions, VBByteType.TypeInfo) { }
 }
 
 /// <summary>
@@ -33,7 +32,7 @@ public sealed record class VBResizableByteArrayValue : VBResizableArrayValue
 /// </summary>
 public record class VBResizableArrayValue : VBArrayValue
 {
-    private static readonly Lazy<VBResizableArrayValue> _defaultValue = new(() => new(GlobalSymbols.StaticSymbols.EmptyResizableArray, []));
+    private static readonly Lazy<VBResizableArrayValue> _defaultValue = new(() => new([]));
     /// <summary>
     /// Gets an empty <c>VBResizableArrayValue</c> with the <c>EmptyResizableArray</c> static symbol.
     /// </summary>
@@ -45,8 +44,8 @@ public record class VBResizableArrayValue : VBArrayValue
     /// <param name="symbol">The <c>Symbol</c> associated with this value.</param>
     /// <param name="dimensions">An array of value tuples containing the lower and upper boundaries of each dimension.</param>
     /// <param name="itemType">The type of item held in this array. <c>VBVariantType</c> by default.</param>
-    public VBResizableArrayValue(Symbol symbol, (int lBound, int uBound)[] dimensions, VBType? itemType = null)
-        : base(symbol, dimensions, itemType ?? VBVariantType.TypeInfo) { }
+    public VBResizableArrayValue((int lBound, int uBound)[] dimensions, VBType? itemType = null)
+        : base(dimensions, itemType ?? VBVariantType.TypeInfo) { }
     /*
     public VBArrayValue ReDim((int lBound, int uBound)[] dimensions, bool preserve = false)
     {

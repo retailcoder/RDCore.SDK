@@ -1,4 +1,5 @@
 ﻿using RDCore.SDK.Model.Source;
+using System.Collections.Immutable;
 
 namespace RDCore.SDK.Model.AST.Abstract;
 
@@ -10,4 +11,9 @@ namespace RDCore.SDK.Model.AST.Abstract;
 /// </remarks>
 /// <param name="SemanticId">A semantic <c>Uri</c> uniquely identifying this specific node.</param>
 /// <param name="Location">The document location (<c>Uri</c>+<c>Range</c>) of this node.</param>
-public abstract record class BoundNode(Uri SemanticId, SourceLocation Location);
+public abstract record class BoundNode(Uri SemanticId, SourceLocation Location, ImmutableArray<BoundNode> Children)
+{
+    public Uri SemanticId { get; init; } = SemanticId;
+    public SourceLocation SourceLocation { get; init; } = Location;
+    public ImmutableArray<BoundNode> Children { get; init; } = Children;
+}

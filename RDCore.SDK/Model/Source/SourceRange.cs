@@ -8,6 +8,11 @@ namespace RDCore.SDK.Model.Source;
 public readonly record struct SourceRange(SourcePosition Start, SourcePosition End)
 {
     /// <summary>
+    /// Gets an empty range at position <c>L0C0</c>.
+    /// </summary>
+    public static SourceRange Empty { get; } = new(SourcePosition.Zero, SourcePosition.Zero);
+
+    /// <summary>
     /// Creates a <c>SourceRange</c> from zero-based start/end line numbers and character offsets.
     /// </summary>
     public SourceRange(int startLine, int startCharacter, int endLine, int endCharacter)

@@ -1,5 +1,4 @@
-﻿using RDCore.SDK.Model.Symbols.Abstract;
-using RDCore.SDK.Model.Types;
+﻿using RDCore.SDK.Model.Types;
 using RDCore.SDK.Model.Values.Abstract;
 using RDCore.SDK.Model.Values.Interop;
 
@@ -8,9 +7,8 @@ namespace RDCore.SDK.Model.Values.Intrinsic;
 /// <summary>
 /// A <see cref="VBNumericTypedValue"/> representing a runtime value of the <see cref="VBDecimalType"/> data type.
 /// </summary>
-/// <param name="Symbol">The <see cref="Symbol"/> associated with this value.</param>
-public sealed record class VBDecimalValue(Symbol Symbol) 
-    : VBNumericTypedValue(VBDecimalType.TypeInfo, Symbol), IVBTypedValue<VBDecimalValue, decimal>, INumericValue<VBDecimalValue>
+public sealed record class VBDecimalValue() 
+    : VBNumericTypedValue(VBDecimalType.TypeInfo), IVBTypedValue<VBDecimalValue, decimal>, INumericValue<VBDecimalValue>
 {
     public decimal Value => ((ManagedInteropValue<ManagedDecimalInteropValue>)ManagedValue.InteropValue!).Value.ManagedValue;
     public override int Size => sizeof(Decimal);

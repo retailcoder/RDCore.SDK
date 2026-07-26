@@ -12,9 +12,9 @@ namespace RDCore.SDK.Model.Values.Meta;
 /// </summary>
 /// <param name="Target">The described type.</param>
 /// <param name="Symbol">The symbol associated with this value.</param>
-public record class VBTypeDescValue(VBType Target, Symbol Symbol) : VBTypedValue(VBTypeDesc.TypeInfo, Symbol)
+public record class VBTypeDescValue(VBType Target) : VBTypedValue(VBTypeDesc.TypeInfo)
 {
-    private static readonly Lazy<VBTypeDescValue> _defaultValue = new(() => new(GlobalSymbols.StaticSymbols.VBUnknown.ResolvedType, GlobalSymbols.StaticSymbols.VBUnknown), LazyThreadSafetyMode.PublicationOnly);
+    private static readonly Lazy<VBTypeDescValue> _defaultValue = new(() => new(GlobalSymbols.StaticSymbols.VBUnknown.ResolvedType), LazyThreadSafetyMode.PublicationOnly);
     /// <summary>
     /// Gets a <c>VBTypeDescValue</c> describing a <c>VBUnknownType</c>.
     /// </summary>
@@ -27,7 +27,6 @@ public record class VBTypeDescValue(VBType Target, Symbol Symbol) : VBTypedValue
 /// Creates a new <c>VBTypeDescValue</c> describing the specified <em>deferred type</em> at the specified symbol.
 /// </summary>
 /// <param name="deferredTypeInfo">The described <em>deferred type</em>.</param>
-/// <param name="symbol">The symbol associated with this value.</param>
-public record class VBDeferredTypeDescValue(VBDeferredType DeferredTarget, Symbol Symbol) : VBTypeDescValue(DeferredTarget, Symbol) 
+public record class VBDeferredTypeDescValue(VBDeferredType DeferredTarget) : VBTypeDescValue(DeferredTarget) 
 {
 }

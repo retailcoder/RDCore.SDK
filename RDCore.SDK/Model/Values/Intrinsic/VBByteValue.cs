@@ -1,5 +1,4 @@
-﻿using RDCore.SDK.Model.Symbols.Abstract;
-using RDCore.SDK.Model.Types;
+﻿using RDCore.SDK.Model.Types;
 using RDCore.SDK.Model.Values.Abstract;
 using RDCore.SDK.Model.Values.Interop;
 
@@ -8,9 +7,9 @@ namespace RDCore.SDK.Model.Values.Intrinsic;
 /// <summary>
 /// A <see cref="VBNumericTypedValue"/> representing a runtime value of the <see cref="VBByteType"/> data type.
 /// </summary>
-/// <param name="Symbol">The <see cref="Symbol"/> associated with this value.</param>
-public sealed record class VBByteValue(Symbol Symbol) 
-    : VBNumericTypedValue(VBByteType.TypeInfo, Symbol), IVBTypedValue<VBByteValue, byte>, INumericValue<VBByteValue>
+public sealed record class VBByteValue() : VBNumericTypedValue(VBByteType.TypeInfo), 
+    IVBTypedValue<VBByteValue, byte>, 
+    INumericValue<VBByteValue>
 {
     public byte Value => ((ManagedInteropValue<byte>)ManagedValue.InteropValue!).Value;
     public override int Size { get; } = sizeof(byte);

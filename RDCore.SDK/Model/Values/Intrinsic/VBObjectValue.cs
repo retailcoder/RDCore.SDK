@@ -2,6 +2,8 @@
 using RDCore.SDK.Model.Symbols.Abstract;
 using RDCore.SDK.Model.Types;
 using RDCore.SDK.Model.Values.Abstract;
+using RDCore.SDK.Model.Values.Bindings;
+using RDCore.SDK.Model.Values.Interop;
 
 namespace RDCore.SDK.Model.Values.Intrinsic;
 
@@ -12,19 +14,22 @@ namespace RDCore.SDK.Model.Values.Intrinsic;
 /// The default value of a <c>VBObjectValue</c> is <see cref="VBNothingValue"/>.
 /// </remarks>
 public record class VBObjectValue : VBTypedValue,
-    IVBTypedValue<VBObjectValue, int> // FIXME
+    IVBTypedValue<VBObjectValue, object>
 {
     private static readonly Lazy<VBObjectValue> _nothing = new(() 
-        => new VBNothingValue(GlobalSymbols.StaticSymbols.Nothing), LazyThreadSafetyMode.PublicationOnly);
+        => new VBNothingValue(), LazyThreadSafetyMode.PublicationOnly);
     public static VBObjectValue Nothing => _nothing.Value;
 
-    public VBObjectValue(Symbol symbol) : base(VBObjectType.TypeInfo, symbol) { }
+    public VBObjectValue(object reference) : base(VBObjectType.TypeInfo) 
+    {
+        Handle = new ReferenceBindingHandle(new ManagedInteropReference(typeof(object), reference));
+    }
 
-    public int Value { get; init; }
-    public override int Size => sizeof(int);
+    public object Value => ManagedValue.InteropReference!.Value.Value;
+    public override int Size => sizeof(int); // not quite
 
     public bool IsNothing() => Value == Nothing.Value;
 
-    public bool Equals(IVBTypedValue<VBObjectValue, int>? other) => Value.Equals(other?.Value);
+    public bool Equals(IVBTypedValue<VBObjectValue, object>? other) => object.ReferenceEquals(Value, other?.Value);
     public override int GetHashCode() => Value.GetHashCode();
 }

@@ -1,45 +1,60 @@
-﻿using RDCore.SDK.Model.Source;
+﻿using Newtonsoft.Json.Linq;
 using RDCore.SDK.Model.AST.Abstract;
+using RDCore.SDK.Model.Source;
 using RDCore.SDK.Model.Types;
 using RDCore.SDK.Model.Types.Abstract;
+using System.Collections.Immutable;
 
 namespace RDCore.SDK.Model.AST.Directives;
 
 /// <summary>
 /// A <c>BoundNode</c> representing an <c>Option</c> module directive.
 /// </summary>
+/// <param name="SemanticId">A semantic <c>Uri</c> uniquely identifying this specific node.</param>
 /// <param name="Location">The <c>Location</c> of the directive.</param>
 /// <param name="ModuleOption">The <c>ModuleOptions</c> value being configured.</param>
 public record class ModuleOptionDirectiveNode(Uri SemanticId, SourceLocation Location, ModuleOptions ModuleOption) : BoundDirective(SemanticId, Location) { }
 /// <summary>
 /// A <c>BoundNode</c> representing a <c>Def&lt;Type&gt;</c> module directive.
 /// </summary>
+/// <param name="SemanticId">A semantic <c>Uri</c> uniquely identifying this specific node.</param>
 /// <param name="Location">The <c>Location</c> of the directive.</param>
-/// <param name="VBType">The mapped <c>VBType</c> (per the semantics defined in MS-VBAL 5.2.2 Implicit Definition Directives).</param>
-/// <param name="Value">The prefixing scheme defined by this directive.</param>
-public record class TypeDefDirectiveNode(Uri SemanticId, SourceLocation Location, VBType VBType, DefTypePrefixMapping Value) : BoundDirective(SemanticId, Location) 
+/// <param name="Token">The <c>DefType</c> token mapping to a specific <c>VBType</c> (per the semantics defined in MS-VBAL 5.2.2 Implicit Definition Directives).</param>
+/// <param name="Mappings">The prefixing scheme defined by this directive.</param>
+public record class TypeDefDirectiveNode(Uri SemanticId, SourceLocation Location, string Token, ImmutableArray<DefTypePrefixMapping> Mappings) 
+    : BoundDirective(SemanticId, Location) 
+{
+    public VBType GetVBType(bool is64bit) => Token switch
+    {
+        Tokens.DefBool => VBBooleanType.TypeInfo,
+        Tokens.DefByte => VBByteType.TypeInfo,
+        Tokens.DefCur => VBCurrencyType.TypeInfo,
+        Tokens.DefDate => VBDateType.TypeInfo,
+        Tokens.DefDbl => VBDoubleType.TypeInfo,
+        Tokens.DefInt => VBIntegerType.TypeInfo,
+        Tokens.DefLng => VBLongType.TypeInfo,
+        Tokens.DefLngLng => VBLongLongType.TypeInfo,
+        Tokens.DefLngPtr => is64bit ? VBLongPtrType_x64.TypeInfo : VBLongPtrType_x86.TypeInfo,
+        Tokens.DefObj => VBObjectType.TypeInfo,
+        Tokens.DefSng => VBSingleType.TypeInfo,
+        Tokens.DefStr => VBStringType.TypeInfo,
+        Tokens.DefVar => VBVariantType.TypeInfo,
+
+        _ => VBUnknownType.TypeInfo // illegal
+    };
+}
+
+/// <summary>
+/// Represents an <c>Implements</c> directive.
+/// </summary>
+/// <param name="SemanticId">A semantic <c>Uri</c> uniquely identifying this specific node.</param>
+/// <param name="Location">The <c>Location</c> of the directive.</param>
+/// <param name="InterfaceClassType">The identifier name of the implemented interface.</param>
+public record class ImplementsDirectiveNode(Uri SemanticId, SourceLocation Location, BoundExpression NameExpression)
+    : BoundDirective(SemanticId, Location)
 {
     /// <summary>
-    /// Gets the <c>Def&lt;Type&gt;</c> token corresponding to the specified <c>VBType</c>, as defined in <strong>MS-VBAL 5.2.2</strong> Implicit Definition Directives.
+    /// Gets an expression resolving the identifier name of the implemented interface.
     /// </summary>
-    /// <param name="type">The <c>VBType</c> to map.</param>
-    /// <returns><c>null</c> given any <c>VBType</c> that does not have a defined implicit declaration token.</returns>
-    public static string? Token(VBType type) => type switch
-    {
-        VBBooleanType => Tokens.DefBool,
-        VBByteType => Tokens.DefByte,
-        VBIntegerType => Tokens.DefInt,
-        VBLongType => Tokens.DefLng,
-        VBLongLongType => Tokens.DefLngLng,
-        VBLongPtrType_x64 => Tokens.DefLngPtr,
-        VBLongPtrType_x86 => Tokens.DefLngPtr,
-        VBCurrencyType => Tokens.DefCur,
-        VBSingleType => Tokens.DefSng,
-        VBDoubleType => Tokens.DefDbl,
-        VBDateType => Tokens.DefDate,
-        VBStringType => Tokens.DefStr,
-        VBObjectType => Tokens.DefObj,
-        VBVariantType => Tokens.DefVar,
-        _ => default
-    };
+    public BoundExpression NameExpression { get; } = NameExpression;
 }

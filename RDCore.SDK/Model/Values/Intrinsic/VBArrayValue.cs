@@ -15,14 +15,13 @@ public abstract record class VBArrayValue : VBTypedValue
     /// <summary>
     /// Creates a new <see cref="VBTypedValue"/> representing a runtime value of the <see cref="VBArrayType"/> data type.
     /// </summary>
-    /// <param name="symbol">The <see cref="Symbol"/> associated with this value.</param>
     /// <param name="dimensions">An array of <em>value tuples</em> defining the size of each dimension of this <see cref="VBArrayValue"/>.</param>
     /// <param name="itemType">The data type of the items in this array. Use <see cref="VBVariantType"/> if the declared data type is unspecified.</param>
-    protected VBArrayValue(Symbol symbol, (int lBound, int uBound)[] dimensions, VBType itemType)
-        : base(VBArrayType.TypeInfo, symbol)
+    protected VBArrayValue((int lBound, int uBound)[] dimensions, VBType itemType)
+        : base(VBArrayType.TypeInfo)
     {
         ItemType = itemType;
-        Dimensions = [.. dimensions.Select(e => new VBArrayDimension(symbol, ItemType, e.lBound, e.uBound))];
+        Dimensions = [.. dimensions.Select(e => new VBArrayDimension(ItemType, e.lBound, e.uBound))];
     }
 
     /// <summary>
@@ -47,21 +46,17 @@ public abstract record class VBArrayValue : VBTypedValue
     /// </summary>
     public record class VBArrayDimension
     {
-        private readonly Symbol _symbol;
-
         /// <summary>
         /// Creates a array dimension of the specified <c>VBType</c> item type and the specified lower and upper bounds.
         /// </summary>
-        /// <param name="symbol">The <see cref="Symbol"/> of the parent <see cref="VBArrayValue"/>.</param>
         /// <param name="itemType"></param>
         /// <param name="lBound"></param>
         /// <param name="uBound"></param>
-        public VBArrayDimension(Symbol symbol, VBType itemType, int lBound, int uBound)
+        public VBArrayDimension(VBType itemType, int lBound, int uBound)
         {
             UpperBound = uBound;
             LowerBound = lBound;
 
-            _symbol = symbol;
             _itemType = itemType;
 
             var defaultManagedValue = itemType is VBBooleanType or VBNumericType or VBStringType 
@@ -95,12 +90,12 @@ public abstract record class VBArrayValue : VBTypedValue
                     if (_itemType is VBNumericType numericType)
                     {
                         var value = (double)_state[index]!;
-                        return VBTypedValueFactory.CreateValue(numericType, _symbol, value);
+                        return VBTypedValueFactory.CreateValue(numericType, value);
                     }
                     else if (_itemType is VBStringType stringType)
                     {
                         var value = (string)(_state[index] ?? string.Empty);
-                        return ((VBStringValue)VBTypedValueFactory.CreateValue(stringType, _symbol)!).WithValue(value);
+                        return ((VBStringValue)VBTypedValueFactory.CreateValue(stringType)!).WithValue(value);
                     }
                     else
                     {

@@ -1,5 +1,4 @@
 ﻿using RDCore.SDK.Model.Errors;
-using RDCore.SDK.Model.Symbols.Abstract;
 using RDCore.SDK.Model.Types;
 using RDCore.SDK.Model.Types.Abstract;
 using RDCore.SDK.Model.Values.Interop;
@@ -11,9 +10,7 @@ namespace RDCore.SDK.Model.Values.Abstract;
 /// Represents any data type that is specified as a <em>numeric type</em>, mapping directly to "Any numeric type" specifications.
 /// </summary>
 /// <param name="TypeInfo">The <c>VBType</c> of the numeric value.</param>
-/// <param name="Symbol">The symbol associated with this value.</param>
-public abstract record class VBNumericTypedValue(VBType TypeInfo, Symbol Symbol) : VBTypedValue(TypeInfo, Symbol),
-    INumericValue
+public abstract record class VBNumericTypedValue(VBType TypeInfo) : VBTypedValue(TypeInfo), INumericValue
 {
     /// <summary>
     /// The maximum possible number of significant digits retained in a String representation of a value of this type.

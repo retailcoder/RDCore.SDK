@@ -1,8 +1,18 @@
-﻿namespace RDCore.SDK.Model.AST.Expressions;
+﻿using RDCore.SDK.Model.AST.Abstract;
+using RDCore.SDK.Model.Source;
+using RDCore.SDK.Semantics.Context;
+using RDCore.SDK.Semantics.Flags;
+
+namespace RDCore.SDK.Model.AST.Expressions;
 
 // TODO migrate to types dedicated to the runtime semantics for member and dictionary access
 
-public static class VBMemberAccessOperatorExpression
+public record class VBMemberAccessOperatorExpression(
+    Uri SemanticId,
+    SourceLocation Location,
+    BoundExpression Left, BoundExpression Right) 
+    : VBBinaryOperatorExpression<BinaryOperatorSemanticContext<MemberAccessOperationSemanticFlags>, MemberAccessOperationSemanticFlags>(
+        Tokens.MemberAccess, SemanticId, Location, Left, Right)
 {
     /*
     public static VBTypedValue EvaluateBinaryMemberAccess(

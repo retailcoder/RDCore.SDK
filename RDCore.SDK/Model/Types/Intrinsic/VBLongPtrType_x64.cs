@@ -1,8 +1,6 @@
 ﻿#pragma warning disable IDE0130 // Namespace does not match folder structure
-using RDCore.SDK.Model.Symbols;
 using RDCore.SDK.Model.Types.Abstract;
 using RDCore.SDK.Model.Values.Abstract;
-using RDCore.SDK.Model.Values.Interop;
 using RDCore.SDK.Model.Values.Intrinsic;
 
 namespace RDCore.SDK.Model.Types;
@@ -15,7 +13,7 @@ namespace RDCore.SDK.Model.Types;
 /// </remarks>
 public record class VBLongPtrType_x64() : VBIntrinsicType<long>(VBTypeNames.VBLongPtr)
 {
-    public static int BitnessAwarePtrSize => sizeof(long);
+    public static int BitnessAwarePtrSize => sizeof(Int64); // safe: type is necessarily x64
 
     private static readonly Lazy<VBLongPtrType_x64> _instance = new(() => new(), LazyThreadSafetyMode.PublicationOnly);
     /// <summary>
@@ -27,21 +25,21 @@ public record class VBLongPtrType_x64() : VBIntrinsicType<long>(VBTypeNames.VBLo
     public override VBTypedValue DefaultValue => _defaultValue.Value;
 
     private static readonly Lazy<VBLongPtrValue> _minValue = new(()
-        => new VBLongPtrValue(Is64Bit: true, GlobalSymbols.ExtensionSymbols.VBLongPtr64MinValue) { ManagedValue = new(ManagedInteropValue<long>.Int64MinValue) }, LazyThreadSafetyMode.PublicationOnly);
+        => new VBLongPtrValue(Int64.MinValue), LazyThreadSafetyMode.PublicationOnly);
     /// <summary>
     /// Gets the minimum representable value for this data type.
     /// </summary>
     public static VBLongPtrValue MinValue => _minValue.Value;
 
     private static readonly Lazy<VBLongPtrValue> _maxValue = new(()
-        => new VBLongPtrValue(Is64Bit: true, GlobalSymbols.ExtensionSymbols.VBLongPtr64MaxValue) { ManagedValue = new(ManagedInteropValue<long>.Int64MaxValue) }, LazyThreadSafetyMode.PublicationOnly);
+        => new VBLongPtrValue(Int64.MaxValue), LazyThreadSafetyMode.PublicationOnly);
     /// <summary>
     /// Gets the maximum representable value for this data type.
     /// </summary>
     public static VBLongPtrValue MaxValue => _maxValue.Value;
 
     private static readonly Lazy<VBLongPtrValue> _zero = new(()
-        => new VBLongPtrValue(Is64Bit: true, GlobalSymbols.ExtensionSymbols.VBLongPtr64ZeroValue) { ManagedValue = new(ManagedInteropValue<long>.Int64ZeroValue) }, LazyThreadSafetyMode.PublicationOnly);
+        => new VBLongPtrValue(0L), LazyThreadSafetyMode.PublicationOnly);
 
     /// <summary>
     /// Gets the value <c>0</c> (zero) representation of this data type.

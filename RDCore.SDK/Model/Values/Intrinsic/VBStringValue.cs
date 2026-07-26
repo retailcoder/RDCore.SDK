@@ -12,10 +12,16 @@ namespace RDCore.SDK.Model.Values.Intrinsic;
 public record class VBStringValue : VBTypedValue, IVBTypedValue<VBStringValue, string>
 {
     /// <summary>
-    /// Creates a new <c>VBStringValue</c> associated with the specified symbol.
+    /// Creates a new <c>VBStringValue</c>.
     /// </summary>
-    /// <param name="symbol">The symbol to be associated with this value.</param>
-    public VBStringValue(Symbol symbol) : base(VBStringType.TypeInfo, symbol) { }
+    public VBStringValue() : base(VBStringType.TypeInfo) { }
+    /// <summary>
+    /// Creates a new <c>VBStringValue</c>.
+    /// </summary>
+    public VBStringValue(string value) : this()
+    {
+        ManagedValue = new(new ManagedInteropReference(typeof(string), value));
+    }
 
     public const string Zero = "0";
     /// <summary>
@@ -44,13 +50,13 @@ public record class VBStringValue : VBTypedValue, IVBTypedValue<VBStringValue, s
     public const string NaN = "1.#IND";
 
 
-    private static readonly Lazy<VBStringValue> _vbNullString = new(() => new VBStringValue(GlobalSymbols.StaticSymbols.VBNullString) { ManagedValue = new(ManagedInteropReference.NullRef) }, LazyThreadSafetyMode.PublicationOnly);
+    private static readonly Lazy<VBStringValue> _vbNullString = new(() => new VBStringValue((string)null!), LazyThreadSafetyMode.PublicationOnly);
     /// <summary>
     /// Gets the <em>static value</em> associated with <see cref="GlobalSymbols.StaticSymbols.VBNullString"/>.
     /// </summary>
     public static VBStringValue VBNullString => _vbNullString.Value;
 
-    private static readonly Lazy<VBStringValue> _zeroString = new(() => new VBStringValue(GlobalSymbols.StaticSymbols.VBEmptyString) { ManagedValue = new(ManagedInteropReference.EmptyStringRef) }, LazyThreadSafetyMode.PublicationOnly);
+    private static readonly Lazy<VBStringValue> _zeroString = new(() => new VBStringValue(string.Empty), LazyThreadSafetyMode.PublicationOnly);
     /// <summary>
     /// Gets the <em>static value</em> associated with <see cref="GlobalSymbols.StaticSymbols.VBEmptyString"/>.
     /// </summary>
@@ -61,7 +67,7 @@ public record class VBStringValue : VBTypedValue, IVBTypedValue<VBStringValue, s
     public override int Size => Value is null ? 0 : 2 * Length + 2;
 
 
-    public virtual VBStringValue WithValue(string? value) => this with { ManagedValue = new(new ManagedInteropReference(typeof(string), ResolvedSymbol.ScopeKind, value ?? string.Empty)) };
+    public virtual VBStringValue WithValue(string? value) => this with { ManagedValue = new(new ManagedInteropReference(typeof(string), value ?? string.Empty)) };
 
     public override string ToString() => Value ?? VBNullString.Value;
 

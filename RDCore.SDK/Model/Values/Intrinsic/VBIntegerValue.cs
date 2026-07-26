@@ -1,15 +1,22 @@
-﻿using RDCore.SDK.Model.Symbols.Abstract;
-using RDCore.SDK.Model.Types;
+﻿using RDCore.SDK.Model.Types;
 using RDCore.SDK.Model.Values.Abstract;
 using RDCore.SDK.Model.Values.Interop;
 
 namespace RDCore.SDK.Model.Values.Intrinsic;
 
-public record class VBIntegerValue(Symbol Symbol) : VBNumericTypedValue(VBIntegerType.TypeInfo, Symbol),
+/// <summary>
+/// Represents an <c>Integer</c> value
+/// </summary>
+public record class VBIntegerValue() : VBNumericTypedValue(VBIntegerType.TypeInfo),
     IVBTypedValue<VBIntegerValue, short>,
     INumericValue<VBIntegerValue>
 {
-    public short Value => ((ManagedInteropValue<short>)ManagedValue.InteropValue!).Value;
+    public VBIntegerValue(short value) : this()
+    {
+        ManagedValue = new(new ManagedInteropValue<short>(value));
+    }
+
+    public short Value => ((ManagedInteropValue<short>)ManagedValue.InteropValue!).StoredValue;
     public override int Size { get; } = sizeof(short);
 
     public bool Equals(IVBTypedValue<VBIntegerValue, short>? other) => Value == other?.Value;

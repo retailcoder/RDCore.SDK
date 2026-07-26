@@ -13,8 +13,7 @@ public sealed record class VBFixedSizeArrayValue : VBArrayValue
     /// Creates a new fixed-size array with the specified declared dimensions.
     /// </summary>
     /// <param name="dimensions">An array of </param>
-    /// <param name="symbol"></param>
     /// <param name="itemType"></param>
-    public VBFixedSizeArrayValue((int uBound, int lBound)[] dimensions, Symbol symbol, VBType? itemType = null)
-        : base(symbol, dimensions, itemType ?? VBVariantType.TypeInfo) { }
+    public VBFixedSizeArrayValue((int uBound, int lBound)[] dimensions, VBType? itemType = null)
+        : base(dimensions, itemType ?? VBVariantType.TypeInfo) { }
 }

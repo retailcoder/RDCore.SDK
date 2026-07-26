@@ -23,7 +23,7 @@ public record class VBMissingType() : VBIntrinsicType<int>(VBTypeNames.VBMissing
     /// </remarks>
     public static VBMissingType TypeInfo => _instance.Value;
 
-    private static readonly Lazy<VBMissingValue> _defaultValue = new(() => new(GlobalSymbols.StaticSymbols.MissingValue), LazyThreadSafetyMode.PublicationOnly);
+    private static readonly Lazy<VBMissingValue> _defaultValue = new(() => new(), LazyThreadSafetyMode.PublicationOnly);
     public override VBMissingValue DefaultValue => _defaultValue.Value;
 
     public override int Size => sizeof(int);

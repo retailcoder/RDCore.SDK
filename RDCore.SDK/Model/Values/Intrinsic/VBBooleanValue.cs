@@ -1,7 +1,6 @@
-﻿using RDCore.SDK.Model.Symbols;
-using RDCore.SDK.Model.Symbols.Abstract;
-using RDCore.SDK.Model.Types;
+﻿using RDCore.SDK.Model.Types;
 using RDCore.SDK.Model.Values.Abstract;
+using RDCore.SDK.Model.Values.Bindings;
 using RDCore.SDK.Model.Values.Interop;
 
 namespace RDCore.SDK.Model.Values.Intrinsic;
@@ -9,18 +8,23 @@ namespace RDCore.SDK.Model.Values.Intrinsic;
 /// <summary>
 /// A <see cref="VBTypedValue"/> representing a runtime value of the <see cref="VBBooleanType"/> data type.
 /// </summary>
-/// <param name="Symbol">The <see cref="Symbol"/> associated with this value.</param>
-public sealed record class VBBooleanValue(Symbol Symbol) 
-    : VBTypedValue(VBBooleanType.TypeInfo, Symbol), IVBTypedValue<VBBooleanValue, ManagedBooleanInteropValue>
+public sealed record class VBBooleanValue() : 
+    VBTypedValue(VBBooleanType.TypeInfo), 
+    IVBTypedValue<VBBooleanValue, ManagedBooleanInteropValue>
 {
-    private static readonly Lazy<VBBooleanValue> _falseValue = new(() => new VBBooleanValue(GlobalSymbols.StaticSymbols.False) { ManagedValue = new(ManagedInteropValue<bool>.BooleanFalse) });
+    public VBBooleanValue(bool value) : this()
+    {
+        Handle = new ValueBindingHandle(new ManagedBooleanInteropValue(value));
+    }
+
+    private static readonly Lazy<VBBooleanValue> _falseValue = new(() => new VBBooleanValue { ManagedValue = new(ManagedInteropValue<bool>.BooleanFalse) });
     public static VBBooleanValue False { get; } = _falseValue.Value;
 
-    private static readonly Lazy<VBBooleanValue> _trueValue = new(() => new VBBooleanValue(GlobalSymbols.StaticSymbols.True) { ManagedValue = new(ManagedInteropValue<bool>.BooleanTrue) });
+    private static readonly Lazy<VBBooleanValue> _trueValue = new(() => new VBBooleanValue { ManagedValue = new(ManagedInteropValue<bool>.BooleanTrue) });
     public static VBBooleanValue True { get; } = _trueValue.Value;
 
     public ManagedBooleanInteropValue Value => (ManagedBooleanInteropValue)ManagedValue.InteropValue!;
-    public override int Size { get; } = 16;
+    public override int Size { get; } = 16; // yes, really.
 
     public override string ToString() => Value.StoredValue != 0 ? Tokens.True : Tokens.False;
 

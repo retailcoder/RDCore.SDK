@@ -1,6 +1,4 @@
-﻿using RDCore.SDK.Model.Symbols;
-using RDCore.SDK.Model.Symbols.Abstract;
-using RDCore.SDK.Model.Types;
+﻿using RDCore.SDK.Model.Types;
 using RDCore.SDK.Model.Values.Abstract;
 
 namespace RDCore.SDK.Model.Values.Intrinsic;
@@ -9,10 +7,10 @@ namespace RDCore.SDK.Model.Values.Intrinsic;
 /// Represents a <c>Null</c> (<c>VBNullType</c>) literal value.
 /// </summary>
 /// <param name="Symbol">The symbol associated with this value.</param>
-public sealed record class VBNullValue(Symbol Symbol) 
-    : VBTypedValue(VBNullType.TypeInfo, Symbol), IVBTypedValue<VBNullValue, int>
+public sealed record class VBNullValue() 
+    : VBTypedValue(VBNullType.TypeInfo), IVBTypedValue<VBNullValue, int>
 {
-    private static readonly Lazy<VBNullValue> _instance = new(() => new(GlobalSymbols.StaticSymbols.Null));
+    private static readonly Lazy<VBNullValue> _instance = new(() => new());
     public static VBNullValue Null => _instance.Value;
 
     public int Value { get; } = 0;

@@ -17,10 +17,6 @@ public interface IStackFrame
     /// </summary>
     Uri NodeUri { get; }
     /// <summary>
-    /// The <see cref="Model.Symbols.Abstract.StaticSymbol"/> representing the <strong>unallocated</strong>, <em>language-level</em> symbol associated with this operation.
-    /// </summary>
-    StaticSymbol StaticSymbol { get; }
-    /// <summary>
     /// Gets an immutable array containing the ordered <see cref="VBTypedValue"/> inputs of the operation.
     /// </summary>
     /// <remarks>

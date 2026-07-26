@@ -1,5 +1,4 @@
 ﻿#pragma warning disable IDE0130 // Namespace does not match folder structure
-using RDCore.SDK.Model.Symbols;
 using RDCore.SDK.Model.Types.Abstract;
 using RDCore.SDK.Model.Values.Intrinsic;
 
@@ -21,7 +20,7 @@ public sealed record class VBVariantType(VBType SubType) : VBIntrinsicType<objec
     /// </summary>
     public static VBVariantType TypeInfo => _instance.Value;
 
-    private static readonly Lazy<VBVariantValue> _defaultValue = new(() => new(VBEmptyValue.Empty, GlobalSymbols.StaticSymbols.Empty), LazyThreadSafetyMode.PublicationOnly);
+    private static readonly Lazy<VBVariantValue> _defaultValue = new(() => new(VBEmptyValue.Empty), LazyThreadSafetyMode.PublicationOnly);
     public override VBVariantValue DefaultValue => _defaultValue.Value;
     /// <summary>
     /// The <em>variant subtype</em>, or <em>wrapped</em> data type.

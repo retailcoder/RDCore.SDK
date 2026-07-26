@@ -1,21 +1,18 @@
-﻿using RDCore.SDK.Model.Symbols.Abstract;
-using RDCore.SDK.Model.Values.Interop;
+﻿using RDCore.SDK.Model.Values.Interop;
 
 namespace RDCore.SDK.Model.Values.Intrinsic;
 
 public sealed record class VBFixedStringValue : VBStringValue
 {
-    public VBFixedStringValue(int length, Symbol symbol)
-        : base(symbol)
+    public VBFixedStringValue(int length) : base()
     {
         Length = length;
     }
 
-    public VBFixedStringValue(VBStringValue value)
-        : base(value.ResolvedSymbol)
+    public VBFixedStringValue(VBStringValue value) : base()
     {
         Length = value.Length;
-        ManagedValue = new(new ManagedInteropReference(typeof(string), value.ResolvedSymbol.ScopeKind, FixLength(value.Value, Length)));
+        ManagedValue = new(new ManagedInteropReference(typeof(string), FixLength(value.Value, Length)));
     }
 
     public override int Length { get; }
@@ -25,7 +22,7 @@ public sealed record class VBFixedStringValue : VBStringValue
     public override VBStringValue WithValue(string? value)
     {
         var fixedValue = FixLength(value, Length);
-        return this with { ManagedValue = new(new ManagedInteropReference(typeof(string), ResolvedSymbol.ScopeKind, fixedValue)) };
+        return this with { ManagedValue = new(new ManagedInteropReference(typeof(string), fixedValue)) };
     }
 
     private static string FixLength(string? value, int length)

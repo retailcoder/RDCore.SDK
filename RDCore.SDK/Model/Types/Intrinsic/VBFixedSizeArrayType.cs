@@ -18,7 +18,7 @@ public record class VBFixedSizeArrayType(VBType ItemType) : VBArrayType(ItemType
     /// </summary>
     public static new VBArrayType TypeInfo => _instance.Value;
 
-    private static readonly Lazy<VBFixedSizeArrayValue> _defaultValue = new(() => new VBFixedSizeArrayValue([], GlobalSymbols.StaticSymbols.EmptyFixedSizeArray), LazyThreadSafetyMode.PublicationOnly);
+    private static readonly Lazy<VBFixedSizeArrayValue> _defaultValue = new(() => new VBFixedSizeArrayValue([]), LazyThreadSafetyMode.PublicationOnly);
     /// <summary>
     /// Gets an empty (uninitialized) <c>VBFixedSizeArrayType</c>.
     /// </summary>
