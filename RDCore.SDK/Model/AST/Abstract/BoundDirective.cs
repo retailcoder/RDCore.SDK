@@ -1,4 +1,5 @@
 ﻿using RDCore.SDK.Model.Source;
+using System.Collections.Immutable;
 
 namespace RDCore.SDK.Model.AST.Abstract;
 
@@ -8,5 +9,5 @@ namespace RDCore.SDK.Model.AST.Abstract;
 /// </summary>
 /// <param name="SemanticId">A semantic <c>Uri</c> uniquely identifying this specific node.</param>
 /// <param name="Location">The document location (<c>Uri</c>+<c>Range</c>) of the bound expression.</param>
-public abstract record class BoundDirective(Uri SemanticId, SourceLocation Location) 
-    : BoundNode(SemanticId, Location, []);
+public abstract record class BoundDirective(Uri SemanticId, SourceLocation Location, ImmutableArray<BoundNode> Children) 
+    : BoundNode(SemanticId, Location, Children);
