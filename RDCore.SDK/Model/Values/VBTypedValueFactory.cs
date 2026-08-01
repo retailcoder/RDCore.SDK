@@ -2,7 +2,7 @@
 using RDCore.SDK.Model.Types;
 using RDCore.SDK.Model.Types.Abstract;
 using RDCore.SDK.Model.Values.Abstract;
-using RDCore.SDK.Model.Values.Interop;
+using RDCore.SDK.Model.Values.Runtime;
 using RDCore.SDK.Model.Values.Intrinsic;
 using RDCore.SDK.Model.Values.Meta;
 using System.Data;
@@ -79,7 +79,7 @@ public static class VBTypedValueFactory
     /// 👉 Overloads taking a <see cref="VBTypeDescValue"/> <em>type descriptor value</em> parameter are 
     /// intended for let-coercion semantics and may eventually need to be moved.
     /// </remarks>
-    public static VBTypedValue CreateValue(VBTypeDescValue typeDesc, IManagedInteropValue managedValue)
+    public static VBTypedValue CreateValue(VBTypeDescValue typeDesc, IRuntimeValue managedValue)
         => typeDesc.Target.DefaultValue.WithValue(new(managedValue));
 
     /// <summary>
@@ -92,7 +92,7 @@ public static class VBTypedValueFactory
     /// intended for let-coercion semantics and may eventually need to be moved.
     /// </remarks>
     public static VBTypedValue CreateValue(VBTypeDescValue typeDesc, VBNumericTypedValue source)
-        => typeDesc.Target.DefaultValue.WithValue(new(source.ManagedValue.InteropValue!));
+        => typeDesc.Target.DefaultValue.WithValue(new(source.ManagedValue.RuntimeValue!));
 
     /// <summary>
     /// Creates a new <c>VBNumericValue</c> of the specified described type, with the specified value, for the specified symbol.
@@ -104,7 +104,7 @@ public static class VBTypedValueFactory
     /// intended for let-coercion semantics and may eventually need to be moved.
     /// </remarks>
     public static VBTypedValue CreateValue(VBTypeDescValue typeDesc, VBDateValue source)
-        => typeDesc.Target.DefaultValue.WithValue(new(source.ManagedValue.InteropValue!));
+        => typeDesc.Target.DefaultValue.WithValue(new(source.ManagedValue.RuntimeValue!));
 
 
     /// <summary>

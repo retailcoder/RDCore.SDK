@@ -1,7 +1,7 @@
 ﻿using RDCore.SDK.Model.Types;
 using RDCore.SDK.Model.Values.Abstract;
 using RDCore.SDK.Model.Values.Bindings;
-using RDCore.SDK.Model.Values.Interop;
+using RDCore.SDK.Model.Values.Runtime;
 
 namespace RDCore.SDK.Model.Values.Intrinsic;
 
@@ -13,7 +13,7 @@ public sealed record class VBDateValue()
 {
     public VBDateValue(double value) : this()
     {
-        Handle = new ValueBindingHandle(new ManagedInteropValue<double>(value));
+        Handle = new ValueBindingHandle(new VBRuntimeValue<double>(value));
     }
 
     /// <summary>
@@ -22,9 +22,9 @@ public sealed record class VBDateValue()
     /// <remarks>
     /// This representation is natively compatible with how dates are represented in <em>Microsoft Excel</em>.
     /// </remarks>
-    public double SerialValue => ((ManagedInteropValue<double>)ManagedValue.InteropValue!).StoredValue;
+    public double SerialValue => ((VBRuntimeValue<double>)ManagedValue.RuntimeValue!).StoredValue;
 
-    public DateTime Value => DateTime.FromOADate(((ManagedInteropValue<double>)ManagedValue.InteropValue!).StoredValue);
+    public DateTime Value => DateTime.FromOADate(((VBRuntimeValue<double>)ManagedValue.RuntimeValue!).StoredValue);
     public override int Size => sizeof(double);
 
     public bool Equals(IVBTypedValue<VBDateValue, DateTime>? other) => Value == other?.Value;

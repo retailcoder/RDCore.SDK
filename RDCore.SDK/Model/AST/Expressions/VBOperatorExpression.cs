@@ -18,7 +18,7 @@ namespace RDCore.SDK.Model.AST.Expressions;
 /// <param name="Symbol">The <see cref="OperatorSymbol{TContext, TFlags}"/> associated with this <em>operator expression</em>.</param>
 /// <param name="ResultSymbol">A <see cref="BoundTypedSymbol"/> bound to the result of this expression.</param>
 /// <param name="Location">The <c>Location</c> (holds the document <c>Uri</c> and a <c>Range</c>) of the bound expression.</param>
-public abstract record class VBOperatorExpression<TContext, TFlags> : BoundExpression 
+public abstract record class VBOperatorExpression<TContext, TFlags> : ExpressionNode 
 where TContext : SemanticContext<TFlags>, new()
 where TFlags : struct, Enum
 {
@@ -26,11 +26,11 @@ where TFlags : struct, Enum
     OperatorSymbol<TContext, TFlags> Symbol,
     OperatorExpressionValueSymbol ResultSymbol,
     SourceLocation Location,
-    ImmutableArray<BoundExpression> Operands)
+    ImmutableArray<ExpressionNode> Operands)
         : base(Symbol.Name, SemanticId, Location, Operands)
     { }
 
     protected VBOperatorExpression(string token, Uri semanticId, SourceLocation location, 
-        ImmutableArray<BoundExpression> operands)
+        ImmutableArray<ExpressionNode> operands)
         : base(token, semanticId, location, operands) {  }
 }

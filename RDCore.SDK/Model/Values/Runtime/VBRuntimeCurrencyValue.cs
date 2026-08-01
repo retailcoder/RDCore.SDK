@@ -1,14 +1,14 @@
 ﻿using System.Runtime.InteropServices;
-namespace RDCore.SDK.Model.Values.Interop;
+namespace RDCore.SDK.Model.Values.Runtime;
 
 [StructLayout(LayoutKind.Explicit)]
-public readonly record struct ManagedCurrencyInteropValue : IManagedInteropValue
+public readonly record struct VBRuntimeCurrencyValue : IRuntimeValue
 {
-    public ManagedCurrencyInteropValue(long storedValue)
+    public VBRuntimeCurrencyValue(long storedValue)
     {
         StoredValue = storedValue;
     }
-    public ManagedCurrencyInteropValue(decimal scaledValue)
+    public VBRuntimeCurrencyValue(decimal scaledValue)
     {
         StoredValue = Convert.ToInt64(scaledValue * ScaleFactor);
     }

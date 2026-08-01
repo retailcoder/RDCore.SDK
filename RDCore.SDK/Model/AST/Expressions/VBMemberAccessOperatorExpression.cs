@@ -10,7 +10,7 @@ namespace RDCore.SDK.Model.AST.Expressions;
 public record class VBMemberAccessOperatorExpression(
     Uri SemanticId,
     SourceLocation Location,
-    BoundExpression Left, BoundExpression Right) 
+    ExpressionNode Left, ExpressionNode Right) 
     : VBBinaryOperatorExpression<BinaryOperatorSemanticContext<MemberAccessOperationSemanticFlags>, MemberAccessOperationSemanticFlags>(
         Tokens.MemberAccess, SemanticId, Location, Left, Right)
 {

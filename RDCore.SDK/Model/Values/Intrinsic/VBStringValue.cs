@@ -2,7 +2,7 @@
 using RDCore.SDK.Model.Symbols.Abstract;
 using RDCore.SDK.Model.Types;
 using RDCore.SDK.Model.Values.Abstract;
-using RDCore.SDK.Model.Values.Interop;
+using RDCore.SDK.Model.Values.Runtime;
 
 namespace RDCore.SDK.Model.Values.Intrinsic;
 
@@ -20,7 +20,7 @@ public record class VBStringValue : VBTypedValue, IVBTypedValue<VBStringValue, s
     /// </summary>
     public VBStringValue(string value) : this()
     {
-        ManagedValue = new(new ManagedInteropReference(typeof(string), value));
+        ManagedValue = new(new VBRuntimeReference(typeof(string), value));
     }
 
     public const string Zero = "0";
@@ -62,12 +62,12 @@ public record class VBStringValue : VBTypedValue, IVBTypedValue<VBStringValue, s
     /// </summary>
     public static VBStringValue ZeroLengthString => _zeroString.Value;
 
-    public string Value => (string?)ManagedValue.InteropReference?.Value ?? string.Empty;
+    public string Value => (string?)ManagedValue.RuntimeReference?.Value ?? string.Empty;
     public virtual int Length => Value?.Length ?? 0;
     public override int Size => Value is null ? 0 : 2 * Length + 2;
 
 
-    public virtual VBStringValue WithValue(string? value) => this with { ManagedValue = new(new ManagedInteropReference(typeof(string), value ?? string.Empty)) };
+    public virtual VBStringValue WithValue(string? value) => this with { ManagedValue = new(new VBRuntimeReference(typeof(string), value ?? string.Empty)) };
 
     public override string ToString() => Value ?? VBNullString.Value;
 

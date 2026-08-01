@@ -22,7 +22,7 @@ public sealed record class BinaryMultiplicationOperatorStaticSemantics : BinaryA
     /// <returns>
     /// A <see cref="StaticSemanticsEvaluationResult"/> encapsulating the resulting <see cref="VBType"/> if successful, or <see cref="VBCompileErrorInfo"/> error metadata otherwise.
     /// </returns>
-    protected override StaticSemanticsEvaluationResult DetermineOperatorStaticType(ISymbolResolver resolver, BoundExpression expression, VBType lhs, VBType rhs)
+    protected override StaticSemanticsEvaluationResult DetermineOperatorStaticType(ISymbolResolver resolver, ExpressionNode expression, VBType lhs, VBType rhs)
     {
         return lhs switch
         {

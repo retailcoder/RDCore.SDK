@@ -2,7 +2,7 @@
 using RDCore.SDK.Model.Symbols;
 using RDCore.SDK.Model.Types.Abstract;
 using RDCore.SDK.Model.Values.Abstract;
-using RDCore.SDK.Model.Values.Interop;
+using RDCore.SDK.Model.Values.Runtime;
 using RDCore.SDK.Model.Values.Intrinsic;
 
 namespace RDCore.SDK.Model.Types;
@@ -28,7 +28,7 @@ public record class VBLongType() : VBNumericType<int>(VBTypeNames.VBLong), IInte
     /// Gets the minimum representable value for this data type.
     /// </summary>
     public static VBLongValue MinValue => _minValue.Value;
-    public override double ManagedMinValue => (double)_minValue.Value.ManagedValue.InteropValue!.BoxedValue;
+    public override double ManagedMinValue => (double)_minValue.Value.ManagedValue.RuntimeValue!.BoxedValue;
 
     private static readonly Lazy<VBLongValue> _maxValue = new(()
         => new VBLongValue(int.MaxValue), LazyThreadSafetyMode.PublicationOnly);
@@ -36,7 +36,7 @@ public record class VBLongType() : VBNumericType<int>(VBTypeNames.VBLong), IInte
     /// Gets the maximum representable value for this data type.
     /// </summary>
     public static VBLongValue MaxValue => _maxValue.Value;
-    public override double ManagedMaxValue => (double)_maxValue.Value.ManagedValue.InteropValue!.BoxedValue;
+    public override double ManagedMaxValue => (double)_maxValue.Value.ManagedValue.RuntimeValue!.BoxedValue;
 
     private static readonly Lazy<VBLongValue> _zero = new(()
         => new VBLongValue(0), LazyThreadSafetyMode.PublicationOnly);

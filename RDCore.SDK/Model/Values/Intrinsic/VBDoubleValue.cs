@@ -1,6 +1,6 @@
 ﻿using RDCore.SDK.Model.Types;
 using RDCore.SDK.Model.Values.Abstract;
-using RDCore.SDK.Model.Values.Interop;
+using RDCore.SDK.Model.Values.Runtime;
 
 namespace RDCore.SDK.Model.Values.Intrinsic;
 
@@ -12,10 +12,10 @@ public sealed record class VBDoubleValue() : VBNumericTypedValue(VBDoubleType.Ty
 {
     public VBDoubleValue(double value) : this()
     {
-        ManagedValue = new(new ManagedInteropValue<double>(value));
+        ManagedValue = new(new VBRuntimeValue<double>(value));
     }
 
-    public double Value => ((ManagedInteropValue<double>)ManagedValue.InteropValue!).Value;
+    public double Value => ((VBRuntimeValue<double>)ManagedValue.RuntimeValue!).Value;
     public override int Size => 8;
 
     public bool Equals(IVBTypedValue<VBDoubleValue, double>? other) => Value == other?.Value;

@@ -1,7 +1,7 @@
 ﻿using RDCore.SDK.Model.Errors;
 using RDCore.SDK.Model.Types;
 using RDCore.SDK.Model.Types.Abstract;
-using RDCore.SDK.Model.Values.Interop;
+using RDCore.SDK.Model.Values.Runtime;
 using RDCore.SDK.Model.Values.Intrinsic;
 
 namespace RDCore.SDK.Model.Values.Abstract;
@@ -28,15 +28,15 @@ public abstract record class VBNumericTypedValue(VBType TypeInfo) : VBTypedValue
     {
         return this switch
         {
-            PrecompilerConstantValue constValue => constValue with { ManagedValue = new(new ManagedInteropValue<Int16>(Convert.ToInt16(value))) },
-            VBByteValue byteValue => byteValue with { ManagedValue = new(new ManagedInteropValue<Byte>(Convert.ToByte(value))) },
-            VBIntegerValue integerValue => integerValue with { ManagedValue = new(new ManagedInteropValue<Int16>(Convert.ToInt16(value))) },
-            VBLongValue longValue => longValue with { ManagedValue = new(new ManagedInteropValue<Int32>(Convert.ToInt32(value))) },
-            VBLongLongValue longLongValue => longLongValue with { ManagedValue = new(new ManagedInteropValue<Int64>(Convert.ToInt64(value))) },
-            VBSingleValue singleValue => singleValue with { ManagedValue = new(new ManagedInteropValue<Single>(Convert.ToSingle(value))) },
-            VBDoubleValue doubleValue => doubleValue with { ManagedValue = new(new ManagedInteropValue<Double>(Convert.ToDouble(value))) },
-            VBCurrencyValue currencyValue => currencyValue with { ManagedValue = new(new ManagedInteropValue<ManagedCurrencyInteropValue>(new ManagedCurrencyInteropValue(Convert.ToDecimal(value)))) },
-            VBDecimalValue decimalValue => decimalValue with { ManagedValue = new(new ManagedInteropValue<ManagedDecimalInteropValue>(new ManagedDecimalInteropValue(Convert.ToDecimal(value)))) },
+            PrecompilerConstantValue constValue => constValue with { ManagedValue = new(new VBRuntimeValue<Int16>(Convert.ToInt16(value))) },
+            VBByteValue byteValue => byteValue with { ManagedValue = new(new VBRuntimeValue<Byte>(Convert.ToByte(value))) },
+            VBIntegerValue integerValue => integerValue with { ManagedValue = new(new VBRuntimeValue<Int16>(Convert.ToInt16(value))) },
+            VBLongValue longValue => longValue with { ManagedValue = new(new VBRuntimeValue<Int32>(Convert.ToInt32(value))) },
+            VBLongLongValue longLongValue => longLongValue with { ManagedValue = new(new VBRuntimeValue<Int64>(Convert.ToInt64(value))) },
+            VBSingleValue singleValue => singleValue with { ManagedValue = new(new VBRuntimeValue<Single>(Convert.ToSingle(value))) },
+            VBDoubleValue doubleValue => doubleValue with { ManagedValue = new(new VBRuntimeValue<Double>(Convert.ToDouble(value))) },
+            VBCurrencyValue currencyValue => currencyValue with { ManagedValue = new(new VBRuntimeValue<VBRuntimeCurrencyValue>(new VBRuntimeCurrencyValue(Convert.ToDecimal(value)))) },
+            VBDecimalValue decimalValue => decimalValue with { ManagedValue = new(new VBRuntimeValue<VBRuntimeDecimalValue>(new VBRuntimeDecimalValue(Convert.ToDecimal(value)))) },
 
             _ => throw new NotSupportedException(),
         };

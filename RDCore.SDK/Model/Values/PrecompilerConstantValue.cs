@@ -1,4 +1,4 @@
-﻿using RDCore.SDK.Model.Values.Interop;
+﻿using RDCore.SDK.Model.Values.Runtime;
 using RDCore.SDK.Model.Values.Intrinsic;
 
 namespace RDCore.SDK.Model.Values;
@@ -15,6 +15,6 @@ public sealed record class PrecompilerConstantValue : VBIntegerValue
     public PrecompilerConstantValue(int managedValue)
         : base()
     {
-        ManagedValue = new(new ManagedInteropValue<int>(managedValue));
+        ManagedValue = new(new VBRuntimeValue<int>(managedValue));
     }
 }

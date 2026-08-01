@@ -1,5 +1,5 @@
 ﻿using RDCore.SDK.Model.Values.Abstract;
-using RDCore.SDK.Model.Values.Interop;
+using RDCore.SDK.Model.Values.Runtime;
 using RDCore.SDK.Model.Values.Meta;
 using RDCore.SDK.Runtime.Abstract.Execution;
 
@@ -20,11 +20,11 @@ public enum BindingCapabilities
     /// </summary>
     GetMember = 1 << 0,
     /// <summary>
-    /// Signals a binding's capability to yield a <see cref="IManagedInteropValue"/>.
+    /// Signals a binding's capability to yield a <see cref="IRuntimeValue"/>.
     /// </summary>
     GetValue = 1 << 1,
     /// <summary>
-    /// Signals a binding's capability to accept a <see cref="IManagedInteropValue"/>.
+    /// Signals a binding's capability to accept a <see cref="IRuntimeValue"/>.
     /// </summary>
     SetValue = 1 << 2,
     /// <summary>
@@ -32,7 +32,7 @@ public enum BindingCapabilities
     /// </summary>
     Invoke = 1 << 3,
     /// <summary>
-    /// Signals a binding's capability to yield an indexed <see cref="IManagedInteropValue"/>.
+    /// Signals a binding's capability to yield an indexed <see cref="IRuntimeValue"/>.
     /// </summary>
     GetIndex = 1 << 4,
     /// <summary>
@@ -53,7 +53,7 @@ public interface IBindingHandle
     /// 👉 Verify that the binding supports <see cref="BindingCapabilities.GetValue"/>.
     /// </remarks>
     /// <exception cref="NotSupportedException"></exception>
-    IManagedInteropValue GetValue(IVBExecutionContext context);
+    IRuntimeValue GetValue(IVBExecutionContext context);
     /// <summary>
     /// Sets the value associated to this handle.
     /// </summary>
@@ -61,7 +61,7 @@ public interface IBindingHandle
     /// 👉 Verify that the binding supports <see cref="BindingCapabilities.SetValue"/>.
     /// </remarks>
     /// <exception cref="NotSupportedException"></exception>
-    void SetValue(IVBExecutionContext context, IManagedInteropValue value);
+    void SetValue(IVBExecutionContext context, IRuntimeValue value);
     /// <summary>
     /// Invokes the callable entity associated to this handle.
     /// </summary>
@@ -69,7 +69,7 @@ public interface IBindingHandle
     /// 👉 Verify that the binding supports <see cref="BindingCapabilities.SetValue"/>.
     /// </remarks>
     /// <exception cref="NotSupportedException"></exception>
-    IManagedInteropValue Invoke(IVBExecutionContext context, IManagedInteropValue[] args);
+    IRuntimeValue Invoke(IVBExecutionContext context, IRuntimeValue[] args);
 
     /// <summary>
     /// Indicates the valid members of this binding.

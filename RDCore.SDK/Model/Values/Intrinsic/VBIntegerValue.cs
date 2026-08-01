@@ -1,6 +1,6 @@
 ﻿using RDCore.SDK.Model.Types;
 using RDCore.SDK.Model.Values.Abstract;
-using RDCore.SDK.Model.Values.Interop;
+using RDCore.SDK.Model.Values.Runtime;
 
 namespace RDCore.SDK.Model.Values.Intrinsic;
 
@@ -13,10 +13,10 @@ public record class VBIntegerValue() : VBNumericTypedValue(VBIntegerType.TypeInf
 {
     public VBIntegerValue(short value) : this()
     {
-        ManagedValue = new(new ManagedInteropValue<short>(value));
+        ManagedValue = new(new VBRuntimeValue<short>(value));
     }
 
-    public short Value => ((ManagedInteropValue<short>)ManagedValue.InteropValue!).StoredValue;
+    public short Value => ((VBRuntimeValue<short>)ManagedValue.RuntimeValue!).StoredValue;
     public override int Size { get; } = sizeof(short);
 
     public bool Equals(IVBTypedValue<VBIntegerValue, short>? other) => Value == other?.Value;

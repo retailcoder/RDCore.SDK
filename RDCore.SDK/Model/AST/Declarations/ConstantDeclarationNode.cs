@@ -13,5 +13,5 @@ namespace RDCore.SDK.Model.AST.Declarations;
 /// <param name="AccessModifier">An access modifier, if one was supplied.</param>
 /// <param name="DeclaredTypeExpression">The <em>declared type</em> expression, if one was supplied.</param>
 /// <param name="ValueExpression">An expression node that evaluates to the declared value of the constant, if one was supplied.</param>
-public record class ConstantDeclarationNode(Uri SemanticId, SourceLocation Location, string Name, ConstKind ConstKind, AccessModifier AccessModifier = AccessModifier.Implicit, BoundExpression? DeclaredTypeExpression = default, BoundExpression? ValueExpression = default)
-    : BoundNode(SemanticId, Location, []);
+public record class ConstantDeclarationNode(Uri SemanticId, SourceLocation Location, string Name, ConstKind ConstKind, AccessModifier AccessModifier = AccessModifier.Implicit, ExpressionNode? DeclaredTypeExpression = default, ExpressionNode? ValueExpression = default)
+    : SyntaxNode(SemanticId, Location, []);

@@ -1,6 +1,6 @@
 ﻿using RDCore.SDK.Model.Types;
 using RDCore.SDK.Model.Values.Abstract;
-using RDCore.SDK.Model.Values.Interop;
+using RDCore.SDK.Model.Values.Runtime;
 
 namespace RDCore.SDK.Model.Values.Intrinsic;
 
@@ -14,16 +14,16 @@ public sealed record class VBLongPtrValue(bool Is64Bit)
 {
     public VBLongPtrValue(long value) : this(true)
     {
-        ManagedValue = new(new ManagedInteropValue<long>(value));
+        ManagedValue = new(new VBRuntimeValue<long>(value));
         Size = VBLongPtrType_x64.TypeInfo.Size;
     }
     public VBLongPtrValue(int value) : this(true)
     {
-        ManagedValue = new(new ManagedInteropValue<int>(value));
+        ManagedValue = new(new VBRuntimeValue<int>(value));
         Size = VBLongPtrType_x86.TypeInfo.Size;
     }
 
-    public long Value => (long)ManagedValue.InteropValue!.BoxedValue;
+    public long Value => (long)ManagedValue.RuntimeValue!.BoxedValue;
     public override int Size { get; }
 
     public bool Equals(IVBTypedValue<VBLongPtrValue, long>? other) => Value.Equals(other?.Value);

@@ -1,6 +1,6 @@
 ﻿using RDCore.SDK.Model.Types;
 using RDCore.SDK.Model.Values.Abstract;
-using RDCore.SDK.Model.Values.Interop;
+using RDCore.SDK.Model.Values.Runtime;
 
 namespace RDCore.SDK.Model.Values.Intrinsic;
 
@@ -11,7 +11,7 @@ public sealed record class VBByteValue() : VBNumericTypedValue(VBByteType.TypeIn
     IVBTypedValue<VBByteValue, byte>, 
     INumericValue<VBByteValue>
 {
-    public byte Value => ((ManagedInteropValue<byte>)ManagedValue.InteropValue!).Value;
+    public byte Value => ((VBRuntimeValue<byte>)ManagedValue.RuntimeValue!).Value;
     public override int Size { get; } = sizeof(byte);
 
     public bool Equals(IVBTypedValue<VBByteValue, byte>? other) => Value == other?.Value;

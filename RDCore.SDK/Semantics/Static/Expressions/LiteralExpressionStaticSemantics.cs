@@ -17,6 +17,6 @@ public record class LiteralExpressionStaticSemantics : IStaticSemantics
     /// <param name="resolver">The static context containing the available static memory space.</param>
     /// <param name="expression">The <em>expression node</em> being evaluated.</param>
     /// <param name="operandDeclaredTypes">The declared type of the operands.</param>
-    public StaticSemanticsEvaluationResult DetermineDeclaredType(ISymbolResolver resolver, BoundExpression expression, params VBType[] operandDeclaredTypes) 
+    public StaticSemanticsEvaluationResult DetermineDeclaredType(ISymbolResolver resolver, ExpressionNode expression, params VBType[] operandDeclaredTypes) 
         => StaticSemanticsEvaluationResult.Success(operandDeclaredTypes[(int)InputIndex.UnaryOperand]);
 }

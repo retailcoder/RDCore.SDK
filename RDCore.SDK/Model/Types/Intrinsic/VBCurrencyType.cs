@@ -1,7 +1,7 @@
 ﻿#pragma warning disable IDE0130 // Namespace does not match folder structure
 using RDCore.SDK.Model.Types.Abstract;
 using RDCore.SDK.Model.Values.Abstract;
-using RDCore.SDK.Model.Values.Interop;
+using RDCore.SDK.Model.Values.Runtime;
 using RDCore.SDK.Model.Values.Intrinsic;
 
 namespace RDCore.SDK.Model.Types;
@@ -13,7 +13,7 @@ namespace RDCore.SDK.Model.Types;
 /// The <em>managed type</em> of a value of this data type is <c>decimal</c>.<br/>
 /// 👉 Implements <see cref="IFixedPointNumericType"/>.
 /// </remarks>
-public record class VBCurrencyType() : VBNumericType<ManagedCurrencyInteropValue>(VBTypeNames.VBCurrency), IFixedPointNumericType
+public record class VBCurrencyType() : VBNumericType<VBRuntimeCurrencyValue>(VBTypeNames.VBCurrency), IFixedPointNumericType
 {
     private static readonly Lazy<VBCurrencyType> _instance = new(() => new(), LazyThreadSafetyMode.PublicationOnly);
     /// <summary>
@@ -29,14 +29,14 @@ public record class VBCurrencyType() : VBNumericType<ManagedCurrencyInteropValue
     /// Gets the minimum representable value for this data type.
     /// </summary>
     public static VBCurrencyValue MinValue => _minValue.Value;
-    public override double ManagedMinValue => Convert.ToDouble(ManagedInteropValue<ManagedCurrencyInteropValue>.CurrencyMinValue.Value.Value);
+    public override double ManagedMinValue => Convert.ToDouble(VBRuntimeValue<VBRuntimeCurrencyValue>.CurrencyMinValue.Value.Value);
 
     private static readonly Lazy<VBCurrencyValue> _maxValue = new(() => (VBCurrencyValue)new VBCurrencyValue().WithValue(long.MaxValue * Math.Pow(10, -4)), LazyThreadSafetyMode.PublicationOnly);
     /// <summary>
     /// Gets the maximum representable value for this data type.
     /// </summary>
     public static VBCurrencyValue MaxValue => _maxValue.Value;
-    public override double ManagedMaxValue => Convert.ToDouble(ManagedInteropValue<ManagedCurrencyInteropValue>.CurrencyMaxValue.Value.Value);
+    public override double ManagedMaxValue => Convert.ToDouble(VBRuntimeValue<VBRuntimeCurrencyValue>.CurrencyMaxValue.Value.Value);
 
     private static readonly Lazy<VBCurrencyValue> _zero = new(() => (VBCurrencyValue)new VBCurrencyValue().WithValue(0d), LazyThreadSafetyMode.PublicationOnly);
     /// <summary>

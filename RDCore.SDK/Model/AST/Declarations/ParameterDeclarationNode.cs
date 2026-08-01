@@ -13,5 +13,5 @@ namespace RDCore.SDK.Model.AST.Declarations;
 /// <param name="ParameterKind">The kind (ByRef/ByVal) of parameter.</param>
 /// <param name="IsOptional">An indicator that is <c>true</c> if the parameter is optional.</param>
 /// <param name="IsParamArray">An indicator that is <c>true</c> if the parameter is a parameter array.</param>
-public record class ParameterDeclarationNode(Uri SemanticId, SourceLocation Location, string Name, ParameterKind ParameterKind = ParameterKind.ImplicitByRef, bool IsOptional = false, bool IsParamArray = false, ImmutableArray<BoundNode> Children = default)
-    : BoundNode(SemanticId, Location, Children);
+public record class ParameterDeclarationNode(Uri SemanticId, SourceLocation Location, string Name, ParameterKind ParameterKind = ParameterKind.ImplicitByRef, bool IsOptional = false, bool IsParamArray = false, ImmutableArray<SyntaxNode> Children = default)
+    : SyntaxNode(SemanticId, Location, Children);

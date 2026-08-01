@@ -13,10 +13,10 @@ namespace RDCore.SDK.Model.AST.Declarations;
 /// <param name="Name">The declared identifier name of the member.</param>
 /// <param name="MemberKind">Specifies the kind of member.</param>
 /// <param name="AccessModifier">An access modifier, if one was supplied.</param>
-public record class MemberDeclarationNode(Uri SemanticId, SourceLocation SourceLocation, ImmutableArray<BoundNode> Children, string Name, MemberKind MemberKind, AccessModifier AccessModifier = AccessModifier.Implicit)
-    : BoundNode(SemanticId, SourceLocation, Children)
+public record class MemberDeclarationNode(Uri SemanticId, SourceLocation SourceLocation, ImmutableArray<SyntaxNode> Children, string Name, MemberKind MemberKind, AccessModifier AccessModifier = AccessModifier.Implicit)
+    : SyntaxNode(SemanticId, SourceLocation, Children)
 {
-    BoundExpression? DeclaredTypeExpression => Children.OfType<BoundExpression>().SingleOrDefault();
+    ExpressionNode? DeclaredTypeExpression => Children.OfType<ExpressionNode>().SingleOrDefault();
 };
 /// <summary>
 /// 
@@ -30,5 +30,5 @@ public record class MemberDeclarationNode(Uri SemanticId, SourceLocation SourceL
 /// <param name="MemberKind">Specifies the kind of member.</param>
 /// <param name="Alias">The declared alias of the external member, if provided.</param>
 /// <param name="AccessModifier">An access modifier, if one was supplied.</param>
-public record class ExternalMemberDeclarationNode(Uri SemanticId, SourceLocation SourceLocation, ImmutableArray<BoundNode> Children, string Name = "", string Library = "", bool IsPtrSafe = false, MemberKind MemberKind = MemberKind.ExternalProcedure, string? Alias = default, AccessModifier AccessModifier = AccessModifier.Implicit)
+public record class ExternalMemberDeclarationNode(Uri SemanticId, SourceLocation SourceLocation, ImmutableArray<SyntaxNode> Children, string Name = "", string Library = "", bool IsPtrSafe = false, MemberKind MemberKind = MemberKind.ExternalProcedure, string? Alias = default, AccessModifier AccessModifier = AccessModifier.Implicit)
     : MemberDeclarationNode(SemanticId, SourceLocation, Children, Name, MemberKind, AccessModifier);

@@ -2,7 +2,7 @@
 using RDCore.SDK.Model.Symbols;
 using RDCore.SDK.Model.Types.Abstract;
 using RDCore.SDK.Model.Values.Abstract;
-using RDCore.SDK.Model.Values.Interop;
+using RDCore.SDK.Model.Values.Runtime;
 using RDCore.SDK.Model.Values.Intrinsic;
 
 namespace RDCore.SDK.Model.Types;
@@ -35,14 +35,14 @@ public record class VBSingleType() : VBNumericType<float>(VBTypeNames.VBSingle),
     /// Gets the minimum representable value for this data type.
     /// </summary>
     public static VBSingleValue MinValue => _minValue.Value;
-    public override double ManagedMinValue => (double)_minValue.Value.ManagedValue.InteropValue!.BoxedValue;
+    public override double ManagedMinValue => (double)_minValue.Value.ManagedValue.RuntimeValue!.BoxedValue;
 
     private static readonly Lazy<VBSingleValue> _maxValue = new(() => new VBSingleValue(float.MaxValue), LazyThreadSafetyMode.PublicationOnly);
     /// <summary>
     /// Gets the maximum representable value for this data type.
     /// </summary>
     public static VBSingleValue MaxValue => _maxValue.Value;
-    public override double ManagedMaxValue => (double)_maxValue.Value.ManagedValue.InteropValue!.BoxedValue;
+    public override double ManagedMaxValue => (double)_maxValue.Value.ManagedValue.RuntimeValue!.BoxedValue;
 
     private static readonly Lazy<VBSingleValue> _zero = new(() => new VBSingleValue(0f), LazyThreadSafetyMode.PublicationOnly);
     /// <summary>

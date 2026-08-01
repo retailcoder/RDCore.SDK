@@ -17,7 +17,7 @@ public sealed record class UnaryNegationOperatorStaticSemantics : UnaryArithmeti
     /// </summary>
     /// <param name="expression">The <em>expression node</em> being evaluated.</param>
     /// <param name="operand">The declared type of the operand.</param>
-    protected override StaticSemanticsEvaluationResult DetermineOperatorStaticType(ISymbolResolver resolver, BoundExpression expression, VBType operand) 
+    protected override StaticSemanticsEvaluationResult DetermineOperatorStaticType(ISymbolResolver resolver, ExpressionNode expression, VBType operand) 
         => operand switch
         {
             VBByteType => StaticSemanticsEvaluationResult.Success(VBIntegerType.TypeInfo),

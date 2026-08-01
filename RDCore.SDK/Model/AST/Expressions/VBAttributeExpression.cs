@@ -13,8 +13,8 @@ namespace RDCore.SDK.Model.AST.Expressions;
 /// </remarks>
 /// <param name="SemanticId">A semantic <c>Uri</c> uniquely identifying this specific node.</param>
 /// <param name="Location">The document location (<c>Uri</c>+<c>Range</c>) of the bound expression.</param>
-public record class VBAttributeExpression(Uri SemanticId, SourceLocation Location, BoundExpression NameExpression, BoundExpression ValueExpression) 
-    : BoundExpression(Tokens.Attribute, SemanticId, Location, [NameExpression, ValueExpression]) { }
+public record class VBAttributeExpression(Uri SemanticId, SourceLocation Location, ExpressionNode NameExpression, ExpressionNode ValueExpression) 
+    : ExpressionNode(Tokens.Attribute, SemanticId, Location, [NameExpression, ValueExpression]) { }
 
 /// <summary>
 /// A <c>BoundExpression</c> with static semantics that resolve the <c>VBType</c> of a <c>VBTypedDeclarationExpression</c>.
@@ -25,7 +25,7 @@ public record class VBAttributeExpression(Uri SemanticId, SourceLocation Locatio
 /// <param name="QualifierName">The qualifying module or library name, if present.</param>
 /// <param name="AsAutoObject"><c>true</c> if the expression includes a <c>New</c> token, declaring an <em>auto-object</em>.</param>
 public record class VBAsTypeExpression(Uri SemanticId, SourceLocation Location, string TypeName, string? QualifierName = default, bool AsAutoObject = false)
-    : BoundExpression(Tokens.As, SemanticId, Location, []) { }
+    : ExpressionNode(Tokens.As, SemanticId, Location, []) { }
 
 /// <summary>
 /// A <c>BoundExpression</c> representing any <em>declaration expression</em> that evaluates to a <c>TypedSymbol</c>.
@@ -35,7 +35,7 @@ public record class VBAsTypeExpression(Uri SemanticId, SourceLocation Location, 
 /// <param name="IdentifierName">The <em>identifier</em> name of the declared symbol.</param>
 /// <param name="AsTypeExpression">The <c>As &lt;Type&gt;</c> clause of the declaration, if present.</param>
 public record class VBTypedDeclarationExpression(Uri SemanticId, SourceLocation Location, string IdentifierName, VBAsTypeExpression? AsTypeExpression = default) 
-    : BoundExpression(Tokens.Private, SemanticId, Location, AsTypeExpression is null ? [] : [AsTypeExpression]) { }
+    : ExpressionNode(Tokens.Private, SemanticId, Location, AsTypeExpression is null ? [] : [AsTypeExpression]) { }
 
 
 /// <summary>
@@ -48,7 +48,7 @@ public record class VBTypedDeclarationExpression(Uri SemanticId, SourceLocation 
 /// <param name="IsWithEvents"><c>true</c> if the declaration list includes the <c>WithEvents</c> keyword.</param>
 /// <param name="IsStatic"><c>true</c> if the declaration list includes the <c>Static</c> keyword.</param>
 public record class VBDeclarationStatement(Uri SemanticId, SourceLocation Location, VBTypedDeclarationExpression[] Declarations, AccessModifier? Modifier = AccessModifier.Implicit, bool IsWithEvents = false, bool IsStatic = false)
-    : BoundStatement(SemanticId, Location, string.Empty, [.. Declarations.Cast<BoundExpression>()]) { }
+    : StatementNode(SemanticId, Location, string.Empty, [.. Declarations.Cast<ExpressionNode>()]) { }
 
 
 //public record class VBAssignationStatement(Uri SemanticId, SourceLocation Location, SimpleNameExpression TargetExpression, BoundExpression ValueExpression)

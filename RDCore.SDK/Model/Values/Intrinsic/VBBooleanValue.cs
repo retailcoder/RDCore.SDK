@@ -1,7 +1,7 @@
 ﻿using RDCore.SDK.Model.Types;
 using RDCore.SDK.Model.Values.Abstract;
 using RDCore.SDK.Model.Values.Bindings;
-using RDCore.SDK.Model.Values.Interop;
+using RDCore.SDK.Model.Values.Runtime;
 
 namespace RDCore.SDK.Model.Values.Intrinsic;
 
@@ -10,25 +10,25 @@ namespace RDCore.SDK.Model.Values.Intrinsic;
 /// </summary>
 public sealed record class VBBooleanValue() : 
     VBTypedValue(VBBooleanType.TypeInfo), 
-    IVBTypedValue<VBBooleanValue, ManagedBooleanInteropValue>
+    IVBTypedValue<VBBooleanValue, VBRuntimeBooleanValue>
 {
     public VBBooleanValue(bool value) : this()
     {
-        Handle = new ValueBindingHandle(new ManagedBooleanInteropValue(value));
+        Handle = new ValueBindingHandle(new VBRuntimeBooleanValue(value));
     }
 
-    private static readonly Lazy<VBBooleanValue> _falseValue = new(() => new VBBooleanValue { ManagedValue = new(ManagedInteropValue<bool>.BooleanFalse) });
+    private static readonly Lazy<VBBooleanValue> _falseValue = new(() => new VBBooleanValue { ManagedValue = new(VBRuntimeValue<bool>.BooleanFalse) });
     public static VBBooleanValue False { get; } = _falseValue.Value;
 
-    private static readonly Lazy<VBBooleanValue> _trueValue = new(() => new VBBooleanValue { ManagedValue = new(ManagedInteropValue<bool>.BooleanTrue) });
+    private static readonly Lazy<VBBooleanValue> _trueValue = new(() => new VBBooleanValue { ManagedValue = new(VBRuntimeValue<bool>.BooleanTrue) });
     public static VBBooleanValue True { get; } = _trueValue.Value;
 
-    public ManagedBooleanInteropValue Value => (ManagedBooleanInteropValue)ManagedValue.InteropValue!;
+    public VBRuntimeBooleanValue Value => (VBRuntimeBooleanValue)ManagedValue.RuntimeValue!;
     public override int Size { get; } = 16; // yes, really.
 
     public override string ToString() => Value.StoredValue != 0 ? Tokens.True : Tokens.False;
 
-    public bool Equals(IVBTypedValue<VBBooleanValue, ManagedBooleanInteropValue>? other) => Value == other?.Value;
+    public bool Equals(IVBTypedValue<VBBooleanValue, VBRuntimeBooleanValue>? other) => Value == other?.Value;
     public override int GetHashCode() => Value.GetHashCode();
 
 

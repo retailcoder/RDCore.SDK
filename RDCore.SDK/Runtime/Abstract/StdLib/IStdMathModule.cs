@@ -1,6 +1,7 @@
 ﻿using RDCore.SDK.Model.Types;
 using RDCore.SDK.Model.Values.Abstract;
 using RDCore.SDK.Model.Values.Intrinsic;
+using RDCore.SDK.Model.Values.Runtime;
 using RDCore.SDK.Runtime.Shared;
 
 namespace RDCore.SDK.Runtime.Abstract.StdLib;
@@ -23,7 +24,7 @@ public interface IStdMathModule
     /// </remarks>
     /// <param name="Number">Any <em>data value</em></param>
     /// <returns>A <see cref="RuntimeSemanticsEvaluationResult"/> object encapsulating the result of the successful operation, or the error metadata otherwise.</returns>
-    RuntimeSemanticsEvaluationResult StdMath__Abs(VBVariantValue Number);
+    RuntimeSemanticsEvaluationResult StdMath__Abs(VBRuntimeVariantValue Number);
 
     /// <summary>
     /// <strong>MS-VBAL 6.1.2.10.2 Atn</strong>
@@ -33,7 +34,7 @@ public interface IStdMathModule
     /// </remarks>
     /// <param name="Number">Any <see cref="VBDoubleValue"/> containing a valid numeric value (i.e. not <c>NaN</c>).</param>
     /// <returns>A <see cref="RuntimeSemanticsEvaluationResult"/> object encapsulating the result of the successful operation, or the error metadata otherwise.</returns>
-    RuntimeSemanticsEvaluationResult StdMath__Atn(VBDoubleValue Number);
+    RuntimeSemanticsEvaluationResult StdMath__Atn(VBRuntimeValue<Double> Number);
 
     /// <summary>
     /// <strong>MS-VBAL 6.1.2.10.3 Cos</strong>
@@ -43,7 +44,7 @@ public interface IStdMathModule
     /// </remarks>
     /// <param name="Number">Any <see cref="VBDoubleValue"/> containing a valid numeric value (i.e. not <c>NaN</c>) <em>representing an angle in radians</em>.</param>
     /// <returns>A <see cref="RuntimeSemanticsEvaluationResult"/> object encapsulating the result of the successful operation, or the error metadata otherwise.</returns>
-    RuntimeSemanticsEvaluationResult StdMath__Cos(VBDoubleValue Number);
+    RuntimeSemanticsEvaluationResult StdMath__Cos(VBRuntimeValue<Double> Number);
 
     /// <summary>
     /// <strong>MS-VBAL 6.1.2.10.4 Exp</strong>
@@ -53,7 +54,7 @@ public interface IStdMathModule
     /// </remarks>
     /// <param name="Number">Any <see cref="VBDoubleValue"/> containing a valid numeric value (i.e. not <c>NaN</c>) representing the <em>power</em> to raise <c>e</c> by.</param>
     /// <returns>A <see cref="RuntimeSemanticsEvaluationResult"/> object encapsulating the result of the successful operation, or the error metadata otherwise.</returns>
-    RuntimeSemanticsEvaluationResult StdMath__Exp(VBDoubleValue Number);
+    RuntimeSemanticsEvaluationResult StdMath__Exp(VBRuntimeValue<Double> Number);
 
     /// <summary>
     /// <strong>MS-VBAL 6.1.2.10.5 Log</strong>
@@ -63,7 +64,7 @@ public interface IStdMathModule
     /// </remarks>
     /// <param name="Number">Any <see cref="VBDoubleValue"/> containing a valid numeric value (i.e. not <c>NaN</c>) <em>greater than zero</em>.</param>
     /// <returns>A <see cref="RuntimeSemanticsEvaluationResult"/> object encapsulating the result of the successful operation, or the error metadata otherwise.</returns>
-    RuntimeSemanticsEvaluationResult StdMath__Log(VBDoubleValue Number);
+    RuntimeSemanticsEvaluationResult StdMath__Log(VBRuntimeValue<Double> Number);
 
     /// <summary>
     /// <strong>MS-VBAL 6.1.2.10.6 Rnd</strong>
@@ -83,7 +84,7 @@ public interface IStdMathModule
     /// </list>
     /// </param>
     /// <returns>A <see cref="RuntimeSemanticsEvaluationResult"/> object encapsulating the result of the successful operation, or the error metadata otherwise.</returns>
-    RuntimeSemanticsEvaluationResult StdMath__Rnd(VBVariantValue Number);
+    RuntimeSemanticsEvaluationResult StdMath__Rnd(VBRuntimeVariantValue Number);
 
     /// <summary>
     /// <strong>MS-VBAL 6.1.2.10.7 Round</strong>
@@ -94,7 +95,7 @@ public interface IStdMathModule
     /// <param name="Number">Any <see cref="VBVariantValue"/> containing the numeric value to be rounded.</param>
     /// <param name="NumDigitsAfterDecimal">Any <see cref="VBLongValue"/> containing representing the <em>number of decimal places</em> to the <em>right</em> of the <em>decimal separator</em> are included in the rounded result.<br/><strong>Optional</strong>: <see cref="VBLongType.DefaultValue"/> if omitted.</param>
     /// <returns>A <see cref="RuntimeSemanticsEvaluationResult"/> object encapsulating the result of the successful operation, or the error metadata otherwise.</returns>
-    RuntimeSemanticsEvaluationResult StdMath__Round(VBVariantValue Number, VBLongValue NumDigitsAfterDecimal);
+    RuntimeSemanticsEvaluationResult StdMath__Round(VBRuntimeVariantValue Number, VBRuntimeValue<Int32> NumDigitsAfterDecimal);
 
     /// <summary>
     /// <strong>MS-VBAL 6.1.2.10.8 Sgn</strong>
@@ -109,7 +110,7 @@ public interface IStdMathModule
     /// </remarks>
     /// <param name="Number">Any <see cref="VBDoubleValue"/> containing a valid numeric value (i.e. not <c>NaN</c>).</param>
     /// <returns>A <see cref="RuntimeSemanticsEvaluationResult"/> object encapsulating the result of the successful operation, or the error metadata otherwise.</returns>
-    RuntimeSemanticsEvaluationResult StdMath__Sgn(VBVariantValue Number);
+    RuntimeSemanticsEvaluationResult StdMath__Sgn(VBRuntimeVariantValue Number);
 
     /// <summary>
     /// <strong>MS-VBAL 6.1.2.10.9 Sin</strong>
@@ -119,7 +120,7 @@ public interface IStdMathModule
     /// </remarks>
     /// <param name="Number">Any <see cref="VBDoubleValue"/> containing a valid numeric value (i.e. not <c>NaN</c>) <em>representing an angle in radians</em>.</param>
     /// <returns>A <see cref="RuntimeSemanticsEvaluationResult"/> object encapsulating the result of the successful operation, or the error metadata otherwise.</returns>
-    RuntimeSemanticsEvaluationResult StdMath__Sin(VBDoubleValue Number);
+    RuntimeSemanticsEvaluationResult StdMath__Sin(VBRuntimeValue<Double> Number);
 
     /// <summary>
     /// <strong>MS-VBAL 6.1.2.10.10 Sqr</strong>
@@ -129,7 +130,7 @@ public interface IStdMathModule
     /// </remarks>
     /// <param name="Number">Any <see cref="VBDoubleValue"/> containing a valid numeric value (i.e. not <c>NaN</c>) <em>greater than</em> <c>0</c>.</param>
     /// <returns>A <see cref="RuntimeSemanticsEvaluationResult"/> object encapsulating the result of the successful operation, or the error metadata otherwise.</returns>
-    RuntimeSemanticsEvaluationResult StdMath__Sqr(VBDoubleValue Number);
+    RuntimeSemanticsEvaluationResult StdMath__Sqr(VBRuntimeValue<Double> Number);
 
     /// <summary>
     /// <strong>MS-VBAL 6.1.2.10.11 Tan</strong>
@@ -139,7 +140,7 @@ public interface IStdMathModule
     /// </remarks>
     /// <param name="Number">Any <see cref="VBDoubleValue"/> containing a valid numeric value (i.e. not <c>NaN</c>) <em>representing an angle in radians</em>.</param>
     /// <returns>A <see cref="RuntimeSemanticsEvaluationResult"/> object encapsulating the result of the successful operation, or the error metadata otherwise.</returns>
-    RuntimeSemanticsEvaluationResult StdMath__Tan(VBDoubleValue Number);
+    RuntimeSemanticsEvaluationResult StdMath__Tan(VBRuntimeValue<Double> Number);
 
     #endregion
 
@@ -153,7 +154,7 @@ public interface IStdMathModule
     /// </remarks>
     /// <param name="Number">A <see cref="VBNumericTypedValue"/> representing a <em>seed value</em>.<br/><strong>Optional</strong>: <see cref="VBMissingValue"/> or <see cref="VBEmptyValue"/> yields a new <em>seed value</em> from the <em>host-provided</em> pseudo-random number generator.</param>
     /// <returns>A <see cref="RuntimeSemanticsEvaluationResult"/> object encapsulating the result of the successful operation, or the error metadata otherwise.</returns>
-    RuntimeSemanticsEvaluationResult StdMath__Randomize(VBVariantValue Number);
+    RuntimeSemanticsEvaluationResult StdMath__Randomize(VBRuntimeVariantValue Number);
 
     #endregion
 }

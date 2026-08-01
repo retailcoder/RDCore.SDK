@@ -1,4 +1,5 @@
 ﻿using RDCore.SDK.Model.Values.Intrinsic;
+using RDCore.SDK.Model.Values.Runtime;
 using RDCore.SDK.Runtime.Shared;
 
 namespace RDCore.SDK.Runtime.Abstract.StdLib;
@@ -27,12 +28,12 @@ public interface IStdGlobalClass
     /// </list>
     /// </remarks>
     /// <returns>A <see cref="RuntimeSemanticsEvaluationResult"/> object encapsulating the result of the successful operation, or the error metadata otherwise.</returns>
-    public RuntimeSemanticsEvaluationResult StdGlobalClass_Load(VBObjectValue value);
+    public RuntimeSemanticsEvaluationResult StdGlobalClass_Load(VBRuntimeReference value);
 
     /// <summary>
     /// <strong>MS-VBAL 6.1.3.3.1.2 Unload</strong> Unloads a <em>form</em> or <em>control</em> from memory.<br/>
     /// </summary>
     /// <returns>A <see cref="RuntimeSemanticsEvaluationResult"/> object encapsulating the result of the successful operation, or the error metadata otherwise.</returns>
-    public RuntimeSemanticsEvaluationResult StdGlobalClass_Unload(VBObjectValue value);
+    public RuntimeSemanticsEvaluationResult StdGlobalClass_Unload(VBRuntimeReference value);
     #endregion
 }

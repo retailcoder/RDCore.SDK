@@ -1,14 +1,14 @@
 ﻿using System.Runtime.InteropServices;
 
-namespace RDCore.SDK.Model.Values.Interop;
+namespace RDCore.SDK.Model.Values.Runtime;
 
 /// <summary>
 /// Represents a <c>decimal</c> value using 14 bytes, including a 96-bit numerator.
 /// </summary>
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public readonly record struct ManagedDecimalInteropValue : IManagedInteropValue
+public readonly record struct VBRuntimeDecimalValue : IRuntimeValue
 {
-    public ManagedDecimalInteropValue(decimal value)
+    public VBRuntimeDecimalValue(decimal value)
     {
         var values = decimal.GetBits(value);
         Numerator1 = values[0];

@@ -1,4 +1,5 @@
 ﻿using RDCore.SDK.Model.Values.Intrinsic;
+using RDCore.SDK.Model.Values.Runtime;
 using RDCore.SDK.Runtime.Shared;
 
 namespace RDCore.SDK.Runtime.Abstract.StdLib;
@@ -21,7 +22,7 @@ public interface IStdRegExpClass
     /// Sets a flag indicating whether the regex returns after the first match (<c>false</c>) or not (<c>true</c>).
     /// </summary>
     /// <returns>A <see cref="RuntimeSemanticsEvaluationResult"/> object encapsulating the result of the successful operation, or the error metadata otherwise.</returns>
-    RuntimeSemanticsEvaluationResult IStdRegExpClass__setGlobal(VBBooleanValue value);
+    RuntimeSemanticsEvaluationResult IStdRegExpClass__setGlobal(VBRuntimeBooleanValue value);
 
     /// <summary>
     /// Gets or sets a flag indicating whether the regex evaluates case-insensitive (<c>true</c>) or case-sensitive (<c>false</c>) matches.
@@ -32,7 +33,7 @@ public interface IStdRegExpClass
     /// Sets a flag indicating whether the regex evaluates case-insensitive (<c>true</c>) or case-sensitive (<c>false</c>) matches.
     /// </summary>
     /// <returns>A <see cref="RuntimeSemanticsEvaluationResult"/> object encapsulating the result of the successful operation, or the error metadata otherwise.</returns>
-    RuntimeSemanticsEvaluationResult IStdRegExpClass__setIgnoreCase(VBBooleanValue value);
+    RuntimeSemanticsEvaluationResult IStdRegExpClass__setIgnoreCase(VBRuntimeBooleanValue value);
 
     /// <summary>
     /// Gets a flag indicating whether <c>^</c> and <c>$</c> denote the start/end of the <em>input</em> (<c>false</c>) or of a <em>single line</em> (<c>true</c>) of it.
@@ -41,7 +42,7 @@ public interface IStdRegExpClass
     /// <summary>
     /// Sets a flag indicating whether <c>^</c> and <c>$</c> denote the start/end of the <em>input</em> (<c>false</c>) or of a <em>single line</em> (<c>true</c>) of it.
     /// </summary>
-    RuntimeSemanticsEvaluationResult IStdRegExpClass__setMultiline(VBBooleanValue value);
+    RuntimeSemanticsEvaluationResult IStdRegExpClass__setMultiline(VBRuntimeBooleanValue value);
 
     /// <summary>
     /// Gets the Regular Expression pattern string for this instance.
@@ -50,7 +51,7 @@ public interface IStdRegExpClass
     /// <summary>
     /// Sets the Regular Expression pattern string for this instance.
     /// </summary>
-    RuntimeSemanticsEvaluationResult IStdRegExpClass__setPattern(VBStringValue value);
+    RuntimeSemanticsEvaluationResult IStdRegExpClass__setPattern(VBRuntimeReference value);
     #endregion
 
     #region Public Methods
@@ -59,20 +60,20 @@ public interface IStdRegExpClass
     /// </summary>
     /// <param name="sourceString">The input string to match against the configured pattern.</param>
     /// <returns>A <see cref="RuntimeSemanticsEvaluationResult"/> object encapsulating the result of the successful operation, or the error metadata otherwise.</returns>
-    RuntimeSemanticsEvaluationResult Execute(VBStringValue sourceString);
+    RuntimeSemanticsEvaluationResult Execute(VBRuntimeReference sourceString);
     /// <summary>
     /// Replaces regex matches in the provided <em>source string</em> with the specified <em>replacement value</em>.
     /// </summary>
     /// <param name="sourceString">The input string to replace matched content from.</param>
     /// <param name="replaceVar">The replacement value for any pattern matches.</param>
     /// <returns>A <see cref="RuntimeSemanticsEvaluationResult"/> object encapsulating the result of the successful operation, or the error metadata otherwise.</returns>
-    RuntimeSemanticsEvaluationResult Replace(VBStringValue sourceString, VBVariantValue replaceVar);
+    RuntimeSemanticsEvaluationResult Replace(VBRuntimeReference sourceString, VBRuntimeVariantValue replaceVar);
     /// <summary>
     /// Tests whether the specified <em>source string</em> matches the currently configured <c>Pattern</c> for this instance.
     /// </summary>
     /// <param name="sourceString">The input string to test against the configured pattern.</param>
     /// <returns>A <see cref="RuntimeSemanticsEvaluationResult"/> object encapsulating the result of the successful operation, or the error metadata otherwise.</returns>
-    RuntimeSemanticsEvaluationResult Test(VBStringValue sourceString);
+    RuntimeSemanticsEvaluationResult Test(VBRuntimeReference sourceString);
     #endregion
 }
 
@@ -131,7 +132,7 @@ public interface IStdMatchCollectionClass
     /// 👉 This property is exposed as the <em>default member</em> of this class type.
     /// </remarks>
     /// <returns>A <see cref="RuntimeSemanticsEvaluationResult"/> object encapsulating the result of the successful operation, or the error metadata otherwise.</returns>
-    RuntimeSemanticsEvaluationResult IStdMatchCollectionClass__getItem(VBLongValue index);
+    RuntimeSemanticsEvaluationResult IStdMatchCollectionClass__getItem(VBRuntimeValue<Int32> index);
     #endregion
 }
 
@@ -155,6 +156,6 @@ public interface IStdSubMatchesClass
     /// 👉 This property is exposed as the <em>default member</em> of this class type.
     /// </remarks>
     /// <returns>A <see cref="RuntimeSemanticsEvaluationResult"/> object encapsulating the result of the successful operation, or the error metadata otherwise.</returns>
-    RuntimeSemanticsEvaluationResult IStdSubMatchesClass__getItem(VBLongValue index);
+    RuntimeSemanticsEvaluationResult IStdSubMatchesClass__getItem(VBRuntimeValue<Int32> index);
     #endregion
 }

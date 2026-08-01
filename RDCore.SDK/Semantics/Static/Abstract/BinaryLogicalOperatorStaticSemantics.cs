@@ -19,7 +19,7 @@ public record class BinaryLogicalOperatorStaticSemantics : StaticSemantics, ISta
     /// <param name="operandDeclaredTypes">The declared type of the operands.</param>
     public override StaticSemanticsEvaluationResult DetermineDeclaredType(
         ISymbolResolver resolver,
-        BoundExpression expression, 
+        ExpressionNode expression, 
         params VBType[] operandDeclaredTypes)
         => DetermineOperatorStaticType(expression, operandDeclaredTypes[(int)InputIndex.BinaryLeftOperand], operandDeclaredTypes[(int)InputIndex.BinaryRightOperand]);
 
@@ -30,7 +30,7 @@ public record class BinaryLogicalOperatorStaticSemantics : StaticSemantics, ISta
     /// <param name="expression">The <em>expression node</em> being evaluated.</param>
     /// <param name="lhs">The declared type of the LHS operand.</param>
     /// <param name="rhs">The declared type of the RHS operand.</param>
-    protected virtual StaticSemanticsEvaluationResult DetermineOperatorStaticType(BoundExpression expression, VBType lhs, VBType rhs)
+    protected virtual StaticSemanticsEvaluationResult DetermineOperatorStaticType(ExpressionNode expression, VBType lhs, VBType rhs)
         => lhs switch
         {
             VBByteType when rhs is VBByteType => VBByteType.TypeInfo,

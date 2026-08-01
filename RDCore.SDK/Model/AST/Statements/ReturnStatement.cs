@@ -7,6 +7,6 @@ namespace RDCore.SDK.Model.AST.Statements;
 /// Represents a statement that pops an offset from the local <em>return stack</em>, then moves the <em>current instruction</em> pointer to that instruction.
 /// </summary>
 /// <param name="SemanticId">A semantic <c>Uri</c> uniquely identifying this specific node.</param>
-/// <param name="Location">The document location (<c>Uri</c>+<c>Range</c>) of the bound expression.</param>
-public record class ReturnStatement(Uri SemanticId, SourceLocation Location)
-    : BoundStatement(SemanticId, Location, $"{Tokens.Return}", []);
+/// <param name="SourceLocation">The document location (<c>Uri</c>+<c>Range</c>) of the bound expression.</param>
+public record class ReturnStatement(Uri SemanticId, SourceLocation SourceLocation)
+    : StatementNode(SemanticId, SourceLocation, $"{Tokens.Return}", []);

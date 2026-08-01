@@ -16,7 +16,7 @@ public abstract record class BinaryArithmeticOperatorStaticSemantics() : StaticS
     /// <param name="resolver">The static context containing the available static memory space.</param>
     /// <param name="expression">The <em>expression node</em> being evaluated.</param>
     /// <param name="operandDeclaredTypes">The declared type of each operand involved in the evaluation.</param>
-    public override StaticSemanticsEvaluationResult DetermineDeclaredType(ISymbolResolver resolver, BoundExpression expression, params VBType[] operandDeclaredTypes)
+    public override StaticSemanticsEvaluationResult DetermineDeclaredType(ISymbolResolver resolver, ExpressionNode expression, params VBType[] operandDeclaredTypes)
         => DetermineOperatorStaticType(resolver, expression, operandDeclaredTypes[0], operandDeclaredTypes[1]);
 
     /// <summary>
@@ -27,7 +27,7 @@ public abstract record class BinaryArithmeticOperatorStaticSemantics() : StaticS
     /// <param name="expression">The <em>expression node</em> being evaluated.</param>
     /// <param name="lhs">The declared type of the LHS operand.</param>
     /// <param name="rhs">The declared type of the RHS operand.</param>
-    protected virtual StaticSemanticsEvaluationResult DetermineOperatorStaticType(ISymbolResolver resolver, BoundExpression expression, VBType lhs, VBType rhs)
+    protected virtual StaticSemanticsEvaluationResult DetermineOperatorStaticType(ISymbolResolver resolver, ExpressionNode expression, VBType lhs, VBType rhs)
         => lhs switch
         {
             VBByteType when rhs is VBByteType => VBByteType.TypeInfo,

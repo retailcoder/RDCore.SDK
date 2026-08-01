@@ -21,7 +21,7 @@ public record class BinaryConcatOperatorStaticSemantics : StaticSemantics
     /// <returns>
     /// A <see cref="StaticSemanticsEvaluationResult"/> encapsulating the resulting <see cref="VBType"/> if successful, or <see cref="VBCompileErrorInfo"/> error metadata otherwise.
     /// </returns>
-    public override StaticSemanticsEvaluationResult DetermineDeclaredType(ISymbolResolver resolver, BoundExpression expression, params VBType[] operandDeclaredTypes)
+    public override StaticSemanticsEvaluationResult DetermineDeclaredType(ISymbolResolver resolver, ExpressionNode expression, params VBType[] operandDeclaredTypes)
     {
         var lhs = operandDeclaredTypes[(int)InputIndex.BinaryLeftOperand];
         var rhs = operandDeclaredTypes[(int)InputIndex.BinaryRightOperand];

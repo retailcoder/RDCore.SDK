@@ -10,5 +10,5 @@ namespace RDCore.SDK.Model.AST.Declarations;
 /// <param name="Location">The source location of this module; the <c>SourceRange</c> is invalid.</param>
 /// <param name="Name">The declared identifier name of the member.</param>
 /// <param name="DeclaredTypeExpression">The <em>declared type</em> expression, if one was supplied.</param>
-public record class VariableDeclarationNode(Uri SemanticId, SourceLocation Location, string Name, BoundExpression? DeclaredTypeExpression = default) 
-    : BoundNode(SemanticId, Location, []);
+public record class VariableDeclarationNode(Uri SemanticId, SourceLocation Location, string Name, ExpressionNode? DeclaredTypeExpression = default) 
+    : SyntaxNode(SemanticId, Location, []);

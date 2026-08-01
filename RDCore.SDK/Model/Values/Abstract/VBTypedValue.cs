@@ -1,7 +1,7 @@
 ﻿using RDCore.SDK.Model.Types.Abstract;
 using RDCore.SDK.Model.Types.Meta;
 using RDCore.SDK.Model.Values.Bindings;
-using RDCore.SDK.Model.Values.Interop;
+using RDCore.SDK.Model.Values.Runtime;
 using RDCore.SDK.Model.Values.Meta;
 namespace RDCore.SDK.Model.Values.Abstract;
 
@@ -32,15 +32,15 @@ public interface IVBTypedValue<VBTValue, TValue> : IEquatable<IVBTypedValue<VBTV
 public abstract record class VBTypedValue(VBType TypeInfo) 
     : VBRuntimeEntity(TypeInfo)
 {
-    protected VBTypedValue(VBType typeInfo, ManagedInteropReference reference) : this(typeInfo)
+    protected VBTypedValue(VBType typeInfo, VBRuntimeReference reference) : this(typeInfo)
     {
         Handle = new ReferenceBindingHandle(reference);
     }
-    protected VBTypedValue(VBType typeInfo, IManagedInteropValue value) : this(typeInfo)
+    protected VBTypedValue(VBType typeInfo, IRuntimeValue value) : this(typeInfo)
     {
         Handle = new ValueBindingHandle(value);
     }
-    protected VBTypedValue(VBType typeInfo, ManagedInteropVariant variant) : this(typeInfo)
+    protected VBTypedValue(VBType typeInfo, VBRuntimeVariantValue variant) : this(typeInfo)
     {
         Handle = variant.Handle;
     }
@@ -66,19 +66,19 @@ public abstract record class VBTypedValue(VBType TypeInfo)
     /// <summary>
     /// Gets a wrapper for the underlying managed value.
     /// </summary>
-    public ManagedInteropWrapper ManagedValue 
+    public VBRuntimeValueWrapper ManagedValue 
     {
         get => new(Handle.GetValue(null!));
-        init => Handle = value.InteropValue is not null 
-            ? new ValueBindingHandle(value.InteropValue)
-            : value.InteropReference is not null
-                ? new ReferenceBindingHandle(value.InteropReference.Value)
-                : value.InteropVariant is not null
-                    ? value.InteropVariant.Value.Handle
+        init => Handle = value.RuntimeValue is not null 
+            ? new ValueBindingHandle(value.RuntimeValue)
+            : value.RuntimeReference is not null
+                ? new ReferenceBindingHandle(value.RuntimeReference.Value)
+                : value.RuntimeVariant is not null
+                    ? value.RuntimeVariant.Value.Handle
                     : throw new InvalidOperationException();
     }
 
     public IBindingHandle Handle { get; init; } = InvalidBindingHandle.Default;
 
-    public VBTypedValue WithValue(ManagedInteropWrapper value) => this with { ManagedValue = value };
+    public VBTypedValue WithValue(VBRuntimeValueWrapper value) => this with { ManagedValue = value };
 }

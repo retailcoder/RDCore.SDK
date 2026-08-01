@@ -5,5 +5,5 @@ namespace RDCore.SDK.Services.VerboseMessages;
 
 public interface IExpressionInfoFormatter
 {
-    void Format(StringBuilder builder, BoundExpression expression);
+    void Format(StringBuilder builder, ExpressionNode expression);
 }

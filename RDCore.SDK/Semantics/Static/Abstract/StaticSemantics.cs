@@ -58,7 +58,7 @@ public interface IStaticSemantics
     /// <returns>
     /// A <see cref="StaticSemanticsEvaluationResult"/> encapsulating the resulting <see cref="VBType"/> if successful, or <see cref="VBCompileErrorInfo"/> error metadata otherwise.
     /// </returns>
-    StaticSemanticsEvaluationResult DetermineDeclaredType(ISymbolResolver resolver, BoundExpression expression, params VBType[] operandDeclaredTypes);
+    StaticSemanticsEvaluationResult DetermineDeclaredType(ISymbolResolver resolver, ExpressionNode expression, params VBType[] operandDeclaredTypes);
 }
 
 /// <summary>
@@ -75,14 +75,14 @@ public abstract record class StaticSemantics() : IStaticSemantics
     /// <returns>
     /// A <see cref="StaticSemanticsEvaluationResult"/> encapsulating the resulting <see cref="VBType"/> if successful, or <see cref="VBCompileErrorInfo"/> error metadata otherwise.
     /// </returns>
-    public abstract StaticSemanticsEvaluationResult DetermineDeclaredType(ISymbolResolver resolver, BoundExpression expression, params VBType[] operandDeclaredTypes);
+    public abstract StaticSemanticsEvaluationResult DetermineDeclaredType(ISymbolResolver resolver, ExpressionNode expression, params VBType[] operandDeclaredTypes);
 
     /// <summary>
     /// Gets the error metadata for a <em>type mismatch</em> compile-time error.
     /// </summary>
     /// <param name="expression">The <em>statically invalid</em> expression.</param>
     /// <param name="operandDeclaredTypes">The <em>declared types</em> of the inputs of the expression.</param>
-    protected static VBCompileErrorInfo GetStaticTypeMismatchErrorInfo(BoundExpression expression, VBType[] operandDeclaredTypes)
+    protected static VBCompileErrorInfo GetStaticTypeMismatchErrorInfo(ExpressionNode expression, VBType[] operandDeclaredTypes)
         => VBCompileErrorInfo.For(VBCompileErrorId.TypeMismatch, expression.Location, 
             Exceptions.VBCompileError_TypeMismatch_Verbose.Replace("{$INPUTS}", string.Join(", ", operandDeclaredTypes.Select(type => type.Name))));
 
@@ -95,7 +95,7 @@ public abstract record class StaticSemantics() : IStaticSemantics
     /// 👉 A different <c>verbose</c> message differenciates this error from a <em>static type mismatch</em> error; 
     /// they are the same compile-time error, but with distincly different causes that a verbose message should explain.
     /// </remarks>
-    protected static VBCompileErrorInfo GetStaticCoercionTypeMismatchErrorInfo(BoundExpression expression, VBType[] operandDeclaredTypes)
+    protected static VBCompileErrorInfo GetStaticCoercionTypeMismatchErrorInfo(ExpressionNode expression, VBType[] operandDeclaredTypes)
         => VBCompileErrorInfo.For(VBCompileErrorId.TypeMismatch, expression.Location, 
             Exceptions.VBCompileError_LetCoercionTypeMismatch_Verbose);
 }

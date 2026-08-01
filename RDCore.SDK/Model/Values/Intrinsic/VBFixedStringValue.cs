@@ -1,4 +1,4 @@
-﻿using RDCore.SDK.Model.Values.Interop;
+﻿using RDCore.SDK.Model.Values.Runtime;
 
 namespace RDCore.SDK.Model.Values.Intrinsic;
 
@@ -12,7 +12,7 @@ public sealed record class VBFixedStringValue : VBStringValue
     public VBFixedStringValue(VBStringValue value) : base()
     {
         Length = value.Length;
-        ManagedValue = new(new ManagedInteropReference(typeof(string), FixLength(value.Value, Length)));
+        ManagedValue = new(new VBRuntimeReference(typeof(string), FixLength(value.Value, Length)));
     }
 
     public override int Length { get; }
@@ -22,7 +22,7 @@ public sealed record class VBFixedStringValue : VBStringValue
     public override VBStringValue WithValue(string? value)
     {
         var fixedValue = FixLength(value, Length);
-        return this with { ManagedValue = new(new ManagedInteropReference(typeof(string), fixedValue)) };
+        return this with { ManagedValue = new(new VBRuntimeReference(typeof(string), fixedValue)) };
     }
 
     private static string FixLength(string? value, int length)

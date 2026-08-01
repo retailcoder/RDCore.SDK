@@ -30,7 +30,7 @@ public interface IRuntimeSemantics<TContext, TFlags>
     RuntimeSemanticsEvaluationResult Evaluate(
         IVBExecutionContext runtime, 
         SemanticContext<TFlags> context, 
-        BoundNode node, 
+        SyntaxNode node, 
         params VBTypedValue[] inputs);
 
     /// <summary>
@@ -47,6 +47,6 @@ public interface IRuntimeSemantics<TContext, TFlags>
         ISymbolResolver resolver, 
         ConversionOperationSemanticContext conversionContext, 
         ISemanticFlagsAccumulator<TFlags> builder, 
-        BoundNode node, 
+        SyntaxNode node, 
         params VBTypedValue[] inputs);
 }

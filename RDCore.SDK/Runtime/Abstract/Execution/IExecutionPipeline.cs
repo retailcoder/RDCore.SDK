@@ -13,7 +13,7 @@ public interface IExecutionPipeline<out TResult> where TResult : ExecutionResult
     /// <param name="expression">The <em>bound expression</em> node to evaluate.</param>
     /// <returns>A record encapsulating the <see cref="RuntimeSemanticsEvaluationResult"/>.</returns>
     TResult Execute<TNode>(IVBExecutionContext context, TNode expression)
-        where TNode : BoundExpression;
+        where TNode : ExpressionNode;
 }
 
 /// <summary>

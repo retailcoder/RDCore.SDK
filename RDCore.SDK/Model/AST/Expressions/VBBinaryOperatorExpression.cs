@@ -24,20 +24,20 @@ public record class VBBinaryOperatorExpression<TContext, TFlags>
     where TContext : SemanticContext<TFlags>, new()
     where TFlags : struct, Enum
 {
-    public VBBinaryOperatorExpression(string token, Uri semanticId, SourceLocation location, BoundExpression left, BoundExpression right) 
+    public VBBinaryOperatorExpression(string token, Uri semanticId, SourceLocation location, ExpressionNode left, ExpressionNode right) 
         : base(token, semanticId, location, [left, right])
     {
         Left = left;
         Right = right;
     }
 
-    public VBBinaryOperatorExpression(Uri semanticId, OperatorSymbol<TContext, TFlags> symbol, OperatorExpressionValueSymbol resultSymbol, SourceLocation location, BoundExpression left, BoundExpression right) 
+    public VBBinaryOperatorExpression(Uri semanticId, OperatorSymbol<TContext, TFlags> symbol, OperatorExpressionValueSymbol resultSymbol, SourceLocation location, ExpressionNode left, ExpressionNode right) 
         : base(semanticId, symbol, resultSymbol, location, [left, right])
     {
         Left = left;
         Right = right;
     }
 
-    public BoundExpression Left { get; }
-    public BoundExpression Right { get; }
+    public ExpressionNode Left { get; }
+    public ExpressionNode Right { get; }
 }

@@ -13,7 +13,7 @@ namespace RDCore.SDK.Runtime.Abstract.Execution;
 public interface IStackFrame
 {
     /// <summary>
-    /// The <c>SemanticId</c> of the <see cref="BoundNode"/> being evaluated.
+    /// The <c>SemanticId</c> of the <see cref="SyntaxNode"/> being evaluated.
     /// </summary>
     Uri NodeUri { get; }
     /// <summary>

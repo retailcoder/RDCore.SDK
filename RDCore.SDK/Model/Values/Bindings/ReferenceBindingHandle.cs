@@ -1,5 +1,5 @@
 ﻿using RDCore.SDK.Model.Values.Abstract;
-using RDCore.SDK.Model.Values.Interop;
+using RDCore.SDK.Model.Values.Runtime;
 using RDCore.SDK.Runtime.Abstract.Execution;
 
 namespace RDCore.SDK.Model.Values.Bindings;
@@ -9,18 +9,18 @@ namespace RDCore.SDK.Model.Values.Bindings;
 /// </summary>
 public record class ReferenceBindingHandle : IBindingHandle
 {
-    private ManagedInteropReference _value;
-    public ReferenceBindingHandle(ManagedInteropReference value)
+    private VBRuntimeReference _value;
+    public ReferenceBindingHandle(VBRuntimeReference value)
     {
         _value = value;
     }
 
     public BindingCapabilities BindingCapabilities => BindingCapabilities.GetValue | BindingCapabilities.SetValue;
 
-    public IManagedInteropValue GetValue(IVBExecutionContext context) => _value;
+    public IRuntimeValue GetValue(IVBExecutionContext context) => _value;
 
-    public void SetValue(IVBExecutionContext context, IManagedInteropValue value) => _value = value is ManagedInteropReference reference
-        ? reference : throw new ArgumentException($"Expected {nameof(ManagedInteropReference)} value", nameof(value));
+    public void SetValue(IVBExecutionContext context, IRuntimeValue value) => _value = value is VBRuntimeReference reference
+        ? reference : throw new ArgumentException($"Expected {nameof(VBRuntimeReference)} value", nameof(value));
 
-    public IManagedInteropValue Invoke(IVBExecutionContext context, IManagedInteropValue[] args) => throw new NotSupportedException();
+    public IRuntimeValue Invoke(IVBExecutionContext context, IRuntimeValue[] args) => throw new NotSupportedException();
 }

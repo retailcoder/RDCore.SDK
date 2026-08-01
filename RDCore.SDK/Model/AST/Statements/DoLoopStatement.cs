@@ -7,11 +7,11 @@ namespace RDCore.SDK.Model.AST.Statements;
 /// Represents a <c>Do...Loop</c> construct.
 /// </summary>
 /// <param name="SemanticId">A semantic <c>Uri</c> uniquely identifying this specific node.</param>
-/// <param name="Location">The document location (<c>Uri</c>+<c>Range</c>) of the bound expression.</param>
+/// <param name="SourceLocation">The document location (<c>Uri</c>+<c>Range</c>) of the bound expression.</param>
 /// <param name="Body">The executable statements in the body of the loop.</param>
 /// <remarks>
 /// If the <c>Body</c> contains no <c>Exit</c> statement (conditional or not), the loop is deterministically infinite.
 /// </remarks>
-public record DoLoopStatement(Uri SemanticId, SourceLocation Location, StatementBlock Body)
-    : BoundStatement(SemanticId, Location, $"{Tokens.Do}-{Tokens.Loop}", []);
+public record DoLoopStatement(Uri SemanticId, SourceLocation SourceLocation, StatementBlock Body)
+    : StatementNode(SemanticId, SourceLocation, $"{Tokens.Do}-{Tokens.Loop}", []);
 

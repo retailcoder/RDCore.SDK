@@ -2,7 +2,7 @@
 using RDCore.SDK.Model.Symbols;
 using RDCore.SDK.Model.Types.Abstract;
 using RDCore.SDK.Model.Values.Abstract;
-using RDCore.SDK.Model.Values.Interop;
+using RDCore.SDK.Model.Values.Runtime;
 using RDCore.SDK.Model.Values.Intrinsic;
 
 namespace RDCore.SDK.Model.Types;
@@ -26,14 +26,14 @@ public sealed record class VBDoubleType() : VBNumericType<double>(VBTypeNames.VB
     /// Gets the minimum representable value for this data type.
     /// </summary>
     public static VBDoubleValue MinValue => _minValue.Value;
-    public override double ManagedMinValue => ((ManagedInteropValue<double>)_minValue.Value.ManagedValue.InteropValue!).StoredValue;
+    public override double ManagedMinValue => ((VBRuntimeValue<double>)_minValue.Value.ManagedValue.RuntimeValue!).StoredValue;
 
     private static readonly Lazy<VBDoubleValue> _maxValue = new(() => new(double.MaxValue), LazyThreadSafetyMode.PublicationOnly);
     /// <summary>
     /// Gets the maximum representable value for this data type.
     /// </summary>
     public static VBDoubleValue MaxValue => _maxValue.Value;
-    public override double ManagedMaxValue => ((ManagedInteropValue<double>)_maxValue.Value.ManagedValue.InteropValue!).StoredValue;
+    public override double ManagedMaxValue => ((VBRuntimeValue<double>)_maxValue.Value.ManagedValue.RuntimeValue!).StoredValue;
 
     private static readonly Lazy<VBDoubleValue> _zero = new(() => new(0d), LazyThreadSafetyMode.PublicationOnly);
     /// <summary>

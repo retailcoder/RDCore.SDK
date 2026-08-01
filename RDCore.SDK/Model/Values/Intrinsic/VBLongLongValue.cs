@@ -1,6 +1,6 @@
 ﻿using RDCore.SDK.Model.Types;
 using RDCore.SDK.Model.Values.Abstract;
-using RDCore.SDK.Model.Values.Interop;
+using RDCore.SDK.Model.Values.Runtime;
 
 namespace RDCore.SDK.Model.Values.Intrinsic;
 
@@ -13,10 +13,10 @@ public sealed record class VBLongLongValue() : VBNumericTypedValue(VBLongLongTyp
 {
     public VBLongLongValue(long value) : this()
     {
-        ManagedValue = new(new ManagedInteropValue<long>(value));
+        ManagedValue = new(new VBRuntimeValue<long>(value));
     }
 
-    public long Value => ((ManagedInteropValue<long>)ManagedValue.InteropValue!).Value;
+    public long Value => ((VBRuntimeValue<long>)ManagedValue.RuntimeValue!).Value;
     public override int Size => sizeof(long);
 
     public bool Equals(IVBTypedValue<VBLongLongValue, long>? other) => Value == other?.Value;

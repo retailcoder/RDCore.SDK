@@ -3,7 +3,7 @@ using RDCore.SDK.Model.Symbols.Abstract;
 using RDCore.SDK.Model.Types;
 using RDCore.SDK.Model.Values.Abstract;
 using RDCore.SDK.Model.Values.Bindings;
-using RDCore.SDK.Model.Values.Interop;
+using RDCore.SDK.Model.Values.Runtime;
 
 namespace RDCore.SDK.Model.Values.Intrinsic;
 
@@ -22,10 +22,10 @@ public record class VBObjectValue : VBTypedValue,
 
     public VBObjectValue(object reference) : base(VBObjectType.TypeInfo) 
     {
-        Handle = new ReferenceBindingHandle(new ManagedInteropReference(typeof(object), reference));
+        Handle = new ReferenceBindingHandle(new VBRuntimeReference(typeof(object), reference));
     }
 
-    public object Value => ManagedValue.InteropReference!.Value.Value;
+    public object Value => ManagedValue.RuntimeReference!.Value.Value;
     public override int Size => sizeof(int); // not quite
 
     public bool IsNothing() => Value == Nothing.Value;

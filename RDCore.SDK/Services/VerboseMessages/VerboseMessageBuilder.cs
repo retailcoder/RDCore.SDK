@@ -11,12 +11,12 @@ namespace RDCore.SDK.Services.VerboseMessages;
 public interface IVerboseMessageBuilder
 {
     /// <summary>
-    /// Represents the specified <see cref="BoundExpression"/> and its stack trace as a localized, formatted <c>string</c>.
+    /// Represents the specified <see cref="ExpressionNode"/> and its stack trace as a localized, formatted <c>string</c>.
     /// </summary>
     /// <param name="message">A specific <em>verbose</em> message that is included when verbose output is enabled, regardless of other verbose configuration settings.</param>
     /// <param name="expression">The expression to be formatted into the output, per verbose configuration settings.</param>
     /// <param name="frames">The stack of evaluation frames to be formatted into the output, per verbose configuration settings.</param>
-    string Format(string message, BoundExpression expression, IEnumerable<IStackFrame> frames);
+    string Format(string message, ExpressionNode expression, IEnumerable<IStackFrame> frames);
 }
 
 /// <summary>
@@ -32,7 +32,7 @@ public class VerboseMessageBuilder(
     private readonly IExpressionInfoFormatter _expressionFormatter = expressionFormatter;
     private readonly IStackTraceFormatter _stackTraceFormatter = stackTraceFormatter;
 
-    public string Format(string message, BoundExpression expression, IEnumerable<IStackFrame> frames)
+    public string Format(string message, ExpressionNode expression, IEnumerable<IStackFrame> frames)
     {
         if (!_config.IsEnabled)
         {

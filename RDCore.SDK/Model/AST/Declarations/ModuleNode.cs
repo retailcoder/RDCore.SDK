@@ -11,5 +11,5 @@ namespace RDCore.SDK.Model.AST.Declarations;
 /// <param name="Location">The source location of this module; the <c>SourceRange</c> is invalid.</param>
 /// <param name="Children">An immutable array containing all AST nodes of this module.</param>
 /// <param name="ModuleType">The type of module this AST is for.</param>
-public record class ModuleNode(Uri SemanticId, SourceLocation Location, ImmutableArray<BoundNode> Children, ModuleType ModuleType)
-    : BoundNode(SemanticId, Location, Children);
+public record class ModuleNode(Uri SemanticId, SourceLocation Location, ImmutableArray<SyntaxNode> Children, ModuleType ModuleType)
+    : SyntaxNode(SemanticId, Location, Children);

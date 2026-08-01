@@ -23,7 +23,7 @@ public record class UnaryArithmeticOperatorStaticSemantics : StaticSemantics, IS
     /// <returns>
     /// A <see cref="StaticSemanticsEvaluationResult"/> encapsulating the resulting <see cref="VBType"/> if successful, or <see cref="VBCompileErrorInfo"/> error metadata otherwise.
     /// </returns>
-    public override StaticSemanticsEvaluationResult DetermineDeclaredType(ISymbolResolver resolver, BoundExpression expression, params VBType[] operandDeclaredTypes)
+    public override StaticSemanticsEvaluationResult DetermineDeclaredType(ISymbolResolver resolver, ExpressionNode expression, params VBType[] operandDeclaredTypes)
         => DetermineOperatorStaticType(resolver, expression, operandDeclaredTypes[(int)InputIndex.UnaryOperand]);
 
     /// <summary>
@@ -32,7 +32,7 @@ public record class UnaryArithmeticOperatorStaticSemantics : StaticSemantics, IS
     /// </summary>
     /// <param name="expression">The <em>expression node</em> being evaluated.</param>
     /// <param name="operand">The declared type of the operand.</param>
-    protected virtual StaticSemanticsEvaluationResult DetermineOperatorStaticType(ISymbolResolver resolver, BoundExpression expression, VBType operand)  
+    protected virtual StaticSemanticsEvaluationResult DetermineOperatorStaticType(ISymbolResolver resolver, ExpressionNode expression, VBType operand)  
         => operand switch
         {
             VBByteType => VBByteType.TypeInfo,

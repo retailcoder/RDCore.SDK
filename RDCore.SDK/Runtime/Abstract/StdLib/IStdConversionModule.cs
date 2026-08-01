@@ -1,5 +1,6 @@
 ﻿using RDCore.SDK.Model.Types;
 using RDCore.SDK.Model.Types.Abstract;
+using RDCore.SDK.Model.Values.Runtime;
 using RDCore.SDK.Model.Values.Intrinsic;
 using RDCore.SDK.Runtime.Shared;
 
@@ -21,7 +22,7 @@ public interface IStdConversionModule
     /// </remarks>
     /// <param name="expression">Any <em>data value</em>.</param>
     /// <returns>A <see cref="RuntimeSemanticsEvaluationResult"/> object encapsulating the result of the successful operation, or the error metadata otherwise.</returns>
-    RuntimeSemanticsEvaluationResult StdConversions__CBool(VBVariantValue expression);
+    RuntimeSemanticsEvaluationResult StdConversions__CBool(VBRuntimeVariantValue expression);
 
     /// <summary>
     /// <strong>MS-VBAL 6.1.2.3.1.2 CByte</strong>
@@ -31,7 +32,7 @@ public interface IStdConversionModule
     /// </remarks>
     /// <param name="expression">Any <em>data value</em>.</param>
     /// <returns>A <see cref="RuntimeSemanticsEvaluationResult"/> object encapsulating the result of the successful operation, or the error metadata otherwise.</returns>
-    RuntimeSemanticsEvaluationResult StdConversions__CByte(VBVariantValue expression);
+    RuntimeSemanticsEvaluationResult StdConversions__CByte(VBRuntimeVariantValue expression);
 
     /// <summary>
     /// <strong>MS-VBAL 6.1.2.3.1.3 CCur</strong>
@@ -41,7 +42,7 @@ public interface IStdConversionModule
     /// </remarks>
     /// <param name="expression">Any <em>data value</em>.</param>
     /// <returns>A <see cref="RuntimeSemanticsEvaluationResult"/> object encapsulating the result of the successful operation, or the error metadata otherwise.</returns>
-    RuntimeSemanticsEvaluationResult StdConversions__CCur(VBVariantValue expression);
+    RuntimeSemanticsEvaluationResult StdConversions__CCur(VBRuntimeVariantValue expression);
 
     /// <summary>
     /// <strong>MS-VBAL 6.1.2.3.1.4 CDate</strong>
@@ -51,7 +52,7 @@ public interface IStdConversionModule
     /// </remarks>
     /// <param name="expression">Any <em>data value</em>.</param>
     /// <returns>A <see cref="RuntimeSemanticsEvaluationResult"/> object encapsulating the result of the successful operation, or the error metadata otherwise.</returns>
-    RuntimeSemanticsEvaluationResult StdConversions__CDate(VBVariantValue expression);
+    RuntimeSemanticsEvaluationResult StdConversions__CDate(VBRuntimeVariantValue expression);
     /// <summary>
     /// <strong>MS-VBAL 6.1.2.3.1.4 CVDate</strong>
     /// </summary>
@@ -60,7 +61,7 @@ public interface IStdConversionModule
     /// </remarks>
     /// <param name="expression">Any <em>data value</em>.</param>
     /// <returns>A <see cref="RuntimeSemanticsEvaluationResult"/> object encapsulating the result of the successful operation, or the error metadata otherwise.</returns>
-    RuntimeSemanticsEvaluationResult StdConversions__CVDate(VBVariantValue expression);
+    RuntimeSemanticsEvaluationResult StdConversions__CVDate(VBRuntimeVariantValue expression);
 
     /// <summary>
     /// <strong>MS-VBAL 6.1.2.3.1.5 CDbl</strong>
@@ -70,7 +71,7 @@ public interface IStdConversionModule
     /// </remarks>
     /// <param name="expression">Any <em>data value</em>.</param>
     /// <returns>A <see cref="RuntimeSemanticsEvaluationResult"/> object encapsulating the result of the successful operation, or the error metadata otherwise.</returns>
-    RuntimeSemanticsEvaluationResult StdConversions__CDbl(VBVariantValue expression);
+    RuntimeSemanticsEvaluationResult StdConversions__CDbl(VBRuntimeVariantValue expression);
 
     /// <summary>
     /// <strong>MS-VBAL 6.1.2.3.1.6 CDec</strong>
@@ -80,7 +81,7 @@ public interface IStdConversionModule
     /// </remarks>
     /// <param name="expression">Any <em>data value</em>.</param>
     /// <returns>A <see cref="RuntimeSemanticsEvaluationResult"/> object encapsulating the result of the successful operation, or the error metadata otherwise.</returns>
-    RuntimeSemanticsEvaluationResult StdConversions__CDec(VBVariantValue expression);
+    RuntimeSemanticsEvaluationResult StdConversions__CDec(VBRuntimeVariantValue expression);
 
 
     /// <summary>
@@ -91,7 +92,7 @@ public interface IStdConversionModule
     /// </remarks>
     /// <param name="expression">Any <em>data value</em>.</param>
     /// <returns>A <see cref="RuntimeSemanticsEvaluationResult"/> object encapsulating the result of the successful operation, or the error metadata otherwise.</returns>
-    RuntimeSemanticsEvaluationResult StdConversions__CInt(VBVariantValue expression);
+    RuntimeSemanticsEvaluationResult StdConversions__CInt(VBRuntimeVariantValue expression);
 
     /// <summary>
     /// <strong>MS-VBAL 6.1.2.3.1.8 CLng</strong>
@@ -101,7 +102,7 @@ public interface IStdConversionModule
     /// </remarks>
     /// <param name="expression">Any <em>data value</em>.</param>
     /// <returns>A <see cref="RuntimeSemanticsEvaluationResult"/> object encapsulating the result of the successful operation, or the error metadata otherwise.</returns>
-    RuntimeSemanticsEvaluationResult StdConversions__CLng(VBVariantValue expression);
+    RuntimeSemanticsEvaluationResult StdConversions__CLng(VBRuntimeVariantValue expression);
 
     /// <summary>
     /// <strong>MS-VBAL 6.1.2.3.1.9 CLngLng</strong>
@@ -112,7 +113,7 @@ public interface IStdConversionModule
     /// </remarks>
     /// <param name="expression">Any <em>data value</em>.</param>
     /// <returns>A <see cref="RuntimeSemanticsEvaluationResult"/> object encapsulating the result of the successful operation, or the error metadata otherwise.</returns>
-    RuntimeSemanticsEvaluationResult StdConversions__CLngLng(VBVariantValue expression);
+    RuntimeSemanticsEvaluationResult StdConversions__CLngLng(VBRuntimeVariantValue expression);
 
     /// <summary>
     /// <strong>MS-VBAL 6.1.2.3.1.10 CLngPtr</strong>
@@ -123,7 +124,7 @@ public interface IStdConversionModule
     /// </remarks>
     /// <param name="expression">Any <em>data value</em>.</param>
     /// <returns>A <see cref="RuntimeSemanticsEvaluationResult"/> object encapsulating the result of the successful operation, or the error metadata otherwise.</returns>
-    RuntimeSemanticsEvaluationResult StdConversions__CLngPtr(VBVariantValue expression);
+    RuntimeSemanticsEvaluationResult StdConversions__CLngPtr(VBRuntimeVariantValue expression);
 
     /// <summary>
     /// <strong>MS-VBAL 6.1.2.3.1.11 CSng</strong>
@@ -133,7 +134,7 @@ public interface IStdConversionModule
     /// </remarks>
     /// <param name="expression">Any <em>data value</em>.</param>
     /// <returns>A <see cref="RuntimeSemanticsEvaluationResult"/> object encapsulating the result of the successful operation, or the error metadata otherwise.</returns>
-    RuntimeSemanticsEvaluationResult StdConversions__CSng(VBVariantValue expression);
+    RuntimeSemanticsEvaluationResult StdConversions__CSng(VBRuntimeVariantValue expression);
 
     /// <summary>
     /// <strong>MS-VBAL 6.1.2.3.1.12 CStr</strong>
@@ -143,7 +144,7 @@ public interface IStdConversionModule
     /// </remarks>
     /// <param name="expression">Any <em>data value</em>.</param>
     /// <returns>A <see cref="RuntimeSemanticsEvaluationResult"/> object encapsulating the result of the successful operation, or the error metadata otherwise.</returns>
-    RuntimeSemanticsEvaluationResult StdConversions__CStr(VBVariantValue expression);
+    RuntimeSemanticsEvaluationResult StdConversions__CStr(VBRuntimeVariantValue expression);
 
     /// <summary>
     /// <strong>MS-VBAL 6.1.2.3.1.13 CVar</strong>
@@ -153,7 +154,7 @@ public interface IStdConversionModule
     /// </remarks>
     /// <param name="expression">Any <em>data value</em>.</param>
     /// <returns>A <see cref="RuntimeSemanticsEvaluationResult"/> object encapsulating the result of the successful operation, or the error metadata otherwise.</returns>
-    RuntimeSemanticsEvaluationResult StdConversions__CVar(VBVariantValue expression);
+    RuntimeSemanticsEvaluationResult StdConversions__CVar(VBRuntimeVariantValue expression);
 
     /// <summary>
     /// <strong>MS-VBAL 6.1.2.3.1.14 CVErr</strong>
@@ -163,7 +164,7 @@ public interface IStdConversionModule
     /// </remarks>
     /// <param name="expression">Any <em>data value</em>.</param>
     /// <returns>A <see cref="RuntimeSemanticsEvaluationResult"/> object encapsulating the result of the successful operation, or the error metadata otherwise.</returns>
-    RuntimeSemanticsEvaluationResult StdConversions__CVErr(VBVariantValue expression);
+    RuntimeSemanticsEvaluationResult StdConversions__CVErr(VBRuntimeVariantValue expression);
 
     /// <summary>
     /// <strong>MS-VBAL 6.1.2.3.1.15 Error</strong>
@@ -173,7 +174,7 @@ public interface IStdConversionModule
     /// </remarks>
     /// <param name="expression">Any <em>data value</em>.</param>
     /// <returns>A <see cref="RuntimeSemanticsEvaluationResult"/> object encapsulating the result of the successful operation, or the error metadata otherwise.</returns>
-    RuntimeSemanticsEvaluationResult StdConversions__Error(VBVariantValue errorNumber);
+    RuntimeSemanticsEvaluationResult StdConversions__Error(VBRuntimeVariantValue errorNumber);
     /// <summary>
     /// <strong>MS-VBAL 6.1.2.3.1.15 Error$</strong>
     /// </summary>
@@ -182,7 +183,7 @@ public interface IStdConversionModule
     /// </remarks>
     /// <param name="expression">Any <em>data value</em>.</param>
     /// <returns>A <see cref="RuntimeSemanticsEvaluationResult"/> object encapsulating the result of the successful operation, or the error metadata otherwise.</returns>
-    RuntimeSemanticsEvaluationResult StdConversions__ErrorStr(VBVariantValue errorNumber);
+    RuntimeSemanticsEvaluationResult StdConversions__ErrorStr(VBRuntimeVariantValue errorNumber);
 
     /// <summary>
     /// <strong>MS-VBAL 6.1.2.3.1.16 Fix</strong>
@@ -192,7 +193,7 @@ public interface IStdConversionModule
     /// </remarks>
     /// <param name="expression">Any <em>data value</em>.</param>
     /// <returns>A <see cref="RuntimeSemanticsEvaluationResult"/> object encapsulating the result of the successful operation, or the error metadata otherwise.</returns>
-    RuntimeSemanticsEvaluationResult StdConversions__Fix(VBVariantValue number);
+    RuntimeSemanticsEvaluationResult StdConversions__Fix(VBRuntimeVariantValue number);
 
     /// <summary>
     /// <strong>MS-VBAL 6.1.2.3.1.17 Hex</strong>
@@ -202,7 +203,7 @@ public interface IStdConversionModule
     /// </remarks>
     /// <param name="expression">Any <em>data value</em>.</param>
     /// <returns>A <see cref="RuntimeSemanticsEvaluationResult"/> object encapsulating the result of the successful operation, or the error metadata otherwise.</returns>
-    RuntimeSemanticsEvaluationResult StdConversions__Hex(VBVariantValue number);
+    RuntimeSemanticsEvaluationResult StdConversions__Hex(VBRuntimeVariantValue number);
     /// <summary>
     /// <strong>MS-VBAL 6.1.2.3.1.17 Hex$</strong>
     /// </summary>
@@ -211,7 +212,7 @@ public interface IStdConversionModule
     /// </remarks>
     /// <param name="expression">Any <em>data value</em>.</param>
     /// <returns>A <see cref="RuntimeSemanticsEvaluationResult"/> object encapsulating the result of the successful operation, or the error metadata otherwise.</returns>
-    RuntimeSemanticsEvaluationResult StdConversions__HexStr(VBVariantValue number);
+    RuntimeSemanticsEvaluationResult StdConversions__HexStr(VBRuntimeVariantValue number);
 
     /// <summary>
     /// <strong>MS-VBAL 6.1.2.3.1.18 Int</strong>
@@ -221,7 +222,7 @@ public interface IStdConversionModule
     /// </remarks>
     /// <param name="expression">Any <em>data value</em>.</param>
     /// <returns>A <see cref="RuntimeSemanticsEvaluationResult"/> object encapsulating the result of the successful operation, or the error metadata otherwise.</returns>
-    RuntimeSemanticsEvaluationResult StdConversions__Int(VBVariantValue number);
+    RuntimeSemanticsEvaluationResult StdConversions__Int(VBRuntimeVariantValue number);
 
     /// <summary>
     /// <strong>MS-VBAL 6.1.2.3.1.19 Oct</strong>
@@ -231,7 +232,7 @@ public interface IStdConversionModule
     /// </remarks>
     /// <param name="expression">Any <em>data value</em>.</param>
     /// <returns>A <see cref="RuntimeSemanticsEvaluationResult"/> object encapsulating the result of the successful operation, or the error metadata otherwise.</returns>
-    RuntimeSemanticsEvaluationResult StdConversions__Oct(VBVariantValue number);
+    RuntimeSemanticsEvaluationResult StdConversions__Oct(VBRuntimeVariantValue number);
     /// <summary>
     /// <strong>MS-VBAL 6.1.2.3.1.19 Oct$</strong>
     /// </summary>
@@ -240,7 +241,7 @@ public interface IStdConversionModule
     /// </remarks>
     /// <param name="expression">Any <em>data value</em>.</param>
     /// <returns>A <see cref="RuntimeSemanticsEvaluationResult"/> object encapsulating the result of the successful operation, or the error metadata otherwise.</returns>
-    RuntimeSemanticsEvaluationResult StdConversions__OctStr(VBVariantValue number);
+    RuntimeSemanticsEvaluationResult StdConversions__OctStr(VBRuntimeVariantValue number);
 
     /// <summary>
     /// <strong>MS-VBAL 6.1.2.3.1.20 Str</strong>
@@ -250,7 +251,7 @@ public interface IStdConversionModule
     /// </remarks>
     /// <param name="expression">Any <em>data value</em>.</param>
     /// <returns>A <see cref="RuntimeSemanticsEvaluationResult"/> object encapsulating the result of the successful operation, or the error metadata otherwise.</returns>
-    RuntimeSemanticsEvaluationResult StdConversions__Str(VBVariantValue number);
+    RuntimeSemanticsEvaluationResult StdConversions__Str(VBRuntimeVariantValue number);
     /// <summary>
     /// <strong>MS-VBAL 6.1.2.3.1.20 Str$</strong>
     /// </summary>
@@ -259,7 +260,7 @@ public interface IStdConversionModule
     /// </remarks>
     /// <param name="expression">Any <em>data value</em>.</param>
     /// <returns>A <see cref="RuntimeSemanticsEvaluationResult"/> object encapsulating the result of the successful operation, or the error metadata otherwise.</returns>
-    RuntimeSemanticsEvaluationResult StdConversions__StrStr(VBVariantValue number);
+    RuntimeSemanticsEvaluationResult StdConversions__StrStr(VBRuntimeVariantValue number);
 
     /// <summary>
     /// <strong>MS-VBAL 6.1.2.3.1.21 Val</strong>
@@ -269,5 +270,5 @@ public interface IStdConversionModule
     /// </remarks>
     /// <param name="expression">Any <em>data value</em>.</param>
     /// <returns>A <see cref="RuntimeSemanticsEvaluationResult"/> object encapsulating the result of the successful operation, or the error metadata otherwise.</returns>
-    RuntimeSemanticsEvaluationResult StdConversions__Val(VBStringValue value);
+    RuntimeSemanticsEvaluationResult StdConversions__Val(string value);
 }

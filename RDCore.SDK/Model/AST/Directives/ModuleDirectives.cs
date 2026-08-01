@@ -15,8 +15,8 @@ namespace RDCore.SDK.Model.AST.Directives;
 /// <param name="Name">The name of the attribute.</param>
 /// <param name="ValueExpression">An expression node that statically evaluates to the value of the attribute.</param>
 /// <param name="Binding">An optional qualifier used for binding the attribute to the member it belongs to.</param>
-public record class AttributeDirectiveNode(Uri SemanticId, SourceLocation Location, string Name, BoundNode ValueExpression, string? Binding = null)
-    : BoundDirective(SemanticId, Location, [ValueExpression]);
+public record class AttributeDirectiveNode(Uri SemanticId, SourceLocation Location, string Name, SyntaxNode ValueExpression, string? Binding = null)
+    : DirectiveNode(SemanticId, Location, [ValueExpression]);
 
 /// <summary>
 /// A <c>BoundNode</c> representing an <c>Option</c> module directive.
@@ -25,7 +25,7 @@ public record class AttributeDirectiveNode(Uri SemanticId, SourceLocation Locati
 /// <param name="Location">The <c>Location</c> of the directive.</param>
 /// <param name="ModuleOption">The <c>ModuleOptions</c> value being configured.</param>
 public record class ModuleOptionDirectiveNode(Uri SemanticId, SourceLocation Location, ModuleOptions ModuleOption)
-    : BoundDirective(SemanticId, Location, []);
+    : DirectiveNode(SemanticId, Location, []);
 
 /// <summary>
 /// A <c>BoundNode</c> representing a <c>Def&lt;Type&gt;</c> module directive.
@@ -35,7 +35,7 @@ public record class ModuleOptionDirectiveNode(Uri SemanticId, SourceLocation Loc
 /// <param name="Token">The <c>DefType</c> token mapping to a specific <c>VBType</c> (per the semantics defined in MS-VBAL 5.2.2 Implicit Definition Directives).</param>
 /// <param name="Mappings">The prefixing scheme defined by this directive.</param>
 public record class TypeDefDirectiveNode(Uri SemanticId, SourceLocation Location, string Token, ImmutableArray<DefTypePrefixMapping> Mappings) 
-    : BoundDirective(SemanticId, Location, []) 
+    : DirectiveNode(SemanticId, Location, []) 
 {
     public VBType GetVBType(bool is64bit) => Token switch
     {
@@ -62,11 +62,11 @@ public record class TypeDefDirectiveNode(Uri SemanticId, SourceLocation Location
 /// </summary>
 /// <param name="SemanticId">A semantic <c>Uri</c> uniquely identifying this specific node.</param>
 /// <param name="Location">The <c>Location</c> of the directive.</param>
-public record class ImplementsDirectiveNode(Uri SemanticId, SourceLocation Location, BoundExpression? NameExpression = null)
-    : BoundDirective(SemanticId, Location, NameExpression is null ? [] : [NameExpression])
+public record class ImplementsDirectiveNode(Uri SemanticId, SourceLocation Location, ExpressionNode? NameExpression = null)
+    : DirectiveNode(SemanticId, Location, NameExpression is null ? [] : [NameExpression])
 {
     /// <summary>
     /// Gets an expression resolving the identifier name of the implemented interface.
     /// </summary>
-    public BoundExpression NameExpression => Children.OfType<BoundExpression>().Single();
+    public ExpressionNode NameExpression => Children.OfType<ExpressionNode>().Single();
 }

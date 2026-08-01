@@ -3,4 +3,4 @@ using System.Collections.Immutable;
 
 namespace RDCore.SDK.Model.AST.Statements;
 
-public record class StatementBlock(ImmutableArray<BoundStatement> Statements);
+public record class StatementBlock(ImmutableArray<StatementNode> Statements);
