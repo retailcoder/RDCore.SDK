@@ -6,7 +6,7 @@ namespace RDCore.SDK.Model.AST.Statements;
 /// <summary>
 /// Represents a statement that disables error handling.
 /// </summary>
-/// <param name="SemanticId">A semantic <c>Uri</c> uniquely identifying this specific node.</param>
+/// <param name="Identity">A unique identifier for this specific syntax node.</param>
 /// <param name="SourceLocation">The document location (<c>Uri</c>+<c>Range</c>) of the bound expression.</param>
-public record class OnErrorResumeStatement(Uri SemanticId, SourceLocation SourceLocation)
-    : StatementNode(SemanticId, SourceLocation, $"{Tokens.On}{Tokens.Error}{Tokens.Resume}{Tokens.Next}", []);
+public record class OnErrorResumeStatement(Guid Identity, SourceLocation SourceLocation)
+    : StatementNode(Identity, SourceLocation, $"{Tokens.On}{Tokens.Error}{Tokens.Resume}{Tokens.Next}", []);

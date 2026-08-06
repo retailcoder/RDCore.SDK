@@ -7,21 +7,21 @@ namespace RDCore.SDK.Model.AST.Declarations;
 /// <summary>
 /// An AST node representing a member of a module.
 /// </summary>
-/// <param name="SemanticId">The semantic ID of this AST node.</param>
+/// <param name="Identity">A unique identifier for this specific syntax node.</param>
 /// <param name="SourceLocation">The source location of this module; the <c>SourceRange</c> is invalid.</param>
 /// <param name="Children">An immutable array containing all AST nodes of this module.</param>
 /// <param name="Name">The declared identifier name of the member.</param>
 /// <param name="MemberKind">Specifies the kind of member.</param>
 /// <param name="AccessModifier">An access modifier, if one was supplied.</param>
-public record class MemberDeclarationNode(Uri SemanticId, SourceLocation SourceLocation, ImmutableArray<SyntaxNode> Children, string Name, MemberKind MemberKind, AccessModifier AccessModifier = AccessModifier.Implicit)
-    : SyntaxNode(SemanticId, SourceLocation, Children)
+public record class MemberDeclarationNode(Guid Identity, SourceLocation SourceLocation, ImmutableArray<SyntaxNode> Children, string Name, MemberKind MemberKind, AccessModifier AccessModifier = AccessModifier.Implicit)
+    : SyntaxNode(Identity, SourceLocation, Children)
 {
     ExpressionNode? DeclaredTypeExpression => Children.OfType<ExpressionNode>().SingleOrDefault();
 };
 /// <summary>
 /// 
 /// </summary>
-/// <param name="SemanticId">The semantic ID of this AST node.</param>
+/// <param name="Identity">A unique identifier for this specific syntax node.</param>
 /// <param name="SourceLocation">The source location of this module; the <c>SourceRange</c> is invalid.</param>
 /// <param name="Children">An immutable array containing all AST nodes of this module.</param>
 /// <param name="Name">The declared identifier name of the member.</param>
@@ -30,5 +30,5 @@ public record class MemberDeclarationNode(Uri SemanticId, SourceLocation SourceL
 /// <param name="MemberKind">Specifies the kind of member.</param>
 /// <param name="Alias">The declared alias of the external member, if provided.</param>
 /// <param name="AccessModifier">An access modifier, if one was supplied.</param>
-public record class ExternalMemberDeclarationNode(Uri SemanticId, SourceLocation SourceLocation, ImmutableArray<SyntaxNode> Children, string Name = "", string Library = "", bool IsPtrSafe = false, MemberKind MemberKind = MemberKind.ExternalProcedure, string? Alias = default, AccessModifier AccessModifier = AccessModifier.Implicit)
-    : MemberDeclarationNode(SemanticId, SourceLocation, Children, Name, MemberKind, AccessModifier);
+public record class ExternalMemberDeclarationNode(Guid Identity, SourceLocation SourceLocation, ImmutableArray<SyntaxNode> Children, string Name = "", string Library = "", bool IsPtrSafe = false, MemberKind MemberKind = MemberKind.ExternalProcedure, string? Alias = default, AccessModifier AccessModifier = AccessModifier.Implicit)
+    : MemberDeclarationNode(Identity, SourceLocation, Children, Name, MemberKind, AccessModifier);

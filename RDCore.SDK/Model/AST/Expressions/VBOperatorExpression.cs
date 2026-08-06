@@ -4,7 +4,6 @@ using RDCore.SDK.Model.Symbols.Abstract;
 using RDCore.SDK.Model.Values.Abstract;
 using RDCore.SDK.Semantics.Context.Abstract;
 using System.Collections.Immutable;
-using OmniSharp.Extensions.LanguageServer.Protocol.Models;
 
 namespace RDCore.SDK.Model.AST.Expressions;
 
@@ -22,15 +21,15 @@ public abstract record class VBOperatorExpression<TContext, TFlags> : Expression
 where TContext : SemanticContext<TFlags>, new()
 where TFlags : struct, Enum
 {
-    protected VBOperatorExpression(Uri SemanticId,
+    protected VBOperatorExpression(Guid Identity,
     OperatorSymbol<TContext, TFlags> Symbol,
     OperatorExpressionValueSymbol ResultSymbol,
     SourceLocation Location,
     ImmutableArray<ExpressionNode> Operands)
-        : base(Symbol.Name, SemanticId, Location, Operands)
+        : base(Symbol.Name, Identity, Location, Operands)
     { }
 
-    protected VBOperatorExpression(string token, Uri semanticId, SourceLocation location, 
+    protected VBOperatorExpression(string token, Guid identity, SourceLocation location, 
         ImmutableArray<ExpressionNode> operands)
-        : base(token, semanticId, location, operands) {  }
+        : base(token, identity, location, operands) {  }
 }

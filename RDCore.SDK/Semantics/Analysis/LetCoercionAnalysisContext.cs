@@ -11,20 +11,20 @@ public readonly record struct LetCoercionAnalysisContext
     /// <summary>
     /// Encapsulates the context of an <c>Analyze</c> operation as the nullable results of successive operations.
     /// </summary>
-    /// <param name="nodeUri">The <c>SemanticId</c> of the associated expression node.</param>
+    /// <param name="nodeId">The <c>Identity</c> of the associated expression node.</param>
     /// <param name="result">The result of the let-coercion operation.</param>
     /// <param name="flags">The semantic flags associated with this context.</param>
-    public LetCoercionAnalysisContext(Uri nodeUri, LetCoercionResult result, ConversionSemanticFlags flags)
+    public LetCoercionAnalysisContext(Guid nodeId, LetCoercionResult result, ConversionSemanticFlags flags)
     {
-        NodeUri = nodeUri;
+        NodeId = nodeId;
         Result = result;
         Flags = flags;
     }
 
     /// <summary>
-    /// The <c>SemanticId</c> of the associated expression node.
+    /// The <c>Identity</c> of the associated expression node.
     /// </summary>
-    public Uri NodeUri { get; }
+    public Guid NodeId { get; }
 
     /// <summary>
     /// The semantic flags associated with this context.
@@ -39,17 +39,17 @@ public readonly record struct LetCoercionAnalysisContext
     /// <summary>
     /// Creates a new <em>analysis context</em> for a no-op coercion operation that does not involve a coercion stack frame.
     /// </summary>
-    /// <param name="nodeUri">The <c>SemanticId</c> of the node being evaluated.</param>
+    /// <param name="nodeId">The <c>Identity</c> of the node being evaluated.</param>
     /// <param name="nopResult">The result of the no-op operation.</param>
-    public LetCoercionAnalysisContext(Uri nodeUri, LetCoercionResult nopResult)
-        : this(nodeUri, nopResult, 0) { }
+    public LetCoercionAnalysisContext(Guid nodeId, LetCoercionResult nopResult)
+        : this(nodeId, nopResult, 0) { }
 
     /// <summary>
     /// Returns a new <c>LetCoercionAnalysisContext</c> containing the specified evaluation frames and their respective result.
     /// </summary>
     /// <param name="context">The sub-coercion analysis context to merge into this one.</param>
     public LetCoercionAnalysisContext Merge(LetCoercionAnalysisContext context)
-        => new(context.NodeUri, 
+        => new(context.NodeId, 
             context.Result with
             {
                 // NOTE: .Merge(context) is called within an aggregator stack-traversal enumeration;

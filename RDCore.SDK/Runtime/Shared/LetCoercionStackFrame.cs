@@ -13,17 +13,17 @@ namespace RDCore.SDK.Runtime.Shared;
 /// <remarks>
 /// 👉 This mechanism allows detecting <em>recursive let-coercion</em> and avoiding uncontrolled re-entry.
 /// </remarks>
-/// <param name="NodeUri">The <c>Uri</c> of the <em>bound node</em> being evaluated.</param>
+/// <param name="NodeId">The <c>Identity</c> of the <em>syntax node</em> being evaluated.</param>
 /// <param name="OperandIndex">Encodes the semantic index of the operand being evaluated.</param>
 /// <param name="SourceValue">The <em>source value</em> being let-coerced in this frame.</param>
 /// <param name="DestinationTypeDesc">Describes the <em>destination type</em> of the let-coercion operation. The described data type must be unwrapped from the descriptor.</param>
 public readonly record struct LetCoercionStackFrame(
-    Uri NodeUri,
+    Guid NodeId,
     InputIndex OperandIndex,
     VBTypedValue SourceValue,
     VBTypeDescValue DestinationTypeDesc) : IStackFrame<InputIndex>
 {
-    Uri IStackFrame.NodeUri => NodeUri;
+    Guid IStackFrame.NodeId => NodeId;
     ImmutableArray<VBTypedValue> IStackFrame.Inputs => [SourceValue, DestinationTypeDesc];
 
     VBTypedValue IStackFrame<InputIndex>.this[InputIndex value] => 

@@ -26,7 +26,7 @@ public record class ExpressionInfoBuilder: IExpressionInfoFormatter
     protected virtual void FormatSemanticId(StringBuilder builder, ExpressionNode expression) 
         => builder
             .WithIconIf(_options.ExpressionSemanticId && _options.ShowSemanticIdIcon, _options.SemanticIdIcon)
-            .WithConditional(_options.ExpressionSemanticId, expression.SemanticId.ToString());
+            .WithConditional(_options.ExpressionSemanticId, expression.Identity.ToString());
 
     /// <summary>
     /// Formats a <c>Uri</c>.
