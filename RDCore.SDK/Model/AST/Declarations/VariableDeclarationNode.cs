@@ -13,5 +13,5 @@ namespace RDCore.SDK.Model.AST.Declarations;
 /// <param name="AccessModifier">The access modifier, if one was supplied.</param>
 /// <param name="TypeHint">The <em>type hint</em> token, if one was supplied.</param>
 /// <param name="IsWithEvents"><c>true</c> if the variable is a <c>WithEvents</c> field.</param>
-public record class VariableDeclarationNode(Guid Identity, SourceLocation SourceLocation, string Name, ImmutableArray<SyntaxNode> Children, AccessModifier AccessModifier = AccessModifier.Implicit, string? TypeHint = default, bool IsWithEvents = false) 
+public record class VariableDeclarationNode(SyntaxNodeId Identity, SourceLocation SourceLocation, string Name, ImmutableArray<SyntaxNode> Children, AccessModifier AccessModifier = AccessModifier.Implicit, string? TypeHint = default, bool IsWithEvents = false) 
     : SyntaxNode(Identity, SourceLocation, Children);

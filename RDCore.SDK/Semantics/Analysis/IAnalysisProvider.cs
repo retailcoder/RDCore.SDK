@@ -24,7 +24,7 @@ public interface IAnalysisProvider
     /// <param name="sourceValue">A <em>typed value</em> being let-coerced to the <em>destination declared type</em>.</param>
     /// <param name="resultValue">The <em>typed value</em> resulting from the let-coercion operation. <c>null</c> if the operation is a <em>type mismatch</em>, in which case a runtime error diagnostic has already been attached to the semantic context.</param>
     /// <returns>A <c>Task</c> that completes when all LSP notifications have been sent.</returns>
-    void AnalyzeLetCoercionSemantics<TContext, TFlags>(SemanticContextBuilder<ConversionOperationSemanticContext, ConversionSemanticFlags> context, VBOperatorExpression<TContext, TFlags> expression, VBType destinationDeclaredType, VBTypedValue sourceValue, VBTypedValue? resultValue)
+    void AnalyzeLetCoercionSemantics<TContext, TFlags>(SemanticContextBuilder<ConversionOperationSemanticContext, ConversionSemanticFlags> context, VBOperatorExpression expression, VBType destinationDeclaredType, VBTypedValue sourceValue, VBTypedValue? resultValue)
         where TContext : SemanticContext<TFlags>, new ()
         where TFlags : struct, Enum;
 
@@ -38,7 +38,7 @@ public interface IAnalysisProvider
     /// <param name="sourceValue">A <em>typed value</em> being let-coerced to the <em>destination declared type</em>.</param>
     /// <param name="resultValue">The <em>typed value</em> resulting from the let-coercion operation. <c>null</c> if the operation is a <em>type mismatch</em>, in which case a runtime error diagnostic has already been attached to the semantic context.</param>
     /// <returns>A <c>Task</c> that completes when all LSP notifications have been sent.</returns>
-    void AnalyzeOperatorSemantics<TContext, TFlags>(VBOperatorExpression<TContext, TFlags> expression, VBType destinationDeclaredType, VBTypedValue sourceValue, VBTypedValue? resultValue)
+    void AnalyzeOperatorSemantics<TContext, TFlags>(VBOperatorExpression expression, VBType destinationDeclaredType, VBTypedValue sourceValue, VBTypedValue? resultValue)
         where TContext : SemanticContext<TFlags>, new()
         where TFlags : struct, Enum;
 }

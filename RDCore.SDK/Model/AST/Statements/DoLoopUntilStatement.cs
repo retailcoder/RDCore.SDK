@@ -13,6 +13,6 @@ namespace RDCore.SDK.Model.AST.Statements;
 /// <remarks>
 /// This loop construct exits when the <c>ConditionExpression</c> evaluates to <c>True</c>.
 /// </remarks>
-public record DoLoopUntilStatement(Guid Identity, SourceLocation SourceLocation, ExpressionNode ConditionExpression, StatementBlock Body)
-    : StatementNode(Identity, SourceLocation, $"{Tokens.Loop}-{Tokens.Until}", [ConditionExpression]);
+public record DoLoopUntilStatement(SyntaxNodeId Identity, SourceLocation SourceLocation, ExpressionNode ConditionExpression, StatementBlock Body)
+    : StatementNode(Identity, SourceLocation, [ConditionExpression]);
 

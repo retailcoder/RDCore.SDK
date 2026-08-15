@@ -3,6 +3,7 @@ using RDCore.SDK.Model.Source;
 using RDCore.SDK.Model.Types;
 using RDCore.SDK.Model.Types.Abstract;
 using System.Collections.Immutable;
+using System.Text.Json.Serialization;
 
 namespace RDCore.SDK.Model.AST.Directives;
 
@@ -14,7 +15,8 @@ namespace RDCore.SDK.Model.AST.Directives;
 /// <param name="Name">The name of the attribute.</param>
 /// <param name="ValueExpression">An expression node that statically evaluates to the value of the attribute.</param>
 /// <param name="Binding">An optional qualifier used for binding the attribute to the member it belongs to.</param>
-public record class AttributeDirectiveNode(Guid Identity, SourceLocation Location, string Name, SyntaxNode ValueExpression, string? Binding = null)
+[JsonPolymorphic]
+public record class AttributeDirectiveNode(SyntaxNodeId Identity, SourceLocation Location, string Name, SyntaxNode ValueExpression, string? Binding = null)
     : DirectiveNode(Identity, Location, [ValueExpression]);
 
 /// <summary>
@@ -23,7 +25,8 @@ public record class AttributeDirectiveNode(Guid Identity, SourceLocation Locatio
 /// <param name="Identity">A unique identifier for this specific syntax node.</param>
 /// <param name="Location">The <c>Location</c> of the directive.</param>
 /// <param name="ModuleOption">The <c>ModuleOptions</c> value being configured.</param>
-public record class ModuleOptionDirectiveNode(Guid Identity, SourceLocation Location, ModuleOptions ModuleOption)
+[JsonPolymorphic]
+public record class ModuleOptionDirectiveNode(SyntaxNodeId Identity, SourceLocation Location, ModuleOptions ModuleOption)
     : DirectiveNode(Identity, Location, []);
 
 /// <summary>
@@ -33,7 +36,8 @@ public record class ModuleOptionDirectiveNode(Guid Identity, SourceLocation Loca
 /// <param name="Location">The <c>Location</c> of the directive.</param>
 /// <param name="Token">The <c>DefType</c> token mapping to a specific <c>VBType</c> (per the semantics defined in MS-VBAL 5.2.2 Implicit Definition Directives).</param>
 /// <param name="Mappings">The prefixing scheme defined by this directive.</param>
-public record class TypeDefDirectiveNode(Guid Identity, SourceLocation Location, string Token, ImmutableArray<DefTypePrefixMapping> Mappings) 
+[JsonPolymorphic]
+public record class TypeDefDirectiveNode(SyntaxNodeId Identity, SourceLocation Location, string Token, ImmutableArray<DefTypePrefixMapping> Mappings) 
     : DirectiveNode(Identity, Location, []) 
 {
     public VBType GetVBType(bool is64bit) => Token switch
@@ -61,7 +65,8 @@ public record class TypeDefDirectiveNode(Guid Identity, SourceLocation Location,
 /// </summary>
 /// <param name="Identity">A unique identifier for this specific syntax node.</param>
 /// <param name="Location">The <c>Location</c> of the directive.</param>
-public record class ImplementsDirectiveNode(Guid Identity, SourceLocation Location, ExpressionNode? NameExpression = null)
+[JsonPolymorphic]
+public record class ImplementsDirectiveNode(SyntaxNodeId Identity, SourceLocation Location, ExpressionNode? NameExpression = null)
     : DirectiveNode(Identity, Location, NameExpression is null ? [] : [NameExpression])
 {
     /// <summary>

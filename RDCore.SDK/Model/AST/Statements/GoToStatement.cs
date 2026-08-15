@@ -9,5 +9,5 @@ namespace RDCore.SDK.Model.AST.Statements;
 /// <param name="Identity">A unique identifier for this specific syntax node.</param>
 /// <param name="SourceLocation">The document location (<c>Uri</c>+<c>Range</c>) of the bound expression.</param>
 /// <param name="LabelExpression">An expression that resolves to the local label this statement jumps to.</param>
-public record class GoToStatement(Guid Identity, SourceLocation SourceLocation, ExpressionNode LabelExpression)
-    : StatementNode(Identity, SourceLocation, $"{Tokens.GoTo}", [LabelExpression]);
+public record class GoToStatement(SyntaxNodeId Identity, SourceLocation SourceLocation, ExpressionNode LabelExpression)
+    : StatementNode(Identity, SourceLocation, [LabelExpression]);

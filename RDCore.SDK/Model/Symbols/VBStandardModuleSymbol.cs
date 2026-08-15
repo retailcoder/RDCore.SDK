@@ -1,7 +1,7 @@
 ﻿using RDCore.SDK.Model.Symbols.Abstract;
 using RDCore.SDK.Model.Source;
 
-namespace RDCore.SDK.Model.Symbols.Unbound;
+namespace RDCore.SDK.Model.Symbols;
 
 /// <summary>
 /// An unbound symbol representing a <em>standard module</em>.

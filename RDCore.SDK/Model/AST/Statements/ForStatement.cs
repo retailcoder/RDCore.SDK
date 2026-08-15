@@ -13,6 +13,6 @@ namespace RDCore.SDK.Model.AST.Statements;
 /// <param name="EndExpression">A numeric expression that evaluates to the final value of the loop counter.</param>
 /// <param name="StepExpression">A numeric expression that evaluates to the iteration increment of the control variable.</param>
 /// <param name="Body">The executable statements in the body of the loop.</param>
-public record class ForStatement(Guid Identity, SourceLocation SourceLocation, ExpressionNode ControlExpression, ExpressionNode StartExpression, ExpressionNode EndExpression, ExpressionNode StepExpression, StatementBlock Body)
-    : StatementNode(Identity, SourceLocation, $"{Tokens.For}-{Tokens.Next}", [ControlExpression, StartExpression, EndExpression, StepExpression]);
+public record class ForStatement(SyntaxNodeId Identity, SourceLocation SourceLocation, ExpressionNode ControlExpression, ExpressionNode StartExpression, ExpressionNode EndExpression, ExpressionNode StepExpression, StatementBlock Body)
+    : StatementNode(Identity, SourceLocation, [ControlExpression, StartExpression, EndExpression, StepExpression]);
 

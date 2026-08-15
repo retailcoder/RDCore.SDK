@@ -1,6 +1,4 @@
-﻿using RDCore.SDK.Model.Symbols.Unbound;
-
-namespace RDCore.SDK.Model.Symbols.Abstract;
+﻿namespace RDCore.SDK.Model.Symbols.Abstract;
 
 public record class SymbolProperty<T>(string Name) { }
 

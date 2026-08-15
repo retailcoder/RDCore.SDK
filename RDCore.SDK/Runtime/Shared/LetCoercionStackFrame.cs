@@ -1,4 +1,5 @@
-﻿using RDCore.SDK.Model.Symbols.Abstract;
+﻿using RDCore.SDK.Model.AST.Abstract;
+using RDCore.SDK.Model.Symbols.Abstract;
 using RDCore.SDK.Model.Values.Abstract;
 using RDCore.SDK.Model.Values.Meta;
 using RDCore.SDK.Runtime.Abstract.Execution;
@@ -18,12 +19,12 @@ namespace RDCore.SDK.Runtime.Shared;
 /// <param name="SourceValue">The <em>source value</em> being let-coerced in this frame.</param>
 /// <param name="DestinationTypeDesc">Describes the <em>destination type</em> of the let-coercion operation. The described data type must be unwrapped from the descriptor.</param>
 public readonly record struct LetCoercionStackFrame(
-    Guid NodeId,
+    SyntaxNodeId NodeId,
     InputIndex OperandIndex,
     VBTypedValue SourceValue,
     VBTypeDescValue DestinationTypeDesc) : IStackFrame<InputIndex>
 {
-    Guid IStackFrame.NodeId => NodeId;
+    SyntaxNodeId IStackFrame.NodeId => NodeId;
     ImmutableArray<VBTypedValue> IStackFrame.Inputs => [SourceValue, DestinationTypeDesc];
 
     VBTypedValue IStackFrame<InputIndex>.this[InputIndex value] => 

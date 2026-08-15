@@ -10,5 +10,5 @@ namespace RDCore.SDK.Model.AST.Statements;
 /// <param name="SourceLocation">The document location (<c>Uri</c>+<c>Range</c>) of the bound expression.</param>
 /// <param name="Condition">A <em>Boolean expression</em> that determines whether execution branches into the <em>conditional statement</em> or not.</param>
 /// <param name="ConditionalBlock">A block of <em>executable nodes</em> that is executed if the <em>Condition</em> expression evaluates to <c>True</c>.</param>
-public record class ElseIfBlockStatement(Guid Identity, SourceLocation SourceLocation, ExpressionNode Condition, StatementBlock ConditionalBlock)
-    : StatementNode(Identity, SourceLocation, Tokens.ElseIf, [Condition]);
+public record class ElseIfBlockStatement(SyntaxNodeId Identity, SourceLocation SourceLocation, ExpressionNode Condition, StatementBlock ConditionalBlock)
+    : StatementNode(Identity, SourceLocation, [Condition]);

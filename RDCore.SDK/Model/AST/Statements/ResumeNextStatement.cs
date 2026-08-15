@@ -11,5 +11,5 @@ namespace RDCore.SDK.Model.AST.Statements;
 /// <remarks>
 /// This statement is only legal with an active error state.
 /// </remarks>
-public record class ResumeNextStatement(Guid Identity, SourceLocation SourceLocation)
-    : StatementNode(Identity, SourceLocation, $"{Tokens.Resume}-{Tokens.Next}", []);
+public record class ResumeNextStatement(SyntaxNodeId Identity, SourceLocation SourceLocation)
+    : StatementNode(Identity, SourceLocation, []);

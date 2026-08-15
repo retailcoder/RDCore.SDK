@@ -13,6 +13,6 @@ namespace RDCore.SDK.Model.AST.Statements;
 /// <remarks>
 /// This loop construct exits (and may not even enter) when the <c>ConditionExpression</c> evaluates to <c>False</c>.
 /// </remarks>
-public record WhileWendStatement(Guid Identity, SourceLocation SourceLocation, ExpressionNode ConditionExpression, StatementBlock Body)
-    : StatementNode(Identity, SourceLocation, $"{Tokens.While}-{Tokens.Wend}", [ConditionExpression]);
+public record WhileWendStatement(SyntaxNodeId Identity, SourceLocation SourceLocation, ExpressionNode ConditionExpression, StatementBlock Body)
+    : StatementNode(Identity, SourceLocation, [ConditionExpression]);
 

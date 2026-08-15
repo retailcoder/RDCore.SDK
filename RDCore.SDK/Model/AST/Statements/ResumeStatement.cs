@@ -12,5 +12,5 @@ namespace RDCore.SDK.Model.AST.Statements;
 /// <remarks>
 /// This statement is only legal with an active error state.
 /// </remarks>
-public record class ResumeStatement(Guid Identity, SourceLocation SourceLocation, ExpressionNode? LabelExpression)
-    : StatementNode(Identity, SourceLocation, $"{Tokens.Resume}{(LabelExpression is null ? string.Empty : $"-Label")}", LabelExpression is null ? [] : [LabelExpression]);
+public record class ResumeStatement(SyntaxNodeId Identity, SourceLocation SourceLocation, ExpressionNode? LabelExpression)
+    : StatementNode(Identity, SourceLocation, LabelExpression is null ? [] : [LabelExpression]);

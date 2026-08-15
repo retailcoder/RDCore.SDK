@@ -1,4 +1,5 @@
-﻿using RDCore.SDK.Runtime.Shared;
+﻿using RDCore.SDK.Model.AST.Abstract;
+using RDCore.SDK.Runtime.Shared;
 using RDCore.SDK.Semantics.Flags;
 
 namespace RDCore.SDK.Semantics.Analysis;
@@ -14,7 +15,7 @@ public readonly record struct LetCoercionAnalysisContext
     /// <param name="nodeId">The <c>Identity</c> of the associated expression node.</param>
     /// <param name="result">The result of the let-coercion operation.</param>
     /// <param name="flags">The semantic flags associated with this context.</param>
-    public LetCoercionAnalysisContext(Guid nodeId, LetCoercionResult result, ConversionSemanticFlags flags)
+    public LetCoercionAnalysisContext(SyntaxNodeId nodeId, LetCoercionResult result, ConversionSemanticFlags flags)
     {
         NodeId = nodeId;
         Result = result;
@@ -24,7 +25,7 @@ public readonly record struct LetCoercionAnalysisContext
     /// <summary>
     /// The <c>Identity</c> of the associated expression node.
     /// </summary>
-    public Guid NodeId { get; }
+    public SyntaxNodeId NodeId { get; }
 
     /// <summary>
     /// The semantic flags associated with this context.
@@ -41,7 +42,7 @@ public readonly record struct LetCoercionAnalysisContext
     /// </summary>
     /// <param name="nodeId">The <c>Identity</c> of the node being evaluated.</param>
     /// <param name="nopResult">The result of the no-op operation.</param>
-    public LetCoercionAnalysisContext(Guid nodeId, LetCoercionResult nopResult)
+    public LetCoercionAnalysisContext(SyntaxNodeId nodeId, LetCoercionResult nopResult)
         : this(nodeId, nopResult, 0) { }
 
     /// <summary>

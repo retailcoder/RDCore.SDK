@@ -1,4 +1,5 @@
-﻿using RDCore.SDK.Runtime.Shared;
+﻿using RDCore.SDK.Model.AST.Abstract;
+using RDCore.SDK.Runtime.Shared;
 
 namespace RDCore.SDK.Semantics.Analysis;
 
@@ -12,7 +13,7 @@ namespace RDCore.SDK.Semantics.Analysis;
 /// <param name="SemanticFlags">The semantic flags associated with the operation.</param>
 /// <typeparam name="TFlags">The specific type of semantic flags associated with the operation.</typeparam>
 public readonly record struct OperatorAnalysisContext<TFlags>(
-    Guid NodeId,
+    SyntaxNodeId NodeId,
     DetermineOperatorEffectiveTypeResult EffectiveTypeResult,
     LetCoercionAnalysisContext ValidationResults,
     RuntimeSemanticsEvaluationResult EvaluationResult,

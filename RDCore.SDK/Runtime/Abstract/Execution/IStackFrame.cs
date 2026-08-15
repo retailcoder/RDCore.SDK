@@ -15,7 +15,7 @@ public interface IStackFrame
     /// <summary>
     /// The <c>Identity</c> of the <see cref="SyntaxNode"/> being evaluated.
     /// </summary>
-    Guid NodeId { get; }
+    SyntaxNodeId NodeId { get; }
     /// <summary>
     /// Gets an immutable array containing the ordered <see cref="VBTypedValue"/> inputs of the operation.
     /// </summary>

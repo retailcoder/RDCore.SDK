@@ -29,7 +29,7 @@ public interface IRuntimeSemantics<TContext, TFlags>
     /// <param name="inputs">The inputs of the bound node.</param>
     RuntimeSemanticsEvaluationResult Evaluate(
         IVBExecutionContext runtime, 
-        SemanticContext<TFlags> context, 
+        TContext context, 
         SyntaxNode node, 
         params VBTypedValue[] inputs);
 

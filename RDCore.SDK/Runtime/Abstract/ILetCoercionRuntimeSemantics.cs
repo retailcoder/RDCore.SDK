@@ -21,18 +21,14 @@ public interface ILetCoercionRuntimeSemantics
     /// <param name="expression">The <c>VBOperatorExpression</c> that is being evaluated.</param>
     /// <param name="frame">The current stack frame of the coercion operation.</param>
     /// <returns>An object that encapsulates the result of the operation, including any run-time errors to be thrown.</returns>
-    LetCoercionResult EvaluateLetCoercion<TContext, TFlags>(
-        ISymbolResolver resolver, 
-        VBOperatorExpression<TContext, TFlags> expression, 
-        LetCoercionStackFrame frame)
-    where TContext : SemanticContext<TFlags>, new()
-    where TFlags : struct, Enum;
+    LetCoercionResult EvaluateLetCoercion(
+        ISymbolResolver resolver,
+        VBOperatorExpression expression,
+        LetCoercionStackFrame frame);
 
     /// <summary>
     /// Builds the semantic context of a let-coercion operation involving the semantics of a specific <c>VBType</c>.
     /// </summary>
-    /// <typeparam name="TContext">The type of <em>semantic context</em> of the <c>expression</c> the let-coercion is occurring inside of.</typeparam>
-    /// <typeparam name="TFlags">The type of semantic flags associated with the semantic context of the <c>expression</c>.</typeparam>
     /// <param name="builder">Builds the semantic context of the conversion operation.</param>
     /// <param name="resolver">A symbol lookup service.</param>
     /// <param name="expression">The <c>BoundExpression</c> that is being evaluated.</param>
@@ -42,12 +38,10 @@ public interface ILetCoercionRuntimeSemantics
     /// 🧩 <em>Analyzers</em> (<c>RDCore.Diagnostics</c> and other <em>plug-ins</em>) perform the actual analysis of the semantic context.
     /// </remarks>
     /// <returns>An <em>analysis context</em> for this let-coercion operation.</returns>
-    LetCoercionAnalysisContext Analyze<TContext, TFlags>(
+    LetCoercionAnalysisContext Analyze(
         ILetCoercionSemanticContextBuilder builder, 
         ISymbolResolver resolver, 
-        VBOperatorExpression<TContext, TFlags> expression, 
+        VBOperatorExpression expression, 
         LetCoercionStackFrame frame,
-        LetCoercionResult result)
-    where TContext : SemanticContext<TFlags>, new()
-    where TFlags : struct, Enum;
+        LetCoercionResult result);
 }

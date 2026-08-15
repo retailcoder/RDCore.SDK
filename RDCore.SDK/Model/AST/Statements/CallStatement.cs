@@ -11,5 +11,5 @@ namespace RDCore.SDK.Model.AST.Statements;
 /// <param name="SourceLocation">The document location (<c>Uri</c>+<c>Range</c>) of the bound expression.</param>
 /// <param name="Token">The <c>string</c> <em>token</em> of the statement, e.g. <c>Open</c>, <c>Input</c>, <c>Print</c>, <c>Assert</c>, etc..</param>
 /// <param name="Inputs">The <em>inputs</em> of the executable statement; expressions evaluated immediately before the call.</param>
-public record class CallStatement(Guid Identity, SourceLocation SourceLocation, string Token, ImmutableArray<ExpressionNode> Inputs)
-    : StatementNode(Identity, SourceLocation, Token, Inputs);
+public record class CallStatement(SyntaxNodeId Identity, SourceLocation SourceLocation, string Token, ImmutableArray<ExpressionNode> Inputs)
+    : StatementNode(Identity, SourceLocation, Inputs);

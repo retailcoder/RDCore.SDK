@@ -1,6 +1,6 @@
 ﻿using RDCore.SDK.Model.Source;
 
-namespace RDCore.SDK.Model.Symbols.Unbound;
+namespace RDCore.SDK.Model.Symbols;
 
 /// <summary>
 /// An unbound symbol representing a <em>class module</em>.
