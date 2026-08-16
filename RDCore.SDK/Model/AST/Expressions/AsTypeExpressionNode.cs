@@ -4,17 +4,6 @@ using RDCore.SDK.Model.AST.Abstract;
 namespace RDCore.SDK.Model.AST.Expressions;
 
 /// <summary>
-/// A <c>VB_Attribute</c> expression node.
-/// </summary>
-/// <remarks>
-/// <strong>MS-VBAL 4.2 Modules</strong> defines the static semantics of this expression.
-/// </remarks>
-/// <param name="Identity">A unique identifier for this specific syntax node.</param>
-/// <param name="Location">The document location (<c>Uri</c>+<c>Range</c>) of the bound expression.</param>
-public record class VBAttributeExpression(SyntaxNodeId Identity, SourceLocation Location, ExpressionNode NameExpression, ExpressionNode ValueExpression)
-    : ExpressionNode(Tokens.Attribute, Identity, Location, [NameExpression, ValueExpression]);
-
-/// <summary>
 /// A <c>BoundExpression</c> with static semantics that resolve the <c>VBType</c> of a <c>VBTypedDeclarationExpression</c>.
 /// </summary>
 /// <param name="Identity">A unique identifier for this specific syntax node.</param>
@@ -23,7 +12,7 @@ public record class VBAttributeExpression(SyntaxNodeId Identity, SourceLocation 
 /// <param name="QualifierName">The qualifying module or library name, if present.</param>
 /// <param name="AsAutoObject"><c>true</c> if the expression includes a <c>New</c> token, declaring an <em>auto-object</em>.</param>
 /// <param name="IsArrayDef"><c>true</c> if the expression is an array definition.</param>
-public record class VBAsTypeExpression(SyntaxNodeId Identity, SourceLocation Location, string TypeName, string? QualifierName = default, bool AsAutoObject = false, bool IsArrayDef = false)
+public record class AsTypeExpressionNode(SyntaxNodeId Identity, SourceLocation Location, string TypeName, string? QualifierName = default, bool AsAutoObject = false, bool IsArrayDef = false)
     : ExpressionNode(Tokens.As, Identity, Location, []);
 
 /// <summary>
@@ -33,7 +22,7 @@ public record class VBAsTypeExpression(SyntaxNodeId Identity, SourceLocation Loc
 /// <param name="Location">The document location (<c>Uri</c>+<c>Range</c>) of the bound expression.</param>
 /// <param name="IdentifierName">The <em>identifier</em> name of the declared symbol.</param>
 /// <param name="AsTypeExpression">The <c>As &lt;Type&gt;</c> clause of the declaration, if present.</param>
-public record class VBTypedDeclarationExpression(SyntaxNodeId Identity, SourceLocation Location, string IdentifierName, VBAsTypeExpression? AsTypeExpression = default)
+public record class VBTypedDeclarationExpressionNode(SyntaxNodeId Identity, SourceLocation Location, string IdentifierName, AsTypeExpressionNode? AsTypeExpression = default)
     : ExpressionNode(Tokens.Private, Identity, Location, AsTypeExpression is null ? [] : [AsTypeExpression]);
 
 
@@ -46,7 +35,7 @@ public record class VBTypedDeclarationExpression(SyntaxNodeId Identity, SourceLo
 /// <param name="Modifier">The access modifier token specified, if any.</param>
 /// <param name="IsWithEvents"><c>true</c> if the declaration list includes the <c>WithEvents</c> keyword.</param>
 /// <param name="IsStatic"><c>true</c> if the declaration list includes the <c>Static</c> keyword.</param>
-public record class VBDeclarationStatement(SyntaxNodeId Identity, SourceLocation Location, VBTypedDeclarationExpression[] Declarations, AccessModifier? Modifier = AccessModifier.Implicit, bool IsWithEvents = false, bool IsStatic = false)
+public record class VBDeclarationStatementNode(SyntaxNodeId Identity, SourceLocation Location, VBTypedDeclarationExpressionNode[] Declarations, AccessModifier? Modifier = AccessModifier.Implicit, bool IsWithEvents = false, bool IsStatic = false)
     : StatementNode(Identity, Location, [.. Declarations.Cast<ExpressionNode>()]);
 
 

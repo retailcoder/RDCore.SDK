@@ -10,7 +10,7 @@ namespace RDCore.SDK.Model.AST.Expressions;
 /// <remarks>
 /// Unless specified otherwise in a derived node type, <strong>MS-VBAL 5.6.9 Operator Expressions</strong> defines the static and run-time semantics of this node.
 /// </remarks>
-public record class VBBinaryOperatorExpression : VBOperatorExpression
+public record class VBBinaryOperatorExpressionNode : VBOperatorExpression
 {
     /// <param name="Identity">A unique identifier for this specific syntax node.</param>
     /// <param name="Symbol">The <c>OperatorSymbol</c> associated with this <em>operator expression</em>.</param>
@@ -18,7 +18,7 @@ public record class VBBinaryOperatorExpression : VBOperatorExpression
     /// <param name="Location">The <c>Location</c> (holds the document <c>Uri</c> and a <c>Range</c>) of the bound expression.</param>
     /// <param name="Left">The left-hand side (LHS) operand of this <em>binary operator expression</em></param>
     /// <param name="Right">The right-hand side (RHS) operand of this <em>binary operator expression</em></param>
-    public VBBinaryOperatorExpression(string token, SyntaxNodeId identity, SourceLocation location, ExpressionNode left, ExpressionNode right) 
+    public VBBinaryOperatorExpressionNode(string token, SyntaxNodeId identity, SourceLocation location, ExpressionNode left, ExpressionNode right) 
         : base(token, identity, location, [left, right])
     {
         Left = left;

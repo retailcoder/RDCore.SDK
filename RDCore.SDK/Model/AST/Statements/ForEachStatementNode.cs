@@ -11,6 +11,6 @@ namespace RDCore.SDK.Model.AST.Statements;
 /// <param name="ControlExpression">An object or variant expression that resolves to the loop control variable.</param>
 /// <param name="CollectionExpression">An object expression that resolves to an enumerable object (or array).</param>
 /// <param name="Body">The executable statements in the body of the loop.</param>
-public record class ForEachStatement(SyntaxNodeId Identity, SourceLocation SourceLocation, ExpressionNode ControlExpression, ExpressionNode CollectionExpression, StatementBlock Body)
+public record class ForEachStatementNode(SyntaxNodeId Identity, SourceLocation SourceLocation, ExpressionNode ControlExpression, ExpressionNode CollectionExpression, StatementBlock Body)
     : StatementNode(Identity, SourceLocation, [ControlExpression, CollectionExpression]);
 

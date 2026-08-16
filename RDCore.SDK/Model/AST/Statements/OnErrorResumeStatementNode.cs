@@ -8,5 +8,5 @@ namespace RDCore.SDK.Model.AST.Statements;
 /// </summary>
 /// <param name="Identity">A unique identifier for this specific syntax node.</param>
 /// <param name="SourceLocation">The document location (<c>Uri</c>+<c>Range</c>) of the bound expression.</param>
-public record class OnErrorResumeStatement(SyntaxNodeId Identity, SourceLocation SourceLocation)
+public record class OnErrorResumeStatementNode(SyntaxNodeId Identity, SourceLocation SourceLocation)
     : StatementNode(Identity, SourceLocation, []);

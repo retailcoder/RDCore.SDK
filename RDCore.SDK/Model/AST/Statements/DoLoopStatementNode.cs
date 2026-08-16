@@ -12,6 +12,6 @@ namespace RDCore.SDK.Model.AST.Statements;
 /// <remarks>
 /// If the <c>Body</c> contains no <c>Exit</c> statement (conditional or not), the loop is deterministically infinite.
 /// </remarks>
-public record DoLoopStatement(SyntaxNodeId Identity, SourceLocation SourceLocation, StatementBlock Body)
+public record DoLoopStatementNode(SyntaxNodeId Identity, SourceLocation SourceLocation, StatementBlock Body)
     : StatementNode(Identity, SourceLocation, []);
 

@@ -8,38 +8,30 @@ namespace RDCore.SDK.Model.AST.Abstract;
 /// <remarks>
 /// Encodes the node's position within the AST.
 /// </remarks>
+/// <param name="DocumentUri">The URI of the document this syntax tree belongs to.</param>
 /// <param name="Lineage">An array of successive child index values in the syntax tree.</param>
-public readonly record struct SyntaxNodeId : IEquatable<SyntaxNodeId>, IComparable<SyntaxNodeId>
+public readonly record struct SyntaxNodeId(string DocumentUri, ImmutableArray<int> Lineage) : IEquatable<SyntaxNodeId>, IComparable<SyntaxNodeId>
 {
-    private readonly string _documentUri;
-    private readonly ImmutableArray<int> _lineage;
-
-    public SyntaxNodeId Add(int position) => new(_documentUri, _lineage.Add(position));
-
-    public SyntaxNodeId(string DocumentUri, ImmutableArray<int> Lineage)
-    {
-        _documentUri = DocumentUri;
-        _lineage = Lineage;
-    }
+    public SyntaxNodeId Add(int position) => new(DocumentUri, Lineage.Add(position));
     public readonly override string ToString()
     {
-        return $"{_documentUri}#{string.Join('/', _lineage)}";
+        return $"{DocumentUri}#{string.Join('/', Lineage)}";
     }
 
     public readonly bool Equals(SyntaxNodeId other)
     {
-        return (other._documentUri == _documentUri)
-            && other._lineage.SequenceEqual(_lineage);
+        return (other.DocumentUri == DocumentUri)
+            && other.Lineage.SequenceEqual(Lineage);
     }
 
     public readonly override int GetHashCode()
     {
         var hashcode = new HashCode();
-        hashcode.Add(_documentUri);
+        hashcode.Add(DocumentUri);
 
-        for (var i = 0; i < _lineage.Length; i++)
+        for (var i = 0; i < Lineage.Length; i++)
         {
-            hashcode.Add(_lineage[i]);
+            hashcode.Add(Lineage[i]);
         }
 
         return hashcode.ToHashCode();
@@ -47,28 +39,34 @@ public readonly record struct SyntaxNodeId : IEquatable<SyntaxNodeId>, IComparab
 
     public int CompareTo(SyntaxNodeId other)
     {
-        if (_lineage.Length < other._lineage.Length)
+        if (DocumentUri == other.DocumentUri)
         {
-            return -1;
-        }
-        else if (_lineage.Length > other._lineage.Length)
-        {
-            return 1;
-        }
-        else
-        {
-            for (var i = 0; i < _lineage.Length; i++)
+            for (var i = 0; i < Lineage.Length; i++)
             {
-                if (_lineage[i] < other._lineage[i])
+                if (i < other.Lineage.Length)
                 {
-                    return -1;
+                    if (Lineage[i] < other.Lineage[i])
+                    {
+                        return -1;
+                    }
+                    else if (Lineage[i] > other.Lineage[i])
+                    {
+                        return 1;
+                    }
                 }
-                else if (_lineage[i] > other._lineage[i])
+                else
                 {
+                    // this node goes deeper, so necessarily compares greater than:
                     return 1;
                 }
             }
-            return 0;
+
+            if (Lineage.Length < other.Lineage.Length)
+            {
+                // same lineage but other node goes deeper; necessarily compares smaller than:
+                return -1;
+            }
         }
+        return DocumentUri.CompareTo(other.DocumentUri);
     }
 }

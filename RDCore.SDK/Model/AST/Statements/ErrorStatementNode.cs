@@ -9,5 +9,5 @@ namespace RDCore.SDK.Model.AST.Statements;
 /// <param name="Identity">A unique identifier for this specific syntax node.</param>
 /// <param name="SourceLocation">The document location (<c>Uri</c>+<c>Range</c>) of the bound expression.</param>
 /// <param name="NumberExpression">The number/code of the run-time error to raise.</param>
-public record class ErrorStatement(SyntaxNodeId Identity, SourceLocation SourceLocation, ExpressionNode NumberExpression)
+public record class ErrorStatementNode(SyntaxNodeId Identity, SourceLocation SourceLocation, ExpressionNode NumberExpression)
     : StatementNode(Identity, SourceLocation, [NumberExpression]);
