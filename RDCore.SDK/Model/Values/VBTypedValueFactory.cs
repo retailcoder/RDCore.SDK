@@ -92,7 +92,7 @@ public static class VBTypedValueFactory
     /// intended for let-coercion semantics and may eventually need to be moved.
     /// </remarks>
     public static VBTypedValue CreateValue(VBTypeDescValue typeDesc, VBNumericTypedValue source)
-        => typeDesc.Target.DefaultValue.WithValue(new(source.ManagedValue.RuntimeValue!));
+        => typeDesc.Target.DefaultValue.WithValue(new(source.UnderlyingValue.RuntimeValue!));
 
     /// <summary>
     /// Creates a new <c>VBNumericValue</c> of the specified described type, with the specified value, for the specified symbol.
@@ -104,7 +104,7 @@ public static class VBTypedValueFactory
     /// intended for let-coercion semantics and may eventually need to be moved.
     /// </remarks>
     public static VBTypedValue CreateValue(VBTypeDescValue typeDesc, VBDateValue source)
-        => typeDesc.Target.DefaultValue.WithValue(new(source.ManagedValue.RuntimeValue!));
+        => typeDesc.Target.DefaultValue.WithValue(new(source.UnderlyingValue.RuntimeValue!));
 
 
     /// <summary>
@@ -123,7 +123,7 @@ public static class VBTypedValueFactory
         type switch
         {
             VBStringType => new VBStringValue(),
-            VBBooleanType => new VBBooleanValue(),
+            VBBooleanType => new VBBooleanValue(false),
             VBByteType => new VBByteValue(),
             VBIntegerType => new VBIntegerValue(),
             VBLongType => new VBLongValue(),

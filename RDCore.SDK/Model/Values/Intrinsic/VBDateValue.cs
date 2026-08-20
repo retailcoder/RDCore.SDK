@@ -22,9 +22,9 @@ public sealed record class VBDateValue()
     /// <remarks>
     /// This representation is natively compatible with how dates are represented in <em>Microsoft Excel</em>.
     /// </remarks>
-    public double SerialValue => ((VBRuntimeValue<double>)ManagedValue.RuntimeValue!).StoredValue;
+    public double SerialValue => ((VBRuntimeValue<double>)UnderlyingValue.RuntimeValue!).StoredValue;
 
-    public DateTime Value => DateTime.FromOADate(((VBRuntimeValue<double>)ManagedValue.RuntimeValue!).StoredValue);
+    public DateTime Value => DateTime.FromOADate(((VBRuntimeValue<double>)UnderlyingValue.RuntimeValue!).StoredValue);
     public override int Size => sizeof(double);
 
     public bool Equals(IVBTypedValue<VBDateValue, DateTime>? other) => Value == other?.Value;

@@ -2,6 +2,7 @@
 using RDCore.SDK.Model.AST.Abstract;
 using RDCore.SDK.Model.Symbols.Abstract;
 using RDCore.SDK.Model.Values.Abstract;
+using System.Collections.Immutable;
 namespace RDCore.SDK.Model.AST.Expressions;
 
 /// <summary>
@@ -18,13 +19,15 @@ public record class VBBinaryOperatorExpressionNode : VBOperatorExpression
     /// <param name="Location">The <c>Location</c> (holds the document <c>Uri</c> and a <c>Range</c>) of the bound expression.</param>
     /// <param name="Left">The left-hand side (LHS) operand of this <em>binary operator expression</em></param>
     /// <param name="Right">The right-hand side (RHS) operand of this <em>binary operator expression</em></param>
-    public VBBinaryOperatorExpressionNode(string token, SyntaxNodeId identity, SourceLocation location, ExpressionNode left, ExpressionNode right) 
-        : base(token, identity, location, [left, right])
+    public VBBinaryOperatorExpressionNode(string token, SyntaxNodeId identity, SourceLocation location, ImmutableArray<SyntaxNode> children)
+        : base(identity, location, children)
     {
-        Left = left;
-        Right = right;
+        Token = token;
+        Left = (ExpressionNode)children[0];
+        Right = (ExpressionNode)children[1];
     }
 
+    public string Token { get; }
     public ExpressionNode Left { get; }
     public ExpressionNode Right { get; }
 }

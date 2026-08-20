@@ -18,7 +18,7 @@ public sealed record class VBSingleValue() : VBNumericTypedValue(VBSingleType.Ty
         Handle = new ValueBindingHandle(new VBRuntimeValue<float>(value));
     }
 
-    public float Value => ((VBRuntimeValue<float>)ManagedValue.RuntimeValue!).Value;
+    public float Value => ((VBRuntimeValue<float>)UnderlyingValue.RuntimeValue!).Value;
     public override int Size => sizeof(float);
     public bool Equals(IVBTypedValue<VBSingleValue, float>? other) => Value == other?.Value;
     public override int GetHashCode() => Value.GetHashCode();

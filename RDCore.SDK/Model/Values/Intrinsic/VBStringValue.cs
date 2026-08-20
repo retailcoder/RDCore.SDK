@@ -20,7 +20,7 @@ public record class VBStringValue : VBTypedValue, IVBTypedValue<VBStringValue, s
     /// </summary>
     public VBStringValue(string value) : this()
     {
-        ManagedValue = new(new VBRuntimeReference(typeof(string), value));
+        UnderlyingValue = new(new VBRuntimeReference(typeof(string), value));
     }
 
     public const string Zero = "0";
@@ -62,12 +62,12 @@ public record class VBStringValue : VBTypedValue, IVBTypedValue<VBStringValue, s
     /// </summary>
     public static VBStringValue ZeroLengthString => _zeroString.Value;
 
-    public string Value => (string?)ManagedValue.RuntimeReference?.Value ?? string.Empty;
+    public string Value => (string?)UnderlyingValue.RuntimeReference?.Value ?? string.Empty;
     public virtual int Length => Value?.Length ?? 0;
     public override int Size => Value is null ? 0 : 2 * Length + 2;
 
 
-    public virtual VBStringValue WithValue(string? value) => this with { ManagedValue = new(new VBRuntimeReference(typeof(string), value ?? string.Empty)) };
+    public virtual VBStringValue WithValue(string? value) => this with { UnderlyingValue = new(new VBRuntimeReference(typeof(string), value ?? string.Empty)) };
 
     public override string ToString() => Value ?? VBNullString.Value;
 

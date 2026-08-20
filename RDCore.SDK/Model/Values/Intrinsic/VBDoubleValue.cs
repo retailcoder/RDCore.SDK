@@ -12,10 +12,10 @@ public sealed record class VBDoubleValue() : VBNumericTypedValue(VBDoubleType.Ty
 {
     public VBDoubleValue(double value) : this()
     {
-        ManagedValue = new(new VBRuntimeValue<double>(value));
+        UnderlyingValue = new(new VBRuntimeValue<double>(value));
     }
 
-    public double Value => ((VBRuntimeValue<double>)ManagedValue.RuntimeValue!).Value;
+    public double Value => ((VBRuntimeValue<double>)UnderlyingValue.RuntimeValue!).Value;
     public override int Size => 8;
 
     public bool Equals(IVBTypedValue<VBDoubleValue, double>? other) => Value == other?.Value;

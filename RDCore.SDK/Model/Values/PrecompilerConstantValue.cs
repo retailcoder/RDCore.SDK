@@ -15,6 +15,6 @@ public sealed record class PrecompilerConstantValue : VBIntegerValue
     public PrecompilerConstantValue(int managedValue)
         : base()
     {
-        ManagedValue = new(new VBRuntimeValue<int>(managedValue));
+        UnderlyingValue = new(new VBRuntimeValue<int>(managedValue));
     }
 }

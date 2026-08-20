@@ -64,9 +64,12 @@ public abstract record class VBTypedValue(VBType TypeInfo)
     public abstract int Size { get; }
 
     /// <summary>
-    /// Gets a wrapper for the underlying managed value.
+    /// Gets a wrapper for the underlying runtime value.
     /// </summary>
-    public VBRuntimeValueWrapper ManagedValue 
+    /// <remarks>
+    /// This wrapper is a crutch, it must eventually disappear.
+    /// </remarks>
+    public VBRuntimeValueWrapper UnderlyingValue 
     {
         get => new(Handle.GetValue(null!));
         init => Handle = value.RuntimeValue is not null 
@@ -80,5 +83,5 @@ public abstract record class VBTypedValue(VBType TypeInfo)
 
     public IBindingHandle Handle { get; init; } = InvalidBindingHandle.Default;
 
-    public VBTypedValue WithValue(VBRuntimeValueWrapper value) => this with { ManagedValue = value };
+    public VBTypedValue WithValue(VBRuntimeValueWrapper value) => this with { UnderlyingValue = value };
 }

@@ -28,19 +28,19 @@ public abstract record class VBNumericTypedValue(VBType TypeInfo) : VBTypedValue
     {
         return this switch
         {
-            PrecompilerConstantValue constValue => constValue with { ManagedValue = new(new VBRuntimeValue<Int16>(Convert.ToInt16(value))) },
-            VBByteValue byteValue => byteValue with { ManagedValue = new(new VBRuntimeValue<Byte>(Convert.ToByte(value))) },
-            VBIntegerValue integerValue => integerValue with { ManagedValue = new(new VBRuntimeValue<Int16>(Convert.ToInt16(value))) },
-            VBLongValue longValue => longValue with { ManagedValue = new(new VBRuntimeValue<Int32>(Convert.ToInt32(value))) },
-            VBLongLongValue longLongValue => longLongValue with { ManagedValue = new(new VBRuntimeValue<Int64>(Convert.ToInt64(value))) },
-            VBSingleValue singleValue => singleValue with { ManagedValue = new(new VBRuntimeValue<Single>(Convert.ToSingle(value))) },
-            VBDoubleValue doubleValue => doubleValue with { ManagedValue = new(new VBRuntimeValue<Double>(Convert.ToDouble(value))) },
-            VBCurrencyValue currencyValue => currencyValue with { ManagedValue = new(new VBRuntimeValue<VBRuntimeCurrencyValue>(new VBRuntimeCurrencyValue(Convert.ToDecimal(value)))) },
-            VBDecimalValue decimalValue => decimalValue with { ManagedValue = new(new VBRuntimeValue<VBRuntimeDecimalValue>(new VBRuntimeDecimalValue(Convert.ToDecimal(value)))) },
+            PrecompilerConstantValue constValue => constValue with { UnderlyingValue = new(new VBRuntimeValue<Int16>(Convert.ToInt16(value))) },
+            VBByteValue byteValue => byteValue with { UnderlyingValue = new(new VBRuntimeValue<Byte>(Convert.ToByte(value))) },
+            VBIntegerValue integerValue => integerValue with { UnderlyingValue = new(new VBRuntimeValue<Int16>(Convert.ToInt16(value))) },
+            VBLongValue longValue => longValue with { UnderlyingValue = new(new VBRuntimeValue<Int32>(Convert.ToInt32(value))) },
+            VBLongLongValue longLongValue => longLongValue with { UnderlyingValue = new(new VBRuntimeValue<Int64>(Convert.ToInt64(value))) },
+            VBSingleValue singleValue => singleValue with { UnderlyingValue = new(new VBRuntimeValue<Single>(Convert.ToSingle(value))) },
+            VBDoubleValue doubleValue => doubleValue with { UnderlyingValue = new(new VBRuntimeValue<Double>(Convert.ToDouble(value))) },
+            VBCurrencyValue currencyValue => currencyValue with { UnderlyingValue = new(new VBRuntimeValue<VBRuntimeCurrencyValue>(new VBRuntimeCurrencyValue(Convert.ToDecimal(value)))) },
+            VBDecimalValue decimalValue => decimalValue with { UnderlyingValue = new(new VBRuntimeValue<VBRuntimeDecimalValue>(new VBRuntimeDecimalValue(Convert.ToDecimal(value)))) },
 
             _ => throw new NotSupportedException(),
         };
     }
 
-    public override int GetHashCode() => ManagedValue.GetHashCode();
+    public override int GetHashCode() => UnderlyingValue.GetHashCode();
 }

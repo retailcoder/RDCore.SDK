@@ -10,7 +10,7 @@ namespace RDCore.SDK.Model.Values.Intrinsic;
 public sealed record class VBCurrencyValue() 
     : VBNumericTypedValue(VBCurrencyType.TypeInfo), IVBTypedValue<VBCurrencyValue, VBRuntimeCurrencyValue>, INumericValue<VBCurrencyValue>
 {
-    public VBRuntimeCurrencyValue Value => ((VBRuntimeValue<VBRuntimeCurrencyValue>)ManagedValue.RuntimeValue!).Value;
+    public VBRuntimeCurrencyValue Value => ((VBRuntimeValue<VBRuntimeCurrencyValue>)UnderlyingValue.RuntimeValue!).Value;
     public override int Size => sizeof(long);
 
     public bool Equals(IVBTypedValue<VBCurrencyValue, VBRuntimeCurrencyValue>? other) => Value.StoredValue == other?.Value.StoredValue;

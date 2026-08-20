@@ -10,7 +10,7 @@ namespace RDCore.SDK.Model.Values.Intrinsic;
 public sealed record class VBDecimalValue() 
     : VBNumericTypedValue(VBDecimalType.TypeInfo), IVBTypedValue<VBDecimalValue, decimal>, INumericValue<VBDecimalValue>
 {
-    public decimal Value => ((VBRuntimeValue<VBRuntimeDecimalValue>)ManagedValue.RuntimeValue!).Value.ManagedValue;
+    public decimal Value => ((VBRuntimeValue<VBRuntimeDecimalValue>)UnderlyingValue.RuntimeValue!).Value.ManagedValue;
     public override int Size => sizeof(Decimal);
 
     public bool Equals(IVBTypedValue<VBDecimalValue, decimal>? other) => Value == other?.Value;

@@ -13,10 +13,10 @@ public sealed record class VBLongLongValue() : VBNumericTypedValue(VBLongLongTyp
 {
     public VBLongLongValue(long value) : this()
     {
-        ManagedValue = new(new VBRuntimeValue<long>(value));
+        UnderlyingValue = new(new VBRuntimeValue<long>(value));
     }
 
-    public long Value => ((VBRuntimeValue<long>)ManagedValue.RuntimeValue!).Value;
+    public long Value => ((VBRuntimeValue<long>)UnderlyingValue.RuntimeValue!).Value;
     public override int Size => sizeof(long);
 
     public bool Equals(IVBTypedValue<VBLongLongValue, long>? other) => Value == other?.Value;

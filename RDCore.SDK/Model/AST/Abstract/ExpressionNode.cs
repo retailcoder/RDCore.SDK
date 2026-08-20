@@ -8,8 +8,5 @@ namespace RDCore.SDK.Model.AST.Abstract;
 /// </summary>
 /// <param name="Identity">A unique identifier for this specific syntax node.</param>
 /// <param name="Location">The document location (<c>Uri</c>+<c>Range</c>) of the bound expression.</param>
-public abstract record class ExpressionNode(string Token, SyntaxNodeId Identity, SourceLocation Location, ImmutableArray<ExpressionNode> Inputs) :
-    SyntaxNode(Identity, Location, [.. Inputs.Cast<SyntaxNode>()]), 
-    IExecutableNode
-{
-}
+public abstract record class ExpressionNode(SyntaxNodeId Identity, SourceLocation Location, ImmutableArray<SyntaxNode> Inputs)
+    : SyntaxNode(Identity, Location, [.. Inputs.Cast<SyntaxNode>()]), IExecutableNode;

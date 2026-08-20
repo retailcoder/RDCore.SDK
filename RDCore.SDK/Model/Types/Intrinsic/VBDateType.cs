@@ -30,7 +30,7 @@ public sealed record class VBDateType() : VBIntrinsicType<DateTime>(VBTypeNames.
     /// </summary>
     public const double MinSerial = -657434;
     private static readonly Lazy<VBDateValue> _minValue = new(() 
-        => new VBDateValue { ManagedValue = new(new VBRuntimeValue<double>(new DateTime(100, 01, 01).ToOADate())) }, LazyThreadSafetyMode.PublicationOnly);
+        => new VBDateValue { UnderlyingValue = new(new VBRuntimeValue<double>(new DateTime(100, 01, 01).ToOADate())) }, LazyThreadSafetyMode.PublicationOnly);
 
     /// <summary>
     /// Gets the minimum representable value for this data type.
@@ -45,7 +45,7 @@ public sealed record class VBDateType() : VBIntrinsicType<DateTime>(VBTypeNames.
     /// </remarks>
     public const double MaxSerial = 2958465.999998843d;
     private static readonly Lazy<VBDateValue> _maxValue = new(() 
-        => new VBDateValue { ManagedValue = new(new VBRuntimeValue<double>(MaxSerial)) }, LazyThreadSafetyMode.PublicationOnly);
+        => new VBDateValue { UnderlyingValue = new(new VBRuntimeValue<double>(MaxSerial)) }, LazyThreadSafetyMode.PublicationOnly);
 
     /// <summary>
     /// Gets the maximum representable value for this data type.
@@ -53,7 +53,7 @@ public sealed record class VBDateType() : VBIntrinsicType<DateTime>(VBTypeNames.
     public static VBDateValue MaxValue => _maxValue.Value;
 
     private static readonly Lazy<VBDateValue> _zero = new(() 
-        => new VBDateValue { ManagedValue = new(new VBRuntimeValue<double>(new DateTime(1899, 12, 30).ToOADate())) }, LazyThreadSafetyMode.PublicationOnly);
+        => new VBDateValue { UnderlyingValue = new(new VBRuntimeValue<double>(new DateTime(1899, 12, 30).ToOADate())) }, LazyThreadSafetyMode.PublicationOnly);
 
     /// <summary>
     /// Gets the value <c>0</c> (zero) representation of this data type.

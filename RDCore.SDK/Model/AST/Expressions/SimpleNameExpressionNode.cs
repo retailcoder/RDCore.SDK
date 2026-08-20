@@ -11,4 +11,5 @@ namespace RDCore.SDK.Model.AST.Expressions;
 /// <param name="Location">The document location (<c>Uri</c>+<c>Range</c>) of the bound expression.</param>
 /// <param name="IdentifierName">The parsed <em>identifier name</em>.</param>
 public sealed record class SimpleNameExpressionNode(SyntaxNodeId Identity, SourceLocation Location, string IdentifierName)
-    : ExpressionNode(IdentifierName, Identity, Location, []) { }
+    : ExpressionNode(Identity, Location, [])
+{ }

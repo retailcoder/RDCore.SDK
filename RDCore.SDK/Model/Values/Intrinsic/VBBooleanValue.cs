@@ -8,22 +8,24 @@ namespace RDCore.SDK.Model.Values.Intrinsic;
 /// <summary>
 /// A <see cref="VBTypedValue"/> representing a runtime value of the <see cref="VBBooleanType"/> data type.
 /// </summary>
-public sealed record class VBBooleanValue() : 
-    VBTypedValue(VBBooleanType.TypeInfo), 
-    IVBTypedValue<VBBooleanValue, VBRuntimeBooleanValue>
+public sealed record class VBBooleanValue : VBTypedValue, IVBTypedValue<VBBooleanValue, VBRuntimeBooleanValue>
 {
-    public VBBooleanValue(bool value) : this()
+    public VBBooleanValue(IBindingHandle handle)
+        : base(VBBooleanType.TypeInfo)
     {
-        Handle = new ValueBindingHandle(new VBRuntimeBooleanValue(value));
+        Handle = handle;
     }
+    public VBBooleanValue(bool value) : this(new ValueBindingHandle(new VBRuntimeBooleanValue(value))){ }
 
-    private static readonly Lazy<VBBooleanValue> _falseValue = new(() => new VBBooleanValue { ManagedValue = new(VBRuntimeValue<bool>.BooleanFalse) });
+
+    private static readonly Lazy<VBBooleanValue> _falseValue = new(() => new VBBooleanValue(false));
     public static VBBooleanValue False { get; } = _falseValue.Value;
 
-    private static readonly Lazy<VBBooleanValue> _trueValue = new(() => new VBBooleanValue { ManagedValue = new(VBRuntimeValue<bool>.BooleanTrue) });
+    private static readonly Lazy<VBBooleanValue> _trueValue = new(() => new VBBooleanValue(true));
     public static VBBooleanValue True { get; } = _trueValue.Value;
 
-    public VBRuntimeBooleanValue Value => (VBRuntimeBooleanValue)ManagedValue.RuntimeValue!;
+
+    public VBRuntimeBooleanValue Value => (VBRuntimeBooleanValue)UnderlyingValue.RuntimeValue!;
     public override int Size { get; } = 16; // yes, really.
 
     public override string ToString() => Value.StoredValue != 0 ? Tokens.True : Tokens.False;

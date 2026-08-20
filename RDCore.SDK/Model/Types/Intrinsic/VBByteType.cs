@@ -28,14 +28,14 @@ public sealed record class VBByteType() : VBNumericType<byte>(VBTypeNames.VBByte
     /// Gets the minimum representable value for this data type.
     /// </summary>
     public static VBByteValue MinValue => _minValue.Value;
-    public override double ManagedMinValue => (double)((VBRuntimeValue<byte>)_minValue.Value.ManagedValue.RuntimeValue!).StoredValue;
+    public override double ManagedMinValue => (double)((VBRuntimeValue<byte>)_minValue.Value.UnderlyingValue.RuntimeValue!).StoredValue;
 
     private static readonly Lazy<VBByteValue> _maxValue = new(() => (VBByteValue)new VBByteValue().WithValue(VBRuntimeValue<byte>.ByteMaxValue.Value), LazyThreadSafetyMode.PublicationOnly);
     /// <summary>
     /// Gets the maximum representable value for this data type.
     /// </summary>
     public static VBByteValue MaxValue { get; } = _maxValue.Value;
-    public override double ManagedMaxValue => (double)_maxValue.Value.ManagedValue.RuntimeValue!.BoxedValue;
+    public override double ManagedMaxValue => (double)_maxValue.Value.UnderlyingValue.RuntimeValue!.BoxedValue;
 
     private static readonly Lazy<VBByteValue> _zero = new(() => (VBByteValue)new VBByteValue().WithValue(VBRuntimeValue<byte>.ByteZeroValue.Value), LazyThreadSafetyMode.PublicationOnly);
     /// <summary>

@@ -1,5 +1,6 @@
 ﻿using RDCore.SDK.Model.Source;
 using RDCore.SDK.Model.AST.Abstract;
+using System.Collections.Immutable;
 
 namespace RDCore.SDK.Model.AST.Statements;
 
@@ -8,7 +9,30 @@ namespace RDCore.SDK.Model.AST.Statements;
 /// </summary>
 /// <param name="Identity">A unique identifier for this specific syntax node.</param>
 /// <param name="SourceLocation">The document location (<c>Uri</c>+<c>Range</c>) of the bound expression.</param>
-/// <param name="Condition">A <em>Boolean expression</em> that determines whether execution branches into the <em>conditional statement</em> or not.</param>
-/// <param name="ConditionalBlock">A block of <em>executable nodes</em> that is executed if the <em>Condition</em> expression evaluates to <c>True</c>.</param>
-public record class ElseIfBlockStatementNode(SyntaxNodeId Identity, SourceLocation SourceLocation, ExpressionNode Condition, StatementBlock ConditionalBlock)
-    : StatementNode(Identity, SourceLocation, [Condition]);
+public record class ElseIfBlockStatementNode(SyntaxNodeId Identity, SourceLocation SourceLocation, ImmutableArray<SyntaxNode> Children)
+    : StatementNode(Identity, SourceLocation, Children);
+
+/// <summary>
+/// Represents a conditional executable statement block that is part of an <c>If</c> conditional branch.
+/// </summary>
+/// <param name="Identity">A unique identifier for this specific syntax node.</param>
+/// <param name="SourceLocation">The document location (<c>Uri</c>+<c>Range</c>) of the bound expression.</param>
+public record class ElseBlockStatementNode(SyntaxNodeId Identity, SourceLocation SourceLocation, ImmutableArray<SyntaxNode> Children)
+    : StatementNode(Identity, SourceLocation, Children);
+
+
+/// <summary>
+/// Represents a conditional executable statement block that is part of an <c>#If...#ElseIf</c> precompiler conditional branch.
+/// </summary>
+/// <param name="Identity">A unique identifier for this specific syntax node.</param>
+/// <param name="SourceLocation">The document location (<c>Uri</c>+<c>Range</c>) of the bound expression.</param>
+public record class PrecompilerElseIfBlockStatementNode(SyntaxNodeId Identity, SourceLocation SourceLocation, ImmutableArray<SyntaxNode> Children)
+    : StatementNode(Identity, SourceLocation, Children);
+
+/// <summary>
+/// Represents a conditional executable statement block that is part of an <c>#If...#Else</c> precompiler conditional branch.
+/// </summary>
+/// <param name="Identity">A unique identifier for this specific syntax node.</param>
+/// <param name="SourceLocation">The document location (<c>Uri</c>+<c>Range</c>) of the bound expression.</param>
+public record class PrecompilerElseBlockStatementNode(SyntaxNodeId Identity, SourceLocation SourceLocation, ImmutableArray<SyntaxNode> Children)
+    : StatementNode(Identity, SourceLocation, Children);

@@ -13,7 +13,7 @@ namespace RDCore.SDK.Model.AST.Expressions;
 /// <param name="AsAutoObject"><c>true</c> if the expression includes a <c>New</c> token, declaring an <em>auto-object</em>.</param>
 /// <param name="IsArrayDef"><c>true</c> if the expression is an array definition.</param>
 public record class AsTypeExpressionNode(SyntaxNodeId Identity, SourceLocation Location, string TypeName, string? QualifierName = default, bool AsAutoObject = false, bool IsArrayDef = false)
-    : ExpressionNode(Tokens.As, Identity, Location, []);
+    : ExpressionNode(Identity, Location, []);
 
 /// <summary>
 /// A <c>BoundExpression</c> representing any <em>declaration expression</em> that evaluates to a <c>TypedSymbol</c>.
@@ -23,7 +23,7 @@ public record class AsTypeExpressionNode(SyntaxNodeId Identity, SourceLocation L
 /// <param name="IdentifierName">The <em>identifier</em> name of the declared symbol.</param>
 /// <param name="AsTypeExpression">The <c>As &lt;Type&gt;</c> clause of the declaration, if present.</param>
 public record class VBTypedDeclarationExpressionNode(SyntaxNodeId Identity, SourceLocation Location, string IdentifierName, AsTypeExpressionNode? AsTypeExpression = default)
-    : ExpressionNode(Tokens.Private, Identity, Location, AsTypeExpression is null ? [] : [AsTypeExpression]);
+    : ExpressionNode(Identity, Location, AsTypeExpression is null ? [] : [AsTypeExpression]);
 
 
 /// <summary>

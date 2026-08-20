@@ -1,5 +1,6 @@
 ﻿using RDCore.SDK.Model.AST.Abstract;
 using RDCore.SDK.Model.Source;
+using System.Collections.Immutable;
 
 namespace RDCore.SDK.Model.AST.Expressions;
 
@@ -8,8 +9,8 @@ namespace RDCore.SDK.Model.AST.Expressions;
 public record class MemberAccessOperatorExpressionNode(
     SyntaxNodeId Identity,
     SourceLocation Location,
-    ExpressionNode Left, ExpressionNode Right) 
-    : VBBinaryOperatorExpressionNode(Tokens.MemberAccess, Identity, Location, Left, Right)
+    ImmutableArray<SyntaxNode> Children) 
+    : VBBinaryOperatorExpressionNode(Tokens.MemberAccess, Identity, Location, Children)
 {
     /*
     public static VBTypedValue EvaluateBinaryMemberAccess(

@@ -14,16 +14,16 @@ public sealed record class VBLongPtrValue(bool Is64Bit)
 {
     public VBLongPtrValue(long value) : this(true)
     {
-        ManagedValue = new(new VBRuntimeValue<long>(value));
+        UnderlyingValue = new(new VBRuntimeValue<long>(value));
         Size = VBLongPtrType_x64.TypeInfo.Size;
     }
     public VBLongPtrValue(int value) : this(true)
     {
-        ManagedValue = new(new VBRuntimeValue<int>(value));
+        UnderlyingValue = new(new VBRuntimeValue<int>(value));
         Size = VBLongPtrType_x86.TypeInfo.Size;
     }
 
-    public long Value => (long)ManagedValue.RuntimeValue!.BoxedValue;
+    public long Value => (long)UnderlyingValue.RuntimeValue!.BoxedValue;
     public override int Size { get; }
 
     public bool Equals(IVBTypedValue<VBLongPtrValue, long>? other) => Value.Equals(other?.Value);

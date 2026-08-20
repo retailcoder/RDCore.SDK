@@ -25,7 +25,7 @@ public record class VBObjectValue : VBTypedValue,
         Handle = new ReferenceBindingHandle(new VBRuntimeReference(typeof(object), reference));
     }
 
-    public object Value => ManagedValue.RuntimeReference!.Value.Value;
+    public object Value => UnderlyingValue.RuntimeReference!.Value.Value;
     public override int Size => sizeof(int); // not quite
 
     public bool IsNothing() => Value == Nothing.Value;

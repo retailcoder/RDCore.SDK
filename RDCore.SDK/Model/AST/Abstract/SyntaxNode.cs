@@ -17,6 +17,9 @@ namespace RDCore.SDK.Model.AST.Abstract;
 /// <param name="Identity">A unique identifier for this specific syntax node.</param>
 /// <param name="SourceLocation">The document location (<c>Uri</c>+<c>Range</c>) of this node.</param>
 [JsonPolymorphic]
+[JsonDerivedType(typeof(AnnotationTriviaNode), "AnnotationTrivia")]
+[JsonDerivedType(typeof(CommentTriviaNode), "CommentTrivia")]
+
 [JsonDerivedType(typeof(AttributeDirectiveNode), "AttributeDirective")]
 [JsonDerivedType(typeof(CallStatementNode), "CallStatement")]
 [JsonDerivedType(typeof(CaseExpressionStatementNode), "CaseExpression")]
@@ -58,6 +61,12 @@ namespace RDCore.SDK.Model.AST.Abstract;
 [JsonDerivedType(typeof(SimpleNameExpressionNode), "SimpleNameExpression")]
 [JsonDerivedType(typeof(VBUnaryOperatorExpressionNode), "UnaryOpExpression")]
 [JsonDerivedType(typeof(WhileWendStatementNode), "WhileWendStatement")]
+
+[JsonDerivedType(typeof(ConditionalExpressionNode), "ConditionalExpression")]
+[JsonDerivedType(typeof(PrecompilerConstantDeclarationNode), "PrecompilerConstant")]
+[JsonDerivedType(typeof(PrecompilerInlineIfStatementNode), "PrecompilerConditional")]
+[JsonDerivedType(typeof(PrecompilerIfBlockStatementNode), "PrecompilerConditionalBlock")]
+[JsonDerivedType(typeof(PrecompilerElseIfBlockStatementNode), "PrecompilerConditionalElseBlock")]
 public abstract record class SyntaxNode(SyntaxNodeId Identity, SourceLocation SourceLocation, ImmutableArray<SyntaxNode> Children)
 {
     /// <summary>

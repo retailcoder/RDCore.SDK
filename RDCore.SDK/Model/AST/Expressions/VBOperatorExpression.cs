@@ -1,7 +1,5 @@
 ﻿using RDCore.SDK.Model.Source;
 using RDCore.SDK.Model.AST.Abstract;
-using RDCore.SDK.Model.Symbols.Abstract;
-using RDCore.SDK.Semantics.Context.Abstract;
 using System.Collections.Immutable;
 
 namespace RDCore.SDK.Model.AST.Expressions;
@@ -14,6 +12,6 @@ namespace RDCore.SDK.Model.AST.Expressions;
 /// </remarks>
 public abstract record class VBOperatorExpression : ExpressionNode 
 {
-    protected VBOperatorExpression(string token, SyntaxNodeId identity, SourceLocation location, ImmutableArray<ExpressionNode> operands)
-        : base(token, identity, location, operands) {  }
+    protected VBOperatorExpression(SyntaxNodeId identity, SourceLocation location, ImmutableArray<SyntaxNode> operands)
+        : base(identity, location, operands) {  }
 }

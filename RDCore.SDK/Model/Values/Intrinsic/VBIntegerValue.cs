@@ -13,10 +13,10 @@ public record class VBIntegerValue() : VBNumericTypedValue(VBIntegerType.TypeInf
 {
     public VBIntegerValue(short value) : this()
     {
-        ManagedValue = new(new VBRuntimeValue<short>(value));
+        UnderlyingValue = new(new VBRuntimeValue<short>(value));
     }
 
-    public short Value => ((VBRuntimeValue<short>)ManagedValue.RuntimeValue!).StoredValue;
+    public short Value => ((VBRuntimeValue<short>)UnderlyingValue.RuntimeValue!).StoredValue;
     public override int Size { get; } = sizeof(short);
 
     public bool Equals(IVBTypedValue<VBIntegerValue, short>? other) => Value == other?.Value;
