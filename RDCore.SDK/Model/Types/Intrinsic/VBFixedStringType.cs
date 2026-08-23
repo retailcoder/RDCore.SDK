@@ -20,7 +20,7 @@ public sealed record class VBFixedStringType(int Length) : VBStringType
 {
     private const int _maxLength = 65526;
 
-    private static readonly Lazy<VBStringValue> _defaultValue = new(() => new VBStringValue() { UnderlyingValue = new(VBRuntimeReference.EmptyStringRef) }, LazyThreadSafetyMode.PublicationOnly);
+    private static readonly Lazy<VBStringValue> _defaultValue = new(() => new VBStringValue(string.Empty), LazyThreadSafetyMode.PublicationOnly);
     public override VBTypedValue DefaultValue => _defaultValue.Value;
 
     /// <summary>

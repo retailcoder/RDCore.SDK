@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using RDCore.SDK.Platform;
 using RDCore.SDK.Server.Configuration;
 using System.Diagnostics;
 using System.IO.Abstractions;
@@ -9,12 +10,12 @@ namespace RDCore.SDK.Client;
 /// <summary>
 /// Decouples the startup sequence from an actual <c>Process</c> boundary.
 /// </summary>
-public interface IRDCoreLanguageServerProcess : IDisposable
+public interface IRDCoreServerProcess : IDisposable
 {
     /// <summary>
     /// Finds and runs the language server executable with command-line arguments mapping the specified <c>LanguageClientSettings</c>.
     /// </summary>
-    void Start();
+    void Start(CancellationTokenSource tokenSource);
     /// <summary>
     /// Stops awaiting LSP server process exit to restart it.
     /// </summary>
@@ -25,7 +26,7 @@ public interface IRDCoreLanguageServerProcess : IDisposable
 }
 
 /// <summary>
-/// Represents a <c>RDCore.SDK</c> <em>language server application</em>.
+/// Represents a <c>RDCore.SDK</c> <em> server application</em>.
 /// </summary>
 /// <remarks>
 /// A <em>language server application</em> is any <c>RDCore.SDK</c> server platform application that can run a sidecar LSP server.
@@ -33,10 +34,11 @@ public interface IRDCoreLanguageServerProcess : IDisposable
 /// <param name="FileSystem">Provides an abstraction over the file system.</param>
 /// <param name="Configuration">The current <see cref="IConfiguration"/> .</param>
 /// <param name="Logger">A standard <see cref="ILogger"/>.</param>
-public class RDCoreLanguageServerProcess(
+public class RDCoreServerProcess(
     IFileSystem FileSystem,
+    IPlatformCompositionService Platform,
     IConfiguration Configuration,
-    ILogger<RDCoreLanguageServerProcess> Logger) : IRDCoreLanguageServerProcess
+    ILogger<RDCoreServerProcess> Logger) : IRDCoreServerProcess
 {
     private readonly CancellationTokenSource _tokenSource = new();
     private Process? _serverProcess = default;
@@ -61,20 +63,18 @@ public class RDCoreLanguageServerProcess(
         _serverProcess?.Dispose();
     }
 
-    public void Shutdown() => _tokenSource.Cancel();
+    public void Shutdown() => _serverProcess?.Kill();
 
-    public void Start()
+    public void Start(CancellationTokenSource tokenSource)
     {
         if (_serverProcess is Process running)
         {
             // this should not be happening
-            throw new LanguageServerAlreadyRunningException(running.Id);
+            throw new ServerAlreadyRunningException(running.Id);
         }
 
-        //var path = Options.Value.Platform.ServerExecutable.Replace('/', FileSystem.Path.DirectorySeparatorChar);
-        //var working = FileSystem.Path.GetDirectoryName(Assembly.GetEntryAssembly()!.Location)!;
-        var fullPath = FileSystem.Path.GetFileName(Configuration["Configuration:Platform:ServerExecutable"])
-            ?? throw new LanguageServerNotFoundException(string.Empty);
+        var manifest = Platform.GetManifest();
+        var fullPath = FileSystem.Path.Combine(Platform.RootPath, manifest.LangService);
         
         var args = CommandLine.UnParserExtensions.FormatCommandLine(CommandLine.Parser.Default, 
             new SdkAppCommandLineArgs
@@ -91,14 +91,14 @@ public class RDCoreLanguageServerProcess(
         {
             Logger.LogDebug("[ProcessStartInfo]\n\tPath:'{path}'\n\tWorkingDirectory:'{workdir}'\n\tArguments:'{args}'", fullPath, info.WorkingDirectory, info.Arguments); // TODO REMOVE
         }
-        _serverProcess = Process.Start(info) ?? throw new LanguageServerNotFoundException(fullPath);
 
-        _waitForExit = _serverProcess.WaitForExitAsync(_tokenSource.Token)
-            .ContinueWith(t => Shutdown(), _tokenSource.Token, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+        _serverProcess = Process.Start(info) ?? throw new ServerNotFoundException(fullPath);
+        _waitForExit = _serverProcess.WaitForExitAsync(_tokenSource.Token);
 
         if (_serverProcess.HasExited)
         {
-            throw new LanguageServerProtocolSdkException("Unable to start the RDCore.LanguageServer process.");
+            // server process was started but unexpectedly exited.
+            throw new ServerProtocolSdkException("Unable to start server process.");
         }
     }
 

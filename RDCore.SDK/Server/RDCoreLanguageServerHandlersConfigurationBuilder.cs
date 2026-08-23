@@ -13,7 +13,6 @@ public interface IRDCoreLSPHandlerConfigurationBuilder
     /// </summary>
     /// <typeparam name="THandler">The specific concrete implementation type of <em>OmniSharp</em> LSP handler class to register.</typeparam>
     IRDCoreLSPHandlerConfigurationBuilder WithHandler<THandler>() where THandler : class, IJsonRpcHandler;
-
 }
 
 

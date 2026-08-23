@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using OmniSharp.Extensions.LanguageServer.Protocol.Client.Capabilities;
 using OmniSharp.Extensions.LanguageServer.Protocol.Server;
+using RDCore.SDK.Client;
 using RDCore.SDK.Server;
 using RDCore.SDK.Server.Services;
 using RDCore.SDK.Server.Services.States;
@@ -20,7 +21,7 @@ public class RDCoreExtensionServerApp(
         // TODO
     }
 
-    protected override void RegisterServerCapabilities(ILanguageServer server, ClientCapabilities clientCapabilities)
+    protected override void RegisterServerCapabilities(ILanguageServer server, CorePlatformClientCapabilities clientCapabilities)
     {
     }
 

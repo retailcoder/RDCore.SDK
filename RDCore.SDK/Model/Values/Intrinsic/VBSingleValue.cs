@@ -9,14 +9,16 @@ namespace RDCore.SDK.Model.Values.Intrinsic;
 /// Represents a <c>Single</c> numeric value.
 /// </summary>
 /// <param name="Symbol">The symbol associated with this value.</param>
-public sealed record class VBSingleValue() : VBNumericTypedValue(VBSingleType.TypeInfo),
+public sealed record class VBSingleValue : VBNumericTypedValue,
     IVBTypedValue<VBSingleValue, float>,
     INumericValue<VBSingleValue>
 {
-    public VBSingleValue(float value) : this()
+    public VBSingleValue(IBindingHandle handle)
+        : base(VBSingleType.TypeInfo)
     {
-        Handle = new ValueBindingHandle(new VBRuntimeValue<float>(value));
+        Handle = handle;
     }
+    public VBSingleValue(float value) : this(new ValueBindingHandle(new VBRuntimeValue<float>(value))) { }
 
     public float Value => ((VBRuntimeValue<float>)UnderlyingValue.RuntimeValue!).Value;
     public override int Size => sizeof(float);

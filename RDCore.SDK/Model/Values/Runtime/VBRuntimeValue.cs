@@ -6,7 +6,6 @@ public interface IRuntimeValue
     object BoxedValue { get; }
 }
 public interface IRuntimeValue<T> : IRuntimeValue 
-    where T : struct
 {
     T StoredValue { get; }
 }
@@ -15,15 +14,12 @@ public interface IRuntimeValue<T> : IRuntimeValue
 /// The managed (.net) representation of a runtime value.
 /// </summary>
 public readonly struct VBRuntimeValue<T>(T value) : IRuntimeValue<T>, IEquatable<VBRuntimeValue<T>>
-    where T : struct
 {
     public readonly T Value = value;
 
     public object BoxedValue => Value;
     public T StoredValue => Value;
 
-    public static VBRuntimeValue<bool> BooleanFalse { get; } = new(false);
-    public static VBRuntimeValue<bool> BooleanTrue { get; } = new(true);
     public static VBRuntimeValue<byte> ByteMinValue { get; } = new(byte.MinValue);
     public static VBRuntimeValue<byte> ByteMaxValue { get; } = new(byte.MaxValue);
     public static VBRuntimeValue<byte> ByteZeroValue { get; } = new((byte)0);
@@ -52,7 +48,7 @@ public readonly struct VBRuntimeValue<T>(T value) : IRuntimeValue<T>, IEquatable
 
     public override int GetHashCode()
     {
-        return Value.GetHashCode();
+        return Value?.GetHashCode() ?? 0;
     }
 
     public override bool Equals([NotNullWhen(true)] object? obj)
@@ -67,7 +63,7 @@ public readonly struct VBRuntimeValue<T>(T value) : IRuntimeValue<T>, IEquatable
 
     public bool Equals(VBRuntimeValue<T> other)
     {
-        return other.StoredValue.Equals(StoredValue);
+        return other.StoredValue?.Equals(StoredValue) ?? false;
     }
 
     public static bool operator ==(VBRuntimeValue<T> left, VBRuntimeValue<T> right)

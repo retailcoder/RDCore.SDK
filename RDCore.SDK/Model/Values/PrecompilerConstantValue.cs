@@ -1,5 +1,4 @@
-﻿using RDCore.SDK.Model.Values.Runtime;
-using RDCore.SDK.Model.Values.Intrinsic;
+﻿using RDCore.SDK.Model.Values.Intrinsic;
 
 namespace RDCore.SDK.Model.Values;
 
@@ -11,10 +10,6 @@ public sealed record class PrecompilerConstantValue : VBIntegerValue
     /// <summary>
     /// Creates a new precompiler constant value.
     /// </summary>
-    /// <param name="managedValue">The underlying managed value of this constant.</param>
-    public PrecompilerConstantValue(int managedValue)
-        : base()
-    {
-        UnderlyingValue = new(new VBRuntimeValue<int>(managedValue));
-    }
+    /// <param name="value">The underlying value of this constant.</param>
+    public PrecompilerConstantValue(short value) : base(value) { }
 }

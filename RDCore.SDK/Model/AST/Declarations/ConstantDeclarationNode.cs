@@ -20,10 +20,9 @@ public record class ConstantDeclarationNode(SyntaxNodeId Identity, SourceLocatio
 /// </summary>
 /// <param name="Identity">A unique identifier for this specific syntax node.</param>
 /// <param name="Location">The source location of this module; the <c>SourceRange</c> is invalid.</param>
-/// <param name="Name">The declared identifier name of the member.</param>
 /// <param name="ConstKind">The scope kind of constant declaration.</param>
 /// <param name="AccessModifier">An access modifier, if one was supplied.</param>
-public record class PrecompilerConstantDeclarationNode(SyntaxNodeId Identity, SourceLocation Location, string Name, ConstKind ConstKind, ImmutableArray<SyntaxNode> Children, AccessModifier AccessModifier = AccessModifier.Implicit)
+public record class PrecompilerConstantDeclarationNode(SyntaxNodeId Identity, SourceLocation Location, ConstKind ConstKind, ImmutableArray<SyntaxNode> Children)
     : SyntaxNode(Identity, Location, Children);
 
 /// <summary>

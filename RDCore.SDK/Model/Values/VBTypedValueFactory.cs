@@ -6,6 +6,7 @@ using RDCore.SDK.Model.Values.Runtime;
 using RDCore.SDK.Model.Values.Intrinsic;
 using RDCore.SDK.Model.Values.Meta;
 using System.Data;
+using RDCore.SDK.Runtime.Shared;
 
 namespace RDCore.SDK.Model.Values;
 
@@ -122,20 +123,20 @@ public static class VBTypedValueFactory
     public static VBTypedValue? CreateValue(VBType type) =>
         type switch
         {
-            VBStringType => new VBStringValue(),
+            VBStringType => new VBStringValue(string.Empty),
             VBBooleanType => new VBBooleanValue(false),
             VBByteType => new VBByteValue(),
-            VBIntegerType => new VBIntegerValue(),
-            VBLongType => new VBLongValue(),
+            VBIntegerType => new VBIntegerValue(0),
+            VBLongType => new VBLongValue(0),
             VBLongLongType => new VBLongLongValue(),
-            VBSingleType => new VBSingleValue(),
-            VBDoubleType => new VBDoubleValue(),
+            VBSingleType => new VBSingleValue(0),
+            VBDoubleType => new VBDoubleValue(0),
             VBCurrencyType => new VBCurrencyValue(),
             VBDecimalType => new VBDecimalValue(),
-            VBDateType => new VBDateValue(),
+            VBDateType => new VBDateValue(0),
             VBNullType => new VBNullValue(),
             VBEmptyType => new VBEmptyValue(),
-            VBObjectType => new VBObjectValue((object)null!),
+            VBObjectType => new VBObjectValue(MemoryAddress.Zero),
         
             VBVariantType => CreateVariant(type.DefaultValue),
             _ => null

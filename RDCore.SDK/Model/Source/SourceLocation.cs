@@ -5,4 +5,7 @@ namespace RDCore.SDK.Model.Source;
 /// </summary>
 /// <param name="Uri">The <c>Uri</c> of the source document.</param>
 /// <param name="Range">The range within the source document.</param>
-public readonly record struct SourceLocation(Uri Uri, SourceRange Range);
+public readonly record struct SourceLocation(Uri Uri, SourceRange Range) : IComparable<SourceLocation>
+{
+    public int CompareTo(SourceLocation other) => Range.Start.CompareTo(other.Range.Start);
+}

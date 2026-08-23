@@ -5,7 +5,10 @@ namespace RDCore.SDK.Model.Source;
 /// </summary>
 /// <param name="Start">The inclusive start position of the range.</param>
 /// <param name="End">The exclusive end position of the range.</param>
-public readonly record struct SourceRange(SourcePosition Start, SourcePosition End)
+/// <remarks>
+/// <c>IComparable</c> compares source location start.
+/// </remarks>
+public readonly record struct SourceRange(SourcePosition Start, SourcePosition End) : IComparable<SourceRange>
 {
     /// <summary>
     /// Gets an empty range at position <c>L0C0</c>.
@@ -22,4 +25,6 @@ public readonly record struct SourceRange(SourcePosition Start, SourcePosition E
     /// <c>true</c> if this range spans no characters (<c>Start</c> and <c>End</c> are the same position).
     /// </summary>
     public bool IsEmpty => Start == End;
+
+    public int CompareTo(SourceRange other) => Start.CompareTo(other.Start);
 }

@@ -4,7 +4,7 @@
 /// This exception is thrown when a LSP client application cannot locate the LSP server executable as configured.
 /// </summary>
 /// <param name="Path">The <c>Path</c> where the LSP language server application was expected to be found.</param>
-public class LanguageServerNotFoundException(string Path) 
+public class ServerNotFoundException(string Path) 
     : BadConfigurationException(Exceptions.LanguageServerNotFoundException_Message, Exceptions.LanguageServerNotFoundException_Verbose) 
 {
     /// <summary>
@@ -17,7 +17,7 @@ public class LanguageServerNotFoundException(string Path)
 /// This exception is thrown when a LSP client application attempts to launch an already-running language server.
 /// </summary>
 /// <param name="ProcessId"></param>
-public class LanguageServerAlreadyRunningException(int ProcessId)
+public class ServerAlreadyRunningException(int ProcessId)
     : SdkException(Exceptions.LanguageServerAlreadyRunningException_Message, Exceptions.LanguageServerAlreadyRunningException_Verbose)
 {
     /// <summary>

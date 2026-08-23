@@ -1,13 +1,12 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using OmniSharp.Extensions.LanguageServer.Client;
 using OmniSharp.Extensions.LanguageServer.Protocol.Client.Capabilities;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
 using OmniSharp.Extensions.LanguageServer.Protocol.Server;
 using OmniSharp.Extensions.LanguageServer.Protocol.Window;
 using OmniSharp.Extensions.LanguageServer.Server;
-using RDCore.SDK.Server.Configuration;
+using RDCore.SDK.Client;
 using RDCore.SDK.Server.Handlers;
 using RDCore.SDK.Server.Handlers.Lifecycle;
 using RDCore.SDK.Server.Services;
@@ -61,9 +60,9 @@ public abstract class RDCoreServerApp(
     /// <remarks>
     /// ⚠️ <strong><em>Temporal coupling</em>: this property getter will throw</strong> if it is used before <c>RunAsync</c> is called.
     /// </remarks>
-    /// <exception cref="LanguageServerProtocolSdkException">Thrown </exception>
+    /// <exception cref="ServerProtocolSdkException">Thrown </exception>
     public ILanguageServer LanguageServer => Server 
-        ?? throw new LanguageServerProtocolSdkException(Exceptions.LanguageServerProtocolSdkException_ServerNotInitialized);
+        ?? throw new ServerProtocolSdkException(Exceptions.LanguageServerProtocolSdkException_ServerNotInitialized);
 
     public async Task RunAsync(IServiceProvider externalServiceProvider)
     {
@@ -178,7 +177,7 @@ public abstract class RDCoreServerApp(
     /// </remarks>
     /// <param name="server">The initializing <c>OmniSharp</c> LSP server instance.</param>
     /// <param name="clientCapabilities">The <em>client capabilities</em> reported by the client.</param>
-    protected abstract void RegisterServerCapabilities(ILanguageServer server, ClientCapabilities clientCapabilities);
+    protected abstract void RegisterServerCapabilities(ILanguageServer server, CorePlatformClientCapabilities clientCapabilities);
 
     private async Task HandleLanguageServerStartedAsync(ILanguageServer server, CancellationToken token) => OnLanguageServerStarted(server);
 
@@ -211,7 +210,7 @@ public abstract class RDCoreServerApp(
             LogIfEnabled(LogLevel.Warning, TraceMessages.InitializeMissingClientProcessId);
         }
 
-        if (request.Capabilities is ClientCapabilities capabilities)
+        if (request.Capabilities is CorePlatformClientCapabilities capabilities)
         {
             RegisterServerCapabilities(server, capabilities);
         }
@@ -263,7 +262,5 @@ internal static class LanguageServerOptionsExtensions
     internal static LanguageServerOptions ConfigureCoreSdkHandlers(this LanguageServerOptions options) => options
         .WithHandler<ShutdownHandler>()
         .WithHandler<ExitHandler>()
-        .WithHandler<SetTraceHandler>()
-
-        .WithHandler<ExecuteCommandHandler>();
+        .WithHandler<SetTraceHandler>();
 }

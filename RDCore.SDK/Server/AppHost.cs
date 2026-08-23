@@ -151,7 +151,7 @@ public abstract class AppHost<TApp>() : IDisposable
         services
             .AddTransient<TApp>()
             .AddTransient<IServerStateProvider, ServerStateProvider>()
-            .AddTransient<IRDCoreLanguageServerProcess, RDCoreLanguageServerProcess>() // FIXME this one needs a provider or factory
+            .AddTransient<IRDCoreServerProcess, RDCoreServerProcess>() // FIXME this one needs a provider or factory
             .AddTransient<IHealthCheckService<TApp>, HealthCheckService<TApp>>()
             .AddTransient<ILanguageServerProtocolTransportLayer, RDCorePlatformDefaultTransportLayer>()
             .AddSingleton<IFileSystem, FileSystem>()

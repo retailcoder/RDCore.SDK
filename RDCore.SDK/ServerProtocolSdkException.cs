@@ -6,4 +6,4 @@
 /// <param name="message"></param>
 /// <param name="verbose"></param>
 /// <param name="inner"></param>
-public class LanguageServerProtocolSdkException(string message, string? verbose = default, Exception? inner = default): SdkException(message, verbose, inner) { }
+public class ServerProtocolSdkException(string message, string? verbose = default, Exception? inner = default): SdkException(message, verbose, inner) { }

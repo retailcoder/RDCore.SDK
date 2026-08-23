@@ -8,13 +8,15 @@ namespace RDCore.SDK.Model.Values.Intrinsic;
 /// <summary>
 /// Represents a runtime value of the <see cref="VBDateType"/> data type.
 /// </summary>
-public sealed record class VBDateValue() 
-    : VBTypedValue(VBDateType.TypeInfo), IVBTypedValue<VBDateValue, DateTime>
+public sealed record class VBDateValue : VBTypedValue, 
+    IVBTypedValue<VBDateValue, DateTime>
 {
-    public VBDateValue(double value) : this()
+    public VBDateValue(IBindingHandle handle)
+        : base(VBDateType.TypeInfo)
     {
-        Handle = new ValueBindingHandle(new VBRuntimeValue<double>(value));
+        Handle = handle;
     }
+    public VBDateValue(double value) : this(new ValueBindingHandle(new VBRuntimeValue<double>(value))) { }
 
     /// <summary>
     /// Gets the <c>DateSerial</c> (<c>double</c>) underlying numeric representation of the date value.

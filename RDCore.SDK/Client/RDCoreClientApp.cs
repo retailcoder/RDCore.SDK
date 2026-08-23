@@ -38,7 +38,7 @@ public interface IRDCoreClientApp : IRDCoreApp
 /// 🧩 Most RDCore apps are server-side, but if you were making an IDE or a CLI app, this would be your LSP app.
 /// </remarks>
 public abstract class RDCoreClientApp(
-    IRDCoreLanguageServerProcess serverProcess,
+    IRDCoreServerProcess serverProcess,
     IHealthCheckService<RDCoreClientApp> healthCheckService,
     ILanguageServerProtocolTransportLayer transportLayer,
     ILogger<RDCoreClientApp> logger) : IRDCoreClientApp
@@ -53,9 +53,9 @@ public abstract class RDCoreClientApp(
     /// <remarks>
     /// ⚠️ This property <strong>will throw</strong> if used before initialization.
     /// </remarks>
-    /// <exception cref="LanguageServerProtocolSdkException"></exception>
+    /// <exception cref="ServerProtocolSdkException"></exception>
     public ILanguageClient LanguageClient => Client
-        ?? throw new LanguageServerProtocolSdkException(Exceptions.LanguageServerProtocolSdkException_ClientNotInitialized);
+        ?? throw new ServerProtocolSdkException(Exceptions.LanguageServerProtocolSdkException_ClientNotInitialized);
 
     /// <summary>
     /// Bootstraps and starts the application.
@@ -88,11 +88,12 @@ public abstract class RDCoreClientApp(
 
     private async Task StartLanguageClientAsync()
     {
+        ServerToken = new CancellationTokenSource();
+
         // start the process first:
-        serverProcess.Start();
+        serverProcess.Start(ServerToken);
 
         // by the time we're configured on this side, the server pipe should be ready:
-        ServerToken = new CancellationTokenSource();
         Client = await OmniSharpLanguageClient.From(ConfigureClient, ServerToken.Token);
     }
 
