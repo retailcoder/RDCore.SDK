@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using RDCore.SDK.Client;
 namespace RDCore.SDK;
 
 /// <summary>
@@ -7,10 +8,14 @@ namespace RDCore.SDK;
 public interface IRDCoreApp : IDisposable
 {
     /// <summary>
+    /// Identifies the type of RDCore platform application.
+    /// </summary>
+    CoreServerComponent PlatformComponent { get; }
+    /// <summary>
     /// Bootstraps and starts the application.
     /// </summary>
     /// <param name="provider">An <see cref="IServiceProvider"/> to configure the application.</param>
-    Task RunAsync(IServiceProvider provider);
+    Task RunAsync(IServiceProvider provider, string[] args);
     /// <summary>
     /// Logs the specified message at the specified level, if logging is enabled at that level.
     /// </summary>

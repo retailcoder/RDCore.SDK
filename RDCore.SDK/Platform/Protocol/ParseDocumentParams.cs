@@ -1,12 +1,14 @@
-﻿using RDCore.SDK.Model.AST.Declarations;
+﻿using MediatR;
+using RDCore.SDK.Model.AST;
+using RDCore.SDK.Model.AST.Declarations;
 using RDCore.SDK.Model.Source;
 
-namespace RDCore.SDK.Server.Commands.Parsing;
+namespace RDCore.SDK.Platform.Protocol;
 
 /// <summary>
 /// The <em>parameter</em> object for a <c>ParseDocumentCommand</c>.
 /// </summary>
-public record class ParseDocumentParams
+public record class ParseDocumentParams : IRequest, IRequest<ModuleParseResult>
 {
     /// <summary>
     /// The <c>Uri</c> of the document to parse.

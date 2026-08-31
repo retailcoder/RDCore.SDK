@@ -1,5 +1,6 @@
 ﻿using CommandLine;
 using Microsoft.Extensions.Logging;
+using RDCore.SDK.Client;
 using RDCore.SDK.Extensibility;
 
 namespace RDCore.SDK.Server.Configuration;
@@ -23,50 +24,50 @@ public record class SdkAppCommandLineArgs
     /// A <em>command-line argument</em> that overrides the <see cref="SdkServerOptions.ConnectTimeoutSeconds"/> setting.
     /// </summary>
     [Option('c', "connect-timeout")]
-    public int? ConnectTimeoutSeconds { get; init; }
+    public int? ConnectTimeoutSeconds { get; set; }
     /// <summary>
     /// A <em>command-line argument</em> that overrides the <see cref="SdkWorkspaceOptions.DefaultLocation"/> setting.
     /// </summary>
-    [Option('d', "default-location")]
-    public string? DefaultLocation { get; init; }
+    [Option('d', "default-workspace")]
+    public string? DefaultLocation { get; set; }
     /// <summary>
     /// A <em>command-line argument</em> that overrides the application startup sequence and outputs command-line arguments documentation instead.
     /// </summary>
     [Option('h', "help")]
-    public bool? ShowHelp { get; init; }
+    public bool? Help { get; set; }
     /// <summary>
     /// A <em>command-line argument</em> that overrides the <see cref="SdkServerOptions.HealthCheckIntervalSeconds"/> setting.
     /// </summary>
-    [Option('k', "healthcheck-timeout")]
-    public int? HealthCheckIntervalSeconds { get; init; }
+    [Option('k', "healthcheck-interval")]
+    public int? HealthCheckIntervalSeconds { get; set; }
     /// <summary>
-    /// A <em>command-line argument</em> that overrides the <see cref="SdkServerOptions.HealthCheckIntervalSeconds"/> setting.
+    /// A <em>command-line argument</em> that overrides the <see cref="TransportOptions.Type"/> setting.
     /// </summary>
-    [Option('m', "mode")]
-    public ServerTransportLayerMode Type { get; init; }
+    [Option('m', "transport-mode")]
+    public ServerTransportLayerMode? Type { get; set; }
     /// <summary>
     /// A <em>command-line argument</em> that overrides the <see cref="NamedPipeTransportOptions.PipeName"/> setting.
     /// </summary>
-    [Option('n', "name")]
-    public string? PipeName { get; init; }
+    [Option('n', "pipe-name")]
+    public string? PipeName { get; set; }
     /// <summary>
     /// A <em>command-line argument</em> that provides the <see cref="SdkServerOptions.ClientProcessId"/> owner process ID to a server app.
     /// </summary>
     /// <remarks>
     /// 👉 This argument is required for starting a server app.
     /// </remarks>
-    [Option('p', "client-id")]
-    public int? ClientProcessId { get; init; }
+    [Option('p', "client-process-id")]
+    public int? ClientProcessId { get; set; }
     /// <summary>
     /// A <em>command-line argument</em> that overrides the <see cref="SdkServerOptions.ShutdownTimeoutSeconds"/> setting.
     /// </summary>
     [Option('s', "shutdown-timeout")]
-    public int? ShutdownTimeoutSeconds { get; init; }
+    public int? ShutdownTimeoutSeconds { get; set; }
     /// <summary>
     /// A <em>command-line argument</em> that overrides the <see cref="SdkServerOptions.TraceLevel"/> setting.
     /// </summary>
-    [Option('t', "trace")]
-    public LogLevel? TraceLevel { get; init; }
+    [Option('t', "trace-level")]
+    public LogLevel? TraceLevel { get; set; }
     /// <summary>
     /// A <em>command-line switch</em> that overrides the <see cref="SdkServerOptions.TraceLevel"/> setting.
     /// </summary>
@@ -74,20 +75,20 @@ public record class SdkAppCommandLineArgs
     /// 👉 This switch has <strong>no alias</strong> and does not appear in <em>help documentation</em>.
     /// </remarks>
     [Option("unsafe-dev-mode", Hidden = true)]
-    public bool? UnsafeDevMode { get; init; }
+    public bool? UnsafeDevMode { get; set; }
     /// <summary>
     /// A <em>command-line argument</em> that overrides the <see cref="SdkServerOptions.Verbose"/> setting.
     /// </summary>
     [Option('v', "verbose")]
-    public bool? Verbose { get; init; }
+    public bool? Verbose { get; set; }
     /// <summary>
     /// A <em>command-line argument</em> that overrides the <see cref="SdkWorkspaceOptions.WorkspaceUri"/> setting.
     /// </summary>
     /// <remarks>
-    /// 👉 This argument is required for starting a server app.
+    /// 👉 This argument is required for starting a language server app.
     /// </remarks>
     [Option('w', "workspace")]
-    public string? WorkspaceUri { get; init; }
+    public string? WorkspaceUri { get; set; }
 }
 
 /// <summary>
@@ -95,6 +96,13 @@ public record class SdkAppCommandLineArgs
 /// </summary>
 public record class SdkAppOptions
 {
+    /// <summary>
+    /// ServerApp options.
+    /// </summary>
+    /// <remarks>
+    /// Configures a platform server application within the RDCore platform.
+    /// </remarks>
+    public SdkServerAppOptions ServerApp { get; set; } = new();
     /// <summary>
     /// LSP Server options.
     /// </summary>
@@ -110,6 +118,14 @@ public record class SdkAppOptions
     /// Platform options.
     /// </summary>
     public SdkPlatformOptions Platform { get; set; } = new();
+}
+
+public record class SdkServerAppOptions
+{
+    /// <summary>
+    /// The platform server component type for this application.
+    /// </summary>
+    public CoreServerComponent Component { get; set; } = CoreServerComponent.Extension;
 }
 
 /// <summary>
@@ -162,7 +178,7 @@ public record class SdkServerOptions
     /// 🧩 This is useful for developing plug-ins with a private fork.<br/>
     /// This setting is <strong>read-only</strong> and must be explicitly overridden via a command-line argument.
     /// </remarks>
-    public bool UnsafeDevMode { get; init; }
+    public bool UnsafeDevMode { get; set; }
 }
 
 /// <summary>
@@ -236,7 +252,7 @@ public record class SdkPlatformOptions
 /// </summary>
 public record class ExtensionsOptions
 {
-    private const string _defaultExtensionsLocation = "../extensions";
+    private const string _defaultExtensionsLocation = "Extensions";
     private const string _defaultExtensionManifestName = "extension.manifest.json";
 
     /// <summary>
@@ -344,7 +360,7 @@ public record class NamedPipeTransportOptions
     /// <remarks>
     /// 🧩 This setting is required in <strong>both <em>client</em> and <em>server</em> applications</strong> and <strong>MUST</strong> be different for each loaded SDK application.
     /// </remarks>
-    public string PipeName { get; set; } = $"{_defaultPipeName + Random.Shared.NextInt64()}";
+    public string PipeName { get; set; } = null!;
     /// <summary>
     /// The maximum number of pipe instances that can run concurrently.
     /// </summary>

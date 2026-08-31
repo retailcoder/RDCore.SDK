@@ -1,6 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using RDCore.LanguageServer.Extensibility;
 using RDCore.SDK.Client;
 using RDCore.SDK.Server;
 using RDCore.SDK.Server.Configuration;
@@ -28,7 +27,8 @@ public class ExtensionsClient(
     private readonly Dictionary<string, ExtensionInfo> _extensions = [];
     private readonly Dictionary<ExtensionInfo, IRDCoreClientApp> _clients = [];
 
-    private IDirectoryInfo ExtensionsFolder => fileSystem.DirectoryInfo.New(options.Value.Platform.Extensions.Path);
+    private IDirectoryInfo ExtensionsFolder => fileSystem.DirectoryInfo.New(
+        fileSystem.Path.Combine(fileSystem.Directory.GetParent(fileSystem.Directory.GetCurrentDirectory())!.FullName, options.Value.Platform.Extensions.Path));
 
     /// <summary>
     /// Enables the specified <see cref="ExtensionInfo"/> if the manifest and associated executable pass validation.
@@ -96,7 +96,7 @@ public class ExtensionsClient(
 
         // TODO read company (publisher) and description metadata (if empty) from assembly attributes.
 
-        return new(name, title, version, string.Empty, string.Empty, description, signature);
+        return new(name, title, version, string.Empty, string.Empty, description, signature, []);
     }
 
     /// <summary>
@@ -136,6 +136,10 @@ public class ExtensionsClient(
                     logger.LogWarning("{message}{verbose}", message, verbose);
                 }
             }
+            else if (logger.IsEnabled(LogLevel.Warning))
+            {
+                logger.LogWarning("No manifest was found for extension '{title}'.", title);
+            }
         }
     }
 
@@ -165,15 +169,4 @@ public class ExtensionsClient(
             builder.AppendLine($"[{check}:{(int)check}:X2] {verbose}");
         }
     }
-
-    /// <summary>
-    /// Asynchronously starts and attempts to connect with the <em>server process</em> for the specified <see cref="ExtensionInfo"/>.
-    /// </summary>
-    /// <param name="extension">The deserialized <em>manifest</em> of the extension to start.</param>
-    /// <returns>An asynchronous <see cref="Task"/> that completes when the specified extension was successfully started and connected, or failed to do so.</returns>
-    public async Task StartAsync(ExtensionInfo extension)
-    {
-        // TODO
-    }
 }
-

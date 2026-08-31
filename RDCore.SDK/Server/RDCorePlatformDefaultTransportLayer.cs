@@ -6,26 +6,23 @@ using OmniSharp.Extensions.LanguageServer.Server;
 using RDCore.SDK.Server.Configuration;
 using System.IO.Pipelines;
 using System.IO.Pipes;
+using System.Reflection.Metadata;
 
 namespace RDCore.SDK.Server;
 
 /// <summary>
 /// The RDCore LSP transport layer interface.
 /// </summary>
-public interface ILanguageServerProtocolTransportLayer : IDisposable
+public interface ILanguageServerProtocolTransportLayer
 {
-
     /// <summary>
-    /// Gets a <c>Task</c> that completes then the server establishes a transport-level connection with a client.
+    /// Configures server-side transport.
     /// </summary>
-    /// <param name="options">The <c>OmniSharp</c> language server options.</param>
-    /// <param name="processToken">The <c>CancellationToken</c> that controls the application's process termination.</param>
-    Task GetWaitForClientConnectionTaskAsync(LanguageServerOptions options, CancellationToken processToken);
+    NamedPipeServerStream ConfigureServer();
     /// <summary>
     /// Configures client-side transport.
     /// </summary>
-    /// <param name="options">The <see cref="LanguageClientOptions"/> to configure the LSP client.</param>
-    void ConfigureClient(LanguageClientOptions options);
+    NamedPipeClientStream ConfigureClient(string pipeName);
 }
 
 
@@ -35,46 +32,20 @@ public interface ILanguageServerProtocolTransportLayer : IDisposable
 /// <remarks>
 /// Implements the client/server connection over <em>named pipes</em> streams.
 /// </remarks>
-public sealed class RDCorePlatformDefaultTransportLayer(IOptions<TransportOptions> Options, ILogger<RDCorePlatformDefaultTransportLayer> Logger) : ILanguageServerProtocolTransportLayer
+public sealed class RDCorePlatformDefaultTransportLayer(IOptions<SdkAppOptions> Options) 
+    : ILanguageServerProtocolTransportLayer
 {
-    private TransportOptions Options { get; } = Options.Value;
-    private NamedPipeServerStream NamedPipeServerStream { get; set; } = default!;
-    private NamedPipeClientStream NamedPipeClientStream { get; set; } = default!;
-
-    /// <summary>
-    /// Disposes unmanaged resources.
-    /// </summary>
-    public void Dispose()
-    {
-        NamedPipeServerStream?.Dispose();
-    }
-
-    public Task GetWaitForClientConnectionTaskAsync(LanguageServerOptions options, CancellationToken processToken)
-    {
-        var pipeName = Options.PipeConfig.PipeName;
-        NamedPipeServerStream = new NamedPipeServerStream(pipeName, PipeDirection.InOut,
-            Options.PipeConfig.MaximumInstances,
+    public NamedPipeServerStream ConfigureServer() 
+        => new(Options.Value.Platform.Transport.PipeConfig.PipeName, PipeDirection.InOut,
+            Options.Value.Platform.Transport.PipeConfig.MaximumInstances,
             PipeTransmissionMode.Byte, // NOTE: 'Message' transmission mode is only supported with Windows pipes.
-            System.IO.Pipes.PipeOptions.Asynchronous |
-            System.IO.Pipes.PipeOptions.CurrentUserOnly);
+            // NOTE: 'Asynchronous' is REQUIRED here. Both sides wrap this single duplex handle
+            // as *both* PipeReader (input) and PipeWriter (output). On a non-overlapped handle
+            // Windows serializes I/O on the file object, so the JSON-RPC input read-loop blocks
+            // every outgoing write -- the 'initialize' request never leaves the client.
+            System.IO.Pipes.PipeOptions.CurrentUserOnly | System.IO.Pipes.PipeOptions.Asynchronous);
 
-        options
-            .WithInput(PipeReader.Create(NamedPipeServerStream))
-            .WithOutput(PipeWriter.Create(NamedPipeServerStream));
-
-        if (Logger.IsEnabled(LogLevel.Trace))
-        {
-            Logger.LogTrace("⏳ Named pipe '{pipeName}' initialized; asynchronously awaiting client connection...", pipeName);
-        }
-        return NamedPipeServerStream.WaitForConnectionAsync(processToken);
-    }
-
-    public void ConfigureClient(LanguageClientOptions options)
-    {
-        var pipeName = Options.PipeConfig.PipeName;
-        NamedPipeClientStream = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, System.IO.Pipes.PipeOptions.CurrentUserOnly);
-        options
-            .WithInput(PipeReader.Create(NamedPipeClientStream))
-            .WithOutput(PipeWriter.Create(NamedPipeClientStream));
-    }
+    public NamedPipeClientStream ConfigureClient(string pipeName) 
+        => new(".", pipeName, PipeDirection.InOut,
+            System.IO.Pipes.PipeOptions.CurrentUserOnly | System.IO.Pipes.PipeOptions.Asynchronous);
 }

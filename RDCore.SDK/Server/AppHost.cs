@@ -4,9 +4,12 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
 using RDCore.SDK.Client;
+using RDCore.SDK.Extensibility;
+using RDCore.SDK.Platform;
 using RDCore.SDK.Server.Configuration;
 using RDCore.SDK.Server.Services;
 using RDCore.SDK.Server.Services.States;
+using System.Diagnostics;
 using System.IO.Abstractions;
 using System.Reflection;
 using System.Text;
@@ -17,7 +20,7 @@ namespace RDCore.SDK.Server;
 /// A <c>RDCore.SDK</c> application host.
 /// </summary>
 /// <remarks>
-/// 👉 This class is inherited by both <see cref="RDCoreLanguageServerHost{TApp}"/> and <see cref="RDCoreLanguageClientHost{TApp}"/>
+/// 👉 This class is inherited by both <see cref="RDCorePlatformServerHost{TApp}"/> and <see cref="RDCoreLanguageClientHost{TApp}"/>
 /// to encapsulate a common interface to simplify implementing any kind of SDK application.<br/>
 /// </remarks>
 /// <typeparam name="TApp">The type of <see cref="IRDCoreApp"/> being hosted.</typeparam>
@@ -58,6 +61,42 @@ public abstract class AppHost<TApp>() : IDisposable
     protected virtual Task BeforeAppStartAsync(IServiceProvider provider) => Task.CompletedTask;
 
     /// <summary>
+    /// Builds the host, resolves and runs the <c>TApp</c> application.
+    /// </summary>
+    /// <remarks>
+    /// Overrides should invoke the base implementation to run the base protocol.
+    /// </remarks>
+    protected virtual async Task BuildAndRunAsync(HostApplicationBuilder builder, string[] args)
+    {
+        _host = builder.Build();
+        _app = _host.Services.GetRequiredService<TApp>();
+        LogIfEnabled(LogLevel.Information, "Application resolved successfully. Starting application host...");
+
+        await BeforeAppStartAsync(_host.Services);
+
+        try
+        {            
+            _hostTask = _host.StartAsync(ProcessTokenSource.Token);
+            LogIfEnabled(LogLevel.Information, "Host started; starting application...");
+
+            await _app.RunAsync(_host.Services, args);
+            await _hostTask;
+        }
+        catch (OperationCanceledException)
+        {
+            LogIfEnabled(LogLevel.Information, "Operation was cancelled.");
+        }
+        catch (Exception exception)
+        {
+            LogIfEnabled(LogLevel.Error, exception.ToString());
+        }
+        finally
+        {
+            await _host.StopAsync();
+        }
+    }
+
+    /// <summary>
     /// Runs the <c>RDCore.SDK</c> client/server application.
     /// </summary>
     /// <remarks>
@@ -68,32 +107,18 @@ public abstract class AppHost<TApp>() : IDisposable
     /// <exception cref="Exception">Any other exception type is unexpected and if it is fatal, the host application process should exit with a non-zero error code.</exception>
     public async Task<int> RunAsync(string[] args)
     {
+        Console.OutputEncoding = Encoding.Unicode;
         try
         {
             var builder = Host.CreateApplicationBuilder();
-
             var configuration = builder.Configuration;
-            configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
+            configuration.AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
             Configure(configuration, builder.Services, args);
 
             ConfigureExternalServices(builder.Services, configuration);
             ConfigureAdditionalExternalServices(builder.Services, configuration);
 
-            _host = builder.Build();
-            _app = _host.Services.GetRequiredService<TApp>();
-
-            await BeforeAppStartAsync(_host.Services);
-
-            try
-            {
-                _hostTask = _host.StartAsync();
-                await _app.RunAsync(_host.Services);
-                await _hostTask;
-            }
-            finally
-            {
-                await _host.StopAsync();
-            }
+            await BuildAndRunAsync(builder, args);
         }
         catch (OperationCanceledException)
         {
@@ -107,7 +132,6 @@ public abstract class AppHost<TApp>() : IDisposable
         }
         finally
         {
-            Console.OutputEncoding = Encoding.Unicode;
             Console.WriteLine("V I V A T  ♥  C U C U M I S ™\n©Copyright 2026 9562-7303 Québec inc.");
         }
 
@@ -123,19 +147,7 @@ public abstract class AppHost<TApp>() : IDisposable
     /// 🧩 The base implementation binds and configures <c>appsettings.json</c> options, with command-line arguments as overrides.
     /// </remarks>
     /// <returns>The effective <see cref="SdkAppOptions"/> configuration.</returns>
-    protected virtual void Configure(IConfiguration configuration, IServiceCollection services, string[] args) 
-    {
-        var overrides = CommandLine.Parser.Default.ParseArguments<SdkAppCommandLineArgs>(args);
-        var canOverride = !overrides.Errors.Any();
-
-        var config = configuration.GetSection("Configuration");
-        services.Configure<SdkAppOptions>(config);
-
-        if (canOverride)
-        {
-            config.Bind(overrides);
-        }
-    }
+    protected abstract void Configure(IConfigurationBuilder configuration, IServiceCollection services, string[] args);
 
     /// <summary>
     /// Configures only the services needed to resolve the <see cref="IRDCoreApp"/> instance.
@@ -148,13 +160,19 @@ public abstract class AppHost<TApp>() : IDisposable
     /// </remarks>
     protected virtual void ConfigureExternalServices(IServiceCollection services, IConfiguration configuration)
     {
+        var config = configuration.GetSection("Configuration");
+        services.Configure<SdkAppOptions>(config);
+
         services
-            .AddTransient<TApp>()
+            .AddSingleton<TApp>()
             .AddTransient<IServerStateProvider, ServerStateProvider>()
             .AddTransient<IRDCoreServerProcess, RDCoreServerProcess>() // FIXME this one needs a provider or factory
             .AddTransient<IHealthCheckService<TApp>, HealthCheckService<TApp>>()
             .AddTransient<ILanguageServerProtocolTransportLayer, RDCorePlatformDefaultTransportLayer>()
             .AddSingleton<IFileSystem, FileSystem>()
+            .AddSingleton<IPlatformCompositionService, PlatformCompositionService>()
+            .AddSingleton<IExtensionsProvider, ExtensionsClient>()
+            .AddSingleton<IExtensionManifestValidationService, ExtensionManifestValidationService>()
             .AddLogging(builder => ConfigureExternalLogging(services, builder, configuration));
     }
 
@@ -190,14 +208,12 @@ public abstract class AppHost<TApp>() : IDisposable
     /// </remarks>
     protected virtual void ConfigureExternalLogging(IServiceCollection services, ILoggingBuilder builder, IConfiguration configuration)
     {
-        var traceLevelConfig = configuration["Server:TraceLevel"];
+        var traceLevelConfig = configuration["Configuration:Server:TraceLevel"];
         if (Enum.TryParse<LogLevel>(traceLevelConfig, out var config))
         {
             builder.SetMinimumLevel(config);
         }
-#if DEBUG
         builder.AddDebug();
-#endif
     }
 
     /// <summary>

@@ -1,4 +1,6 @@
-﻿namespace RDCore.SDK.Extensibility;
+﻿using RDCore.SDK.Client;
+
+namespace RDCore.SDK.Extensibility;
 
 /// <summary>
 /// The information contained in an <em>extension manifest</em>.
@@ -13,6 +15,7 @@
 /// <param name="PublisherWebUrl">The publisher's web URL.</param>
 /// <param name="Description">A short description of the extension.</param>
 /// <param name="Signature">The <em>binary signature</em> of the extension executable.</param>
+/// <param name="Capabilities">The <em>advertised capabilities</em> of the extension.</param>
 public record class ExtensionInfo(
     string Name,
     string Title,
@@ -20,4 +23,13 @@ public record class ExtensionInfo(
     string Publisher,
     string PublisherWebUrl,
     string Description,
-    string Signature);
+    string Signature,
+    PlatformExtensionServerCapability[] Capabilities);
+
+/// <summary>
+/// Describes an extension capability.
+/// </summary>
+/// <param name="Name">The name of the capability</param>
+/// <param name="IsSupported"><c>true</c> unless specified otherwise.</param>
+public record class PlatformExtensionServerCapability(string Name, bool IsSupported = true);
+

@@ -1,5 +1,7 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using MediatR;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using OmniSharp.Extensions.LanguageServer.Client;
 using OmniSharp.Extensions.LanguageServer.Protocol.Client.Capabilities;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
@@ -7,27 +9,27 @@ using OmniSharp.Extensions.LanguageServer.Protocol.Server;
 using OmniSharp.Extensions.LanguageServer.Protocol.Window;
 using OmniSharp.Extensions.LanguageServer.Server;
 using RDCore.SDK.Client;
+using RDCore.SDK.Platform;
+using RDCore.SDK.Server.Configuration;
 using RDCore.SDK.Server.Handlers;
 using RDCore.SDK.Server.Handlers.Lifecycle;
 using RDCore.SDK.Server.Services;
 using RDCore.SDK.Server.Services.States;
+using System.IO.Pipelines;
+using System.IO.Pipes;
 using System.Reflection;
 
 using OmniSharpLanguageServer = OmniSharp.Extensions.LanguageServer.Server.LanguageServer;
 namespace RDCore.SDK.Server;
+
 
 /// <summary>
 /// A server-side (LSP) RDCore app.
 /// </summary>
 public interface IRDCoreServerApp : IRDCoreApp
 {
-    /// <summary>
-    /// The <c>OmniSharp</c> <em>language server</em>, once initialized.
-    /// </summary>
-    /// <remarks>
-    /// ⚠️ This property <strong>will throw</strong> if used before initialization.
-    /// </remarks>
-    ILanguageServer LanguageServer { get; }
+    Task<TResult> SendRequestAsync<TParams, TResult>(TParams request, CancellationToken token) where TParams : IRequest<TResult>;
+    Task SendNotificationAsync<TParams>(TParams notification, CancellationToken token) where TParams : IRequest;
 }
 
 /// <summary>
@@ -42,7 +44,7 @@ public interface IRDCoreServerApp : IRDCoreApp
 /// 🧩 Since RDCore extensions are LSP servers, this is the base class for most RDCore applications.
 /// </remarks>
 public abstract class RDCoreServerApp(
-//    IOptions<SdkServerOptions> options,
+    IOptions<SdkAppOptions> options,
     IServerStateProvider serverStateProvider,
     IHealthCheckService<RDCoreServerApp> healthCheckService,
     ILanguageServerProtocolTransportLayer transportLayer,
@@ -50,34 +52,35 @@ public abstract class RDCoreServerApp(
 {
     protected IServerStateProvider ServerStateProvider { get; } = serverStateProvider;
 
+    public abstract CoreServerComponent PlatformComponent { get; }
     private OmniSharpLanguageServer? Server { get; set; }
+    public async Task<TResult> SendRequestAsync<TParams, TResult>(TParams request, CancellationToken token) where TParams : IRequest<TResult>
+        => await Server!.SendRequest(request, token);
 
-    private Task? WaitForClientConnectionTask { get; set; }
-
-    /// <summary>
-    /// Gets the encapsulated <c>OmniSharp</c> language server interface.
-    /// </summary>
-    /// <remarks>
-    /// ⚠️ <strong><em>Temporal coupling</em>: this property getter will throw</strong> if it is used before <c>RunAsync</c> is called.
-    /// </remarks>
-    /// <exception cref="ServerProtocolSdkException">Thrown </exception>
-    public ILanguageServer LanguageServer => Server 
-        ?? throw new ServerProtocolSdkException(Exceptions.LanguageServerProtocolSdkException_ServerNotInitialized);
-
-    public async Task RunAsync(IServiceProvider externalServiceProvider)
+    public Task SendNotificationAsync<TParams>(TParams notification, CancellationToken token) where TParams : IRequest
     {
-        LogIfEnabled(LogLevel.Trace, TraceMessages.LanguageServerStarting);
+        token.ThrowIfCancellationRequested();
+        Server!.SendNotification(notification);
+        return Task.CompletedTask;
+    }
+
+    private NamedPipeServerStream _namedPipe = default!;
+
+    protected async virtual Task BeforeRunAsync(string[] args) { }
+
+    public async Task RunAsync(IServiceProvider externalServiceProvider, string[] args)
+    {
+        LogIfEnabled(LogLevel.Information, TraceMessages.LanguageServerStarting);
+        await BeforeRunAsync(args);
+
+        _namedPipe = transportLayer.ConfigureServer();
+        await _namedPipe.WaitForConnectionAsync();
+        LogIfEnabled(LogLevel.Information, TraceMessages.LanguageServerConnected);
 
         Server = await OmniSharpLanguageServer.From(ConfigureServer, externalServiceProvider, ServerStateProvider.ProcessTokenSource.Token);
 
-        if (WaitForClientConnectionTask is not null && Server is not null)
-        {
-            await WaitForClientConnectionTask;
-            LogIfEnabled(LogLevel.Information, TraceMessages.LanguageServerConnected);
-
-            await Server.WaitForExit;
-            LogIfEnabled(LogLevel.Trace, TraceMessages.LanguageServerWaitForExitTaskCompleted);
-        }
+        await Server.WaitForExit;
+        LogIfEnabled(LogLevel.Information, TraceMessages.LanguageServerWaitForExitTaskCompleted);
     }
 
     private void HandleUnhealthyClient() => ServerStateProvider.ProcessTokenSource.Cancel();
@@ -96,9 +99,9 @@ public abstract class RDCoreServerApp(
         {
             disposableTransport.Dispose();
         }
-        if (WaitForClientConnectionTask is IDisposable disposableTask)
+        if (_namedPipe is IDisposable disposablePipe)
         {
-            disposableTask.Dispose();
+            disposablePipe.Dispose();
         }
         if (Server is IDisposable disposableServer)
         {
@@ -111,8 +114,9 @@ public abstract class RDCoreServerApp(
 
     private void ConfigureServer(LanguageServerOptions options)
     {
-        WaitForClientConnectionTask = transportLayer.GetWaitForClientConnectionTaskAsync(options, ServerStateProvider.ProcessTokenSource.Token);
         options
+            .WithInput(PipeReader.Create(_namedPipe))
+            .WithOutput(PipeWriter.Create(_namedPipe))
             // basic server app information:
             .WithServerInfo(GetServerInfo())
             // wire-up lifecycle delegates:
@@ -134,7 +138,7 @@ public abstract class RDCoreServerApp(
             });
         });
 
-        LogIfEnabled(LogLevel.Trace, TraceMessages.LanguageServerConfigurationCompleted);
+        LogIfEnabled(LogLevel.Information, TraceMessages.LanguageServerConfigurationCompleted);
     }
 
     /// <summary>
@@ -177,7 +181,7 @@ public abstract class RDCoreServerApp(
     /// </remarks>
     /// <param name="server">The initializing <c>OmniSharp</c> LSP server instance.</param>
     /// <param name="clientCapabilities">The <em>client capabilities</em> reported by the client.</param>
-    protected abstract void RegisterServerCapabilities(ILanguageServer server, CorePlatformClientCapabilities clientCapabilities);
+    protected abstract void RegisterServerCapabilities(ILanguageServer server, ClientCapabilities clientCapabilities);
 
     private async Task HandleLanguageServerStartedAsync(ILanguageServer server, CancellationToken token) => OnLanguageServerStarted(server);
 
@@ -188,35 +192,32 @@ public abstract class RDCoreServerApp(
     /// <strong>The client owns the file system</strong> for any document that is currently <em>opened</em>.<br/>
     /// ❌ <strong>DO NOT</strong> configure any server-side <see cref="System.IO.FileSystemWatcher"/>.
     /// </remarks>
-    protected virtual void OnLanguageServerStarted(ILanguageServer server) { }
+    protected virtual void OnLanguageServerStarted(ILanguageServer server) 
+    {
+        LogIfEnabled(LogLevel.Information, "✅ Language server started.");
+    }
 
     private async Task HandleLanguageServerInitializeAsync(ILanguageServer server, InitializeParams request, CancellationToken token)
     {
+        LogIfEnabled(LogLevel.Information, "Received LSP/Initialize request.");
         ServerStateProvider.OnInitialize();
-        if (request.ProcessId is not null)
+        
+        if (options.Value.Server.ClientProcessId != 0)
         {
-            if (request.ProcessId.Value <= int.MaxValue)
-            {
-                // Initialize request specifies a client process ID; start monitoring the client process health
-                healthCheckService.Start(Convert.ToInt32(request.ProcessId.Value), HandleUnhealthyClient);
-            }
-            else 
-            {
-                LogIfEnabled(LogLevel.Warning, TraceMessages.InitializeClientProcessIdOutOfRange);
-            }
+            healthCheckService.Start(options.Value.Server.ClientProcessId, HandleUnhealthyClient);
         }
         else
         {
             LogIfEnabled(LogLevel.Warning, TraceMessages.InitializeMissingClientProcessId);
         }
 
-        if (request.Capabilities is CorePlatformClientCapabilities capabilities)
+        if (request.Capabilities is ClientCapabilities capabilities)
         {
             RegisterServerCapabilities(server, capabilities);
         }
 
         await OnLanguageServerInitializeAsync(server, request, token);
-        LogIfEnabled(LogLevel.Trace, TraceMessages.LanguageServerInitialize_HandlerCompleted);
+        LogIfEnabled(LogLevel.Information, TraceMessages.LanguageServerInitialize_HandlerCompleted);
     }
 
     /// <summary>
@@ -227,7 +228,7 @@ public abstract class RDCoreServerApp(
     /// This method runs <strong>after server capabilities registration </strong>.
     /// </remarks>
     protected virtual async Task OnLanguageServerInitializeAsync(ILanguageServer server, InitializeParams request, CancellationToken cancellationToken)
-        => LogIfEnabled(LogLevel.Trace, TraceMessages.LanguageServerInitialize_HandlerCompleted);
+        => LogIfEnabled(LogLevel.Information, TraceMessages.LanguageServerInitialize_HandlerCompleted);
 
     private async Task HandleLanguageServerInitializedAsync(ILanguageServer server, InitializeParams request, InitializeResult response, CancellationToken cancellationToken)
     {
@@ -241,7 +242,7 @@ public abstract class RDCoreServerApp(
     /// 🧩 The base implementation simply logs handler completion at <c>Trace</c> level.
     /// </remarks>
     protected virtual async Task OnLanguageServerInitializedAsync(ILanguageServer server, InitializeParams request, InitializeResult response, CancellationToken cancellationToken) 
-        => LogIfEnabled(LogLevel.Trace, TraceMessages.LanguageServerInitialized_HandlerCompleted);
+        => LogIfEnabled(LogLevel.Information, TraceMessages.LanguageServerInitialized_HandlerCompleted);
 
     /// <summary>
     /// Logs the specified message at the specified level, if logging is enabled at that level.

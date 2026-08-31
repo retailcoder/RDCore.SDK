@@ -17,7 +17,7 @@ public readonly struct VBRuntimeValue<T>(T value) : IRuntimeValue<T>, IEquatable
 {
     public readonly T Value = value;
 
-    public object BoxedValue => Value;
+    public object BoxedValue => Value!;
     public T StoredValue => Value;
 
     public static VBRuntimeValue<byte> ByteMinValue { get; } = new(byte.MinValue);
