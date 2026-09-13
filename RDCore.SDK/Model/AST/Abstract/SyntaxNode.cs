@@ -46,6 +46,7 @@ namespace RDCore.SDK.Model.AST.Abstract;
 [JsonDerivedType(typeof(IfBlockStatementNode), "IfBlockStatement")]
 [JsonDerivedType(typeof(ImplementsDirectiveNode), "ImplementsDirective")]
 [JsonDerivedType(typeof(InlineIfStatementNode), "InlineIfStatement")]
+[JsonDerivedType(typeof(KeywordStatementNode), "KeywordStatement")]
 [JsonDerivedType(typeof(LineLabelNode), "LineLabel")]
 [JsonDerivedType(typeof(LineNumberNode), "LineNumber")]
 [JsonDerivedType(typeof(MemberDeclarationNode), "Member")]
@@ -70,6 +71,7 @@ namespace RDCore.SDK.Model.AST.Abstract;
 [JsonDerivedType(typeof(SimpleNameExpressionNode), "SimpleNameExpression")]
 [JsonDerivedType(typeof(VBUnaryOperatorExpressionNode), "UnaryOpExpression")]
 [JsonDerivedType(typeof(WhileWendStatementNode), "WhileWendStatement")]
+[JsonDerivedType(typeof(WithStatementNode), "WithStatement")]
 
 [JsonDerivedType(typeof(ConditionalExpressionNode), "ConditionalExpression")]
 [JsonDerivedType(typeof(PrecompilerConstantDeclarationNode), "PrecompilerConstant")]
