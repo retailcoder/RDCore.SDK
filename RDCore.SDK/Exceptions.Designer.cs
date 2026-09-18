@@ -169,6 +169,24 @@ namespace RDCore.SDK {
         }
 
         /// <summary>
+        ///   Looks up a localized string similar to The source object's class does not match, and is not implemented by, the destination's declared class..
+        /// </summary>
+        public static string SetCoercionRuntimeErrorExceptionTypeMismatch_Verbose {
+            get {
+                return ResourceManager.GetString("SetCoercionRuntimeErrorExceptionTypeMismatch_Verbose", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to The source value is not an object reference, and an object is required for Set-coercion to this destination..
+        /// </summary>
+        public static string SetCoercionRuntimeErrorExceptionObjectRequired_Verbose {
+            get {
+                return ResourceManager.GetString("SetCoercionRuntimeErrorExceptionObjectRequired_Verbose", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to This let-coercion operation is deterministically recursive. See evaluation stack details for more information..
         /// </summary>
         public static string LetCoercionRuntimeErrorExceptionOutOfStackSpace_Verbose {
@@ -383,7 +401,16 @@ namespace RDCore.SDK {
                 return ResourceManager.GetString("VBCompileError_LetCoercionTypeMismatch_Verbose", resourceCulture);
             }
         }
-        
+
+        /// <summary>
+        ///   Looks up a localized string similar to Set-coercion is statically invalid for the specified inputs of this expression..
+        /// </summary>
+        public static string VBCompileError_SetCoercionTypeMismatch_Verbose {
+            get {
+                return ResourceManager.GetString("VBCompileError_SetCoercionTypeMismatch_Verbose", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   Looks up a localized string similar to Method or data member not found.
         /// </summary>
@@ -399,6 +426,15 @@ namespace RDCore.SDK {
         public static string VBCompileError_TypeMismatch {
             get {
                 return ResourceManager.GetString("VBCompileError_TypeMismatch", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Implicit With-reference outside a With block.
+        /// </summary>
+        public static string VBCompileError_WithExpressionOutsideWithBlock {
+            get {
+                return ResourceManager.GetString("VBCompileError_WithExpressionOutsideWithBlock", resourceCulture);
             }
         }
 
