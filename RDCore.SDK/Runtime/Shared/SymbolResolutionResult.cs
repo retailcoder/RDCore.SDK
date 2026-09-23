@@ -18,6 +18,12 @@ namespace RDCore.SDK.Runtime.Shared;
 ///   within one module or procedure.</item>
 /// <item><see cref="VBCompileErrorId.AmbiguousName"/> — the name resolves in more than one enclosing
 ///   scope (members promoted from different modules or references); the reference must qualify it.</item>
+/// <item><see cref="VBCompileErrorId.InconsistentPropertyAccessors"/> — the name resolves to a
+///   property's <c>Get</c>/<c>Let</c>/<c>Set</c> accessors, but their declarations are not a valid
+///   property (<strong>MS-VBAL §5.3.1.7</strong>).</item>
+/// <item><see cref="VBCompileErrorId.ArgumentRequiredForPropertyLetOrSet"/> — the name resolves to a
+///   <c>Property Let</c> or <c>Property Set</c> declared with no parameters at all, so it has no value
+///   parameter (<strong>MS-VBAL §5.3.1.5</strong>: <c>value-param</c> is never bracketed).</item>
 /// </list>
 /// </remarks>
 /// <param name="Symbol">The bound symbol, or <c>null</c> when the name is unbound or in error.</param>
@@ -66,4 +72,18 @@ public readonly record struct SymbolResolutionResult(
     /// </summary>
     public static SymbolResolutionResult Ambiguous(IEnumerable<Symbol> candidates)
         => new(null, VBCompileErrorId.AmbiguousName, [.. candidates]);
+
+    /// <summary>
+    /// The name resolves to a property's <c>Get</c>/<c>Let</c>/<c>Set</c> accessors, but their
+    /// declarations are not a valid property (<see cref="VBCompileErrorId.InconsistentPropertyAccessors"/>).
+    /// </summary>
+    public static SymbolResolutionResult InconsistentPropertyAccessors(IEnumerable<Symbol> candidates)
+        => new(null, VBCompileErrorId.InconsistentPropertyAccessors, [.. candidates]);
+
+    /// <summary>
+    /// The name resolves to a <c>Property Let</c> or <c>Property Set</c> with no parameters at all
+    /// (<see cref="VBCompileErrorId.ArgumentRequiredForPropertyLetOrSet"/>).
+    /// </summary>
+    public static SymbolResolutionResult ArgumentRequiredForPropertyLetOrSet(IEnumerable<Symbol> candidates)
+        => new(null, VBCompileErrorId.ArgumentRequiredForPropertyLetOrSet, [.. candidates]);
 }
