@@ -111,9 +111,10 @@ public sealed class StdLibSymbolReader
     /// </param>
     /// <exception cref="InvalidOperationException">
     /// A marked declaration is not expressible as a VBA symbol — a parameter or return type that is
-    /// neither an intrinsic value nor a marked enumeration or class. That is a mistake in the
-    /// declaration rather than a condition to degrade over: the symbol it would produce would be
-    /// declared as a type nothing can bind.
+    /// neither an intrinsic value nor a marked enumeration or class, or an element type stated for a
+    /// parameter that is not a required ByVal array. That is a mistake in the declaration rather than a
+    /// condition to degrade over: the symbol it would produce would be declared as a type nothing can
+    /// bind.
     /// </exception>
     public ImmutableArray<Symbol> Read(IEnumerable<Type> declarations)
     {
@@ -282,19 +283,37 @@ public sealed class StdLibSymbolReader
         foreach (var parameter in parameters)
         {
             var name = StdLibNames.ParameterName(parameter.Name);
-            if (parameter.GetCustomAttribute<ParamArrayAttribute>() is not null)
+            var byRef = parameter.ParameterType.IsByRef;
+            var declared = byRef ? parameter.ParameterType.GetElementType()! : parameter.ParameterType;
+            var array = parameter.GetCustomAttribute<StdLibArrayAttribute>();
+            var paramArray = parameter.GetCustomAttribute<ParamArrayAttribute>() is not null;
+
+            // an element type makes the parameter an array of it, which only an array parameter can be - a Byte()
+            // being a type of its own, and a ParamArray always a Variant(). And the library declares no optional
+            // array and no ByRef one, so nothing models what an omitted one would be or marshals one back.
+            if (array is not null && (paramArray || parameter.IsOptional || byRef
+                || !(declared == typeof(VBResizableArrayValue)
+                    || declared == typeof(VBResizableByteArrayValue) && array.ElementType == typeof(VBByteValue))))
+            {
+                throw new InvalidOperationException(
+                    $"'{name}' in '{method.DeclaringType?.Name}.{method.Name}' states an element type, which only a required " +
+                    $"ByVal parameter declared as a {nameof(VBResizableArrayValue)} has, or a {nameof(VBResizableByteArrayValue)} " +
+                    $"stating {nameof(VBByteValue)}.");
+            }
+
+            if (paramArray)
             {
                 builder.Add(new ParamArrayParameterSymbol(
                     _workspaceRoot, memberUri, name, SourceRange.Empty, SourceRange.Empty, ParameterKind.ExplicitByVal));
                 continue;
             }
 
-            var byRef = parameter.ParameterType.IsByRef;
-            var declared = byRef ? parameter.ParameterType.GetElementType()! : parameter.ParameterType;
             builder.Add(new VBParameterSymbol(
                 _workspaceRoot, memberUri, name, SourceRange.Empty, SourceRange.Empty,
                 byRef ? ParameterKind.ExplicitByRef : ParameterKind.ExplicitByVal,
-                DeclaredTypeOf(declared, method, enumTypes, classTypes),
+                array is not null
+                    ? ArrayTypeOf(DeclaredTypeOf(array.ElementType, method, enumTypes, classTypes))
+                    : DeclaredTypeOf(declared, method, enumTypes, classTypes),
                 parameter.IsOptional, DefaultValueOf(parameter)));
         }
 
@@ -351,6 +370,10 @@ public sealed class StdLibSymbolReader
             $"'{declared.Name}' in '{method.DeclaringType?.Name}.{method.Name}' names no VBA type: a standard-library " +
             $"declaration states one with a {nameof(VBTypedValue)} implementation, or with a marked enumeration or class.");
     }
+
+    // the array type a Dim declares for the same element type, Byte's included: a Byte() is a type of its own.
+    private static VBType ArrayTypeOf(VBType elementType)
+        => elementType is VBByteType ? VBResizableByteArrayType.TypeInfo : new VBResizableArrayType(elementType);
 
     // only an enumeration constant is expressible as a C# default, and it is the only kind of
     // <default-value> clause the standard library has. Everything else optional is `= default`, which
