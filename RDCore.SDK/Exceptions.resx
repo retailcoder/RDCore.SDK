@@ -360,6 +360,18 @@
   <data name="VBCompileError_EventArgumentsIncompatible" xml:space="preserve">
     <value>Wrong number of arguments or invalid argument for event</value>
   </data>
+  <data name="VBCompileError_InvalidWithEventsType" xml:space="preserve">
+    <value>Invalid type for WithEvents variable</value>
+  </data>
+  <data name="VBCompileError_InvalidEventName" xml:space="preserve">
+    <value>Invalid event name</value>
+  </data>
+  <data name="VBCompileError_InvalidEventHandler" xml:space="preserve">
+    <value>Invalid event handler</value>
+  </data>
+  <data name="VBCompileError_ByValArgumentNotAllowed" xml:space="preserve">
+    <value>ByVal argument not allowed here</value>
+  </data>
   <data name="VBCompileError_UnspecifiedError" xml:space="preserve">
     <value>Unspecified error</value>
   </data>

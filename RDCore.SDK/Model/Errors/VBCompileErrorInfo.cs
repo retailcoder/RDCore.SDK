@@ -82,5 +82,9 @@ public record class VBCompileErrorInfo : VBErrorInfo
         [VBCompileErrorId.ArgumentRequiredForPropertyLetOrSet] = Exceptions.VBCompileError_ArgumentRequiredForPropertyLetOrSet,
         [VBCompileErrorId.EventNotDefined] = Exceptions.VBCompileError_EventNotDefined,
         [VBCompileErrorId.EventArgumentsIncompatible] = Exceptions.VBCompileError_EventArgumentsIncompatible,
+        [VBCompileErrorId.InvalidWithEventsType] = Exceptions.VBCompileError_InvalidWithEventsType,
+        [VBCompileErrorId.InvalidEventName] = Exceptions.VBCompileError_InvalidEventName,
+        [VBCompileErrorId.InvalidEventHandler] = Exceptions.VBCompileError_InvalidEventHandler,
+        [VBCompileErrorId.ByValArgumentNotAllowed] = Exceptions.VBCompileError_ByValArgumentNotAllowed,
     };
 }
