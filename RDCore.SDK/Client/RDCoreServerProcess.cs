@@ -147,7 +147,7 @@ public class RDCoreServerProcess(
         var verbose = true; //Options.Value.Server.Verbose;
 
         var arguments = ServerArguments(
-            Environment.ProcessId, pipeName, workspace, trace, verbose, Options.Value.Workspace.ImplicitDeclarationScope);
+            Environment.ProcessId, pipeName, workspace, trace, verbose, Options.Value.Workspace.Language);
         var info = CreateProcessStartInfo(fullPath, arguments);
         if (hostMode)
         {
@@ -175,8 +175,8 @@ public class RDCoreServerProcess(
     /// The command line a server process is started with.
     /// </summary>
     /// <remarks>
-    /// The environment a client serves is its own to describe to the server it starts: an interactive shell works the
-    /// way a BASIC does, and says so here. The scope is left out when it is the default, so that a server's own
+    /// The language a client serves is its own to say of the server it starts: an interactive shell is a BASIC, and says so
+    /// here, because the servers have to agree on it. It is left out when it is the default, so that a server's own
     /// settings win.
     /// <para>
     /// 👉 <c>-v</c> goes last. It is a switch the argument parser only reads as one at the end of a command line; with
@@ -184,13 +184,13 @@ public class RDCoreServerProcess(
     /// </para>
     /// </remarks>
     internal static string ServerArguments(
-        int clientProcessId, string pipeName, string workspace, LogLevel trace, bool verbose, ImplicitDeclarationScope implicitScope)
+        int clientProcessId, string pipeName, string workspace, LogLevel trace, bool verbose, string? language = null)
     {
-        var implicitScopeArgument = implicitScope == ImplicitDeclarationScope.Procedure
+        var languageArgument = language is null || string.Equals(language, Workspace.SupportedLanguages.RDVBA.Id, StringComparison.OrdinalIgnoreCase)
             ? null
-            : $"--implicit-declaration-scope {implicitScope} ";
+            : $"--language {language} ";
 
-        return $"-p {clientProcessId} -n {pipeName} -w \"{workspace}\" {implicitScopeArgument}-t {trace} {(verbose ? "-v" : null)}";
+        return $"-p {clientProcessId} -n {pipeName} -w \"{workspace}\" {languageArgument}-t {trace} {(verbose ? "-v" : null)}";
     }
 
     private ProcessStartInfo CreateProcessStartInfo(string validPath, string args) => new()
