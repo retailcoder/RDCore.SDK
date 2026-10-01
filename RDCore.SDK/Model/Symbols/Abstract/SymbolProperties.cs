@@ -94,4 +94,18 @@ public static class SymbolProperties
     /// apart at the point of invocation.
     /// </remarks>
     public static readonly SymbolProperty<string> ExternalTarget = new(nameof(ExternalTarget));
+    /// <summary>
+    /// Whether a member of an interface has an implementation of its own, which is empty: a class that implements the
+    /// interface and has no procedure for the member implements it with that one, and dispatching the member to such a
+    /// class does nothing.
+    /// </summary>
+    /// <remarks>
+    /// This is what lets <strong>MS-VBAL §5.3.1.9</strong> stand as it is written - a class module that implements an
+    /// interface implements every one of its members - for an interface every class implements and few handle:
+    /// <see cref="ClassLifecycleInterface"/>. A member with a default is implemented by every class, so no class is in
+    /// breach and no rule has an exception. Only the language sets it; there is no source syntax for an interface
+    /// member that implements itself. A host's own optional events, such as those of a document or a form, are the same
+    /// thing.
+    /// </remarks>
+    public static readonly SymbolProperty<bool> DefaultImplementation = new(nameof(DefaultImplementation));
 }

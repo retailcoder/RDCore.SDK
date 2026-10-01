@@ -1,5 +1,6 @@
 ﻿using RDCore.SDK.Model.Source;
 using RDCore.SDK.Model.Symbols.Abstract;
+using RDCore.SDK.Model.Symbols.VBProject;
 using System.Collections.Immutable;
 
 namespace RDCore.SDK.Model.Symbols;
@@ -51,8 +52,60 @@ public record class VBClassModuleSymbol : VBModuleSymbol
     /// <see cref="Types.Complex.VBClassType.FromClassModule"/> reads this to populate
     /// <see cref="Types.Complex.VBClassType.Supertypes"/> — every consumer of that type gets a correct
     /// <c>Supertypes</c> array for free once this is resolved, with no other code to update.
+    /// <para>
+    /// What is assigned is what the source declares. What is read also has what the language implements for every
+    /// class module, first: <see cref="ClassLifecycleInterface"/>, whose members are <c>Initialize</c> and
+    /// <c>Terminate</c>. It is an interface of the module like any other, which is why whatever builds a list of the
+    /// interfaces a module implements — an editor's dropdown among them — finds it there. Its members have an
+    /// implementation of their own (<see cref="SymbolProperties.DefaultImplementation"/>), so a module that writes no
+    /// handler still implements every one of them, as <strong>MS-VBAL §5.3.1.9</strong> requires. It is still not a
+    /// name workspace code can refer to.
+    /// </para>
     /// </remarks>
-    public ImmutableArray<VBClassModuleSymbol> ImplementedInterfaces { get; init; } = [];
+    public ImmutableArray<VBClassModuleSymbol> ImplementedInterfaces
+    {
+        get => ImplementsLifecycle && !_declaredInterfaces.Any(IsLifecycleInterface)
+            ? [ClassLifecycleInterface.Interface, .. _declaredInterfaces]
+            : _declaredInterfaces;
+        init => _declaredInterfaces = value;
+    }
+
+    private ImmutableArray<VBClassModuleSymbol> _declaredInterfaces = [];
+
+    // a Uri's fragment is where a symbol's identity lives, and Uri equality ignores it.
+    private static bool IsLifecycleInterface(VBClassModuleSymbol candidate)
+        => candidate.Uri.AbsoluteUri == ClassLifecycleInterface.Interface.Uri.AbsoluteUri;
+
+    /// <summary>
+    /// Whether the language implements <see cref="ClassLifecycleInterface"/> for this module, which it does for every
+    /// class module but that interface itself.
+    /// </summary>
+    public bool ImplementsLifecycle { get; init; } = true;
+
+    /// <summary>
+    /// The member of this class that implements <paramref name="interfaceMember"/> of <paramref name="implemented"/>
+    /// (<strong>MS-VBAL §5.3.1.9</strong>): the procedure named <c>InterfaceName_MemberName</c>, whatever its access.
+    /// </summary>
+    /// <param name="implemented">An interface this class implements, explicitly or implicitly.</param>
+    /// <param name="interfaceMember">A member of <paramref name="implemented"/>.</param>
+    /// <returns>The implementing procedure, or <see langword="null"/> when this class does not implement the member.</returns>
+    public VBProcedureMemberSymbol? FindImplementation(VBClassModuleSymbol implemented, VBTypeMemberSymbol interfaceMember)
+    {
+        var name = $"{implemented.Name}_{interfaceMember.Name}";
+        return Members.OfType<VBProcedureMemberSymbol>()
+            .FirstOrDefault(member => string.Equals(member.Name, name, StringComparison.OrdinalIgnoreCase));
+    }
+
+    /// <summary>
+    /// Whether this class implements <paramref name="interfaceMember"/> of <paramref name="implemented"/>
+    /// (<strong>MS-VBAL §5.3.1.9</strong>): it has the procedure for it (<see cref="FindImplementation"/>), or the
+    /// member has an implementation of its own (<see cref="SymbolProperties.DefaultImplementation"/>). What a check that
+    /// an <c>Implements</c> directive is complete asks, of each member of the interface.
+    /// </summary>
+    /// <param name="implemented">An interface this class implements, explicitly or implicitly.</param>
+    /// <param name="interfaceMember">A member of <paramref name="implemented"/>.</param>
+    public bool IsImplemented(VBClassModuleSymbol implemented, VBTypeMemberSymbol interfaceMember)
+        => FindImplementation(implemented, interfaceMember) is not null || interfaceMember.GetProperty(SymbolProperties.DefaultImplementation);
 
     /// <summary>
     /// Whether a live instance of this class is COM Automation-capable (<c>IDispatch</c>) or
