@@ -164,6 +164,47 @@ public interface ISessionSymbols
     bool TryRedefine(Symbol symbol, ScopeKind scope);
 
     /// <summary>
+    /// Composes the class module <paramref name="moduleName"/> from the members the session now has defined for it: its
+    /// <see cref="VBClassModuleSymbol.Members"/>, its default interface, and the interfaces it implements
+    /// (<strong>MS-VBAL §5.2.4.2</strong>), resolved over every class module the session has.
+    /// </summary>
+    /// <remarks>
+    /// A module symbol is composed from a project without being read, and its members are defined one at a time, each
+    /// under its own identity: nothing links the symbol of a class to what it declares, which is what an object of the class
+    /// needs to find the members it is called on, the events it raises and handles, and the interfaces it implements. This
+    /// is the step that does, and it is one for the whole session rather than for the module: an interface defined after the
+    /// class that implements it, or defined again since, leaves the class holding it as it was.
+    /// </remarks>
+    /// <param name="moduleName">The name of the class module, which has been defined with its members.</param>
+    /// <param name="implementedInterfaceNames">The names of the interfaces its <c>Implements</c> directives name, as written.</param>
+    /// <returns><c>false</c> if the session has no class module of that name.</returns>
+    /// <param name="implementedInterfaceRanges">Where each directive is written, one for each name, or empty when that is not known.</param>
+    bool TryComposeClassModule(
+        string moduleName, System.Collections.Immutable.ImmutableArray<string> implementedInterfaceNames,
+        System.Collections.Immutable.ImmutableArray<RDCore.SDK.Model.Source.SourceRange> implementedInterfaceRanges = default);
+
+    /// <summary>
+    /// What the storage of a declared variable starts as, or <see langword="null"/> while nothing can reduce the constant
+    /// expressions of an array's bounds yet - a session whose symbols are only being defined. Set by whatever composes the
+    /// execution pipeline, as <see cref="IRuntimeSession.Lifecycle"/> is.
+    /// </summary>
+    /// <remarks>
+    /// While it is <see langword="null"/>, a variable starts as the default value of its declared type, which for a fixed-size array
+    /// is one with no dimensions: <see cref="Symbols.Abstract.SymbolProperties.ArrayBounds"/> are applied by whatever sets this.
+    /// </remarks>
+    IVariableDefaults? Defaults { get; set; }
+
+    /// <summary>
+    /// The members the session has defined for a module, in no particular order: every procedure, property accessor,
+    /// event, variable and constant declared by the module whose <see cref="Symbol.Uri"/> is <paramref name="moduleUri"/>.
+    /// </summary>
+    /// <remarks>
+    /// Names are not enough to find a declaration: the <c>Get</c>, <c>Let</c> and <c>Set</c> accessors of a property share one.
+    /// </remarks>
+    /// <param name="moduleUri">The <see cref="Symbol.Uri"/> of the module symbol.</param>
+    IReadOnlyList<VBTypeMemberSymbol> MembersOf(Uri moduleUri);
+
+    /// <summary>
     /// Resolves <paramref name="name"/> visible from <paramref name="scope"/> in the default binding
     /// context (<see cref="ISymbolResolver.ResolveValue"/>) — the context of a simple name expression.
     /// </summary>

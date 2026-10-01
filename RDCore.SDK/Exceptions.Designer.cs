@@ -529,6 +529,33 @@ namespace RDCore.SDK {
         }
 
         /// <summary>
+        ///   Looks up a localized string similar to Invalid Implements directive.
+        /// </summary>
+        public static string VBCompileError_InvalidImplementsDirective {
+            get {
+                return ResourceManager.GetString("VBCompileError_InvalidImplementsDirective", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Object module needs to implement all members of its interface.
+        /// </summary>
+        public static string VBCompileError_InterfaceMemberNotImplemented {
+            get {
+                return ResourceManager.GetString("VBCompileError_InterfaceMemberNotImplemented", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Invalid implemented member.
+        /// </summary>
+        public static string VBCompileError_InvalidImplementedMember {
+            get {
+                return ResourceManager.GetString("VBCompileError_InvalidImplementedMember", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to Numeric literal overflow.
         /// </summary>
         public static string VBCompileError_NumericLiteralOverflow {
@@ -633,6 +660,15 @@ namespace RDCore.SDK {
         public static string VBForEach_ObjectVariableNotSet_Verbose {
             get {
                 return ResourceManager.GetString("VBForEach_ObjectVariableNotSet_Verbose", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to The object has no public variable, and no Property Let or Property Set, of this name for the assignment to write to..
+        /// </summary>
+        public static string VBMemberAssignment_NotAssignable_Verbose {
+            get {
+                return ResourceManager.GetString("VBMemberAssignment_NotAssignable_Verbose", resourceCulture);
             }
         }
 

@@ -1,5 +1,6 @@
 using RDCore.SDK.Model.AST.Directives;
 using RDCore.SDK.Model.AST.Expressions;
+using RDCore.SDK.Model.Source;
 using RDCore.SDK.Model.Symbols;
 using RDCore.SDK.Model.Values.Intrinsic;
 using System.Collections.Immutable;
@@ -151,6 +152,24 @@ public static class ModuleNodeExtensions
     }
 
     /// <summary>
+    /// Whether a module is an extensible module (<strong>MS-VBAL §4.2.1</strong>) - what a host's document modules are -
+    /// per its <c>Attribute VB_Extensible</c> directive. Defaults to <c>false</c>: a module that declares no such
+    /// attribute is an ordinary one.
+    /// </summary>
+    public static bool IsExtensible(this ModuleNode module)
+    {
+        foreach (var attribute in module.Children.OfType<AttributeDirectiveNode>())
+        {
+            if (attribute.Binding is null && string.Equals(attribute.Name, Tokens.VB_Extensible, StringComparison.OrdinalIgnoreCase))
+            {
+                return string.Equals(attribute.Value.Trim(), "True", StringComparison.OrdinalIgnoreCase);
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
     /// The value of a member's own <c>Attribute &lt;member&gt;.VB_UserMemId</c> directive, or
     /// <c>null</c> when the module declares none for that member. RD-VBA's own use of the value:
     /// <c>WellKnownDispIds.Value</c> (<c>0</c>) denotes the class's default member,
@@ -193,8 +212,17 @@ public static class ModuleNodeExtensions
     /// project. A half-typed <c>Implements</c> with no name at all is skipped.
     /// </summary>
     public static ImmutableArray<string> GetImplementedInterfaceNames(this ModuleNode module)
+        => [.. ImplementsDirectivesOf(module).Select(directive => directive.Name)];
+
+    /// <summary>
+    /// Where each of <see cref="GetImplementedInterfaceNames"/> is written: the source range of its <c>Implements</c> directive,
+    /// one for each name and in the same order.
+    /// </summary>
+    public static ImmutableArray<SourceRange> GetImplementedInterfaceRanges(this ModuleNode module)
+        => [.. ImplementsDirectivesOf(module).Select(directive => directive.Range)];
+
+    private static IEnumerable<(string Name, SourceRange Range)> ImplementsDirectivesOf(ModuleNode module)
     {
-        var names = ImmutableArray.CreateBuilder<string>();
         foreach (var directive in module.Children.OfType<ImplementsDirectiveNode>())
         {
             var name = directive.NameExpression switch
@@ -205,10 +233,9 @@ public static class ModuleNodeExtensions
             };
             if (name is not null)
             {
-                names.Add(name);
+                yield return (name, directive.Location.Range);
             }
         }
-        return names.ToImmutable();
     }
 
     // AttributeDirectiveNode.Value is the raw parse-tree text; a VB_Name value is a string literal.

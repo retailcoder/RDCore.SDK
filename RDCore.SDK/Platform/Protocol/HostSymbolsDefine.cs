@@ -63,6 +63,38 @@ public record class DefineSymbolsParams : IRequest, IRequest<DefineSymbolsResult
     public ModuleDirectives Directives { get; init; } = ModuleDirectives.None;
 
     /// <summary>
+    /// The names of the interfaces the module's <c>Implements</c> directives name
+    /// (<strong>MS-VBAL §5.2.4.2</strong>), as written and in source order; empty for a module that has none, and for one that
+    /// is not a class module.
+    /// </summary>
+    /// <remarks>
+    /// The host composes the class from them once its members are defined
+    /// (<see cref="RDCore.SDK.Runtime.Abstract.Execution.ISessionSymbols.TryComposeClassModule"/>), resolving each to the class it
+    /// names among the class modules it has: an object of the class is then an object that implements the interface, which is
+    /// what a call through a variable declared as the interface is dispatched on (<strong>§5.3.1.9</strong>), and what a
+    /// <c>TypeOf ... Is</c> and a <c>Set</c> to such a variable are decided by.
+    /// </remarks>
+    public ImmutableArray<string> ImplementedInterfaceNames { get; init; } = [];
+
+    /// <summary>
+    /// Where each of <see cref="ImplementedInterfaceNames"/> is written in the module: the range of its <c>Implements</c> directive,
+    /// one for each name and in the same order, or empty when they are not known.
+    /// </summary>
+    public ImmutableArray<SourceRange> ImplementedInterfaceRanges { get; init; } = [];
+
+    /// <summary>
+    /// The <see cref="System.Text.Json"/> representation of the module's <see cref="RDCore.SDK.Model.AST.ModuleParseResult"/>
+    /// (see <see cref="PlatformJson"/>), or empty when the module is defined for its symbols alone.
+    /// </summary>
+    /// <remarks>
+    /// What gives the module's procedures code. A module the host is asked to run carries its parse result with that request
+    /// and is loaded then; a module of the workspace is never run as such, but its procedures are called by the ones that
+    /// are, and its class members by the objects that are made of it. The AST is polymorphic, which is why it rides a string
+    /// and not the transport's own serializer.
+    /// </remarks>
+    public string ParseResultJson { get; init; } = string.Empty;
+
+    /// <summary>
     /// Whether a descriptor replaces an already-defined symbol of the same identity rather than being
     /// skipped.
     /// </summary>
@@ -96,6 +128,12 @@ public record class DefineSymbolsResult
     /// defined, with <c>VBUnknownType</c>; a later resolver pass can bind them.
     /// </summary>
     public IReadOnlyList<string> UnresolvedTypeNames { get; init; } = [];
+
+    /// <summary>
+    /// The descriptions of the errors found lowering the module's procedures when <see cref="DefineSymbolsParams.ParseResultJson"/>
+    /// was given. The module's symbols are defined all the same; its procedures have no code, and what had before is kept.
+    /// </summary>
+    public IReadOnlyList<string> CodeErrors { get; init; } = [];
 
     /// <summary>
     /// The number of already-defined symbols that were replaced, when
@@ -140,9 +178,16 @@ public record class SymbolDescriptor
     /// <summary>
     /// The declared type's name — from an <c>As</c> clause or a type-declaration character — or
     /// <c>null</c> when there is none, or the type reference is not a simple name (a qualified name
-    /// or an array definition needs a later semantic pass).
+    /// or an array definition needs a later semantic pass). For an array, the name of its <em>element</em> type, and
+    /// <see cref="Array"/> says what kind of array it is.
     /// </summary>
     public string? DeclaredTypeName { get; init; }
+
+    /// <summary>
+    /// What is declared is an array of <see cref="DeclaredTypeName"/>: how it is sized, which a type name has no room for.
+    /// <c>null</c> for anything that is not an array.
+    /// </summary>
+    public ArrayDescriptor? Array { get; init; }
 
     /// <summary>
     /// The source span of the whole declaration — the primary site (the first branch) when the
@@ -256,9 +301,12 @@ public record class LocalDescriptor
     public string Name { get; init; } = string.Empty;
 
     /// <summary>
-    /// The declared type's name, or <c>null</c> — resolved host-side like a member's.
+    /// The declared type's name, or <c>null</c> — resolved host-side like a member's. For an array, its element type's.
     /// </summary>
     public string? DeclaredTypeName { get; init; }
+
+    /// <summary>The array the variable is, when it is one: see <see cref="SymbolDescriptor.Array"/>.</summary>
+    public ArrayDescriptor? Array { get; init; }
 
     /// <summary>
     /// Whether the declaration carries the <c>Static</c> token (<strong>MS-VBAL §5.4.3.1</strong>):
@@ -367,10 +415,47 @@ public record class ParameterDescriptor
     /// </summary>
     public string? DeclaredTypeName { get; init; }
 
+    /// <summary>The array the parameter is, when it is one: see <see cref="SymbolDescriptor.Array"/>.</summary>
+    public ArrayDescriptor? Array { get; init; }
+
     /// <summary>
     /// The source span of the parameter declaration.
     /// </summary>
     public SourceRange Range { get; init; }
+}
+
+/// <summary>
+/// What an array declaration says beyond its element type (<strong>MS-VBAL §5.2.3.1.3</strong>): whether it is fixed-size, and the
+/// bounds it was declared with.
+/// </summary>
+public record class ArrayDescriptor
+{
+    /// <summary>
+    /// Whether the array is fixed-size - declared with bounds - rather than resizable, which has no dimensions until a <c>ReDim</c>
+    /// gives it some.
+    /// </summary>
+    public bool IsFixedSize { get; init; }
+
+    /// <summary>
+    /// The bounds of a fixed-size array, one for each dimension and outermost first; empty for a resizable one.
+    /// </summary>
+    public ImmutableArray<ArrayBoundDescriptor> Bounds { get; init; } = [];
+}
+
+/// <summary>
+/// The bounds of one dimension of a fixed-size array.
+/// </summary>
+/// <remarks>
+/// Expressions, not numbers: a bound is a constant expression that may name a <c>Const</c>, and the host is where the evaluator that
+/// reduces one lives (see <see cref="ConstantDescriptor.Value"/>).
+/// </remarks>
+public record class ArrayBoundDescriptor
+{
+    /// <summary>The lower bound, or <c>null</c> when the dimension was declared with an upper bound alone, which <c>Option Base</c> decides.</summary>
+    public ExpressionNode? Lower { get; init; }
+
+    /// <summary>The upper bound.</summary>
+    public ExpressionNode? Upper { get; init; }
 }
 
 /// <summary>
