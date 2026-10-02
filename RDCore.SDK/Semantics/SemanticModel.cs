@@ -28,6 +28,14 @@ public sealed record class ProcedureSemanticModel(SemanticId Procedure, Immutabl
     public ImmutableDictionary<SyntaxNodeId, ExpressionFact> Expressions { get; init; } = ImmutableDictionary<SyntaxNodeId, ExpressionFact>.Empty;
 
     /// <summary>
+    /// Whether <see cref="Expressions"/> has a fact for every place the body refers to a name, and nothing was found wrong with it: the references the facts
+    /// say there are in the body are all the references there are. It is <see langword="false"/> whenever that could not be established - a procedure with an
+    /// error, an expression the pass does not look into, or no workspace to resolve names in - and what is counted from the facts is not known then, which is not
+    /// to say that it is none.
+    /// </summary>
+    public bool IsFullyAnalyzed { get; init; }
+
+    /// <summary>
     /// Whether the static pass found nothing wrong with the procedure.
     /// </summary>
     public bool IsValid => CompileErrors.IsEmpty;
@@ -45,6 +53,18 @@ public sealed record class ProcedureSemanticModel(SemanticId Procedure, Immutabl
 public sealed record class ModuleSemanticModel(
     Uri Module, ImmutableArray<VBCompileErrorInfo> DeclarationErrors, ImmutableArray<ProcedureSemanticModel> Procedures)
 {
+    /// <summary>
+    /// Whether the module states <c>Option Explicit</c> (<strong>MS-VBAL §5.2.1.3</strong>): without it, a name that refers to nothing declared is not an
+    /// error, but a variable that comes into being (<see cref="DeclarationFact.IsImplicit"/>).
+    /// </summary>
+    public bool OptionExplicit { get; init; }
+
+    /// <summary>
+    /// How each declaration of the module is used by the module's own code (<see cref="Static.DeclarationUsage"/>): its variables, constants, parameters,
+    /// procedures, properties and events, and the variables that were never declared. Empty when the pass had no workspace to resolve names in.
+    /// </summary>
+    public ImmutableArray<DeclarationFact> Declarations { get; init; } = [];
+
     /// <summary>
     /// Every compile error of the module: those of its declarations, then those of each procedure.
     /// </summary>

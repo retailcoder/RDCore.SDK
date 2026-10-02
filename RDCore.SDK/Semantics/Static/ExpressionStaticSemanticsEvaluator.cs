@@ -8,6 +8,7 @@ using RDCore.SDK.Model.Symbols.VBProject;
 using RDCore.SDK.Model.Types;
 using RDCore.SDK.Model.Types.Abstract;
 using RDCore.SDK.Model.Types.Complex;
+using RDCore.SDK.Semantics.Flags;
 using RDCore.SDK.Semantics.Static.Abstract;
 using RDCore.SDK.Semantics.Static.Expressions;
 using RDCore.SDK.Semantics.Static.Operators;
@@ -73,8 +74,28 @@ public static class ExpressionStaticSemanticsEvaluator
             VBUnaryOperatorExpressionNode unaryOperator => EvaluateUnaryOperator(context, expression, unaryOperator),
             // ByVal flags how an argument is passed; the argument is the expression it is written before.
             ByValArgumentExpressionNode byVal => Evaluate(context, byVal.Operand),
+            // what is printed is an expression like any other, which can be wrong in its own right; an item of an output list has no type of its own.
+            PrintOutputItemNode item => EvaluateOperands(context, item.Value),
+            PrintSpcClauseNode spc => EvaluateOperands(context, spc.Count),
+            PrintTabClauseNode tab => EvaluateOperands(context, tab.Column),
+            ObjectPrintExpressionNode print => EvaluateOperands(context, [print.Owner, .. print.Items]),
             _ => StaticSemanticsEvaluationResult.Success(VBUnknownType.TypeInfo),
         };
+
+    // the operands of an expression that has no declared type of its own: the first of them that is an error, or nothing known of the expression itself.
+    private static StaticSemanticsEvaluationResult EvaluateOperands(StaticEvaluationContext context, params ExpressionNode?[] operands)
+    {
+        foreach (var operand in operands.OfType<ExpressionNode>())
+        {
+            var result = Evaluate(context, operand);
+            if (result.IsError)
+            {
+                return result;
+            }
+        }
+
+        return StaticSemanticsEvaluationResult.Success(VBUnknownType.TypeInfo);
+    }
 
     private static StaticSemanticsEvaluationResult EvaluateMemberAccess(
         StaticEvaluationContext context, ExpressionNode expression, MemberAccessExpressionNode memberAccess)
@@ -168,6 +189,12 @@ public static class ExpressionStaticSemanticsEvaluator
             }
         }
 
+        // an index of an array is no argument: any other callee may take what is written in its argument list by reference.
+        if (calleeResult.Result is not VBArrayType)
+        {
+            MarkPassedAsArguments(context, indexExpression.Arguments);
+        }
+
         // MS-VBAL §5.6.13: the arguments are those of a call when the callee is a procedure, and the result of the call has the type the procedure
         // returns - however that type is shaped: `Whole()` of a function that returns Long() is no element of an array. A procedure that declares no
         // parameters is not given the arguments written after it: it is called, and they index what it returns.
@@ -181,6 +208,32 @@ public static class ExpressionStaticSemanticsEvaluator
         }
 
         return IndexExpressionStaticSemantics.Instance.DetermineDeclaredType(context, expression, calleeResult.Result!);
+    }
+
+    /// <summary>
+    /// Flags the arguments of a call that may be taken by reference (<see cref="ValueExpressionSemanticFlags.PassedAsArgument"/>): not one written with
+    /// <c>ByVal</c>, which is a value bound to nothing, nor one that is not a value (the address of a procedure).
+    /// </summary>
+    internal static void MarkPassedAsArguments(StaticEvaluationContext context, IEnumerable<ExpressionNode> arguments)
+    {
+        if (context.Facts is not { } facts)
+        {
+            return;
+        }
+
+        foreach (var argument in arguments)
+        {
+            var passed = argument is NamedArgumentNode named ? named.Value : argument;
+            if (passed is ByValArgumentExpressionNode or AddressOfExpressionNode or MissingArgumentNode)
+            {
+                continue;
+            }
+
+            if (facts.TryGet(passed.Identity, out var fact))
+            {
+                facts.Record(fact with { Flags = fact.Flags | ValueExpressionSemanticFlags.PassedAsArgument });
+            }
+        }
     }
 
     // the Function or Property Get a callee names, by its bare name, qualified by the project or module that declares it, or as a member of an object

@@ -122,7 +122,7 @@ public static class StatementStaticSemanticsEvaluator
 
         var facts = new ExpressionFactCollector();
         var errors = Evaluate(resolved with { Facts = facts }, block, options, kind);
-        return new(procedure, errors) { Expressions = facts.ToImmutable() };
+        return new(procedure, errors) { Expressions = facts.ToImmutable(), IsFullyAnalyzed = errors.IsEmpty && ExpressionCoverage.IsCovered(block, options, facts) };
     }
 
     private static ImmutableArray<VBCompileErrorInfo> Run(StaticEvaluationContext context, StatementBlock block, Walk walk)
@@ -201,6 +201,7 @@ public static class StatementStaticSemanticsEvaluator
 
             var targetResult = ExpressionStaticSemanticsEvaluator.Evaluate(context, assignment.Target);
             CollectError(targetResult, walk);
+            MarkWritten(context, assignment.Target);
             if (assignment.Kind == AssignmentKind.Set && DefaultInstanceNamedBy(context, assignment.Target) is { } defaultInstance)
             {
                 walk.Errors.Add(VBCompileErrorInfo.For(VBCompileErrorId.InvalidUseOfObject, assignment.Target.Location,
@@ -269,10 +270,39 @@ public static class StatementStaticSemanticsEvaluator
                 }
             }
 
-            // the keyword is how the statement is written, which the expression it calls is not: a fact of the callee, for whoever finds it obsolete.
-            if (statement is CallStatementNode { IsExplicitCall: true } call && context.Facts is { } facts && facts.TryGet(call.Callee.Identity, out var callee))
+            // what a statement writes to, apart from an assignment's target: the counter or the control variable of a loop, the string a Mid statement
+            // replaces a part of, and the array a ReDim gives its dimensions.
+            switch (statement)
             {
-                facts.Record(callee with { Flags = callee.Flags | ValueExpressionSemanticFlags.ExplicitCallKeyword });
+                case ForStatementNode forStatement:
+                    MarkWritten(context, forStatement.ControlExpression);
+                    break;
+                case ForEachStatementNode forEachStatement:
+                    MarkWritten(context, forEachStatement.ControlExpression);
+                    break;
+                case MidStatementNode midStatement:
+                    MarkWritten(context, midStatement.Target);
+                    break;
+                case RedimDeclarationNode redim:
+                    // the target is the array, which is not one of the statement's operands: it is evaluated here.
+                    CollectError(ExpressionStaticSemanticsEvaluator.Evaluate(context, redim.Target), walk);
+                    MarkWritten(context, redim.Target);
+                    break;
+            }
+
+            // the keyword is how the statement is written, which the expression it calls is not: a fact of the callee, for whoever finds it obsolete.
+            if (statement is CallStatementNode callStatement)
+            {
+                // the arguments of the statement may be taken by reference like those of a call written as an expression, unless the callee is an array.
+                if (context.Facts is { } facts && facts.TryGet(callStatement.Callee.Identity, out var callee) && callee.DeclaredType is not VBArrayType)
+                {
+                    ExpressionStaticSemanticsEvaluator.MarkPassedAsArguments(context, callStatement.Arguments);
+                }
+
+                if (callStatement.IsExplicitCall && context.Facts is { } explicitFacts && explicitFacts.TryGet(callStatement.Callee.Identity, out var explicitCallee))
+                {
+                    explicitFacts.Record(explicitCallee with { Flags = explicitCallee.Flags | ValueExpressionSemanticFlags.ExplicitCallKeyword });
+                }
             }
         }
 
@@ -347,6 +377,25 @@ public static class StatementStaticSemanticsEvaluator
             case CaseElseClauseStatementNode caseElseClauseStatement:
                 EvaluateBlock(context, caseElseClauseStatement.Body, walk);
                 break;
+        }
+    }
+
+    // an expression a statement writes to is a fact of it: the element of an array is written through the array it is an element of.
+    private static void MarkWritten(StaticEvaluationContext context, ExpressionNode target)
+    {
+        if (context.Facts is not { } facts)
+        {
+            return;
+        }
+
+        while (target is IndexExpressionNode index)
+        {
+            target = index.Callee;
+        }
+
+        if (facts.TryGet(target.Identity, out var fact))
+        {
+            facts.Record(fact with { Flags = fact.Flags | ValueExpressionSemanticFlags.AssignmentTarget });
         }
     }
 
