@@ -50,8 +50,13 @@ public class SupportedLanguage
     /// Whether a <c>Print</c> statement with no file number - <c>Print "x"</c> - is a statement of the language.
     /// </summary>
     /// <remarks>
-    /// In VB6 it is the <c>Print</c> member of the form or report it is written in, so it exists only where there is one; and VBA has no such
-    /// statement at all, which is why a call of it is undefined. A BASIC has it as its own: it writes to the output of the program.
+    /// In VB6 it is the <c>Print</c> member of the form or report it is written in, so it exists only where there is one. A BASIC has it as its
+    /// own: it writes to the output of the program.
+    /// <para>
+    /// In VBA <c>Print</c> is a reserved identifier: it is illegal as the name of anything, it has no semantics, and it is not a recognized statement
+    /// inside a procedure. Only the Immediate window accepts a bare <c>Print</c>, where it writes what <c>Debug.Print</c> does - and the Immediate window
+    /// is not procedure scope.
+    /// </para>
     /// </remarks>
     public bool HasBarePrint { get; init; }
 
