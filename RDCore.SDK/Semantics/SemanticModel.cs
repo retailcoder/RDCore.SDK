@@ -1,3 +1,4 @@
+using RDCore.SDK.Model.AST.Abstract;
 using RDCore.SDK.Model.Errors;
 using RDCore.SDK.Model.Symbols.Abstract;
 using System.Collections.Immutable;
@@ -21,25 +22,36 @@ namespace RDCore.SDK.Semantics;
 public sealed record class ProcedureSemanticModel(SemanticId Procedure, ImmutableArray<VBCompileErrorInfo> CompileErrors)
 {
     /// <summary>
+    /// What the static pass found out about each expression of the procedure's body, by the expression: its declared type, what it names and is
+    /// bound to, and how it is written. Empty when the pass had no workspace to resolve names in.
+    /// </summary>
+    public ImmutableDictionary<SyntaxNodeId, ExpressionFact> Expressions { get; init; } = ImmutableDictionary<SyntaxNodeId, ExpressionFact>.Empty;
+
+    /// <summary>
     /// Whether the static pass found nothing wrong with the procedure.
     /// </summary>
     public bool IsValid => CompileErrors.IsEmpty;
 }
 
 /// <summary>
-/// What the semantic analysis pass found out about one module: the model of each procedure it declares.
+/// What the semantic analysis pass found out about one module: what is wrong with what it declares, and the model of each procedure it declares.
 /// </summary>
+/// <remarks>
+/// A module is valid when its declarations are, and every procedure is: a module whose procedures are all valid may still declare a name twice.
+/// </remarks>
 /// <param name="Module">The address of the module the model describes.</param>
+/// <param name="DeclarationErrors">The compile errors of the module's own declarations (<see cref="Static.DeclarationStaticSemanticsEvaluator"/>), which no procedure body shows.</param>
 /// <param name="Procedures">The model of each procedure the module declares, in declaration order.</param>
-public sealed record class ModuleSemanticModel(Uri Module, ImmutableArray<ProcedureSemanticModel> Procedures)
+public sealed record class ModuleSemanticModel(
+    Uri Module, ImmutableArray<VBCompileErrorInfo> DeclarationErrors, ImmutableArray<ProcedureSemanticModel> Procedures)
 {
     /// <summary>
-    /// Every compile error of every procedure of the module.
+    /// Every compile error of the module: those of its declarations, then those of each procedure.
     /// </summary>
-    public ImmutableArray<VBCompileErrorInfo> CompileErrors => [.. Procedures.SelectMany(procedure => procedure.CompileErrors)];
+    public ImmutableArray<VBCompileErrorInfo> CompileErrors => [.. DeclarationErrors, .. Procedures.SelectMany(procedure => procedure.CompileErrors)];
 
     /// <summary>
-    /// Whether the static pass found nothing wrong with any procedure of the module.
+    /// Whether the static pass found nothing wrong with the module's declarations, nor with any procedure of the module.
     /// </summary>
-    public bool IsValid => Procedures.All(procedure => procedure.IsValid);
+    public bool IsValid => DeclarationErrors.IsEmpty && Procedures.All(procedure => procedure.IsValid);
 }
