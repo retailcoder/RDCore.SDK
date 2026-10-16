@@ -53,6 +53,9 @@ public static class ExpressionStaticSemanticsEvaluator
             facts.Record(ExpressionFactDescriber.Describe(context, facts, expression, result));
         }
 
+        // so are its bindings, so that the plan of an operation is made for the declared types of its operands.
+        context.Bindings?.Record(expression, result);
+
         return result;
     }
 
@@ -390,8 +393,15 @@ public static class ExpressionStaticSemanticsEvaluator
             : StaticSemanticsEvaluationResult.Success(VBUnknownType.TypeInfo);
     }
 
-    // MS-VBAL §5.2.3.4: the members of an enumeration are Longs, and an operand declared as the enumeration is a Long to the operator.
-    private static VBType AsOperand(VBType declared) => declared is VBEnumType ? VBLongType.TypeInfo : declared;
+    // MS-VBAL §5.2.3.4: the members of an enumeration are Longs, and an operand declared as the enumeration is a Long to the operator; MS-VBAL §2.2:
+    // LongPtr is an alias, of LongLong in a 64-bit environment and of Long in a 32-bit one, and an operand declared LongPtr is what it is an alias of.
+    internal static VBType AsOperand(VBType declared) => declared switch
+    {
+        VBEnumType => VBLongType.TypeInfo,
+        VBLongPtrType_x64 => VBLongLongType.TypeInfo,
+        VBLongPtrType_x86 => VBLongType.TypeInfo,
+        _ => declared,
+    };
 
     private static StaticSemanticsEvaluationResult EvaluateUnaryOperator(
         StaticEvaluationContext context, ExpressionNode expression, VBUnaryOperatorExpressionNode unaryOperator)
@@ -413,16 +423,16 @@ public static class ExpressionStaticSemanticsEvaluator
             : StaticSemanticsEvaluationResult.Success(VBUnknownType.TypeInfo);
     }
 
-    // One rule instance per call; every operator rule is either a parameterless-constructible record
-    // or a shared Lazy singleton, so this never allocates anything meaningful. `Mod` (Tokens.ModuloOp)
-    // has no rule yet - falls through to null, deferred by the caller like any other unmapped case.
-    private static IStaticSemantics? ResolveBinaryOperatorRule(string token) => token switch
+    // One rule instance per call; every operator rule is a small record or a shared Lazy singleton, so this never allocates anything meaningful. An
+    // operator with no rule falls through to null, deferred by the caller like any other unmapped case.
+    internal static IStaticSemantics? ResolveBinaryOperatorRule(string token) => token switch
     {
         Tokens.AdditionOp => new BinaryAdditionOperatorStaticSemantics(),
         Tokens.SubtractionOp => new BinarySubtractionOperatorStaticSemantics(),
         Tokens.MultiplicationOp => new BinaryMultiplicationOperatorStaticSemantics(),
         Tokens.DivisionOp => new BinaryDivisionOperatorStaticSemantics(),
         Tokens.IntegerDivisionOp => new BinaryIntegerDivisionOperatorStaticSematics(),
+        Tokens.ModuloOp => new BinaryModuloOperatorStaticSemantics(),
         Tokens.PowerOp => new BinaryExponentOperatorStaticSemantics(),
         Tokens.ConcatOp => new BinaryConcatOperatorStaticSemantics(),
         Tokens.CompareIsOp => new BinaryIsRefEqOperatorStaticSemantics(),
@@ -430,11 +440,11 @@ public static class ExpressionStaticSemanticsEvaluator
             or Tokens.CompareGreaterThanOrEqualOp or Tokens.CompareLessThanOp
             or Tokens.CompareLessThanOrEqualOp or Tokens.CompareLikeOp => new BinaryRelationalOperatorStaticSemantics(),
         Tokens.LogicalAndOp or Tokens.LogicalOrOp or Tokens.LogicalXOrOp
-            or Tokens.LogicalEqvOp or Tokens.LogicalImpOp => new BinaryLogicalOperatorStaticSemantics(),
+            or Tokens.LogicalEqvOp or Tokens.LogicalImpOp => new BinaryLogicalOperatorStaticSemantics(token),
         _ => null,
     };
 
-    private static IStaticSemantics? ResolveUnaryOperatorRule(string token) => token switch
+    internal static IStaticSemantics? ResolveUnaryOperatorRule(string token) => token switch
     {
         Tokens.NegationOp => new UnaryNegationOperatorStaticSemantics(),
         Tokens.LogicalNotOp => new UnaryLogicalOperatorStaticSemantics(),
