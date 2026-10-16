@@ -41,6 +41,20 @@ public sealed record class BoundLiteral(LiteralExpressionNode Literal) : BoundNo
 public sealed record class BoundName(SimpleNameExpressionNode Name, Symbol Symbol) : BoundNode(Name);
 
 /// <summary>
+/// A simple name that is a variable: a parameter, a local or <c>Static</c> variable, or a field (<strong>MS-VBAL §5.6.10</strong>), whose value is read.
+/// </summary>
+/// <remarks>
+/// What reading a name is - a call, a constant, an enumeration member's value, or a variable's value - depends on the symbol alone, and is decided once,
+/// here. A variable of the procedure the name is written in has its <see cref="Slot"/> in the procedure's <see cref="FrameLayout"/>.
+/// </remarks>
+/// <param name="Name">The simple name expression.</param>
+/// <param name="Variable">The variable the name resolves to.</param>
+/// <param name="Slot">The slot of the variable, when it is a parameter or a variable of the procedure the name is written in, and is not <c>Static</c>.</param>
+/// <param name="IsAutoInstantiated">Whether the variable is declared <c>As New</c> (<strong>MS-VBAL §5.2.3.1.4</strong>): a reference to it creates the
+/// object it does not hold yet.</param>
+public sealed record class BoundVariable(SimpleNameExpressionNode Name, Symbol Variable, FrameSlot? Slot, bool IsAutoInstantiated) : BoundNode(Name);
+
+/// <summary>
 /// A binary operation (<strong>MS-VBAL §5.6.9</strong>), its operands, and its plan.
 /// </summary>
 /// <param name="Operation">The binary operator expression.</param>
@@ -58,6 +72,19 @@ public sealed record class BoundBinary(VBBinaryOperatorExpressionNode Operation,
 /// have no table of effective types.</param>
 /// <param name="Operand">The operand.</param>
 public sealed record class BoundUnary(VBUnaryOperatorExpressionNode Operation, OperationPlan? Plan, BoundNode Operand) : BoundNode(Operation);
+
+/// <summary>
+/// A call of a procedure the name before its argument list resolves to (<strong>MS-VBAL §5.6.13</strong>): a <c>Sub</c>, a <c>Function</c> or a
+/// <c>Property Get</c> of the workspace or of a library, by its bare name.
+/// </summary>
+/// <remarks>
+/// The binding is the resolution of the callee, made once. How the arguments are passed - aliased to a variable, let-coerced, collected into a
+/// <c>ParamArray</c>, omitted - is the call's to decide each time it is made, from the arguments as they are written; each argument is an expression of its
+/// own, bound in its turn. 🚧 Binding how each argument is passed is a later step.
+/// </remarks>
+/// <param name="Call">The index expression that is the call.</param>
+/// <param name="Procedure">The procedure called.</param>
+public sealed record class BoundCall(IndexExpressionNode Call, Symbol Procedure) : BoundNode(Call);
 
 /// <summary>
 /// An expression the binder does not bind yet (IR lowering D3): it is evaluated from the syntax tree, the way it always was.
