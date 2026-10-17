@@ -49,10 +49,11 @@ public abstract record class VBArrayValue : VBTypedValue
 
     // C# records synthesize `with` from a memberwise copy constructor, which would share this array's
     // _cells by reference with whatever copy it just built — since _cells is a field, not a primary
-    // constructor parameter, `with` never re-runs CreateCells. VBA deep-copies an array on assignment
-    // (MS-VBAL), so every `with`-derived copy (including TryAllocateIn's) needs its own independent
-    // cells; this explicit copy constructor is what C# calls instead of the default one to make that
-    // happen for the whole hierarchy, not just TryAllocateIn's one call site.
+    // constructor parameter, `with` never re-runs CreateCells. This one gives a `with`-derived copy
+    // (TryAllocateIn's included) slots of its own, so that replacing an element's cell in one
+    // (TrySetElement) does not replace it in the other - but the cells in those slots are the same
+    // cells, and a write to one is seen by both: a `with` is another view of the array. The copy an
+    // assignment makes, which shares nothing, is DataCopy.
     protected VBArrayValue(VBArrayValue original) : base(original)
     {
         ItemType = original.ItemType;
@@ -63,6 +64,24 @@ public abstract record class VBArrayValue : VBTypedValue
     /// <summary>
     /// The declared <see cref="VBType"/> of the elements in this array.
     /// </summary>
+    /// <summary>
+    /// A copy of this array that shares no cell with it: the copy an assignment makes of an array (<see cref="DataValues"/>).
+    /// </summary>
+    /// <remarks>
+    /// Each element is a copy in a cell of its own, deep through what a <c>Variant</c> element holds, and the copy is bound to no storage: it is
+    /// whichever variable it is assigned to that gives it an address.
+    /// </remarks>
+    public VBArrayValue DataCopy()
+    {
+        var copy = this with { Handle = InvalidBindingHandle.Default };
+        for (var index = 0; index < _cells.Length; index++)
+        {
+            copy._cells[index] = DataValues.CopyCell(_cells[index]);
+        }
+
+        return copy;
+    }
+
     public VBType ItemType { get; init; }
 
     /// <summary>
@@ -159,6 +178,16 @@ public abstract record class VBArrayValue : VBTypedValue
         var index = LinearIndex(subscripts);
         return index < 0 ? null : _cells[index];
     }
+
+    /// <summary>
+    /// Gets the binding of the element at a flat index, in the order <see cref="ElementAt"/> reads them, or <c>null</c> when there is no element
+    /// there.
+    /// </summary>
+    /// <remarks>
+    /// For whoever walks every cell of the array without subscripts - what the objects its elements hold are held by, each by its own cell.
+    /// </remarks>
+    /// <param name="flatIndex">From 0 to <see cref="Length"/> - 1.</param>
+    public IBindingHandle? CellAt(int flatIndex) => flatIndex < 0 || flatIndex >= _cells.Length ? null : _cells[flatIndex];
 
     /// <summary>
     /// Rebinds the element at the given subscripts to <paramref name="value"/>. Mutates the cell in
