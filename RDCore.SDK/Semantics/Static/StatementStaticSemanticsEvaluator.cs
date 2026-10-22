@@ -281,8 +281,19 @@ public static class StatementStaticSemanticsEvaluator
             var isLet = assignment.Kind is AssignmentKind.ImplicitLet or AssignmentKind.ExplicitLet;
             var letsADefaultMember = assignsADefaultMember && isLet;
             var (role, section) = TargetOf(assignment.Kind);
-            if ((letsADefaultMember || RequireTarget(context, assignment.Target, role, section, isLet, walk)) && !assignsADefaultMember
-                && targetResult.IsSuccess && valueResult.IsSuccess && ResolveCoercionRule(assignment.Kind) is { } coercionRule)
+            if (!letsADefaultMember && !RequireTarget(context, assignment.Target, role, section, assignment.Kind, walk))
+            {
+                return;
+            }
+
+            // what the target is declared as, or the member it is, comes next: a target that is no variable at all says so first.
+            if (targetResult.IsSuccess && TargetKindError(context, assignment, targetResult.Result!) is { } targetKindError)
+            {
+                walk.Errors.Add(targetKindError);
+                return;
+            }
+
+            if (!assignsADefaultMember && targetResult.IsSuccess && valueResult.IsSuccess && ResolveCoercionRule(assignment.Kind) is { } coercionRule)
             {
                 CollectError(coercionRule.DetermineDeclaredType(context, assignment.Value, valueResult.Result!, targetResult.Result!), walk);
             }
@@ -352,10 +363,12 @@ public static class StatementStaticSemanticsEvaluator
                 case ForStatementNode forStatement:
                     RequireVariable(context, forStatement.ControlExpression, "The control variable of a For statement", "5.6.16.6", walk);
                     MarkWritten(context, forStatement.ControlExpression);
+                    RequireNextOfControl(forStatement.ControlExpression, forStatement.NextExpression, walk);
                     break;
                 case ForEachStatementNode forEachStatement:
                     RequireVariable(context, forEachStatement.ControlExpression, "The control variable of a For Each statement", "5.6.16.6", walk);
                     MarkWritten(context, forEachStatement.ControlExpression);
+                    RequireNextOfControl(forEachStatement.ControlExpression, forEachStatement.NextExpression, walk);
                     break;
                 case MidStatementNode midStatement:
                     MarkWritten(context, midStatement.Target);
@@ -369,7 +382,22 @@ public static class StatementStaticSemanticsEvaluator
                         walk.Errors.Add(refused);
                     }
 
-                    RequireVariable(context, redim.Target, "The target of a ReDim statement", "5.4.3.3", walk);
+                    if (RequireVariable(context, redim.Target, "The target of a ReDim statement", "5.4.3.3", walk)
+                        && redim.Target is SimpleNameExpressionNode redimName
+                        && context.Resolver.ResolveValue(redimName, ScopeKind.Local, context.Scope.Uri).Symbol is { } array
+                        && array.TryGetProperty(SymbolProperties.ArrayBounds, out var fixedBounds) && !fixedBounds.IsDefaultOrEmpty)
+                    {
+                        // an array declared with fixed dimensions keeps them (MS-VBA: "Array already dimensioned", Excel-verified).
+                        walk.Errors.Add(VBCompileErrorInfo.For(VBCompileErrorId.ArrayAlreadyDimensioned, redim.Target.Location, redimName.IdentifierName));
+                    }
+                    else if (redimensioned.Result is VBNumericType or VBStringType or VBBooleanType or VBDateType)
+                    {
+                        // what is re-dimensioned is an array, as what is erased is: a variable of an intrinsic type other than Variant never holds one (MS-VBA:
+                        // "Expected array", Excel-verified).
+                        walk.Errors.Add(VBCompileErrorInfo.For(VBCompileErrorId.ExpectedArray, redim.Target.Location,
+                            redim.Target is SimpleNameExpressionNode scalar ? scalar.IdentifierName : string.Empty));
+                    }
+
                     MarkWritten(context, redim.Target);
                     break;
                 case KeywordStatementNode { Token: Tokens.Erase } erase:
@@ -379,12 +407,31 @@ public static class StatementStaticSemanticsEvaluator
                         elements.RequireNotAValue(element, "An element of an Erase statement", "5.4.3.4");
                     }
                     walk.Errors.AddRange(elements.Errors);
+
+                    // what is erased is an array: a variable of an intrinsic type other than Variant never holds one (MS-VBA: "Expected array",
+                    // Excel-verified).
+                    foreach (var element in elements.Errors.IsEmpty ? erase.Inputs.OfType<ExpressionNode>() : [])
+                    {
+                        if (ExpressionStaticSemanticsEvaluator.Evaluate(context with { Facts = null, Bindings = null }, element).Result is VBNumericType or VBStringType or VBBooleanType or VBDateType)
+                        {
+                            walk.Errors.Add(VBCompileErrorInfo.For(VBCompileErrorId.ExpectedArray, element.Location, element is SimpleNameExpressionNode erased ? erased.IdentifierName : string.Empty));
+                        }
+                    }
                     break;
             }
 
             // the keyword is how the statement is written, which the expression it calls is not: a fact of the callee, for whoever finds it obsolete.
             if (statement is CallStatementNode callStatement)
             {
+                // MS-VBAL §5.4.2.1: what a Call statement calls is a procedure; a variable or a constant is none (MS-VBA: "Expected Sub, Function, or
+                // Property", Excel-verified).
+                if (callStatement.IsExplicitCall && callStatement.Callee is SimpleNameExpressionNode calledName
+                    && context.Resolver.ResolveValue(calledName, ScopeKind.Local, context.Scope.Uri).Symbol is ITypedSymbol and not (VBProcedureMemberSymbol
+                        or VBFunctionMemberSymbol or VBPropertyGetMemberSymbol or VBExternalFunctionMemberSymbol or VBExternalSubMemberSymbol))
+                {
+                    walk.Errors.Add(VBCompileErrorInfo.For(VBCompileErrorId.ExpectedSubFunctionOrProperty, calledName.Location, calledName.IdentifierName));
+                }
+
                 // the arguments of the statement may be taken by reference like those of a call written as an expression, unless the callee is an array.
                 if (context.Facts is { } facts && facts.TryGet(callStatement.Callee.Identity, out var callee) && callee.DeclaredType is not VBArrayType)
                 {
@@ -395,7 +442,8 @@ public static class StatementStaticSemanticsEvaluator
                 // value of it must have one (MS-VBAL §5.5.1.1).
                 if (ObjectValueStaticSemantics.MemberOfCallee(context, callStatement.Callee) is { } calledMember
                     && ObjectValueStaticSemantics.ParametersOfCallee(context, callStatement.Callee) is { } parameters
-                    && (ParamArrayStaticSemantics.ArgumentsError(context, calledMember, parameters, callStatement.Arguments)
+                    && (ArgumentListStaticSemantics.Error(context, callStatement.Callee, calledMember, parameters, callStatement.Arguments)
+                        ?? ParamArrayStaticSemantics.ArgumentsError(context, calledMember, parameters, callStatement.Arguments)
                         ?? ObjectValueStaticSemantics.ArgumentsError(context, parameters, callStatement.Arguments)) is { } argumentError)
                 {
                     walk.Errors.Add(argumentError);
@@ -454,10 +502,10 @@ public static class StatementStaticSemanticsEvaluator
                 EvaluateBlock(context, whileWend.Body, walk);
                 break;
             case ForStatementNode forStatement:
-                EvaluateLoopBody(context, forStatement.Body, walk, isForLoop: true);
+                EvaluateLoopBody(context, forStatement.Body, walk, isForLoop: true, forStatement.ControlExpression);
                 break;
             case ForEachStatementNode forEachStatement:
-                EvaluateLoopBody(context, forEachStatement.Body, walk, isForLoop: true);
+                EvaluateLoopBody(context, forEachStatement.Body, walk, isForLoop: true, forEachStatement.ControlExpression);
                 break;
             case SelectCaseStatementNode selectCase:
                 foreach (var caseExpressionBlock in selectCase.CaseExpressionBlocks)
@@ -501,9 +549,21 @@ public static class StatementStaticSemanticsEvaluator
         }
     }
 
-    // an Exit For or Exit Do is checked against the loops it is lexically inside, so a body is walked with the kind of loop it belongs to counted.
-    private static void EvaluateLoopBody(StaticEvaluationContext context, StatementBlock body, Walk walk, bool isForLoop)
+    // an Exit For or Exit Do is checked against the loops it is lexically inside, so a body is walked with the kind of loop it belongs to counted. A loop
+    // nested in a For loop is not controlled by its variable (MS-VBA: "For control variable already in use", Excel-verified).
+    private static void EvaluateLoopBody(StaticEvaluationContext context, StatementBlock body, Walk walk, bool isForLoop, ExpressionNode? control = null)
     {
+        var controlName = control is SimpleNameExpressionNode { IdentifierName: var name } ? name : null;
+        if (controlName is not null && !walk.Structural && walk.ControlVariables.Contains(controlName, StringComparer.OrdinalIgnoreCase))
+        {
+            walk.Errors.Add(VBCompileErrorInfo.For(VBCompileErrorId.ForControlVariableAlreadyInUse, control!.Location, controlName));
+        }
+
+        if (controlName is not null)
+        {
+            walk.ControlVariables.Add(controlName);
+        }
+
         if (isForLoop)
         {
             walk.ForDepth++;
@@ -522,6 +582,11 @@ public static class StatementStaticSemanticsEvaluator
         else
         {
             walk.DoDepth--;
+        }
+
+        if (controlName is not null)
+        {
+            walk.ControlVariables.RemoveAt(walk.ControlVariables.Count - 1);
         }
     }
 
@@ -760,17 +825,35 @@ public static class StatementStaticSemanticsEvaluator
             : null;
     }
 
-    private static bool RequireVariable(StaticEvaluationContext context, ExpressionNode operand, string role, string section, Walk walk)
-        => RequireTarget(context, operand, role, section, isLet: false, walk);
+    // the variable a Next statement names, when it names one, is the control variable of the loop it ends (MS-VBA: "Invalid Next control variable
+    // reference", Excel-verified).
+    private static void RequireNextOfControl(ExpressionNode control, ExpressionNode? next, Walk walk)
+    {
+        if (next is SimpleNameExpressionNode { IdentifierName: var named } && control is SimpleNameExpressionNode { IdentifierName: var controlName }
+            && !string.Equals(named, controlName, StringComparison.OrdinalIgnoreCase))
+        {
+            walk.Errors.Add(VBCompileErrorInfo.For(VBCompileErrorId.InvalidNextControlVariableReference, next.Location, named));
+        }
+    }
 
-    // the same, for the target of an assignment: a Let statement's may also be a library's function whose declared type is a class, Object or Variant
-    // (StatementOperandChecks.RequireLetTarget).
-    private static bool RequireTarget(StaticEvaluationContext context, ExpressionNode operand, string role, string section, bool isLet, Walk walk)
+    private static bool RequireVariable(StaticEvaluationContext context, ExpressionNode operand, string role, string section, Walk walk)
     {
         var checks = new StatementOperandChecks(context);
-        if (isLet)
+        checks.RequireVariable(operand, role, section);
+        walk.Errors.AddRange(checks.Errors);
+        return checks.Errors.IsEmpty;
+    }
+
+    // the same, for the target of an assignment: a Let statement's may also be a library's function whose declared type is a class, Object or Variant
+    // (StatementOperandChecks.RequireLetTarget), and a constant assigned by a Let or a Set statement is MS-VBA's "Assignment to constant not permitted"
+    // (StatementOperandChecks.RequireAssignmentTarget).
+    private static bool RequireTarget(StaticEvaluationContext context, ExpressionNode operand, string role, string section, AssignmentKind kind, Walk walk)
+    {
+        var checks = new StatementOperandChecks(context);
+        var isLet = kind is AssignmentKind.ImplicitLet or AssignmentKind.ExplicitLet;
+        if (isLet || kind == AssignmentKind.Set)
         {
-            checks.RequireLetTarget(operand, role, section);
+            checks.RequireAssignmentTarget(operand, role, section, isLet);
         }
         else
         {
@@ -779,6 +862,79 @@ public static class StatementStaticSemanticsEvaluator
 
         walk.Errors.AddRange(checks.Errors);
         return checks.Errors.IsEmpty;
+    }
+
+    // what the declared type of an assignment's target, or the member it is, cannot be for the kind of assignment, as MS-VBA has it (Excel-verified):
+    // MS-VBAL §5.4.3.6-7's LSet and RSet targets; §5.4.3.9's Set target, which holds an object; a property that has no accessor for the assignment
+    // (§5.4.3.8, §5.4.3.9); and the default member a Let statement assigns through an object, which must be callable with no argument (§5.4.3.8).
+    private static VBCompileErrorInfo? TargetKindError(StaticEvaluationContext context, AssignmentStatementNode assignment, VBType target)
+    {
+        var location = assignment.Target.Location;
+        var name = assignment.Target is MemberAccessExpressionNode { Member: var member } ? member.IdentifierName : target.Name;
+
+        // a property with nothing to assign it through says so first: the type it reads as is not what the assignment writes (MS-VBA, Excel-verified:
+        // `Set c.Value = …` of a Property Get Value() As Long is an invalid use of the property, not a Set of a Long).
+        var isSet = assignment.Kind == AssignmentKind.Set;
+        if (assignment.Kind is not (AssignmentKind.LSet or AssignmentKind.RSet) && HasOnlyAPropertyGet(context, assignment.Target, isSet))
+        {
+            return VBCompileErrorInfo.For(isSet ? VBCompileErrorId.InvalidUseOfProperty : VBCompileErrorId.CantAssignToReadOnlyProperty, location, name);
+        }
+
+        // a call of a function, written as the target of a Let statement, assigns the default member of what it returns: a value that is neither a Variant
+        // nor an object has none (MS-VBAL §5.4.3.8; MS-VBA, Excel-verified). The function's own name in its body is its result, and is no call.
+        if (assignment.Kind is AssignmentKind.ImplicitLet or AssignmentKind.ExplicitLet
+            && assignment.Target is IndexExpressionNode { Callee: var callee }
+            && ObjectValueStaticSemantics.MemberOfCallee(context, callee) is VBFunctionMemberSymbol { ResolvedType: not (VBVariantType or VBObjectType or VBClassType or VBUnknownType) } function
+            && function.Uri.AbsoluteUri != context.Scope.Uri.AbsoluteUri)
+        {
+            return VBCompileErrorInfo.For(VBCompileErrorId.FunctionCallOnLeftHandSideMustReturnVariantOrObject, location, function.Name);
+        }
+
+        // an array declared with fixed dimensions is not assigned another; one declared without them is (MS-VBA: "Can't assign to array", Excel-verified).
+        if (assignment.Kind is AssignmentKind.ImplicitLet or AssignmentKind.ExplicitLet
+            && assignment.Target is SimpleNameExpressionNode arrayName
+            && context.Resolver.ResolveValue(arrayName, ScopeKind.Local, context.Scope.Uri).Symbol is { } array
+            && array.TryGetProperty(SymbolProperties.ArrayBounds, out var bounds) && !bounds.IsDefaultOrEmpty)
+        {
+            return VBCompileErrorInfo.For(VBCompileErrorId.CantAssignToArray, location, arrayName.IdentifierName);
+        }
+
+        switch (assignment.Kind)
+        {
+            case AssignmentKind.LSet when target is not (VBStringType or VBVariantType or VBUserDefinedType or VBUnknownType):
+                return VBCompileErrorInfo.For(VBCompileErrorId.LSetAllowedOnlyOnStringsAndUserDefinedTypes, location, target.Name);
+            case AssignmentKind.RSet when target is not (VBStringType or VBVariantType or VBUnknownType):
+                return VBCompileErrorInfo.For(VBCompileErrorId.RSetAllowedOnlyOnStrings, location, target.Name);
+            case AssignmentKind.Set when target is VBNumericType or VBStringType or VBBooleanType or VBDateType:
+                return VBCompileErrorInfo.For(VBCompileErrorId.ObjectRequired, location, target.Name);
+        }
+
+        return !isSet && target is VBClassType && ObjectValueStaticSemantics.ValueOf(assignment.Target, target, ValueDestination.AnyValue) is { IsError: true } refused
+            ? refused.ErrorInfo as VBCompileErrorInfo
+            : null;
+    }
+
+    // whether a member assigned to is a property of a class that declares a Property Get of its name and nothing a Let (or a Set) writes through: no
+    // Property Let (or Set), and no public variable.
+    private static bool HasOnlyAPropertyGet(StaticEvaluationContext context, ExpressionNode target, bool isSet)
+    {
+        if (target is not MemberAccessExpressionNode access)
+        {
+            return false;
+        }
+
+        var owner = access.Owner is { } ownerExpression
+            ? ExpressionStaticSemanticsEvaluator.Evaluate(context with { Facts = null, Bindings = null }, ownerExpression).Result
+            : context.EnclosingWithTargetType;
+        if (owner is not VBClassType { Symbol: var snapshot })
+        {
+            return false;
+        }
+
+        var members = (VBProjectSymbol.ResolveClass(context.Resolver, snapshot) ?? snapshot).DefaultInterfaceMembers
+            .Where(member => string.Equals(member.Name, access.Member.IdentifierName, StringComparison.OrdinalIgnoreCase)).ToArray();
+        return members.Any(member => member is VBPropertyGetMemberSymbol)
+            && !members.Any(member => member.Kind == SymbolKindExt.Field || (isSet ? member is VBPropertySetMemberSymbol : member is VBPropertyLetMemberSymbol));
     }
 
     private static void CollectError(StaticSemanticsEvaluationResult result, Walk walk)
@@ -814,5 +970,8 @@ public static class StatementStaticSemanticsEvaluator
         public int ForDepth { get; set; }
 
         public int DoDepth { get; set; }
+
+        // the control variables of the For loops the statement being walked is inside, innermost last.
+        public List<string> ControlVariables { get; } = [];
     }
 }

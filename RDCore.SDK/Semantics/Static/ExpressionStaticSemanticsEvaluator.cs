@@ -79,12 +79,25 @@ public static class ExpressionStaticSemanticsEvaluator
             // ByVal flags how an argument is passed; the argument is the expression it is written before.
             ByValArgumentExpressionNode byVal => Evaluate(context, byVal.Operand),
             // what is printed is an expression like any other, which can be wrong in its own right; an item of an output list has no type of its own.
-            PrintOutputItemNode item => EvaluateOperands(context, item.Value),
+            PrintOutputItemNode item => EvaluatePrintItem(context, item),
             PrintSpcClauseNode spc => EvaluateOperands(context, spc.Count),
             PrintTabClauseNode tab => EvaluateOperands(context, tab.Column),
             ObjectPrintExpressionNode print => EvaluateOperands(context, [print.Owner, .. print.Items]),
             _ => StaticSemanticsEvaluationResult.Success(VBUnknownType.TypeInfo),
         };
+
+    // an item of an output list is printed, which a subroutine has no value to be (MS-VBAL §5.6.2.1; MS-VBA: "Expected Function or variable",
+    // Excel-verified).
+    private static StaticSemanticsEvaluationResult EvaluatePrintItem(StaticEvaluationContext context, PrintOutputItemNode item)
+    {
+        if (item.Value is { } value && Evaluate(context, value) is { IsSuccess: true, Result: VBVoidType })
+        {
+            return StaticSemanticsEvaluationResult.Error(VBCompileErrorInfo.For(VBCompileErrorId.ExpectedFunctionOrVariable, value.Location,
+                value switch { SimpleNameExpressionNode name => name.IdentifierName, MemberAccessExpressionNode access => access.Member.IdentifierName, _ => string.Empty }));
+        }
+
+        return EvaluateOperands(context, item.Value);
+    }
 
     // the operands of an expression that has no declared type of its own: the first of them that is an error, or nothing known of the expression itself.
     private static StaticSemanticsEvaluationResult EvaluateOperands(StaticEvaluationContext context, params ExpressionNode?[] operands)
@@ -203,7 +216,8 @@ public static class ExpressionStaticSemanticsEvaluator
         // must have one (MS-VBAL §5.5.1.1).
         if (calleeResult.Result is not VBArrayType && ObjectValueStaticSemantics.MemberOfCallee(context, indexExpression.Callee) is { } calledMember
             && ObjectValueStaticSemantics.ParametersOfCallee(context, indexExpression.Callee) is { } parameters
-            && (ParamArrayStaticSemantics.ArgumentsError(context, calledMember, parameters, indexExpression.Arguments)
+            && (ArgumentListStaticSemantics.Error(context, indexExpression, calledMember, parameters, indexExpression.Arguments)
+                ?? ParamArrayStaticSemantics.ArgumentsError(context, calledMember, parameters, indexExpression.Arguments)
                 ?? ObjectValueStaticSemantics.ArgumentsError(context, parameters, indexExpression.Arguments)) is { } argumentError)
         {
             return StaticSemanticsEvaluationResult.Error(argumentError);
@@ -219,6 +233,23 @@ public static class ExpressionStaticSemanticsEvaluator
             return indexesResult
                 ? IndexExpressionStaticSemantics.Instance.DetermineDeclaredType(context, expression, calleeResult.Result!)
                 : calleeResult;
+        }
+
+        // a variable of an intrinsic type other than Variant has no element (MS-VBA: "Expected array"), and an array declared with fixed dimensions has an
+        // element for as many subscripts as it has dimensions (MS-VBA: "Wrong number of dimensions") - Excel-verified.
+        if (indexExpression.Callee is SimpleNameExpressionNode name
+            && context.Resolver.ResolveValue(name, ScopeKind.Local, context.Scope.Uri).Symbol is { } variable and not (VBReturningMemberSymbol or VBProcedureMemberSymbol))
+        {
+            if (calleeResult.Result is VBNumericType or VBStringType or VBBooleanType or VBDateType)
+            {
+                return StaticSemanticsEvaluationResult.Error(VBCompileErrorInfo.For(VBCompileErrorId.ExpectedArray, indexExpression.Callee.Location, name.IdentifierName));
+            }
+
+            if (variable.TryGetProperty(SymbolProperties.ArrayBounds, out var bounds) && !bounds.IsDefaultOrEmpty
+                && indexExpression.Arguments is not ([] or [MissingArgumentNode]) && indexExpression.Arguments.Length != bounds.Length)
+            {
+                return StaticSemanticsEvaluationResult.Error(VBCompileErrorInfo.For(VBCompileErrorId.WrongNumberOfDimensions, indexExpression.Location, name.IdentifierName));
+            }
         }
 
         return IndexExpressionStaticSemantics.Instance.DetermineDeclaredType(context, expression, calleeResult.Result!);
@@ -344,6 +375,14 @@ public static class ExpressionStaticSemanticsEvaluator
             if (result.IsError)
             {
                 return result;
+            }
+
+            // MS-VBAL §3.3.5.2: what the bounds are asked of is an array; one declared as an intrinsic type other than Variant never holds one (MS-VBA:
+            // "Expected array", Excel-verified).
+            if (ReferenceEquals(operand, arrayBound.Array) && result.Result is VBNumericType or VBStringType or VBBooleanType or VBDateType)
+            {
+                return StaticSemanticsEvaluationResult.Error(VBCompileErrorInfo.For(VBCompileErrorId.ExpectedArray, operand.Location,
+                    string.Format(Exceptions.VBCompileError_ExpectedArray_Verbose, result.Result.Name)));
             }
         }
 

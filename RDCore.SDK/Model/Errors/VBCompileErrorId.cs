@@ -51,6 +51,61 @@ public enum VBCompileErrorId
     /// 32 bits. See <strong>MS-VBAL §3.3.2</strong>.
     /// </summary>
     NumericLiteralOverflow = 42,
+    /// <summary>
+    /// A <c>Next</c> statement ends no <c>For</c> loop: none is open where it is written.<br/>
+    /// <strong>MS-VBAL §5.4.2.3</strong> For Statement.
+    /// </summary>
+    NextWithoutFor = 43,
+    /// <summary>
+    /// A <c>For</c> loop has no <c>Next</c> statement before the end of its procedure.<br/>
+    /// <strong>MS-VBAL §5.4.2.3</strong> For Statement.
+    /// </summary>
+    ForWithoutNext = 44,
+    /// <summary>
+    /// A <c>Loop</c> statement ends no <c>Do</c> loop: none is open where it is written.<br/>
+    /// <strong>MS-VBAL §5.4.2.6</strong> Do Statement.
+    /// </summary>
+    LoopWithoutDo = 45,
+    /// <summary>
+    /// A <c>Do</c> loop has no <c>Loop</c> statement before the end of its procedure.<br/>
+    /// <strong>MS-VBAL §5.4.2.6</strong> Do Statement.
+    /// </summary>
+    DoWithoutLoop = 46,
+    /// <summary>
+    /// An <c>End If</c> statement ends no block <c>If</c>: none is open where it is written.<br/>
+    /// <strong>MS-VBAL §5.4.2.8</strong> If Statement.
+    /// </summary>
+    EndIfWithoutBlockIf = 47,
+    /// <summary>
+    /// A block <c>If</c> has no <c>End If</c> statement before the end of its procedure.<br/>
+    /// <strong>MS-VBAL §5.4.2.8</strong> If Statement.
+    /// </summary>
+    BlockIfWithoutEndIf = 48,
+    /// <summary>
+    /// An <c>Else</c> statement belongs to no block <c>If</c>: none is open where it is written.<br/>
+    /// <strong>MS-VBAL §5.4.2.8</strong> If Statement.
+    /// </summary>
+    ElseWithoutIf = 49,
+    /// <summary>
+    /// A <c>Case</c> clause belongs to no <c>Select Case</c> statement: none is open where it is written.<br/>
+    /// <strong>MS-VBAL §5.4.2.10</strong> Select Case Statement.
+    /// </summary>
+    CaseWithoutSelectCase = 50,
+    /// <summary>
+    /// A <c>Select Case</c> statement has no <c>End Select</c> before the end of its procedure.<br/>
+    /// <strong>MS-VBAL §5.4.2.10</strong> Select Case Statement.
+    /// </summary>
+    SelectCaseWithoutEndSelect = 51,
+    /// <summary>
+    /// An <c>End With</c> statement ends no <c>With</c> block: none is open where it is written.<br/>
+    /// <strong>MS-VBAL §5.4.2.21</strong> With Statement.
+    /// </summary>
+    EndWithWithoutWith = 52,
+    /// <summary>
+    /// A <c>With</c> block has no <c>End With</c> statement before the end of its procedure.<br/>
+    /// <strong>MS-VBAL §5.4.2.21</strong> With Statement.
+    /// </summary>
+    ExpectedEndWith = 53,
 
     #endregion
 
@@ -348,6 +403,143 @@ public enum VBCompileErrorId
     /// (recorded in Excel), as calling it at run time does (<strong>§5.5.1.2.13</strong>'s "simple data value").
     /// </remarks>
     ArgumentNotOptional = 9339,
+    /// <summary>
+    /// A subroutine is written where a value is expected - an operand, an argument, the value of an assignment - and a subroutine has none: only a
+    /// value, a variable, a property or a function can be evaluated to a data value.<br/>
+    /// <strong>MS-VBAL §5.6.2.1</strong> Evaluation to a data value.
+    /// </summary>
+    ExpectedFunctionOrVariable = 9340,
+    /// <summary>
+    /// A Let statement assigns a member of an object whose class declares a <c>Property Get</c> of that name and no <c>Property Let</c> to assign it with.<br/>
+    /// <strong>MS-VBAL §5.4.3.8</strong> Let Statement.
+    /// </summary>
+    CantAssignToReadOnlyProperty = 9341,
+    /// <summary>
+    /// A procedure is called with more arguments than it declares parameters, or with a named argument when it declares none.<br/>
+    /// <strong>MS-VBAL §5.6.13.1</strong> Argument Lists, <strong>§5.3.1.11</strong> Procedure Invocation Argument Processing.
+    /// </summary>
+    WrongNumberOfArgumentsOrInvalidPropertyAssignment = 9342,
+    /// <summary>
+    /// The target of an <c>LSet</c> statement is declared as a type other than <c>String</c>, <c>Variant</c> or a user-defined type.<br/>
+    /// <strong>MS-VBAL §5.4.3.6</strong> LSet Statement.
+    /// </summary>
+    LSetAllowedOnlyOnStringsAndUserDefinedTypes = 9343,
+    /// <summary>
+    /// The target of an <c>RSet</c> statement is declared as a type other than <c>String</c> or <c>Variant</c>.<br/>
+    /// <strong>MS-VBAL §5.4.3.7</strong> RSet Statement.
+    /// </summary>
+    RSetAllowedOnlyOnStrings = 9344,
+    /// <summary>
+    /// A Set statement assigns a member of an object whose class declares a <c>Property Get</c> of that name and no <c>Property Set</c> to assign it with.<br/>
+    /// <strong>MS-VBAL §5.4.3.9</strong> Set Statement.
+    /// </summary>
+    InvalidUseOfProperty = 9345,
+    /// <summary>
+    /// The target of an assignment is a constant - one the code declares with <c>Const</c>, or a member of an enumeration.<br/>
+    /// <strong>MS-VBAL §5.4.3.8</strong> Let Statement.
+    /// </summary>
+    AssignmentToConstantNotPermitted = 9346,
+    /// <summary>
+    /// The target of a Set statement is declared as a type that holds no object.<br/>
+    /// <strong>MS-VBAL §5.4.3.9</strong> Set Statement.
+    /// </summary>
+    ObjectRequired = 9347,
+    /// <summary>
+    /// A call names the same parameter twice, or names a parameter a positional argument is already given to.<br/>
+    /// <strong>MS-VBAL §5.6.13.1</strong> Argument Lists.
+    /// </summary>
+    NamedArgumentAlreadySpecified = 9348,
+    /// <summary>
+    /// A call names a parameter the procedure does not declare.<br/>
+    /// <strong>MS-VBAL §5.6.13.1</strong> Argument Lists.
+    /// </summary>
+    NamedArgumentNotFound = 9349,
+    /// <summary>
+    /// The value of a constant, or a bound of an array declared with <c>Dim</c>, is not a constant expression: it reads a variable or calls a function.<br/>
+    /// <strong>MS-VBAL §5.6.16.1</strong> Constant Expressions.
+    /// </summary>
+    ConstantExpressionRequired = 9350,
+    /// <summary>
+    /// The value of a constant is of a type no constant can have: an object - the <c>Nothing</c> literal.<br/>
+    /// <strong>MS-VBAL §5.2.3.2</strong> Constant Declarations.
+    /// </summary>
+    InvalidDataTypeForConstant = 9351,
+    /// <summary>
+    /// The value of a constant, evaluated statically, does not fit its declared type.<br/>
+    /// <strong>MS-VBAL §5.6.16.1</strong> Constant Expressions.
+    /// </summary>
+    Overflow = 9352,
+    /// <summary>
+    /// The value of a constant, evaluated statically, divides by zero.<br/>
+    /// <strong>MS-VBAL §5.6.16.1</strong> Constant Expressions.
+    /// </summary>
+    DivisionByZero = 9353,
+    /// <summary>
+    /// A member is accessed on an expression of a type that has no members: a number, a <c>String</c>, a <c>Boolean</c> or a <c>Date</c>.<br/>
+    /// <strong>MS-VBAL §5.6.12</strong> Member Access Expressions.
+    /// </summary>
+    InvalidQualifier = 9354,
+    /// <summary>
+    /// The target of a Let statement is a call of a function that returns neither a <c>Variant</c> nor an object, whose default member could be assigned.<br/>
+    /// <strong>MS-VBAL §5.4.3.8</strong> Let Statement.
+    /// </summary>
+    FunctionCallOnLeftHandSideMustReturnVariantOrObject = 9355,
+    /// <summary>
+    /// An element of an array declared with fixed dimensions is selected by a number of subscripts that is not its number of dimensions.<br/>
+    /// <strong>MS-VBAL §5.6.13</strong> Index Expressions.
+    /// </summary>
+    WrongNumberOfDimensions = 9356,
+    /// <summary>
+    /// A <c>ReDim</c> statement re-dimensions an array declared with fixed dimensions.<br/>
+    /// <strong>MS-VBAL §5.4.3.3</strong> ReDim Statement.
+    /// </summary>
+    ArrayAlreadyDimensioned = 9357,
+    /// <summary>
+    /// A <c>For</c> loop is controlled by the variable of a <c>For</c> loop it is nested in.<br/>
+    /// <strong>MS-VBAL §5.4.2.3</strong> For Statement.
+    /// </summary>
+    ForControlVariableAlreadyInUse = 9358,
+    /// <summary>
+    /// The variable a <c>Next</c> statement names is not the control variable of the <c>For</c> loop it ends.<br/>
+    /// <strong>MS-VBAL §5.4.2.3</strong> For Statement.
+    /// </summary>
+    InvalidNextControlVariableReference = 9359,
+    /// <summary>
+    /// An array declared with fixed dimensions is assigned an array.<br/>
+    /// <strong>MS-VBAL §5.4.3.8</strong> Let Statement.
+    /// </summary>
+    CantAssignToArray = 9360,
+    /// <summary>
+    /// A variable is passed to a <c>ByRef</c> parameter declared as another type: the parameter would be a second name for a variable of a type it is not.<br/>
+    /// <strong>MS-VBAL §5.3.1.11</strong> Procedure Invocation Argument Processing.
+    /// </summary>
+    ByRefArgumentTypeMismatch = 9361,
+    /// <summary>
+    /// An array is passed to a parameter declared as an array of another type.<br/>
+    /// <strong>MS-VBAL §5.3.1.11</strong> Procedure Invocation Argument Processing.
+    /// </summary>
+    TypeMismatchArrayOrUserDefinedTypeExpected = 9362,
+    /// <summary>
+    /// The name of a procedural module is written where a value, a variable or a procedure is expected: a module is none of them, and only qualifies the
+    /// names of its members.<br/>
+    /// <strong>MS-VBAL §5.6.10</strong> Simple Name Expressions.
+    /// </summary>
+    ExpectedVariableOrProcedureNotModule = 9363,
+    /// <summary>
+    /// A <c>Call</c> statement calls something that is not a procedure: a variable, a constant.<br/>
+    /// <strong>MS-VBAL §5.4.2.1</strong> Call Statement.
+    /// </summary>
+    ExpectedSubFunctionOrProperty = 9364,
+    /// <summary>
+    /// A dimension of an array is declared with an upper bound less than its lower bound.<br/>
+    /// <strong>MS-VBAL §5.2.3.1.3</strong> Array Dimensions and Bounds.
+    /// </summary>
+    RangeHasNoValues = 9365,
+    /// <summary>
+    /// A declaration names a procedural module as its type: a module declares members, and is no type of a value.<br/>
+    /// <strong>MS-VBAL §5.6.4</strong> Expression Binding Contexts.
+    /// </summary>
+    ModuleIsNotAValidType = 9366,
 
 
     /***********************************************************************************************
