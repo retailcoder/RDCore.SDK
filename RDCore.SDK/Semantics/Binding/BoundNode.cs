@@ -1,5 +1,6 @@
 using RDCore.SDK.Model.AST.Abstract;
 using RDCore.SDK.Model.AST.Expressions;
+using RDCore.SDK.Model.Symbols;
 using RDCore.SDK.Model.Symbols.Abstract;
 using RDCore.SDK.Model.Types.Abstract;
 using RDCore.SDK.Semantics.Plans;
@@ -87,11 +88,71 @@ public sealed record class BoundUnary(VBUnaryOperatorExpressionNode Operation, O
 public sealed record class BoundCall(IndexExpressionNode Call, Symbol Procedure) : BoundNode(Call);
 
 /// <summary>
+/// A member of an object whose declared type is a class (<strong>MS-VBAL §5.6.12</strong>), read - <c>c.Value</c> - or called with the arguments written
+/// after it (<strong>§5.6.13</strong>) - <c>c.Add 1</c>, <c>c.Item(1)</c>: a <c>Sub</c>, a <c>Function</c> or a <c>Property Get</c> of the class.
+/// </summary>
+/// <remarks>
+/// The binding is the resolution of the member in the class the owner is declared as, made once. The object the owner holds at run time is an instance of
+/// that class, or of a class that implements it as an interface (<strong>§5.3.1.9</strong>), whose member is then the one implementing it: which one is a
+/// fact of the object's class, decided once for each class the expression meets. A member that is a public variable of the class, a member of an object
+/// declared <c>Object</c> or <c>Variant</c> is late-bound, and a field of a user-defined type is the record's: neither has a member to resolve, and only the
+/// owner is bound (<paramref name="DeclaredClass"/> and <paramref name="Member"/> are <see langword="null"/>) - the member is found by name, from the value,
+/// each time, as the syntax tree's evaluation finds it.
+/// </remarks>
+/// <param name="Expression">The expression: the member access, or the index expression that calls it.</param>
+/// <param name="Access">The member access.</param>
+/// <param name="Owner">The object the member is accessed on, bound; <see langword="null"/> for a member written with no object before the dot, which is a
+/// member of the target of the enclosing <c>With</c> block (<strong>MS-VBAL §5.6.15</strong>).</param>
+/// <param name="DeclaredClass">The class the owner is declared as; <see langword="null"/> for an owner that is late-bound or a record.</param>
+/// <param name="Member">The member of <paramref name="DeclaredClass"/> the name resolves to; <see langword="null"/> when there is no class.</param>
+/// <param name="Arguments">The arguments of a call; <see langword="null"/> for a member that is read, with no argument list.</param>
+public sealed record class BoundMember(
+    ExpressionNode Expression, MemberAccessExpressionNode Access, BoundNode? Owner, VBClassModuleSymbol? DeclaredClass, VBTypeMemberSymbol? Member,
+    IndexExpressionNode? Arguments) : BoundNode(Expression);
+
+/// <summary>
+/// A <c>New</c> expression (<strong>MS-VBAL §5.6.10</strong>'s <c>New</c> keyword, <strong>§5.2.3.1.4</strong>), and the class it creates an object of.
+/// </summary>
+/// <remarks>
+/// The binding is the resolution of the class the type expression names, made once; creating the object and running its <c>Initialize</c> is the
+/// evaluation's, each time.
+/// </remarks>
+/// <param name="New">The <c>New</c> expression.</param>
+/// <param name="Class">The class module of the class created.</param>
+public sealed record class BoundNew(NewExpressionNode New, VBClassModuleSymbol Class) : BoundNode(New);
+
+/// <summary>
+/// An index expression whose callee is a variable (<strong>MS-VBAL §5.6.13</strong>): an element of the array it holds - <c>a(i)</c> - or a call of the
+/// default member of the object it holds - <c>c(1)</c>, which is <c>c.Item(1)</c>.
+/// </summary>
+/// <remarks>
+/// The binding is the callee's: the variable is read through its bound node. What the arguments do to the value it holds - select an element, call a
+/// default member - is decided by the value, each time, as it is for an index expression evaluated from the syntax tree.
+/// </remarks>
+/// <param name="Index">The index expression.</param>
+/// <param name="Callee">The callee, bound to the variable it reads.</param>
+public sealed record class BoundIndex(IndexExpressionNode Index, BoundNode Callee) : BoundNode(Index);
+
+/// <summary>
+/// A <c>TypeOf … Is</c> expression (<strong>MS-VBAL §5.6.9.9</strong>), its operand, and the class it tests the operand's object against.
+/// </summary>
+/// <remarks>
+/// The binding is the resolution of the type name, made once; whether the object's class is that class or implements it is the evaluation's, each time.
+/// </remarks>
+/// <param name="TypeOf">The <c>TypeOf … Is</c> expression.</param>
+/// <param name="Operand">The operand, bound.</param>
+/// <param name="Class">The class module the type name resolves to.</param>
+public sealed record class BoundTypeOf(TypeOfIsExpressionNode TypeOf, BoundNode Operand, VBClassModuleSymbol Class) : BoundNode(TypeOf);
+
+/// <summary>
 /// An expression the binder does not bind yet (IR lowering D3): it is evaluated from the syntax tree, the way it always was.
 /// </summary>
 /// <remarks>
-/// 🚧 Calls, members, indexes and the special forms bind in later slices, which shrink this to nothing (S0.12). A compile error is not bound either: the
-/// static pass reports it, and the evaluation of the syntax tree is what raises its run-time counterpart.
+/// 🚧 What is left binds when the evaluation of the syntax tree is retired (S0.12), which shrinks this to nothing: the special forms (<c>LBound</c>,
+/// <c>UBound</c>, …) and dictionary access (<c>c!key</c>), whose operands are bound already; <c>New</c> and <c>TypeOf … Is</c> of a project-qualified type
+/// name; an index whose callee is no variable, procedure or member (<c>F()(1)</c>); a member of a module or an enumeration by its qualified name; and the
+/// rest of the expressions (<c>Me</c>, arrays, conditional-compilation names). A compile error is not bound either: the static pass reports it, and the
+/// evaluation of the syntax tree is what raises its run-time counterpart.
 /// </remarks>
 /// <param name="Expression">The expression.</param>
 public sealed record class BoundFallback(ExpressionNode Expression) : BoundNode(Expression);
