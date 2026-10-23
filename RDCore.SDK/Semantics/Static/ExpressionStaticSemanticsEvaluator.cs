@@ -449,6 +449,14 @@ public static class ExpressionStaticSemanticsEvaluator
     private static StaticSemanticsEvaluationResult EvaluateTypeOfIs(
         StaticEvaluationContext context, ExpressionNode expression, TypeOfIsExpressionNode typeOfIs)
     {
+        // what TypeOf tests is an object, written as it is: MS-VBA refuses one in parentheses, which would be its default member's value (MS-VBA: "Syntax
+        // error", Excel-verified).
+        if (typeOfIs.Operand is VBUnaryOperatorExpressionNode { Token: OperatorSymbolNames.UnaryArithmeticPrecedenceOp or OperatorSymbolNames.UnaryLetCoerceOp } parenthesized)
+        {
+            return StaticSemanticsEvaluationResult.Error(VBCompileErrorInfo.For(VBCompileErrorId.SyntaxError, parenthesized.Location,
+                string.Format(Exceptions.VBCompileError_TypeOfParenthesizedOperand_Verbose, Tokens.TypeOf)));
+        }
+
         var operandResult = Evaluate(context, typeOfIs.Operand);
         if (operandResult.IsError)
         {
@@ -530,11 +538,16 @@ public static class ExpressionStaticSemanticsEvaluator
         }
 
         // see EvaluateBinaryOperator: an operand is a value. The parentheses around an argument (`Foo (x)`) are no operator of the program's: what they
-        // coerce to is the parameter's to say.
+        // coerce to is the parameter's to say. The parentheses around an operand of an operator are its simple data value (MS-VBAL §5.6.6) - an object's
+        // default member, even where the operator takes an object: `(o) Is Nothing` tests what o's default member returns, and `((o))` reads it twice
+        // (MS-VBA, Excel-verified).
         var operand = operandResult.Result!;
         if (unaryOperator.Token != OperatorSymbolNames.UnaryLetCoerceOp)
         {
-            var value = ObjectValueStaticSemantics.ValueOf(unaryOperator.Operand, operand, ValueDestination.TypedValue);
+            // the simple data value of what parentheses enclose is of whatever type it is - an object, when the default member returns one; an operand of
+            // any other unary operator is a value of a declared type.
+            var destination = unaryOperator.Token == OperatorSymbolNames.UnaryArithmeticPrecedenceOp ? ValueDestination.SimpleDataValue : ValueDestination.TypedValue;
+            var value = ObjectValueStaticSemantics.ValueOf(unaryOperator.Operand, operand, destination);
             if (value.IsError)
             {
                 return value;
@@ -573,10 +586,12 @@ public static class ExpressionStaticSemanticsEvaluator
     {
         Tokens.NegationOp => new UnaryNegationOperatorStaticSemantics(),
         Tokens.LogicalNotOp => new UnaryLogicalOperatorStaticSemantics(),
-        // MS-VBAL 5.6.6: a pair of parentheses is an operator, and it leaves the declared type alone.
+        // MS-VBAL 5.6.6: a pair of parentheses is an operator - around an operand of an operator, the precedence one; anywhere else, the let-coercion one
+        // (RD-VBAL §5.6.6) - and either leaves the declared type alone.
         // Without a rule it falls through to the VBUnknownType above, which would lose the type of
         // everything anyone ever wrote parentheses around.
         OperatorSymbolNames.UnaryLetCoerceOp => new UnaryLetCoerceOperatorStaticSemantics(),
+        OperatorSymbolNames.UnaryArithmeticPrecedenceOp => new UnaryPrecedenceOperatorStaticSemantics(),
         _ => null,
     };
 }
