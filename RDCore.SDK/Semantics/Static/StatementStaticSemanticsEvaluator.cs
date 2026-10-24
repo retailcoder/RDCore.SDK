@@ -43,8 +43,8 @@ namespace RDCore.SDK.Semantics.Static;
 /// </para>
 /// <para>
 /// A <c>Set</c> assignment whose target is the default instance variable of a predeclared class
-/// (<see cref="VBPredeclaredInstanceSymbol"/>) is invalid (<strong>MS-VBAL §5.2.4.1.2</strong>) and reported as
-/// <see cref="VBCompileErrorId.InvalidUseOfObject"/>.
+/// (<see cref="VBPredeclaredInstanceSymbol"/>) is valid, as it is in MS-VBA, where <strong>MS-VBAL §5.2.4.1.2</strong> says it
+/// is invalid (<strong>RD-VBAL §5.2.4.1.2</strong>).
 /// </para>
 /// </remarks>
 public static class StatementStaticSemanticsEvaluator
@@ -213,7 +213,9 @@ public static class StatementStaticSemanticsEvaluator
             var targetResult = ExpressionStaticSemanticsEvaluator.Evaluate(context, withStatement.WithExpression);
             CollectError(targetResult, walk);
 
-            var bodyContext = targetResult.IsSuccess ? context with { EnclosingWithTargetType = targetResult.Result } : context;
+            // a target that is an error is reported once: the body is still in a With block, of a target whose type is not known, and its members are
+            // late-bound rather than each an implicit With-reference outside any.
+            var bodyContext = context with { EnclosingWithTargetType = targetResult.IsSuccess ? targetResult.Result : VBUnknownType.TypeInfo };
             EvaluateBlock(bodyContext, withStatement.Body, walk);
             return;
         }
@@ -263,11 +265,6 @@ public static class StatementStaticSemanticsEvaluator
             var targetResult = ExpressionStaticSemanticsEvaluator.Evaluate(context, assignment.Target);
             CollectError(targetResult, walk);
             MarkWritten(context, assignment.Target);
-            if (assignment.Kind == AssignmentKind.Set && DefaultInstanceNamedBy(context, assignment.Target) is { } defaultInstance)
-            {
-                walk.Errors.Add(VBCompileErrorInfo.For(VBCompileErrorId.InvalidUseOfObject, assignment.Target.Location,
-                    $"'{defaultInstance.Name}' is the default instance variable of a predeclared class and can't be the target of a Set assignment (MS-VBAL §5.2.4.1.2)."));
-            }
             var valueResult = ExpressionStaticSemanticsEvaluator.Evaluate(context, assignment.Value);
             CollectError(valueResult, walk);
 
@@ -771,14 +768,6 @@ public static class StatementStaticSemanticsEvaluator
     // Set-coercion - which aren't modeled yet (a real, accepted gap; see FixedString let-coercion in
     // the runtime layer for the same kind of deliberate deferral). Falls through to null, deferred by
     // the caller like any other unmapped case.
-    // MS-VBAL §5.2.4.1.2: the variable a predeclared class's name refers to can't be the target of a Set
-    // assignment. Only a simple name reaches it - a local or field of the same name hides it, and resolves
-    // to that instead.
-    private static VBPredeclaredInstanceSymbol? DefaultInstanceNamedBy(StaticEvaluationContext context, ExpressionNode target)
-        => target is SimpleNameExpressionNode name
-            ? context.Resolver.ResolveValue(name, ScopeKind.Local, context.Scope.Uri).Symbol as VBPredeclaredInstanceSymbol
-            : null;
-
     private static IStaticSemantics? ResolveCoercionRule(AssignmentKind kind) => kind switch
     {
         AssignmentKind.ImplicitLet or AssignmentKind.ExplicitLet => LetCoercionStaticSemantics.Instance,
@@ -865,6 +854,12 @@ public static class StatementStaticSemanticsEvaluator
     }
 
     // what the declared type of an assignment's target, or the member it is, cannot be for the kind of assignment, as MS-VBA has it (Excel-verified):
+    // the default instance a bare name refers to; a local or field of the same name hides it, and is what the name refers to instead.
+    private static VBPredeclaredInstanceSymbol? DefaultInstanceNamedBy(StaticEvaluationContext context, ExpressionNode target)
+        => target is SimpleNameExpressionNode simpleName
+            ? context.Resolver.ResolveValue(simpleName, ScopeKind.Local, context.Scope.Uri).Symbol as VBPredeclaredInstanceSymbol
+            : null;
+
     // MS-VBAL §5.4.3.6-7's LSet and RSet targets; §5.4.3.9's Set target, which holds an object; a property that has no accessor for the assignment
     // (§5.4.3.8, §5.4.3.9); and the default member a Let statement assigns through an object, which must be callable with no argument (§5.4.3.8).
     private static VBCompileErrorInfo? TargetKindError(StaticEvaluationContext context, AssignmentStatementNode assignment, VBType target)
@@ -878,6 +873,14 @@ public static class StatementStaticSemanticsEvaluator
         if (assignment.Kind is not (AssignmentKind.LSet or AssignmentKind.RSet) && HasOnlyAPropertyGet(context, assignment.Target, isSet))
         {
             return VBCompileErrorInfo.For(isSet ? VBCompileErrorId.InvalidUseOfProperty : VBCompileErrorId.CantAssignToReadOnlyProperty, location, name);
+        }
+
+        // the default instance of a class can be the target of a Set, as it is in MS-VBA (RD-VBAL §5.2.4.1.2), but not an extensible class's - a document
+        // module, `ThisWorkbook`, `Sheet1` - which is a property of the host that extends it, and which a Set cannot assign (MS-VBA, Excel-verified,
+        // oracle\s18: "Invalid use of property", whatever is assigned). `Debug` is no target at all: its name is a syntax error (SimpleNameExpressionStaticSemantics).
+        if (isSet && DefaultInstanceNamedBy(context, assignment.Target) is { } instance && instance.ClassModule.GetProperty(SymbolProperties.Extensible))
+        {
+            return VBCompileErrorInfo.For(VBCompileErrorId.InvalidUseOfProperty, location, instance.Name);
         }
 
         // a call of a function, written as the target of a Let statement, assigns the default member of what it returns: a value that is neither a Variant
