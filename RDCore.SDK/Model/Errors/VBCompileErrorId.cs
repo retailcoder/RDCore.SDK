@@ -584,6 +584,16 @@ public enum VBCompileErrorId
     /// ℹ️ Unable to find an official <c>learn.microsoft.com</c> documentation link for this error. MS-VBA reports it with this message (recorded in Excel).
     /// </remarks>
     MemberAlreadyExistsInDesigner = 9372,
+    /// <summary>
+    /// A name written as a type is a procedural module of a referenced library, <c>VBA.Strings</c>: a module declares members, and is no type of a value.<br/>
+    /// <strong>MS-VBAL §5.6.16.7</strong> Type Expressions.
+    /// </summary>
+    AutomationTypeNotSupported = 9373,
+    /// <summary>
+    /// A name written as a type is a project or a library, <c>VBA</c>: a project holds modules and types, and is no type of a value.<br/>
+    /// <strong>MS-VBAL §5.6.16.7</strong> Type Expressions.
+    /// </summary>
+    ExpectedUserDefinedTypeNotProject = 9374,
 
 
     /***********************************************************************************************
