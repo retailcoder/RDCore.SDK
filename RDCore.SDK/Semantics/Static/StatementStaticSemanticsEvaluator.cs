@@ -1044,7 +1044,8 @@ public static class StatementStaticSemanticsEvaluator
         var isSet = assignment.Kind == AssignmentKind.Set;
         if (assignment.Kind is not (AssignmentKind.LSet or AssignmentKind.RSet) && HasOnlyAPropertyGet(context, assignment.Target, isSet))
         {
-            return VBCompileErrorInfo.For(isSet ? VBCompileErrorId.InvalidUseOfProperty : VBCompileErrorId.CantAssignToReadOnlyProperty, location, name);
+            var property = assignment.Target is SimpleNameExpressionNode { IdentifierName: var named } ? named : name;
+            return VBCompileErrorInfo.For(isSet ? VBCompileErrorId.InvalidUseOfProperty : VBCompileErrorId.CantAssignToReadOnlyProperty, location, property);
         }
 
         // the default instance of a class can be the target of a Set, as it is in MS-VBA (RD-VBAL §5.2.4.1.2), but not an extensible class's - a document
@@ -1098,20 +1099,43 @@ public static class StatementStaticSemanticsEvaluator
         VBTypeMemberSymbol[] members;
         if (target is SimpleNameExpressionNode name)
         {
-            // whichever accessor the name resolves to, the property is all of them. It is one of the module's own: a property of another module, or of the
-            // library, named by its bare name is called, as MS-VBA compiles `Set Now = Nothing` (oracle\s28 W5)
+            // whichever accessor the name resolves to, the property is all of them: of the module's own, or of another module of the workspace (MS-VBA,
+            // Excel-verified, oracle\s44 W03). A library's property named by its bare name outside its module is called, as MS-VBA compiles
+            // `Set Now = Nothing` (s28 W5); a form's control, named in the form, is the form's own.
             var module = context.Scope.SelfAndAncestors().FirstOrDefault(scope => scope.Kind == LexicalScopeKind.Module)?.Uri;
             if (context.Resolver.ResolveValue(name, ScopeKind.Local, context.Scope.Uri).Symbol is not VBTypeMemberSymbol { } property
                 || property is not IVBPropertyMemberSymbol
                 || property.Uri.AbsoluteUri == context.Scope.Uri.AbsoluteUri
-                || module is null || property.ParentUri.AbsoluteUri != module.AbsoluteUri)
+                || module is null
+                || property.ParentUri.AbsoluteUri != module.AbsoluteUri && property.GetProperty(SymbolProperties.ExternalTarget) is { Length: > 0 })
             {
                 return false;
             }
 
-            // its accessors and whatever else the module declares of the name, as the module's scope has them
+            // its accessors and whatever else its module declares of the name, as the scope has them
             members = [.. context.Scope.SelfAndAncestors().SelectMany(scope => scope.DeclaredAs(property.Name)).OfType<VBTypeMemberSymbol>()
                 .Where(member => member.ParentUri.AbsoluteUri == property.ParentUri.AbsoluteUri)];
+        }
+        else if (target is MemberAccessExpressionNode { Owner: { } qualified } moduleAccess
+            && context.Resolver.NamespaceOf(qualified, context.Scope.Uri) is { } qualifier)
+        {
+            // a property of a standard module named through the module - `Set Program.Items = Nothing` - is the property its bare name is, from anywhere
+            // (MS-VBA, Excel-verified, oracle\s44 V01-V04): its accessors are the module's members of the name.
+            if (context.Resolver.ResolveMember(qualifier, moduleAccess.Member, context.Scope.Uri).Symbol is not VBTypeMemberSymbol { } property
+                || property is not IVBPropertyMemberSymbol
+                || property.Uri.AbsoluteUri == context.Scope.Uri.AbsoluteUri)
+            {
+                return false;
+            }
+
+            members = qualifier is VBModuleSymbol { Members: { IsDefaultOrEmpty: false } declared }
+                ? [.. declared.Where(member => string.Equals(member.Name, property.Name, StringComparison.OrdinalIgnoreCase))]
+                : [.. context.Scope.SelfAndAncestors().SelectMany(scope => scope.DeclaredAs(property.Name)).OfType<VBTypeMemberSymbol>()
+                    .Where(member => member.ParentUri.AbsoluteUri == property.ParentUri.AbsoluteUri)];
+            if (members.Length == 0)
+            {
+                members = [property];
+            }
         }
         else if (target is MemberAccessExpressionNode access)
         {
