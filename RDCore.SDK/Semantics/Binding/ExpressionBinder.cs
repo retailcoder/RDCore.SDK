@@ -89,6 +89,10 @@ public sealed class ExpressionBindings
         _nodes[expression.Identity] = NodeFor(context, expression, result, plan);
     }
 
+    // the declared type of a call that is not the one its procedure declares: Abs, Int and Fix of a number are of its type (ArgumentTypedFunctions).
+    private static VBType? ResultTypeOf(Symbol procedure, StaticSemanticsEvaluationResult result)
+        => result.Result is VBNumericType typed && ArgumentTypedFunctions.IsTypedByItsArgument(procedure) ? typed : null;
+
     // an operand is recorded before the expression that has it, so its node is there to build this one from. An expression that is a compile error is bound
     // to the error and to what it is late-bound, its run-time counterpart.
     private BoundNode NodeFor(StaticEvaluationContext context, ExpressionNode expression, StaticSemanticsEvaluationResult result, OperationPlan? plan)
@@ -121,7 +125,7 @@ public sealed class ExpressionBindings
             IndexExpressionNode { Callee: SimpleNameExpressionNode callee } index
                 when context.Resolver.ResolveValue(callee, ScopeKind.Local, context.Scope.Uri).Symbol is
                     VBTypeMemberSymbol procedure and (VBProcedureMemberSymbol or VBFunctionMemberSymbol or VBPropertyGetMemberSymbol)
-                => new BoundCall(index, procedure, BoundArgumentsOf(procedure, index)),
+                => new BoundCall(index, procedure, BoundArgumentsOf(procedure, index)) { ResultType = ResultTypeOf(procedure, result) },
 
             // MS-VBAL §5.6.12: a member of a project or a procedural module - `Constants.vbCrLf`, `Module1.Count` - is what the name means unqualified there,
             // and a member of an enumeration named by its type is a constant: neither is a member of a value. Classified and resolved as the evaluation does.
@@ -133,7 +137,7 @@ public sealed class ExpressionBindings
             IndexExpressionNode { Callee: MemberAccessExpressionNode { Owner: { } owner } access } index
                 when context.Resolver.NamespaceOf(owner, context.Scope.Uri) is { } qualifier && NamespaceMemberOf(context, qualifier, access) is { } member
                 => member is VBTypeMemberSymbol procedure and (VBProcedureMemberSymbol or VBFunctionMemberSymbol or VBPropertyGetMemberSymbol)
-                    ? new BoundCall(index, procedure, BoundArgumentsOf(procedure, index))
+                    ? new BoundCall(index, procedure, BoundArgumentsOf(procedure, index)) { ResultType = ResultTypeOf(procedure, result) }
                     : new BoundIndex(index, new BoundQualifiedName(access, member), ArgumentNodes(index)),
 
             // a member of an object declared as a class, read or called: resolved in the class, as the evaluation resolves it. A function that takes no
@@ -171,11 +175,11 @@ public sealed class ExpressionBindings
             // is: the owner bound, the member found from the value each time. A name of a namespace or of an enumeration is
             // no owner of the kind, whether or not the member is found in it.
             MemberAccessExpressionNode { Owner: { } owner } access when !IsQualifier(context, owner)
-                => new BoundMember(access, access, ChildNode(owner), null, null, null),
+                => new BoundMember(access, access, ChildNode(owner), null, null, null) { IsLateBound = IsDeclaredObjectOrVariant(context, owner) },
 
             IndexExpressionNode { Callee: MemberAccessExpressionNode { Owner: { } owner } access } index
                 when context.Resolver.NamespaceOf(owner, context.Scope.Uri) is null
-                => new BoundMember(index, access, ChildNode(owner), null, null, index),
+                => new BoundMember(index, access, ChildNode(owner), null, null, index) { IsLateBound = IsDeclaredObjectOrVariant(context, owner) },
 
             // a member of the target of the enclosing With block (MS-VBAL §5.6.15), declared as a class: the object is the block's, not an expression's.
             MemberAccessExpressionNode { Owner: null } access
@@ -188,9 +192,11 @@ public sealed class ExpressionBindings
                 => new BoundMember(index, access, null, declared, member, index, BoundArgumentsOf(member, index)),
 
             // a member of the target of a With block declared as anything else: the object is the block's, the member found from it.
-            MemberAccessExpressionNode { Owner: null } access => new BoundMember(access, access, null, null, null, null),
+            MemberAccessExpressionNode { Owner: null } access
+                => new BoundMember(access, access, null, null, null, null) { IsLateBound = IsDeclaredObjectOrVariant(context, null) },
 
-            IndexExpressionNode { Callee: MemberAccessExpressionNode { Owner: null } access } index => new BoundMember(index, access, null, null, null, index),
+            IndexExpressionNode { Callee: MemberAccessExpressionNode { Owner: null } access } index
+                => new BoundMember(index, access, null, null, null, index) { IsLateBound = IsDeclaredObjectOrVariant(context, null) },
 
             // the special forms and the dictionary access: their operands are bound, and what those evaluate to is the evaluation's to bound, gather or
             // look up, each time.
@@ -206,6 +212,12 @@ public sealed class ExpressionBindings
 
             _ => new BoundLate(expression),
         };
+
+    // whether the owner of a member - the expression written before the dot, or the target of the enclosing With block - is declared Object or Variant: what
+    // the member returns is then a Variant, whatever it declares (BoundMember.IsLateBound).
+    private static bool IsDeclaredObjectOrVariant(StaticEvaluationContext context, ExpressionNode? owner)
+        => (owner is null ? context.EnclosingWithTargetType
+            : ExpressionStaticSemanticsEvaluator.Evaluate(context with { Facts = null, Bindings = null }, owner).Result) is VBObjectType or VBVariantType;
 
     // what a qualified name means when its owner is a namespace - the member of the namespace, and nothing else when it has none - or an enumeration, which
     // the evaluation asks in that order.

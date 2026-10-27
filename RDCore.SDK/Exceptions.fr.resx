@@ -489,6 +489,9 @@
   <data name="VBCompileError_ReDimOfAMemberOfAnObject_Verbose" xml:space="preserve">
     <value>'{0}' est un membre d'un objet, qu'un ReDim ne redimensionne pas : redimensionnez le tableau dans sa classe, ou une variable du code lui-même.</value>
   </data>
+  <data name="VBCompileError_ReDimOfANameUsedBefore_Verbose" xml:space="preserve">
+    <value>'{0}' est utilisé avant ce ReDim sans être déclaré, ce qui le déclare là comme une variable à part entière : déclarez le tableau avec Dim avant sa première utilisation, puis redimensionnez-le.</value>
+  </data>
   <data name="VBCompileError_PrivateTypeInPublicMember_Verbose" xml:space="preserve">
     <value>'{0}' est public et est déclaré avec '{1}', qui est privé à son module.</value>
   </data>
@@ -506,9 +509,6 @@
   </data>
   <data name="VBCompileError_DefaultMemberReturnsAnObject_Verbose" xml:space="preserve">
     <value>Une valeur de {0} est ce que retourne son membre par défaut '{1}', qui est un objet et non une valeur d'un type déclaré.</value>
-  </data>
-  <data name="VBCompileError_ClassHasNoDefaultMember_Verbose" xml:space="preserve">
-    <value>{0} n'a aucun membre par défaut pour lui donner une valeur, ce qui rend statiquement invalide sa coercition Let en une valeur (MS-VBAL §5.5.1.1). MS-VBA le compile, et lève l'erreur d'exécution 438 (Cette propriété ou méthode n'est pas gérée par cet objet) à l'exécution.</value>
   </data>
   <data name="VBCompileError_LenOfAValue_Verbose" xml:space="preserve">
     <value>Len et LenB prennent une expression String ou le nom d'une variable (MS-VBAL §6.1.2.11.1.22): ceci est une valeur de type {0}, qui n'est ni l'un ni l'autre. Assignez-la à une variable de ce type pour mesurer la variable, ou convertissez-la en String pour en compter les caractères.</value>
@@ -848,5 +848,8 @@
   </data>
   <data name="VBCompileError_MemberAlreadyExistsInDesigner_Verbose" xml:space="preserve">
     <value>&apos;{0}&apos; est le nom d&apos;un contrôle du formulaire, qui est déjà un membre de la classe du formulaire.</value>
+  </data>
+  <data name="ProjectFile_InvalidJson" xml:space="preserve">
+    <value>Le fichier de projet &apos;{0}&apos; n&apos;est pas du JSON valide, à la ligne {1}, position {2} : {3}</value>
   </data>
 </root>

@@ -103,7 +103,15 @@ public sealed record class BoundUnary(VBUnaryOperatorExpressionNode Operation, O
 /// <c>VBA.Len(s)</c>, <c>Module1.Total(1)</c>.</param>
 /// <param name="BoundArguments">The argument of each parameter of <paramref name="Procedure"/>, in order; <see langword="null"/> when the arguments do not map to
 /// its parameters, which the call reports when it is made.</param>
-public sealed record class BoundCall(IndexExpressionNode Call, Symbol Procedure, ImmutableArray<BoundArgument>? BoundArguments = null) : BoundNode(Call);
+public sealed record class BoundCall(IndexExpressionNode Call, Symbol Procedure, ImmutableArray<BoundArgument>? BoundArguments = null) : BoundNode(Call)
+{
+    /// <summary>
+    /// The declared type of the call, when it is not the type <see cref="Procedure"/> declares: <c>Abs</c>, <c>Int</c> and <c>Fix</c> of a numeric value are
+    /// of the value's declared type (<see cref="Static.ArgumentTypedFunctions"/>), and what the call returns is a value of it, not a <c>Variant</c> that holds
+    /// one. <see langword="null"/> for a call of the type its procedure declares.
+    /// </summary>
+    public VBType? ResultType { get; init; }
+}
 
 /// <summary>
 /// A name qualified by the project or the procedural module it is a member of, or by the enumeration it is a member of (<strong>MS-VBAL §5.6.12</strong>):
@@ -149,7 +157,15 @@ public sealed record class BoundPrecompilerName(PrecompilerNameExpressionNode Na
 /// <see langword="null"/> for a member that is not resolved, or whose parameters the arguments do not map to.</param>
 public sealed record class BoundMember(
     ExpressionNode Expression, MemberAccessExpressionNode Access, BoundNode? Owner, VBClassModuleSymbol? DeclaredClass, VBTypeMemberSymbol? Member,
-    IndexExpressionNode? Arguments, ImmutableArray<BoundArgument>? BoundArguments = null) : BoundNode(Expression);
+    IndexExpressionNode? Arguments, ImmutableArray<BoundArgument>? BoundArguments = null) : BoundNode(Expression)
+{
+    /// <summary>
+    /// Whether the owner is declared <c>Object</c> or <c>Variant</c>: what a member reached late-bound returns is a <c>Variant</c>, whatever the member declares
+    /// (<strong>MS-VBAL §5.6.12</strong>). An <c>Integer</c> property read through a <c>Variant</c> is a <c>Variant</c> holding the <c>Integer</c>, whose
+    /// arithmetic widens where an <c>Integer</c>'s overflows (MS-VBA, recorded in Excel: oracle\s46 F11).
+    /// </summary>
+    public bool IsLateBound { get; init; }
+}
 
 /// <summary>
 /// A <c>New</c> expression (<strong>MS-VBAL §5.6.10</strong>'s <c>New</c> keyword, <strong>§5.2.3.1.4</strong>), and the class it creates an object of.

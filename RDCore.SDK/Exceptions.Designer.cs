@@ -637,6 +637,15 @@ namespace RDCore.SDK {
         }
 
         /// <summary>
+        ///   Looks up a localized string similar to &apos;{0}&apos; is used before this ReDim with no declaration, which declares it there as a variable of its own: declare the array with Dim before its first use, then re-dimension it..
+        /// </summary>
+        public static string VBCompileError_ReDimOfANameUsedBefore_Verbose {
+            get {
+                return ResourceManager.GetString("VBCompileError_ReDimOfANameUsedBefore_Verbose", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to &apos;{0}&apos; is public, and is declared with &apos;{1}&apos;, which is private to its module..
         /// </summary>
         public static string VBCompileError_PrivateTypeInPublicMember_Verbose {
@@ -1434,15 +1443,6 @@ namespace RDCore.SDK {
         public static string VBCompileError_DefaultMemberReturnsAnObject_Verbose {
             get {
                 return ResourceManager.GetString("VBCompileError_DefaultMemberReturnsAnObject_Verbose", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to {0} has no default member to give it a value, which makes it statically invalid to Let-coerce to one (MS-VBAL §5.5.1.1). MS-VBA compiles it, and raises run-time error 438 (Object doesn&apos;t support this property or method) when it runs..
-        /// </summary>
-        public static string VBCompileError_ClassHasNoDefaultMember_Verbose {
-            get {
-                return ResourceManager.GetString("VBCompileError_ClassHasNoDefaultMember_Verbose", resourceCulture);
             }
         }
 
@@ -2253,6 +2253,15 @@ namespace RDCore.SDK {
         public static string VBCompileError_MemberAlreadyExistsInDesigner_Verbose {
             get {
                 return ResourceManager.GetString("VBCompileError_MemberAlreadyExistsInDesigner_Verbose", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to The project file &apos;{0}&apos; is not valid JSON, at line {1}, position {2}: {3}.
+        /// </summary>
+        public static string ProjectFile_InvalidJson {
+            get {
+                return ResourceManager.GetString("ProjectFile_InvalidJson", resourceCulture);
             }
         }
     }

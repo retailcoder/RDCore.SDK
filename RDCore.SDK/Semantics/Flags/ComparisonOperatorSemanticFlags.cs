@@ -80,6 +80,33 @@ public enum ComparisonOperatorSemanticFlags
     /// MS-VBA compares the text of the <c>Variant</c>'s value with the <c>String</c>, as Microsoft Learn documents it (RD-VBAL §5.6.9.5).
     /// </remarks>
     IsVariantComparedWithStringAsText = 1 << 20,
+    /// <summary>
+    /// <c>true</c> if the pattern of a <c>Like</c> operation is written in the code, and has a <c>[]</c> or a <c>[!]</c>.
+    /// </summary>
+    /// <remarks>
+    /// 👉 <strong>MS-VBAL §5.6.9.6</strong> makes either a list of no character; MS-VBA matches <c>[]</c> with no character at all, and <c>[!]</c>
+    /// with a <c>!</c> (RD-VBAL §5.6.9.6).
+    /// </remarks>
+    LikePatternHasEmptyCharList = 1 << 21,
+    /// <summary>
+    /// <c>true</c> if the pattern of a <c>Like</c> operation is written in the code, and is not a valid <c>like-pattern</c> in the comparison mode of
+    /// the operation: it has an unterminated list, or a range whose first character is above its last.
+    /// </summary>
+    /// <remarks>
+    /// 👉 <strong>MS-VBAL §5.6.9.6</strong> raises error 93 (<em>Invalid pattern string</em>) for such a pattern; MS-VBA raises it only where a match
+    /// reaches the invalid element (RD-VBAL §5.6.9.6).
+    /// </remarks>
+    LikePatternIsInvalid = 1 << 22,
+
+    /// <summary>
+    /// <c>true</c> if one operand is a <c>VBVariant</c> holding a <c>String</c> that is no value of the effective type, and the other a number, a
+    /// <c>Date</c> or a <c>Boolean</c> that is no <c>VBVariant</c>: the <c>String</c> ranks above it, whatever their values, as MS-VBA compares them.
+    /// </summary>
+    /// <remarks>
+    /// 👉 <strong>MS-VBAL §5.6.9.5</strong> makes the <c>String</c>'s conversion to the effective type a type mismatch (13); MS-VBA raises nothing, and ranks
+    /// the two as it ranks two <c>VBVariant</c> operands (<see cref="IsVariantStringNumericException"/>; RD-VBAL §5.6.9.5).
+    /// </remarks>
+    IsVariantStringThatIsNoValueRanked = 1 << 23,
 
     /// <summary>
     /// Combines all values.
@@ -92,4 +119,6 @@ public enum ComparisonOperatorSemanticFlags
         | NullEffectiveType 
         | ErrorEffectiveType | HasStandardErrorCodes 
         | IsVariantStringNumericException | IsVariantComparedWithStringAsText
+        | LikePatternHasEmptyCharList | LikePatternIsInvalid
+        | IsVariantStringThatIsNoValueRanked
 }

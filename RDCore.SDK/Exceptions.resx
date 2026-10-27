@@ -489,6 +489,9 @@
   <data name="VBCompileError_ReDimOfAMemberOfAnObject_Verbose" xml:space="preserve">
     <value>'{0}' is a member of an object, which a ReDim does not re-dimension: re-dimension the array in its class, or a variable of the code's own.</value>
   </data>
+  <data name="VBCompileError_ReDimOfANameUsedBefore_Verbose" xml:space="preserve">
+    <value>'{0}' is used before this ReDim with no declaration, which declares it there as a variable of its own: declare the array with Dim before its first use, then re-dimension it.</value>
+  </data>
   <data name="VBCompileError_PrivateTypeInPublicMember_Verbose" xml:space="preserve">
     <value>'{0}' is public, and is declared with '{1}', which is private to its module.</value>
   </data>
@@ -506,9 +509,6 @@
   </data>
   <data name="VBCompileError_DefaultMemberReturnsAnObject_Verbose" xml:space="preserve">
     <value>A value of {0} is what its default member '{1}' returns, which is an object and not a value of a declared type.</value>
-  </data>
-  <data name="VBCompileError_ClassHasNoDefaultMember_Verbose" xml:space="preserve">
-    <value>{0} has no default member to give it a value, which makes it statically invalid to Let-coerce to one (MS-VBAL §5.5.1.1). MS-VBA compiles it, and raises run-time error 438 (Object doesn't support this property or method) when it runs.</value>
   </data>
   <data name="VBCompileError_LenOfAValue_Verbose" xml:space="preserve">
     <value>Len and LenB take a String expression or the name of a variable (MS-VBAL §6.1.2.11.1.22): this is a value of type {0}, which is neither. Assign it to a variable of that type to measure the variable, or convert it to a String to count its characters.</value>
@@ -848,5 +848,8 @@
   </data>
   <data name="VBCompileError_MemberAlreadyExistsInDesigner_Verbose" xml:space="preserve">
     <value>&apos;{0}&apos; is the name of a control of the form, which is already a member of the form&apos;s class.</value>
+  </data>
+  <data name="ProjectFile_InvalidJson" xml:space="preserve">
+    <value>The project file &apos;{0}&apos; is not valid JSON, at line {1}, position {2}: {3}</value>
   </data>
 </root>
