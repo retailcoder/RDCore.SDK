@@ -6,9 +6,10 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <ApplicationIcon>logo.ico</ApplicationIcon>
-    <Authors>9562-7303 Québec inc.</Authors>
-    <Copyright>Copyright © 2026 $(Authors)</Copyright>
-    <Product>RDCore</Product>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <!-- TODO: about 1,350 public members have no xmldoc yet; drop this once they do (Protocol already treats CS1591 as an error). -->
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <Description>The RDCore language model (MS-VBAL types, symbols, syntax trees, semantics, diagnostics) and the plumbing every RDCore platform component and extension shares: hosting, configuration, logging, workspaces, the server and client app bases.</Description>
   </PropertyGroup>
 
   <ItemGroup>
@@ -27,7 +28,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="logo.ico" />
+    <!-- the assembly's own icon; not content a consumer of the package gets. -->
+    <Content Include="logo.ico" Pack="false" />
   </ItemGroup>
 
   <ItemGroup>

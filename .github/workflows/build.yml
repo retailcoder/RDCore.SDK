@@ -1,0 +1,106 @@
+name: Build and Test
+
+on:
+ push:
+  branches: [main]
+ pull_request:
+  branches: [main]
+
+permissions:
+ contents: read
+
+jobs:
+ build-and-test:
+  runs-on: ubuntu-latest
+
+  steps:
+   - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+     with:
+      persist-credentials: false
+
+   - name: Setup .NET
+     uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+     with:
+      dotnet-version: 10.0
+
+   - name: Build (Debug)
+     run: dotnet build RDCore.SDK.slnx --configuration Debug
+
+   - name: Test (Debug) + coverage
+     run: |
+       dotnet tool install --global dotnet-coverage
+       dotnet-coverage collect \
+         "dotnet test RDCore.SDK.slnx --configuration Debug --no-build --verbosity normal" \
+         --output-format cobertura --output coverage.cobertura.xml
+
+   - name: Build (Release)
+     run: dotnet build RDCore.SDK.slnx --configuration Release
+
+   - name: Test (Release)
+     run: dotnet test RDCore.SDK.slnx --configuration Release --no-build --verbosity normal
+
+   - name: Coverage badge
+     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+     run: |
+       dotnet tool install --global dotnet-reportgenerator-globaltool
+       # product code only: our own assemblies (not the tests, not the third-party ones that dotnet-coverage also
+       # instruments), and none of the code generated at build time (resx designers, regex generators).
+       reportgenerator -reports:coverage.cobertura.xml -targetdir:coverage-report \
+         -reporttypes:JsonSummary \
+         "-assemblyfilters:+RDCore.SDK;+RDCore.SDK.Protocol" \
+         "-filefilters:-*/obj/*;-*\\obj\\*"
+       pct=$(grep -m1 -oE '"linecoverage": [0-9.]+' coverage-report/Summary.json | grep -oE '[0-9.]+$')
+       echo "RDCore.SDK line coverage: ${pct}%"
+       mkdir badge
+       # one shields.io endpoint file per badge: the overall one, and one per project (coverage-<assembly>.json)
+       badge() {
+         n=${2%.*}
+         if   [ "$n" -ge 80 ]; then color=brightgreen
+         elif [ "$n" -ge 60 ]; then color=green
+         elif [ "$n" -ge 40 ]; then color=yellowgreen
+         elif [ "$n" -ge 25 ]; then color=yellow
+         elif [ "$n" -ge 10 ]; then color=orange
+         else color=red
+         fi
+         printf '{"schemaVersion":1,"label":"coverage","message":"%s%%","color":"%s"}\n' "$2" "$color" > "badge/$1.json"
+         echo "$1: $2%"
+       }
+       badge coverage "$pct"
+       jq -r '.coverage.assemblies[] | "\(.name) \(.coverage)"' coverage-report/Summary.json | while read -r name value; do
+         badge "coverage-$name" "$value"
+       done
+
+   - name: Upload coverage badges
+     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+     uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+     with:
+      name: coverage-badges
+      path: badge/*.json
+      retention-days: 7
+
+ # the only job that can write to the repo: it runs none of the repo's code, just pushes the badge files built above
+ badge:
+  needs: build-and-test
+  if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+  runs-on: ubuntu-latest
+  permissions:
+   contents: write
+
+  steps:
+   - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+     with:
+      name: coverage-badges
+      path: badge
+
+   - name: Publish coverage badge
+     run: |
+       git config --global user.name  'github-actions[bot]'
+       git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+       tmp=$(mktemp -d)
+       cp badge/*.json "$tmp/"
+       cd "$tmp"
+       git init -q
+       git checkout -q -b badges
+       git add ./*.json
+       git commit -q -m 'coverage badge'
+       git push -qf "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" badges

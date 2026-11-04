@@ -1,0 +1,19 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+    <File Path=".gitattributes" />
+    <File Path=".gitignore" />
+    <File Path="Directory.Build.props" />
+    <File Path="README.md" />
+    <File Path="README.fr.md" />
+    <File Path="LICENSE-MIT.md" />
+  </Folder>
+  <Folder Name="/Solution Items/Build/">
+    <File Path=".github/workflows/build.yml" />
+    <File Path=".github/workflows/release.yml" />
+    <File Path=".github/workflows/cla.yml" />
+  </Folder>
+  <Project Path="RDCore.SDK.Protocol/RDCore.SDK.Protocol.csproj" />
+  <Project Path="RDCore.SDK/RDCore.SDK.csproj" Id="217682fc-e856-4902-bb85-e839ac0be988" />
+  <Project Path="RDCore.SDK.Tests/RDCore.SDK.Tests.csproj" />
+</Solution>

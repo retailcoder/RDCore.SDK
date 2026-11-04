@@ -9,10 +9,7 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <!-- the package is public API, which the documentation site is generated from: nothing of it goes undocumented. -->
     <WarningsAsErrors>CS1591</WarningsAsErrors>
-    <Authors>9562-7303 Québec inc.</Authors>
-    <Copyright>Copyright © 2026 $(Authors)</Copyright>
-    <Product>RDCore</Product>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <Description>What a client of the RDCore platform speaks to it: the rdcore/* methods and their messages, the platform handshake, and how to start the language server. System.Text.Json only, no OmniSharp.</Description>
   </PropertyGroup>
 
   <ItemGroup>

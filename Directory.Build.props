@@ -1,0 +1,30 @@
+﻿<Project>
+
+  <PropertyGroup>
+    <!-- the single version source for both packages; a release tag must equal v<VersionPrefix>[-suffix], the suffix passed as -p:VersionSuffix. -->
+    <VersionPrefix>0.1.0</VersionPrefix>
+  </PropertyGroup>
+
+  <!-- what both packages say about themselves on nuget.org. -->
+  <PropertyGroup>
+    <Authors>9562-7303 Québec inc.</Authors>
+    <Company>9562-7303 Québec inc.</Company>
+    <Product>RDCore</Product>
+    <Copyright>Copyright © 2026 $(Authors)</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/rubberduck-vba/RDCore.SDK</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/rubberduck-vba/RDCore.SDK</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>VBA;VB6;MS-VBAL;RDCore;Rubberduck;LSP;language-server</PackageTags>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <!-- nuget.org wants a PNG or a JPEG for a package's icon, not an .ico: the ducky of logo.ico, at 256 x 256. -->
+    <PackageIcon>ducky.png</PackageIcon>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(IsPackable)' != 'false'">
+    <None Include="$(MSBuildThisFileDirectory)assets/ducky.png" Pack="true" PackagePath="" Visible="false" />
+  </ItemGroup>
+
+</Project>

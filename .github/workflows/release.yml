@@ -1,0 +1,124 @@
+name: Release
+
+# Publishes RDCore.SDK and RDCore.SDK.Protocol to nuget.org from a v<VersionPrefix>[-suffix] tag a maintainer pushes.
+# The build job runs the repo's code with read-only permissions; the publish job runs none of it, waits for a required
+# reviewer on the `release` environment, and pushes with a short-lived key from NuGet trusted publishing (no stored secret).
+# A dry run (Run workflow) builds, tests and packs, and keeps the packages as an artifact; it never publishes.
+
+on:
+ push:
+  tags: ['v*']
+ workflow_dispatch:
+
+permissions:
+ contents: read
+
+concurrency:
+ group: release-${{ github.ref }}
+ cancel-in-progress: false
+
+jobs:
+ build:
+  runs-on: ubuntu-latest
+  outputs:
+   version: ${{ steps.version.outputs.version }}
+   is_tag: ${{ steps.version.outputs.is_tag }}
+
+  steps:
+   - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+     with:
+      persist-credentials: false
+      fetch-depth: 0
+
+   - name: Setup .NET
+     uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+     with:
+      dotnet-version: 10.0
+
+   - name: Resolve the version
+     id: version
+     run: |
+       prefix=$(grep -oP '(?<=<VersionPrefix>)[^<]+' Directory.Build.props)
+       if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+         tag="${GITHUB_REF_NAME}"
+         # v<prefix> or v<prefix>-<suffix>, the prefix exactly as Directory.Build.props has it
+         if [[ ! "$tag" =~ ^v${prefix//./\\.}(-[0-9A-Za-z.-]+)?$ ]]; then
+           echo "::error::Tag '$tag' doesn't match v$prefix[-suffix] (VersionPrefix in Directory.Build.props)."
+           exit 1
+         fi
+         suffix="${tag#v$prefix}"; suffix="${suffix#-}"
+         echo "is_tag=true" >> "$GITHUB_OUTPUT"
+       else
+         suffix="ci.${GITHUB_RUN_NUMBER}"
+         echo "is_tag=false" >> "$GITHUB_OUTPUT"
+       fi
+       version="$prefix${suffix:+-$suffix}"
+       echo "suffix=$suffix" >> "$GITHUB_OUTPUT"
+       echo "version=$version" >> "$GITHUB_OUTPUT"
+       echo "Version: $version"
+
+   - name: The tagged commit is on main
+     if: steps.version.outputs.is_tag == 'true'
+     run: |
+       git fetch --no-tags origin main
+       if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+         echo "::error::$GITHUB_SHA is not on main. Tag a commit that is already on main."
+         exit 1
+       fi
+
+   - name: Build
+     run: dotnet build RDCore.SDK.slnx --configuration Release -p:VersionSuffix=${{ steps.version.outputs.suffix }} -p:ContinuousIntegrationBuild=true
+
+   - name: Test
+     run: dotnet test RDCore.SDK.slnx --configuration Release --no-build --verbosity normal
+
+   - name: Pack
+     run: dotnet pack RDCore.SDK.slnx --configuration Release --no-build -p:VersionSuffix=${{ steps.version.outputs.suffix }} --output packages
+
+   - name: The packages are the version
+     run: |
+       ls packages
+       for id in RDCore.SDK RDCore.SDK.Protocol; do
+         for ext in nupkg snupkg; do
+           f="packages/$id.${{ steps.version.outputs.version }}.$ext"
+           [ -f "$f" ] || { echo "::error::Missing $f"; exit 1; }
+         done
+       done
+       [ "$(ls packages | wc -l)" -eq 4 ] || { echo "::error::Expected exactly the two packages and their symbols."; exit 1; }
+
+   - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+     with:
+      name: packages
+      path: packages/*
+      retention-days: ${{ steps.version.outputs.is_tag == 'true' && 30 || 3 }}
+
+ publish:
+  needs: build
+  if: needs.build.outputs.is_tag == 'true'
+  runs-on: ubuntu-latest
+  environment: release
+  permissions:
+   id-token: write
+
+  steps:
+   - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+     with:
+      name: packages
+      path: packages
+
+   - name: Setup .NET
+     uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+     with:
+      dotnet-version: 10.0
+
+   - name: NuGet login (trusted publishing)
+     id: login
+     uses: NuGet/login@8d196754b4036150537f80ac539e15c2f1028841 # v1.2.0
+     with:
+      user: ${{ vars.NUGET_USER }}
+
+   - name: Push
+     run: |
+       for f in packages/*.nupkg; do
+         dotnet nuget push "$f" --api-key "${{ steps.login.outputs.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicate
+       done
