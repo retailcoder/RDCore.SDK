@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MSTest" Version="4.3.3" />
+    <PackageReference Include="NSubstitute" Version="6.2.0" />
+    <PackageReference Include="TestableIO.System.IO.Abstractions.TestingHelpers" Version="22.2.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\RDCore.SDK\RDCore.SDK.csproj" />
+    <ProjectReference Include="..\RDCore.SDK.Protocol\RDCore.SDK.Protocol.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- form designer fixtures: binary .frx/storage files, read as bytes on every platform -->
+    <EmbeddedResource Include="Workspace\Forms\Fixtures\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Microsoft.VisualStudio.TestTools.UnitTesting" />
+  </ItemGroup>
+
+</Project>
