@@ -1,4 +1,4 @@
-# RDCore.SDK™
+# RDCore.SDK
 <sup>_Ce document est disponible en [français](./README.fr.md)_</sup>
 
 ![VIVAT CUCUMIS](./assets/vivat-cucumis-stonecore.png)
