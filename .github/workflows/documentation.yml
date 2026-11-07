@@ -12,28 +12,46 @@ permissions:
 jobs:
  build-docs:
   runs-on: ubuntu-latest
-  
+  outputs:
+   present: ${{ steps.site.outputs.present }}
+
   steps:
    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-   
+
+   # the site's docfx.json comes with the SDK's sources; until then there is no site to build, and the job says so instead of failing.
+   - name: Find the site
+     id: site
+     run: |
+      if [ -f docs/docfx.json ]; then
+        echo "present=true" >> "$GITHUB_OUTPUT"
+      else
+        echo "present=false" >> "$GITHUB_OUTPUT"
+        echo "::notice::docs/docfx.json is not in this repository yet: no site to build."
+      fi
+
    - name: Setup .NET
+     if: steps.site.outputs.present == 'true'
      uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
      with:
       dotnet-version: 10.0
 
    - name: Install DocFX
+     if: steps.site.outputs.present == 'true'
      run: dotnet tool update -g docfx
 
    - name: Build Docs
+     if: steps.site.outputs.present == 'true'
      run: docfx docs/docfx.json
-       
+
    - name: Upload Site
+     if: steps.site.outputs.present == 'true'
      uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4.0.0
      with:
       path: docs/_site
 
  deploy:
   needs: build-docs
+  if: needs.build-docs.outputs.present == 'true'
   runs-on: ubuntu-latest
   steps:
    - uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4.0.5
