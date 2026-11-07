@@ -528,6 +528,7 @@ public static class StatementStaticSemanticsEvaluator
                 if (context.Facts is { } facts && facts.TryGet(callStatement.Callee.Identity, out var callee) && callee.DeclaredType is not VBArrayType)
                 {
                     ExpressionStaticSemanticsEvaluator.MarkPassedAsArguments(context, callStatement.Arguments);
+                    ObjectVariableArgumentStaticSemantics.MarkPassedAsCopies(context, callStatement.Callee, callStatement.Arguments);
                 }
 
                 // a ParamArray is no variable a ByRef parameter can be bound to (MS-VBAL §5.3.1.11), and an object given to a parameter that expects a
@@ -799,6 +800,9 @@ public static class StatementStaticSemanticsEvaluator
             return;
         }
 
+        // the handlers are given a copy of a public variable of an object named as its member, as a procedure called is (oracle\s58 F05).
+        ObjectVariableArgumentStaticSemantics.MarkPassedAsCopies(context, parameters, arguments);
+
         for (var i = 0; i < Math.Min(arguments.Length, parameters.Length); i++)
         {
             var parameter = parameters[i];
@@ -1054,9 +1058,10 @@ public static class StatementStaticSemanticsEvaluator
     // declares the array from where it is: a name used before it - written, read, on a line that never runs - is "Variable not defined" there, and the
     // ReDim is valid (MS-VBA, Excel-verified, oracle\findings-labels cases-redim4 E01). The symbols declare the ReDim's array for the whole procedure, so the
     // names used before are found here, by where they are written.
+    // A name in the bounds of a declared array (`Dim b(n)`) is not looked for: what MS-VBA reports of one used before its ReDim is not measured yet.
     private static void FindNamesUsedBeforeTheirReDim(StaticEvaluationContext context, StatementBlock block, Walk walk)
     {
-        var nodes = block.Children.SelectMany(child => child.Descendants().Prepend(child)).ToList();
+        var nodes = block.Children.SelectMany(OutsideArrayBounds).ToList();
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var redim in nodes.OfType<RedimDeclarationNode>())
         {
@@ -1074,6 +1079,26 @@ public static class StatementStaticSemanticsEvaluator
             {
                 walk.NamesUsedBeforeTheirReDim[name.IdentifierName] = at;
                 walk.Errors.AddRange(usedBefore.Select(used => VBCompileErrorInfo.For(VBCompileErrorId.VariableNotDefined, used.Location, used.WrittenName)));
+            }
+        }
+    }
+
+    // a node and every node under it, in the order they are written, but for what the bounds of a declared array are made of.
+    private static IEnumerable<SyntaxNode> OutsideArrayBounds(SyntaxNode node)
+    {
+        var pending = new Stack<SyntaxNode>();
+        pending.Push(node);
+        while (pending.TryPop(out var next))
+        {
+            yield return next;
+            if (next is ArrayBoundsNode)
+            {
+                continue;
+            }
+
+            foreach (var child in next.ChildNodes().Reverse())
+            {
+                pending.Push(child);
             }
         }
     }

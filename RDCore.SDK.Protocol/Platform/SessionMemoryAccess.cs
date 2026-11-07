@@ -9,7 +9,7 @@ namespace RDCore.SDK.Platform.Protocol;
 /// Nothing about the address has to mean anything, and the platform does not try to make it mean
 /// anything: it reports the byte there, or that there is nothing there.
 /// </remarks>
-public record class PeekSessionParams
+public record class SessionPeekParams
 {
     /// <summary>The address to read.</summary>
     public int Address { get; init; }
@@ -18,7 +18,7 @@ public record class PeekSessionParams
 /// <summary>
 /// What was at the address.
 /// </summary>
-public record class PeekSessionResult
+public record class PeekResult
 {
     /// <summary>The address that was read, echoed back.</summary>
     public int Address { get; init; }
@@ -39,10 +39,10 @@ public record class PeekSessionResult
 /// </summary>
 /// <remarks>
 /// Unchecked, and deliberately so. Writing a byte into the middle of a live variable changes that
-/// variable to whatever the new bytes spell — an ordinary, valid value of its declared type, or a
+/// variable to whatever the new bytes spell: an ordinary, valid value of its declared type, or a
 /// nonsensical one. Nothing here prevents that; being able to do it is the point.
 /// </remarks>
-public record class PokeSessionParams
+public record class SessionPokeParams
 {
     /// <summary>The address to write.</summary>
     public int Address { get; init; }
@@ -54,14 +54,21 @@ public record class PokeSessionParams
 /// <summary>
 /// Whether the byte went in.
 /// </summary>
-public record class PokeSessionResult
+public record class PokeResult
 {
     /// <summary>The address that was written, echoed back.</summary>
     public int Address { get; init; }
 
     /// <summary>
     /// Whether the byte was written. <c>false</c> means nothing is allocated at that address, or what
-    /// is cannot be expressed as bytes — an object reference, an array, a user-defined type.
+    /// is cannot be expressed as bytes (an object reference, an array, a user-defined type), or
+    /// that a program runs (<see cref="Error"/>).
     /// </summary>
     public bool IsWritten { get; init; }
+
+    /// <summary>
+    /// Why nothing was written when a program runs in the session: it owns its memory while it runs,
+    /// and a byte is written only at a stop or with no program. <c>null</c> otherwise.
+    /// </summary>
+    public string? Error { get; init; }
 }

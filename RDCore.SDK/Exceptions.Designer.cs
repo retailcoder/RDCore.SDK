@@ -1043,6 +1043,41 @@ namespace RDCore.SDK {
             }
         }
 
+        /// <summary>Looks up a localized string similar to Expression nested too deeply.</summary>
+        public static string VBCompileError_ExpressionNestedTooDeeply {
+            get {
+                return ResourceManager.GetString("VBCompileError_ExpressionNestedTooDeeply", resourceCulture);
+            }
+        }
+
+        /// <summary>Looks up a localized string similar to This expression is nested in more than 2,500 others. Write part of it to a variable first.</summary>
+        public static string VBCompileError_ExpressionNestedTooDeeply_Verbose {
+            get {
+                return ResourceManager.GetString("VBCompileError_ExpressionNestedTooDeeply_Verbose", resourceCulture);
+            }
+        }
+
+        /// <summary>Looks up a localized string similar to This module is nested too deeply to be read: an expression or a block in it is nested in many thousands of others. Split its deepest part into smaller ones..</summary>
+        public static string VBCompileError_ModuleNestedTooDeeplyToRead_Verbose {
+            get {
+                return ResourceManager.GetString("VBCompileError_ModuleNestedTooDeeplyToRead_Verbose", resourceCulture);
+            }
+        }
+
+        /// <summary>Looks up a localized string similar to Output items not separated.</summary>
+        public static string VBCompileError_OutputItemsNotSeparated {
+            get {
+                return ResourceManager.GetString("VBCompileError_OutputItemsNotSeparated", resourceCulture);
+            }
+        }
+
+        /// <summary>Looks up a localized string similar to This output item is written right after another, with nothing between them. The VBE would write a ; between them, which prints them the same way.</summary>
+        public static string VBCompileError_OutputItemsNotSeparated_Verbose {
+            get {
+                return ResourceManager.GetString("VBCompileError_OutputItemsNotSeparated_Verbose", resourceCulture);
+            }
+        }
+
         /// <summary>Looks up a localized string similar to Expected: Then. An #If or #ElseIf directive is written #If expression Then.</summary>
         public static string VBCompileError_DirectiveExpectedThen_Verbose {
             get {
@@ -1089,6 +1124,13 @@ namespace RDCore.SDK {
         public static string VBCompileError_ConstDirectiveExpression_Verbose {
             get {
                 return ResourceManager.GetString("VBCompileError_ConstDirectiveExpression_Verbose", resourceCulture);
+            }
+        }
+
+        /// <summary>Looks up a localized string similar to Expected: identifier. &apos;{0}&apos; is a reserved word and cannot name a parameter.</summary>
+        public static string VBCompileError_ReservedParameterName_Verbose {
+            get {
+                return ResourceManager.GetString("VBCompileError_ReservedParameterName_Verbose", resourceCulture);
             }
         }
         
@@ -1138,11 +1180,20 @@ namespace RDCore.SDK {
         }
 
         /// <summary>
-        ///   Looks up a localized string similar to &apos;{0}&apos; is declared As New {1}, a class of the {2} library that cannot be created. MS-VBA compiles it, and raises &apos;Class not registered&apos; when the variable is first referred to..
+        ///   Looks up a localized string similar to &apos;{0}&apos; is declared As New {1}, which the {2} library does not say can be created: an interface, or a class the library makes itself..
         /// </summary>
         public static string VBCompileError_InvalidUseOfNewKeyword_NotCreatable_Verbose {
             get {
                 return ResourceManager.GetString("VBCompileError_InvalidUseOfNewKeyword_NotCreatable_Verbose", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to New {0}: the {1} library does not say {0} can be created: an interface, or a class the library makes itself..
+        /// </summary>
+        public static string VBCompileError_InvalidUseOfNewKeyword_NewNotCreatable_Verbose {
+            get {
+                return ResourceManager.GetString("VBCompileError_InvalidUseOfNewKeyword_NewNotCreatable_Verbose", resourceCulture);
             }
         }
 
@@ -1390,6 +1441,51 @@ namespace RDCore.SDK {
         }
 
         /// <summary>
+        ///   Looks up a localized string similar to The array &apos;{0}&apos; is declared with more than {1:N0} elements, the most an array holds in RD-VBA..
+        /// </summary>
+        public static string VBCompileError_OutOfMemory_ArrayElements_Verbose {
+            get {
+                return ResourceManager.GetString("VBCompileError_OutOfMemory_ArrayElements_Verbose", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to User-defined type may not be passed ByVal.
+        /// </summary>
+        public static string VBCompileError_UserDefinedTypeMayNotBePassedByVal {
+            get {
+                return ResourceManager.GetString("VBCompileError_UserDefinedTypeMayNotBePassedByVal", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to The parameter &apos;{0}&apos; is a record of the type &apos;{1}&apos;, which is passed by reference: declare it ByRef, or without ByVal..
+        /// </summary>
+        public static string VBCompileError_UserDefinedTypeMayNotBePassedByVal_Verbose {
+            get {
+                return ResourceManager.GetString("VBCompileError_UserDefinedTypeMayNotBePassedByVal_Verbose", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Only user-defined types defined in public object modules can be coerced to or from a variant or passed to late-bound functions.
+        /// </summary>
+        public static string VBCompileError_UserDefinedTypeNotCoercibleToVariant {
+            get {
+                return ResourceManager.GetString("VBCompileError_UserDefinedTypeNotCoercibleToVariant", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to A record of the type &apos;{0}&apos; is given to a Variant, which can&apos;t hold it: give it to a variable or a parameter of the type &apos;{0}&apos;, or copy its fields..
+        /// </summary>
+        public static string VBCompileError_UserDefinedTypeNotCoercibleToVariant_Verbose {
+            get {
+                return ResourceManager.GetString("VBCompileError_UserDefinedTypeNotCoercibleToVariant_Verbose", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to &apos;{0}&apos; is a project: it qualifies the names of what it declares, as in &apos;{0}.Len&apos;, and is no value of its own..
         /// </summary>
         public static string VBCompileError_NameIsAProject_Verbose {
@@ -1512,6 +1608,15 @@ namespace RDCore.SDK {
         public static string VBCompileError_TooManyLineContinuations_Verbose {
             get {
                 return ResourceManager.GetString("VBCompileError_TooManyLineContinuations_Verbose", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to A block opened in a #If branch is not closed in it..
+        /// </summary>
+        public static string VBCompileError_BlockNotClosedInItsBranch_Verbose {
+            get {
+                return ResourceManager.GetString("VBCompileError_BlockNotClosedInItsBranch_Verbose", resourceCulture);
             }
         }
 
@@ -2205,6 +2310,25 @@ namespace RDCore.SDK {
         public static string VBRuntimeError_ActiveXComponentCantCreateObject_NotAClass_Verbose {
             get {
                 return ResourceManager.GetString("VBRuntimeError_ActiveXComponentCantCreateObject_NotAClass_Verbose", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Class not registered
+        ///.
+        /// </summary>
+        public static string VBRuntimeError_ClassNotRegistered_Description {
+            get {
+                return ResourceManager.GetString("VBRuntimeError_ClassNotRegistered_Description", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to An object of {0}, a class of the {1} library, is never created: the library says the class can be created, and nothing creates one..
+        /// </summary>
+        public static string VBRuntimeError_ClassNotRegistered_CreationAlwaysFails_Verbose {
+            get {
+                return ResourceManager.GetString("VBRuntimeError_ClassNotRegistered_CreationAlwaysFails_Verbose", resourceCulture);
             }
         }
         
