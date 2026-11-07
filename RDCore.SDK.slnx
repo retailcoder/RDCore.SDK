@@ -6,7 +6,7 @@
     <File Path="Directory.Build.props" />
     <File Path="README.md" />
     <File Path="README.fr.md" />
-    <File Path="LICENSE-MIT.md" />
+    <File Path="LICENSE" />
   </Folder>
   <Folder Name="/Solution Items/Build/">
     <File Path=".github/workflows/build.yml" />
