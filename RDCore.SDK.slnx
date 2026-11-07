@@ -12,6 +12,13 @@
     <File Path=".github/workflows/build.yml" />
     <File Path=".github/workflows/release.yml" />
     <File Path=".github/workflows/cla.yml" />
+    <File Path=".github/workflows/documentation.yml" />
+  </Folder>
+  <Folder Name="/Documentation/">
+    <File Path="docs/docfx.json" />
+    <File Path="docs/index.md" />
+    <File Path="docs/index.fr.md" />
+    <File Path="docs/toc.yml" />
   </Folder>
   <Project Path="RDCore.SDK.Protocol/RDCore.SDK.Protocol.csproj" />
   <Project Path="RDCore.SDK/RDCore.SDK.csproj" Id="217682fc-e856-4902-bb85-e839ac0be988" />
