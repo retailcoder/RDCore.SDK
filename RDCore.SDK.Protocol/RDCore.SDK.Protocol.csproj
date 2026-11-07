@@ -12,8 +12,4 @@
     <Description>What a client of the RDCore platform speaks to it: the rdcore/* methods and their messages, the platform handshake, and how to start the language server. System.Text.Json only, no OmniSharp.</Description>
   </PropertyGroup>
 
-  <ItemGroup>
-    <None Include="LICENSE-MIT.md" Pack="true" PackagePath="" />
-  </ItemGroup>
-
 </Project>

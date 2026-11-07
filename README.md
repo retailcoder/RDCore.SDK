@@ -14,6 +14,8 @@ This repository holds the two **⚖️MIT** libraries of the [RDCore](https://gi
 
 The platform built on these libraries, the RD-VBA runtime included, lives in the [RDCore](https://github.com/rubberduck-vba/RDCore) repository, under **⚖️GPLv3**. What you build with RDCore is yours (see [RDCore's NOTICE](https://github.com/rubberduck-vba/RDCore/blob/main/NOTICE.md)).
 
+The MIT license in [LICENSE](LICENSE) covers the two libraries of this repository, and nothing else of the platform. A French version of the license is available on request.
+
 ## 📊 Project Status
 RDCore is in active **pre-alpha** development, and these libraries with it: their API will still change before 1.0.
 

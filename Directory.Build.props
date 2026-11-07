@@ -25,6 +25,8 @@
 
   <ItemGroup Condition="'$(IsPackable)' != 'false'">
     <None Include="$(MSBuildThisFileDirectory)assets/ducky.png" Pack="true" PackagePath="" Visible="false" />
+    <!-- the license's text in each package, beside PackageLicenseExpression. -->
+    <None Include="$(MSBuildThisFileDirectory)LICENSE" Pack="true" PackagePath="" Visible="false" />
   </ItemGroup>
 
 </Project>
