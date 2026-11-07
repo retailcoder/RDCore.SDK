@@ -14,7 +14,7 @@ Ce dépôt contient les deux bibliothèques **⚖️MIT** de la plateforme [RDCo
 
 La plateforme construite sur ces bibliothèques, incluant le runtime RD-VBA, se trouve dans le dépôt [RDCore](https://github.com/rubberduck-vba/RDCore), sous **⚖️GPLv3**. Ce que vous construisez avec RDCore vous appartient (voir l'[AVIS de RDCore](https://github.com/rubberduck-vba/RDCore/blob/main/NOTICE.md)).
 
-La licence MIT de [LICENSE](LICENSE) couvre les deux bibliothèques de ce dépôt, et rien d'autre de la plateforme. Une version française de la licence est disponible sur demande.
+La licence MIT de [LICENSE](LICENSE) couvre les deux bibliothèques de ce dépôt et aucune autre partie de la plateforme. Une version française de la licence est disponible sur demande.
 
 ## 📊 État du projet
 RDCore est en développement **pré-alpha** actif, et ces bibliothèques avec lui : leur API changera encore avant la version 1.0.
