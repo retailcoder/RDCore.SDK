@@ -1,39 +1,79 @@
 name: Build and Deploy documentation site
 
-on: 
+on:
  push:
   branches: [main]
+ pull_request:
+  branches: [main]
+ workflow_dispatch:
 
 permissions:
  contents: read
- pages: write
- id-token: write
+
+# one deployment at a time; a run in progress finishes before the next starts.
+concurrency:
+ group: pages-${{ github.event_name }}-${{ github.ref }}
+ cancel-in-progress: false
 
 jobs:
  build-docs:
   runs-on: ubuntu-latest
-  
+  timeout-minutes: 30
+
   steps:
    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-   
+     with:
+      persist-credentials: false
+
+   # until the repository has a DocFX site, the site's root redirects to the SDK reference RDCore publishes.
+   - name: Find the site
+     id: site
+     run: |
+      if [ -f docs/docfx.json ]; then echo "exists=true" >> "$GITHUB_OUTPUT"; else echo "exists=false" >> "$GITHUB_OUTPUT"; fi
+
    - name: Setup .NET
+     if: steps.site.outputs.exists == 'true'
      uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
      with:
       dotnet-version: 10.0
 
    - name: Install DocFX
+     if: steps.site.outputs.exists == 'true'
      run: dotnet tool update -g docfx
 
+   # a pull request fails on a broken link or cross-reference; main publishes what it builds.
+   - name: Build Docs (pull request)
+     if: steps.site.outputs.exists == 'true' && github.event_name == 'pull_request'
+     run: docfx docs/docfx.json --warningsAsErrors
+
    - name: Build Docs
+     if: steps.site.outputs.exists == 'true' && github.event_name != 'pull_request'
      run: docfx docs/docfx.json
-       
+
+   - name: Redirect page
+     if: steps.site.outputs.exists != 'true'
+     env:
+      TARGET: https://rubberduck-vba.github.io/RDCore/api/RDCore.SDK.html
+     run: |
+      mkdir -p docs/_site
+      printf '<!doctype html>\n<html lang="en"><head><meta charset="utf-8"><title>RDCore.SDK</title><meta http-equiv="refresh" content="0; url=%s"><link rel="canonical" href="%s"></head>\n<body><a href="%s">RDCore.SDK</a></body></html>\n' "$TARGET" "$TARGET" "$TARGET" > docs/_site/index.html
+
    - name: Upload Site
+     if: github.event_name != 'pull_request'
      uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4.0.0
      with:
       path: docs/_site
 
  deploy:
+  if: github.event_name != 'pull_request'
   needs: build-docs
   runs-on: ubuntu-latest
+  permissions:
+   pages: write
+   id-token: write
+  environment:
+   name: github-pages
+   url: ${{ steps.deployment.outputs.page_url }}
   steps:
-   - uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4.0.5
+   - id: deployment
+     uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4.0.5
