@@ -1,7 +1,7 @@
 # RDCore SDK
 <sup>_This document is available in [English](index.md)_</sup>
 
-Ce site est la référence de l'API des deux bibliothèques MIT de la plateforme [RDCore](https://github.com/rubberduck-vba/RDCore), publiées sur NuGet :
+Ce site est la référence de l'API de ces bibliothèques de la plateforme [RDCore](https://github.com/rubberduck-vba/RDCore), sous licence MIT et publiées sur NuGet :
 
 - **RDCore.SDK** : le modèle du langage et la plomberie que partagent tous les composants de la plateforme.
 - **RDCore.SDK.Protocol** : les messages qu'un client échange avec la plateforme.

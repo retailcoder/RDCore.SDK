@@ -7,14 +7,14 @@
 > 👋 Bonjour! Nouveau ici? _Rubberduck_ a toujours été une initiative open-source. **RDCore l'honore avec une formule Open-Core**.  
 > <small>Voir [rubberduckvba.ca](https://rubberduckvba.ca) pour plus d'informations.</small>
 
-Ce dépôt contient les deux bibliothèques **⚖️MIT** de la plateforme [RDCore](https://github.com/rubberduck-vba/RDCore) :
+Ce dépôt contient ces bibliothèques de la plateforme [RDCore](https://github.com/rubberduck-vba/RDCore), sous licence **⚖️MIT** :
 
 - **RDCore.SDK** : le modèle du langage (types, symboles, arbres syntaxiques, sémantique et diagnostics MS-VBAL) et la plomberie que partagent tous les composants de la plateforme (hébergement, configuration, journalisation, espaces de travail, bases des applications serveur et client). Chaque composant et chaque extension de RDCore s'appuie sur elle.
 - **RDCore.SDK.Protocol** : ce dont un client de la plateforme a besoin, et rien d'autre. Elle contient les méthodes `rdcore/*` et leurs messages, la poignée de main de la plateforme, et comment démarrer le serveur de langage. Elle n'utilise que System.Text.Json, sans OmniSharp, pour qu'un IDE puisse parler à RDCore sans prendre en charge les dépendances de la plateforme. L'add-in RDCore de HexIDE la référence.
 
 La plateforme construite sur ces bibliothèques, incluant le runtime RD-VBA, se trouve dans le dépôt [RDCore](https://github.com/rubberduck-vba/RDCore), sous **⚖️GPLv3 ou toute version ultérieure**. Ce que vous construisez avec RDCore vous appartient (voir l'[AVIS de RDCore](https://github.com/rubberduck-vba/RDCore/blob/main/NOTICE.md)).
 
-La licence MIT de [LICENSE](LICENSE) couvre les deux bibliothèques de ce dépôt et aucune autre partie de la plateforme. Une version française de la licence est disponible sur demande.
+La licence MIT de [LICENSE](LICENSE) couvre les bibliothèques de ce dépôt. Une version française de la licence est disponible sur demande.
 
 ## 📊 État du projet
 RDCore est en développement **pré-alpha** actif, et ces bibliothèques avec lui : leur API changera encore avant la version 1.0.
