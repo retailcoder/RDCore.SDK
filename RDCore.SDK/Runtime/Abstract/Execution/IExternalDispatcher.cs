@@ -13,8 +13,8 @@ namespace RDCore.SDK.Runtime.Abstract.Execution;
 /// library's, a host application's object model, or a native export a <c>Declare</c> named.
 /// </summary>
 /// <remarks>
-/// A growable record rather than a parameter list, so a new fact about a call — the policy decision that
-/// let it through, the reference it came from — gets a field here rather than a new parameter on every
+/// A growable record rather than a parameter list, so a new fact about a call (the policy decision that
+/// let it through, the reference it came from) gets a field here rather than a new parameter on every
 /// dispatcher.
 /// </remarks>
 /// <param name="Member">
@@ -23,7 +23,7 @@ namespace RDCore.SDK.Runtime.Abstract.Execution;
 /// </param>
 /// <param name="Arguments">
 /// The arguments, in the member's declared parameter order, <em>including</em> the receiver at index
-/// <c>0</c> for a member of a class — the same shape <see cref="IProcedureInvoker.Invoke"/> takes, so a
+/// <c>0</c> for a member of a class: the same shape <see cref="IProcedureInvoker.Invoke"/> takes, so a
 /// call site does not have to know which of the two will run it.
 /// </param>
 /// <param name="CallSite">
@@ -74,12 +74,12 @@ public sealed record class ExternalCallRequest(
     /// an administrator means by automation, as distinct from the standard library and from a <c>Declare</c>d import.
     /// </summary>
     public bool IsAutomation => Obtains is not null || (IsCreation
-        ? Creates!.GetProperty(SymbolProperties.Library) is { } created && created != StdLibSymbolProvider.LibraryName
+        ? Creates!.GetProperty(SymbolProperties.Library) is { } created && created != StandardLibrary.LibraryName
         : Member.GetProperty(SymbolProperties.ExternalTarget) is { Length: > 0 }
-            && Member.GetProperty(SymbolProperties.Library) is { } library && library != StdLibSymbolProvider.LibraryName);
+            && Member.GetProperty(SymbolProperties.Library) is { } library && library != StandardLibrary.LibraryName);
 
     /// <summary>
-    /// Whether this call is to a native library a <c>Declare</c> named — the calls an administrator most
+    /// Whether this call is to a native library a <c>Declare</c> named: the calls an administrator most
     /// wants a say over, since a library call is a way to run arbitrary code.
     /// </summary>
     public bool IsLibraryImport => Member is VBExternalFunctionMemberSymbol or VBExternalSubMemberSymbol;
@@ -99,7 +99,7 @@ public sealed record class ExternalCallRequest(
     /// refusal has to say so that a reader can tell which call was refused.
     /// </summary>
     /// <remarks>
-    /// Names the library and the entry point a <c>Declare</c> actually reaches — its <c>Alias</c> when it has
+    /// Names the library and the entry point a <c>Declare</c> actually reaches: its <c>Alias</c> when it has
     /// one, since that is the exported name and the VBA name may be nothing like it.
     /// </remarks>
     public string Describe()
@@ -142,13 +142,13 @@ public sealed record class ExternalCallRequest(
 /// <remarks>
 /// The counterpart of <see cref="IProcedureInvoker"/>, which runs the workspace's own procedures. The two
 /// are chosen between by one fact: a workspace procedure has an instruction list, an external member has a
-/// <see cref="SymbolProperties.ExternalTarget"/>. Nothing above that point — the resolver, the expression
-/// evaluator, the executor, the semantics — is aware of the difference, which is the whole reason this is
+/// <see cref="SymbolProperties.ExternalTarget"/>. Nothing above that point (the resolver, the expression
+/// evaluator, the executor, the semantics) is aware of the difference, which is the whole reason this is
 /// shaped like the invoker it sits beside.
 /// <para>
 /// 🎯 Implementations are expected to be composed rather than singular: an availability check, then the
 /// workspace's own policy, then whatever is intercepting calls (a log, a mock), and only then the provider
-/// that really runs it. A call that is refused, or answered by an interceptor, never reaches a provider —
+/// that really runs it. A call that is refused, or answered by an interceptor, never reaches a provider,
 /// which is what makes a <c>Declare</c> blockable and a <c>MsgBox</c> mockable without either of them
 /// knowing.
 /// </para>
@@ -163,11 +163,11 @@ public interface IExternalDispatcher
     /// do: an error is in the result rather than thrown.
     /// </summary>
     /// <remarks>
-    /// A member this dispatcher cannot reach — no implementation, no provider, or a policy that refuses it
-    /// — is a <em>run-time error</em> saying so, not an internal error and never a silent success. A
+    /// A member this dispatcher cannot reach (no implementation, no provider, or a policy that refuses it)
+    /// is a <em>run-time error</em> saying so, not an internal error and never a silent success. A
     /// workspace can trap it like any other.
     /// </remarks>
     /// <param name="request">The call to run.</param>
-    /// <param name="resolver">A read-only interface over the current execution context.</param>
-    RuntimeSemanticsEvaluationResult Invoke(ExternalCallRequest request, ISymbolResolver resolver);
+    /// <param name="resolver">The running session's symbols and their storage.</param>
+    RuntimeSemanticsEvaluationResult Invoke(ExternalCallRequest request, IRuntimeSymbolResolver resolver);
 }

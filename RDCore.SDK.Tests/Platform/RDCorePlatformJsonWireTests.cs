@@ -1,10 +1,12 @@
 using OmniSharp.Extensions.LanguageServer.Protocol.Serialization;
 using RDCore.SDK.Client;
+using RDCore.SDK.Model.Errors;
 using RDCore.SDK.Model.Source;
 using RDCore.SDK.Platform;
 using RDCore.SDK.Platform.Protocol;
 using RDCore.SDK.Runtime.Abstract.Execution;
 using RDCore.SDK.Server.Serialization;
+using RDCore.SDK.Workspace;
 using System.Collections;
 using System.Collections.Immutable;
 using System.Reflection;
@@ -42,8 +44,8 @@ public sealed class RDCorePlatformJsonWireTests
             ReferenceCount = 2,
             Memory = new SessionMemoryStatus { ReservedBytes = 1, AvailableBytes = 2, AllocatedBytes = 3, FreeBytes = 4, CommittedBytes = 5, LargestFreeBlock = 6 },
         });
-        yield return Same(new ExecuteSessionParams { Source = "Debug.Print 1", ModuleName = "Module1", EntryPoint = "Main", Debug = true, Immediate = true });
-        yield return Same(new ExecuteSessionResult
+        yield return Same(new SessionExecuteParams { Source = "Debug.Print 1", ModuleName = "Module1", EntryPoint = "Main", Debug = true, Immediate = true, SessionModule = true });
+        yield return Same(new ExecuteResult
         {
             Outcome = ExecutionOutcome.Suspended,
             Output = ["1"],
@@ -60,12 +62,22 @@ public sealed class RDCorePlatformJsonWireTests
             ConditionError = "x",
             StackTrace = [new ExecuteStackFrame("Main", 1, 2, [5, 6])],
         });
-        yield return Same(new DiscardSessionParams { ModuleName = "Module1", EndProgram = true });
-        yield return Same(new DiscardSessionResult { Discarded = 2 });
-        yield return Same(new PeekSessionParams { Address = 16 });
-        yield return Same(new PeekSessionResult { Address = 16, IsAllocated = true, Value = 255 });
-        yield return Same(new PokeSessionParams { Address = 16, Value = 7 });
-        yield return Same(new PokeSessionResult { Address = 16, IsWritten = true });
+        yield return Same(new ExecuteResult
+        {
+            Outcome = ExecutionOutcome.RuntimeError,
+            ErrorNumber = 6,
+            ErrorDetails = new VBErrorDetails("Overflow",
+                new VBErrorExpression("Binary", "Module1.Main.x", new SourceLocation(Module, Range)),
+                [new VBErrorFrame("node-1", [new VBErrorOperand("Long", "40000"), new VBErrorOperand("Variant", null)], new VBErrorCoercion(new VBErrorOperand("Long", "40000"), "Integer"))],
+                FramesTruncated: true),
+        });
+        yield return Same(new SessionDiscardParams { ModuleName = "Module1", EndProgram = true });
+        yield return Same(new DiscardResult { Discarded = 2 });
+        yield return Same(new SessionPeekParams { Address = 16 });
+        yield return Same(new PeekResult { Address = 16, IsAllocated = true, Value = 255 });
+        yield return Same(new SessionPokeParams { Address = 16, Value = 7 });
+        yield return Same(new PokeResult { Address = 16, IsWritten = true });
+        yield return Same(new PokeResult { Address = 16, Error = "the program is running" });
 
         yield return Same(new SessionMessageBoxParams { Prompt = "Hello", Title = "Title", Style = 4, Output = ["before"] });
         yield return Same(new MessageBoxResult { Handled = true, Result = 6 });
@@ -80,24 +92,24 @@ public sealed class RDCorePlatformJsonWireTests
         yield return Same(new SessionDebugTerminateParams { Wipe = true });
         yield return Same(new SessionDebugBreakpointsParams { ModuleName = "Module1", Breakpoints = [new SessionBreakpointLine { Line = 2, IsEnabled = false, Condition = "i > 3" }] });
         yield return Same(new SessionDebugStackParams());
-        yield return Same(new SessionDebugVariablesParams { FrameId = 1, Scope = HostVariableScope.Module, Reference = 9 });
+        yield return Same(new SessionDebugVariablesParams { FrameId = 1, Scope = DebugVariableScope.Module, Reference = 9 });
         yield return Same(new SessionDebugEvaluateParams { FrameId = 1, Expression = "i + 1" });
         yield return Same(new SessionDebugExecuteParams { FrameId = 1, Statement = "i = 2" });
 
-        yield return Same(new HostDebugAck { Acted = true });
-        yield return Same(new HostDebugGotoResult { Moved = true, Reason = "moved", Line = 4, Character = 0 });
-        yield return Same(new HostDebugGotoResult { Moved = false, Reason = null });
-        yield return Same(new HostDebugEditStatusResult
+        yield return Same(new DebugAck { Acted = true });
+        yield return Same(new DebugGotoResult { Moved = true, Reason = "moved", Line = 4, Character = 0 });
+        yield return Same(new DebugGotoResult { Moved = false, Reason = null });
+        yield return Same(new DebugEditStatusResult
         {
             Suspended = true,
             Edits = ImmutableArray.Create(
-                new HostDebugEdit { Name = "Module1.Main", Kind = HostDebugEditKind.Restart, Reason = "signature", ModuleUri = Module, Range = Range },
-                new HostDebugEdit { Name = "Module1.Other", ModuleUri = null, Range = null }),
+                new DebugEdit { Name = "Module1.Main", Kind = DebugEditKind.Restart, Reason = "signature", ModuleUri = Module, Range = Range },
+                new DebugEdit { Name = "Module1.Other", ModuleUri = null, Range = null }),
         });
-        yield return Same(new HostDebugBreakpointsResult { Breakpoints = [new HostBreakpoint(2, true), new HostBreakpoint(3, false, "Expected: expression")], Judged = true });
-        yield return Same(new HostDebugStackResult { Frames = [new HostStackFrame(1, "Main", "Module1", 2, 3, [4], "ErrHandler"), new HostStackFrame(2, "Other", "Module1", 5, 6)] });
-        yield return Same(new HostDebugVariablesResult { Variables = [new HostVariable("i", "1", "Integer"), new HostVariable("o", "Object", "Class1", 3)], NotListed = 2 });
-        yield return Same(new HostDebugEvaluateResult { Success = true, Value = "2", Type = "Integer", Reference = 1, Error = "none", Output = ["x"], EndedTheProgram = true });
+        yield return Same(new DebugBreakpointsResult { Breakpoints = [new DebugBreakpoint(2, true), new DebugBreakpoint(3, false, "Expected: expression")], Judged = true });
+        yield return Same(new DebugStackResult { Frames = [new DebugStackFrame(1, "Main", "Module1", 2, 3, [4], "ErrHandler"), new DebugStackFrame(2, "Other", "Module1", 5, 6)] });
+        yield return Same(new DebugVariablesResult { Variables = [new DebugVariable("i", "1", "Integer"), new DebugVariable("o", "Object", "Class1", 3)], NotListed = 2 });
+        yield return Same(new DebugEvaluateResult { Success = true, Value = "2", Type = "Integer", Reference = 1, Error = "none", Output = ["x"], EndedTheProgram = true });
 
         yield return Same(new PlatformInitializeParams
         {
@@ -141,6 +153,56 @@ public sealed class RDCorePlatformJsonWireTests
         var apply = new RubberduckIndenterSettingsApplyParams { Source = RubberduckIndenterSettingsSource.RubberduckConfig, Settings = new() { ["Formatting.IndentSpaces"] = "2" } };
         yield return (apply, new RubberduckIndenterSettingsApplyRequest(apply));
         yield return Same(new RubberduckIndenterSettingsApplyResult { Applied = 1, Refused = ["Formatting.Nope"] });
+
+        yield return Same(new RefactorPrepareParams { Kind = "refactor.extract.method", Uri = Module, Range = Range });
+        yield return Same(new RefactorPrepareResult
+        {
+            Choices =
+            [
+                new RefactorChoice { Id = "name", Kind = RefactorChoiceKind.Name, Label = "Name", Default = "NewMethod" },
+                new RefactorChoice
+                {
+                    Id = "access", Kind = RefactorChoiceKind.Option, Label = "Access", Description = "Who can call it", Default = "Private",
+                    Options = [new RefactorOption { Value = "Private", Label = "Private", Description = "This module" }],
+                },
+                new RefactorChoice
+                {
+                    Id = "parameters", Kind = RefactorChoiceKind.List, Label = "Parameters", CanReorder = true,
+                    Items =
+                    [
+                        new RefactorItem
+                        {
+                            Id = "total", Label = "ByRef total As Long", Reason = "The selection assigns it",
+                            Choices = [new RefactorChoice { Id = "byRef", Kind = RefactorChoiceKind.Flag, Label = "ByRef", Default = "true" }],
+                        },
+                    ],
+                },
+            ],
+            Notices =
+            [
+                new RefactorNotice
+                {
+                    Code = "extractMethod.writeBack", Kind = RefactorNoticeKind.Change, Message = "m",
+                    Location = new SourceLocation(Module, Range), Related = new SourceLocation(Module, Range),
+                },
+            ],
+        });
+        yield return Same(new RefactorApplyParams
+        {
+            Kind = "refactor.extract.method", Uri = Module, Range = Range,
+            Answers =
+            [
+                new RefactorAnswer { Id = "name", Value = "Total" },
+                new RefactorAnswer { Id = "parameters", Items = [new RefactorItemAnswer { Id = "total", Answers = [new RefactorAnswer { Id = "byRef", Value = "false" }] }] },
+            ],
+            Accepted = ["extractMethod.writeBack"],
+        });
+        yield return Same(new RefactorWorkspaceEdit
+        {
+            Created = [new Uri("file:///c:/workspace/IShape.cls")],
+            Documents = [new RefactorDocumentEdit { Uri = Module, Version = 3, Edits = [new RefactorTextEdit { Range = Range, NewText = "Total = Sum(total)" }] }],
+        });
+        yield return Same(new Refactoring(true));
     }
 
     /// <summary>
@@ -151,14 +213,16 @@ public sealed class RDCorePlatformJsonWireTests
     [
         ("SessionStatusParams", """{"waitMilliseconds":250}"""),
         ("SessionStatusResult", """{"isComposed":true,"projectName":"VBAProject","moduleCount":3,"referenceCount":2,"memory":{"reservedBytes":1,"availableBytes":2,"allocatedBytes":3,"freeBytes":4,"committedBytes":5,"largestFreeBlock":6}}"""),
-        ("ExecuteSessionParams", """{"source":"Debug.Print 1","moduleName":"Module1","entryPoint":"Main","debug":true,"immediate":true}"""),
-        ("ExecuteSessionResult", """{"outcome":7,"output":["1"],"streamedLines":7,"diagnostics":["RDC00001"],"errorNumber":13,"errorMessage":"Type mismatch","errorCode":"VBR00013","errorTitle":"Type mismatch","errorSource":"VBAProject","errorLine":3,"errorCharacter":4,"errorLineNumber":100,"conditionError":"x","stackTrace":[{"procedure":"Main","line":1,"character":2,"returnLines":[5,6]}]}"""),
-        ("DiscardSessionParams", """{"moduleName":"Module1","endProgram":true}"""),
-        ("DiscardSessionResult", """{"discarded":2}"""),
-        ("PeekSessionParams", """{"address":16}"""),
-        ("PeekSessionResult", """{"address":16,"isAllocated":true,"value":255}"""),
-        ("PokeSessionParams", """{"address":16,"value":7}"""),
-        ("PokeSessionResult", """{"address":16,"isWritten":true}"""),
+        ("SessionExecuteParams", """{"source":"Debug.Print 1","moduleName":"Module1","entryPoint":"Main","debug":true,"immediate":true,"sessionModule":true}"""),
+        ("ExecuteResult", """{"outcome":7,"output":["1"],"streamedLines":7,"diagnostics":["RDC00001"],"errorNumber":13,"errorMessage":"Type mismatch","errorCode":"VBR00013","errorTitle":"Type mismatch","errorSource":"VBAProject","errorLine":3,"errorCharacter":4,"errorLineNumber":100,"conditionError":"x","stackTrace":[{"procedure":"Main","line":1,"character":2,"returnLines":[5,6]}],"errorDetails":null}"""),
+        ("ExecuteResult", """{"outcome":3,"output":[],"streamedLines":0,"diagnostics":[],"errorNumber":6,"errorMessage":"","errorCode":"","errorTitle":"","errorSource":"","errorLine":-1,"errorCharacter":-1,"errorLineNumber":0,"conditionError":"","stackTrace":[],"errorDetails":{"message":"Overflow","expression":{"kind":"Binary","semanticId":"Module1.Main.x","location":{"uri":"file:///c:/workspace/Module1.bas","range":{"start":{"line":1,"character":2},"end":{"line":3,"character":4},"isEmpty":false}}},"frames":[{"nodeId":"node-1","inputs":[{"typeName":"Long","value":"40000"},{"typeName":"Variant","value":null}],"coercion":{"source":{"typeName":"Long","value":"40000"},"destinationTypeName":"Integer"}}],"framesTruncated":true}}"""),
+        ("SessionDiscardParams", """{"moduleName":"Module1","endProgram":true}"""),
+        ("DiscardResult", """{"discarded":2}"""),
+        ("SessionPeekParams", """{"address":16}"""),
+        ("PeekResult", """{"address":16,"isAllocated":true,"value":255}"""),
+        ("SessionPokeParams", """{"address":16,"value":7}"""),
+        ("PokeResult", """{"address":16,"isWritten":true,"error":null}"""),
+        ("PokeResult", """{"address":16,"isWritten":false,"error":"the program is running"}"""),
         ("SessionMessageBoxParams", """{"prompt":"Hello","title":"Title","style":4,"output":["before"]}"""),
         ("MessageBoxResult", """{"handled":true,"result":6,"declined":false,"failure":null}"""),
         ("SessionInputBoxParams", """{"prompt":"Name?","title":"Title","default":"x","xPos":10,"yPos":20,"output":["before"]}"""),
@@ -174,16 +238,16 @@ public sealed class RDCorePlatformJsonWireTests
         ("SessionDebugVariablesParams", """{"frameId":1,"scope":1,"reference":9}"""),
         ("SessionDebugEvaluateParams", """{"frameId":1,"expression":"i + 1"}"""),
         ("SessionDebugExecuteParams", """{"frameId":1,"statement":"i = 2"}"""),
-        ("HostDebugAck", """{"acted":true}"""),
-        ("HostDebugGotoResult", """{"moved":true,"reason":"moved","line":4,"character":0}"""),
-        ("HostDebugGotoResult", """{"moved":false,"reason":null,"line":-1,"character":-1}"""),
-        ("HostDebugEditStatusResult", """{"suspended":true,"edits":[{"name":"Module1.Main","kind":1,"reason":"signature","moduleUri":"file:///c:/workspace/Module1.bas","range":{"start":{"line":1,"character":2},"end":{"line":3,"character":4},"isEmpty":false}},{"name":"Module1.Other","kind":0,"reason":"","moduleUri":null,"range":null}]}"""),
-        ("HostDebugBreakpointsResult", """{"breakpoints":[{"line":2,"verified":true,"conditionError":null},{"line":3,"verified":false,"conditionError":"Expected: expression"}],"judged":true}"""),
-        ("HostDebugStackResult", """{"frames":[{"id":1,"procedure":"Main","module":"Module1","line":2,"character":3,"handler":"ErrHandler","returnLines":[4]},{"id":2,"procedure":"Other","module":"Module1","line":5,"character":6,"handler":null,"returnLines":[]}]}"""),
-        ("HostDebugVariablesResult", """{"variables":[{"name":"i","value":"1","type":"Integer","reference":0},{"name":"o","value":"Object","type":"Class1","reference":3}],"notListed":2}"""),
-        ("HostDebugEvaluateResult", """{"success":true,"value":"2","type":"Integer","reference":1,"error":"none","output":["x"],"endedTheProgram":true}"""),
-        ("PlatformInitializeParams", """{"expectedComponent":1,"expected":{"parsing":{"parseFullDocument":{"isSupported":true},"parseTokens":{"isSupported":false}},"environmentHost":{"defineSymbols":{"isSupported":true},"sessionStatus":{"isSupported":false},"sessionExecute":{"isSupported":false},"sessionDiscard":{"isSupported":false},"projectReload":{"isSupported":false},"programDebugging":{"isSupported":false},"semanticAnalysis":{"isSupported":false},"sessionMemoryAccess":{"isSupported":false}},"languageServer":{"sessionStatus":{"isSupported":false},"sessionExecute":{"isSupported":true},"programDebugging":{"isSupported":false},"sessionDiscard":{"isSupported":false},"sessionAnalyze":{"isSupported":false},"sessionCompletion":{"isSupported":false},"sessionSignatureHelp":{"isSupported":false},"sessionSemanticTokens":{"isSupported":false},"sessionMemoryAccess":{"isSupported":false},"sessionInteraction":{"isSupported":true},"unattended":{"isSupported":true},"rubberduckIndenterSettings":{"isSupported":false}}}}"""),
-        ("PlatformInitializeParams", """{"expectedComponent":1,"expected":{"languageServer":{"sessionStatus":{"isSupported":false},"sessionExecute":{"isSupported":false},"programDebugging":{"isSupported":false},"sessionDiscard":{"isSupported":false},"sessionAnalyze":{"isSupported":false},"sessionCompletion":{"isSupported":false},"sessionSignatureHelp":{"isSupported":false},"sessionSemanticTokens":{"isSupported":false},"sessionMemoryAccess":{"isSupported":false},"sessionInteraction":{"isSupported":false},"unattended":{"isSupported":false},"rubberduckIndenterSettings":{"isSupported":false}}}}"""),
+        ("DebugAck", """{"acted":true,"stopping":false}"""),
+        ("DebugGotoResult", """{"moved":true,"reason":"moved","line":4,"character":0}"""),
+        ("DebugGotoResult", """{"moved":false,"reason":null,"line":-1,"character":-1}"""),
+        ("DebugEditStatusResult", """{"suspended":true,"edits":[{"name":"Module1.Main","kind":1,"reason":"signature","moduleUri":"file:///c:/workspace/Module1.bas","range":{"start":{"line":1,"character":2},"end":{"line":3,"character":4},"isEmpty":false}},{"name":"Module1.Other","kind":0,"reason":"","moduleUri":null,"range":null}]}"""),
+        ("DebugBreakpointsResult", """{"breakpoints":[{"line":2,"verified":true,"conditionError":null},{"line":3,"verified":false,"conditionError":"Expected: expression"}],"judged":true}"""),
+        ("DebugStackResult", """{"frames":[{"id":1,"procedure":"Main","module":"Module1","line":2,"character":3,"handler":"ErrHandler","returnLines":[4]},{"id":2,"procedure":"Other","module":"Module1","line":5,"character":6,"handler":null,"returnLines":[]}]}"""),
+        ("DebugVariablesResult", """{"variables":[{"name":"i","value":"1","type":"Integer","reference":0},{"name":"o","value":"Object","type":"Class1","reference":3}],"notListed":2}"""),
+        ("DebugEvaluateResult", """{"success":true,"value":"2","type":"Integer","reference":1,"error":"none","output":["x"],"endedTheProgram":true}"""),
+        ("PlatformInitializeParams", """{"expectedComponent":1,"expected":{"parsing":{"parseFullDocument":{"isSupported":true},"parseTokens":{"isSupported":false}},"environmentHost":{"defineSymbols":{"isSupported":true},"sessionStatus":{"isSupported":false},"sessionExecute":{"isSupported":false},"sessionDiscard":{"isSupported":false},"projectReload":{"isSupported":false},"programDebugging":{"isSupported":false},"semanticAnalysis":{"isSupported":false},"sessionMemoryAccess":{"isSupported":false}},"languageServer":{"sessionStatus":{"isSupported":false},"sessionExecute":{"isSupported":true},"programDebugging":{"isSupported":false},"sessionDiscard":{"isSupported":false},"sessionAnalyze":{"isSupported":false},"sessionCompletion":{"isSupported":false},"sessionSignatureHelp":{"isSupported":false},"sessionSemanticTokens":{"isSupported":false},"sessionMemoryAccess":{"isSupported":false},"sessionInteraction":{"isSupported":true},"unattended":{"isSupported":true},"rubberduckIndenterSettings":{"isSupported":false},"refactoring":{"isSupported":false}}}}"""),
+        ("PlatformInitializeParams", """{"expectedComponent":1,"expected":{"languageServer":{"sessionStatus":{"isSupported":false},"sessionExecute":{"isSupported":false},"programDebugging":{"isSupported":false},"sessionDiscard":{"isSupported":false},"sessionAnalyze":{"isSupported":false},"sessionCompletion":{"isSupported":false},"sessionSignatureHelp":{"isSupported":false},"sessionSemanticTokens":{"isSupported":false},"sessionMemoryAccess":{"isSupported":false},"sessionInteraction":{"isSupported":false},"unattended":{"isSupported":false},"rubberduckIndenterSettings":{"isSupported":false},"refactoring":{"isSupported":false}}}}"""),
         ("PlatformInitializeResult", """{"component":1,"provided":["SessionExecute","SessionStatus"]}"""),
         ("DiagnoseDocument", """{"isSupported":true}"""),
         ("CliCommand", """{"isSupported":true}"""),
@@ -193,6 +257,11 @@ public sealed class RDCorePlatformJsonWireTests
         ("RubberduckIndenterSettingsResult", """{"source":"SmartIndenterRegistry","values":{"IndentProc":"Y","AlignDimCol":15},"tabWidth":4}"""),
         ("RubberduckIndenterSettingsApplyParams", """{"source":"RubberduckConfig","settings":{"Formatting.IndentSpaces":"2"}}"""),
         ("RubberduckIndenterSettingsApplyResult", """{"applied":1,"refused":["Formatting.Nope"]}"""),
+        ("RefactorPrepareParams", """{"kind":"refactor.extract.method","uri":"file:///c:/workspace/Module1.bas","range":{"start":{"line":1,"character":2},"end":{"line":3,"character":4},"isEmpty":false}}"""),
+        ("RefactorPrepareResult", """{"choices":[{"id":"name","kind":0,"label":"Name","description":null,"default":"NewMethod","options":[],"items":[],"canReorder":false},{"id":"access","kind":1,"label":"Access","description":"Who can call it","default":"Private","options":[{"value":"Private","label":"Private","description":"This module"}],"items":[],"canReorder":false},{"id":"parameters","kind":3,"label":"Parameters","description":null,"default":null,"options":[],"items":[{"id":"total","label":"ByRef total As Long","reason":"The selection assigns it","choices":[{"id":"byRef","kind":2,"label":"ByRef","description":null,"default":"true","options":[],"items":[],"canReorder":false}]}],"canReorder":true}],"notices":[{"code":"extractMethod.writeBack","kind":1,"message":"m","location":{"uri":"file:///c:/workspace/Module1.bas","range":{"start":{"line":1,"character":2},"end":{"line":3,"character":4},"isEmpty":false}},"related":{"uri":"file:///c:/workspace/Module1.bas","range":{"start":{"line":1,"character":2},"end":{"line":3,"character":4},"isEmpty":false}}}]}"""),
+        ("RefactorApplyParams", """{"kind":"refactor.extract.method","uri":"file:///c:/workspace/Module1.bas","range":{"start":{"line":1,"character":2},"end":{"line":3,"character":4},"isEmpty":false},"answers":[{"id":"name","value":"Total","items":[]},{"id":"parameters","value":null,"items":[{"id":"total","answers":[{"id":"byRef","value":"false","items":[]}]}]}],"accepted":["extractMethod.writeBack"]}"""),
+        ("RefactorWorkspaceEdit", """{"created":["file:///c:/workspace/IShape.cls"],"documents":[{"uri":"file:///c:/workspace/Module1.bas","version":3,"edits":[{"range":{"start":{"line":1,"character":2},"end":{"line":3,"character":4},"isEmpty":false},"newText":"Total = Sum(total)"}]}]}"""),
+        ("Refactoring", """{"isSupported":true}"""),
     ];
 
     private static IEnumerable<OmniSharpSerializer> PlatformSerializers() => [new LspSerializer(), new PullDiagnosticsLspSerializer()];
@@ -260,6 +329,52 @@ public sealed class RDCorePlatformJsonWireTests
         }
     }
 
+    /// <summary>
+    /// The name on the wire of each method a client sends or answers, as a client that has only the Protocol package must send or answer it: what a change of a
+    /// value of <see cref="RDCorePlatformProtocol"/> would change, and a client and a language server built from the same source would not see.
+    /// </summary>
+    private static readonly (string Constant, string Method)[] MethodGoldens =
+    [
+        ("PlatformInitialize", "rdcore/platform/initialize"),
+        ("SessionStatus", "rdcore/session/status"),
+        ("SessionExecute", "rdcore/session/execute"),
+        ("SessionDiscard", "rdcore/session/discard"),
+        ("SessionMessageBox", "rdcore/session/interaction/msgBox"),
+        ("SessionInputBox", "rdcore/session/interaction/inputBox"),
+        ("SessionDebugResume", "rdcore/session/debug/resume"),
+        ("SessionDebugPause", "rdcore/session/debug/pause"),
+        ("SessionDebugGoto", "rdcore/session/debug/goto"),
+        ("SessionDebugEditStatus", "rdcore/session/debug/editStatus"),
+        ("SessionDebugTerminate", "rdcore/session/debug/terminate"),
+        ("SessionDebugBreakpoints", "rdcore/session/debug/breakpoints"),
+        ("SessionDebugStack", "rdcore/session/debug/stack"),
+        ("SessionDebugVariables", "rdcore/session/debug/variables"),
+        ("SessionDebugEvaluate", "rdcore/session/debug/evaluate"),
+        ("SessionDebugExecute", "rdcore/session/debug/execute"),
+        ("SessionAnalyze", "rdcore/session/analyze"),
+        ("SessionCompletion", "rdcore/session/completion"),
+        ("RubberduckIndenterSettings", "rdcore/formatting/indenterSettings"),
+        ("RubberduckIndenterSettingsApply", "rdcore/formatting/indenterSettings/apply"),
+        ("SessionSignatureHelp", "rdcore/session/signatureHelp"),
+        ("SessionSemanticTokens", "rdcore/session/semanticTokens"),
+        ("SessionCommands", "rdcore/session/commands"),
+        ("SessionPeek", "rdcore/session/memory/peek"),
+        ("SessionPoke", "rdcore/session/memory/poke"),
+        ("RefactorPrepare", "rdcore/refactor/prepare"),
+        ("RefactorApply", "rdcore/refactor/apply"),
+    ];
+
+    [TestMethod]
+    public void EveryMethodOfTheClient_IsNamedAsItsGoldenSays()
+    {
+        var methods = typeof(RDCorePlatformProtocol).GetFields(BindingFlags.Public | BindingFlags.Static)
+            .Where(field => field.IsLiteral)
+            .Select(field => (field.Name, (string)field.GetRawConstantValue()!))
+            .ToArray();
+
+        CollectionAssert.AreEqual(MethodGoldens, methods, "\n" + string.Join("\n", methods));
+    }
+
     [TestMethod]
     public void EveryTypeOfTheProtocol_IsInAMessageAbove()
     {
@@ -269,11 +384,21 @@ public sealed class RDCorePlatformJsonWireTests
             Reach(message, reached);
         }
 
-        // the client logic sends and answers messages, and is none; the pre-launch preparation is local to the client, and the manifest is a file of the platform root.
-        Type[] notMessages = [typeof(RDCorePlatformClient), typeof(RDCoreLanguageServerLaunch), typeof(RDCoreLanguageServerLaunchOptions), typeof(PlatformManifest)];
+        // the client logic sends and answers messages, and is none; the pre-launch preparations (the language server's, the debug adapter's) are local to the
+        // client, and the manifest is a file of the platform root.
+        Type[] notMessages =
+        [
+            typeof(RDCorePlatformClient),
+            typeof(RDCoreLanguageServerLaunch), typeof(RDCoreLanguageServerLaunchOptions),
+            typeof(RDCoreDebugAdapterLaunch), typeof(RDCoreDebugAdapterLaunchOptions),
+            typeof(PlatformManifest),
+        ];
+        // the project file model is a workspace's .rdproj, which a client reads from disk: it is no message either.
+        var projectFileModel = typeof(ProjectFile).Namespace;
 
         var unreached = typeof(RDCorePlatformJson).Assembly.GetExportedTypes()
             .Where(type => !type.IsAbstract && !type.IsEnum && !type.IsInterface && !typeof(Exception).IsAssignableFrom(type) && !notMessages.Contains(type) && !reached.Contains(type))
+            .Where(type => type.Namespace != projectFileModel)
             .Select(type => type.FullName)
             .ToList();
 

@@ -20,7 +20,7 @@ public class CorePlatformClientCapabilities
     public EnvironmentHostCapabilities? EnvironmentHost { get; set; }
 
     /// <summary>
-    /// The core platform capabilities of the language server — what a <em>client</em> (an IDE
+    /// The core platform capabilities of the language server: what a <em>client</em> (an IDE
     /// extension, <c>rdc.exe</c>'s interactive shell) expects the platform coordinator itself to
     /// serve beyond LSP.
     /// </summary>
@@ -99,7 +99,7 @@ public class EnvironmentHostCapabilities
 }
 
 /// <summary>
-/// Regroups all core platform <c>LanguageServer</c> capabilities — the non-LSP requests a client can
+/// Regroups all core platform <c>LanguageServer</c> capabilities: the non-LSP requests a client can
 /// make of the platform coordinator.
 /// </summary>
 public class LanguageServerCapabilities
@@ -172,10 +172,17 @@ public class LanguageServerCapabilities
     public Unattended Unattended { get; set; } = new();
 
     /// <summary>
-    /// If supported, the language server asks the client for the indenter settings its user had in Rubberduck, over <c>rdcore/rubberduck-indenter-settings</c>, and
-    /// asks it to take the <c>Formatting</c> settings it mapped from them as its own, over <c>rdcore/rubberduck-indenter-settings/apply</c>.
+    /// If supported, the language server asks the client for the indenter settings its user had in Rubberduck, over <c>rdcore/formatting/indenterSettings</c>, and
+    /// asks it to take the <c>Formatting</c> settings it mapped from them as its own, over <c>rdcore/formatting/indenterSettings/apply</c>.
     /// </summary>
     public RubberduckIndenterSettings RubberduckIndenterSettings { get; set; } = new();
+
+    /// <summary>
+    /// If supported, the language server says what a refactoring asks its user before it is applied, over <c>rdcore/refactor/prepare</c>, and answers the edit
+    /// it makes with the user's answers, over <c>rdcore/refactor/apply</c>: what a client that has a dialog of its own asks with. Any client is offered the refactorings as
+    /// LSP code actions, which complete with their defaults.
+    /// </summary>
+    public Refactoring Refactoring { get; set; } = new();
 }
 
 /// <summary>
@@ -201,6 +208,7 @@ public class LanguageServerCapabilities
 [JsonDerivedType(typeof(SessionMemoryAccess))]
 [JsonDerivedType(typeof(SessionInteraction))]
 [JsonDerivedType(typeof(Unattended))]
+[JsonDerivedType(typeof(Refactoring))]
 [JsonDerivedType(typeof(RubberduckIndenterSettings))]
 public abstract record class CorePlatformClientCapability(bool IsSupported = true);
 
@@ -317,8 +325,8 @@ public record class SessionInteraction(bool IsSupported = false) : CorePlatformC
 public record class Unattended(bool IsSupported = false) : CorePlatformClientCapability(IsSupported);
 
 /// <summary>
-/// Advertises that the language server asks the client for the indenter settings its user had in Rubberduck - <c>rdcore/rubberduck-indenter-settings</c> - and asks it to
-/// take the <c>Formatting</c> settings mapped from them as its own - <c>rdcore/rubberduck-indenter-settings/apply</c>; a client that expects it answers both.
+/// Advertises that the language server asks the client for the indenter settings its user had in Rubberduck - <c>rdcore/formatting/indenterSettings</c> - and asks it to
+/// take the <c>Formatting</c> settings mapped from them as its own - <c>rdcore/formatting/indenterSettings/apply</c>; a client that expects it answers both.
 /// </summary>
 /// <remarks>
 /// A client owns its configuration and the platform writes none of it: only a client that expects this is asked, and it stores what it applies as a change of its own.
@@ -354,3 +362,15 @@ public record class DiagnoseDocument(bool IsSupported = false) : CorePlatformCli
 /// informational: nothing is negotiated over <c>rdcore/platform/initialize</c> for this capability yet.
 /// </remarks>
 public record class CliCommand(bool IsSupported = false) : CorePlatformClientCapability(IsSupported);
+
+/// <summary>
+/// Advertises that the language server says what a refactoring asks its user (<c>rdcore/refactor/prepare</c>), and answers the edit it makes with the
+/// user's answers (<c>rdcore/refactor/apply</c>): the counterpart to LSP's own <c>codeAction/resolve</c> for a client that shows a dialog of its own before a refactoring is
+/// applied.
+/// </summary>
+/// <remarks>
+/// One pair of requests serves every refactoring, whose choices are described as data. A client that does not expect it is offered the same refactorings as
+/// code actions, which complete with their defaults.
+/// </remarks>
+/// <param name="IsSupported">Whether the capability is expected, or provided.</param>
+public record class Refactoring(bool IsSupported = false) : CorePlatformClientCapability(IsSupported);

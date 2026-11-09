@@ -1,3 +1,5 @@
+using RDCore.SDK.Model.Errors;
+
 namespace RDCore.SDK.Platform.Protocol;
 
 /// <summary>
@@ -16,7 +18,7 @@ namespace RDCore.SDK.Platform.Protocol;
 /// program that will never finish on its own still stops.
 /// </para>
 /// </remarks>
-public record class ExecuteSessionParams
+public record class SessionExecuteParams
 {
     /// <summary>
     /// The complete source of the module to run — every procedure of it, not just the one being
@@ -46,13 +48,26 @@ public record class ExecuteSessionParams
     /// which waits still - this is how its variables are read and set - and without it a run while a program waits starts the program over.
     /// </summary>
     public bool Immediate { get; init; }
+
+    /// <summary>
+    /// Whether the module is the client's own, of the runtime session and not of the project (<c>sessionModule</c> on the wire): a shell's program, which the project
+    /// of a workspace the shell is attached to does not list. When the session has no module of that name, the module is defined as a standard module of the session
+    /// at the workspace root, as the code of an Immediate window is, and the project file is not changed. It is then a module the session has: a later run finds it
+    /// with or without this flag, until the project is reloaded and the session composed again.
+    /// </summary>
+    /// <remarks>
+    /// Without it, a module the session does not have is not found (<see cref="ExecutionOutcome.NotFound"/>). A module of the client's own cannot be named after the
+    /// project or a library it references: they and the project's procedural modules are matched in one tier (<strong>MS-VBAL §5.6.10</strong>), so the name would
+    /// match twice, and every name qualified by it would be invalid. The run is not found, and the result says why.
+    /// </remarks>
+    public bool SessionModule { get; init; }
 }
 
 /// <summary>
 /// The result of a run. The same result answers both hops — the language server passes the host's
 /// answer back to the client unchanged, except for a parse that never reached the host at all.
 /// </summary>
-public record class ExecuteSessionResult
+public record class ExecuteResult
 {
     /// <summary>How the run ended.</summary>
     public ExecutionOutcome Outcome { get; init; }
@@ -106,7 +121,7 @@ public record class ExecuteSessionResult
     public string ErrorSource { get; init; } = string.Empty;
 
     /// <summary>
-    /// Where in the submitted <see cref="ExecuteSessionParams.Source"/> the error was raised, zero-based
+    /// Where in the submitted <see cref="SessionExecuteParams.Source"/> the error was raised, zero-based
     /// as every position in the platform is: the line, and <see cref="ErrorCharacter"/> within it. Both
     /// <c>-1</c> when the outcome is not a run-time error, or when nothing located it.
     /// </summary>
@@ -139,6 +154,16 @@ public record class ExecuteSessionResult
     /// reports. Empty for any other outcome.
     /// </summary>
     public IReadOnlyList<ExecuteStackFrame> StackTrace { get; init; } = [];
+
+    /// <summary>
+    /// What the runtime was doing when it raised the run-time error, as it recorded it: the expression, and the frames of the operation that failed. The client
+    /// formats them its own way. <see langword="null"/> for any other outcome, and for an error the runtime recorded no details of.
+    /// </summary>
+    /// <remarks>
+    /// The location of the expression is in the source the runtime ran, as every position of the error is. The frames are bounded: at most
+    /// <see cref="VBErrorDetails.MaxFrames"/> of them, the innermost ones, with <see cref="VBErrorDetails.FramesTruncated"/> set when there were more.
+    /// </remarks>
+    public VBErrorDetails? ErrorDetails { get; init; }
 }
 
 /// <summary>
@@ -152,9 +177,10 @@ public record class ExecuteSessionResult
 /// </remarks>
 /// <param name="Procedure">The name of the procedure the activation is of.</param>
 /// <param name="Line">
-/// Zero-based line in the submitted source, or <c>-1</c> when the activation carries no location — true
-/// of every activation but the one the error was raised in, since an activation record does not say
-/// where in itself it is suspended.
+/// Zero-based line in the submitted source, or <c>-1</c> when the activation carries no location. For
+/// the activation the error was raised in, it is the line of the faulting statement or expression. For
+/// each of its callers, it is the line of the call the caller was suspended at: the call expression or
+/// call statement that was running.
 /// </param>
 /// <param name="Character">Zero-based character within <paramref name="Line"/>, or <c>-1</c>.</param>
 /// <param name="ReturnLines">

@@ -14,6 +14,7 @@ namespace RDCore.SDK.Model.Symbols.VBProject;
 /// <param name="Name">The identifier name of the symbol.</param>
 /// <param name="Scope">The allocation scope of the symbol.</param>
 /// <param name="Kind">Describes the kind (category) of symbol for the LSP client.</param>
+/// <param name="ResolvedType">The resolved <c>VBType</c> of this member. <c>VBUnknownType</c> when the type is not resolved.</param>
 /// <param name="Range">A <c>Range</c> pointing to the document location that belongs to this symbol.</param>
 /// <param name="SelectionRange">A <c>Range</c> pointing to the document location that should be selected when navigating to this symbol.</param>
 /// <param name="AccessModifier">The access modifier specified for this symbol. Use <c>AccessModifier.Implicit</c> if none is specified.</param>
@@ -27,7 +28,7 @@ public record class VBProcedureMemberSymbol(Uri WorkspaceRoot, Uri ParentUri, st
 
     /// <summary>
     /// An <em>immutable array</em> containing the <c>Dim</c>/<c>Static</c>/<c>Const</c> local
-    /// declarations of this procedure member (<strong>MS-VBAL §5.4.3</strong>) — a
+    /// declarations of this procedure member (<strong>MS-VBAL §5.4.3</strong>): a
     /// <see cref="VBLocalVariableSymbol"/> per <c>Dim</c>/<c>Static</c>, a
     /// <see cref="VBLocalConstantSymbol"/> per <c>Const</c>.
     /// </summary>
@@ -42,6 +43,7 @@ public record class VBProcedureMemberSymbol(Uri WorkspaceRoot, Uri ParentUri, st
 /// <param name="Name">The identifier name of the symbol.</param>
 /// <param name="Scope">The allocation scope of the symbol.</param>
 /// <param name="Kind">Describes the kind (category) of symbol for the LSP client.</param>
+/// <param name="ResolvedType">The resolved <c>VBType</c> of this member. <c>VBUnknownType</c> when the type is not resolved.</param>
 public record class UnboundVBProcedureMemberSymbol(Uri WorkspaceRoot, Uri ParentUri, string Name, ScopeKind Scope, SymbolKindExt Kind, VBType ResolvedType)
     : UnboundVBTypeMemberSymbol(WorkspaceRoot, ParentUri, Name, Scope, Kind, ResolvedType) 
 {

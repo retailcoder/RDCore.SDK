@@ -7,6 +7,7 @@ using RDCore.SDK.Model.Types;
 using RDCore.SDK.Model.Types.Abstract;
 using RDCore.SDK.Model.Types.Complex;
 using System.Collections.Immutable;
+using RDCore.SDK.Platform.Components;
 
 namespace RDCore.SDK.Platform.Protocol;
 
@@ -15,7 +16,7 @@ namespace RDCore.SDK.Platform.Protocol;
 /// <see cref="DefineSymbolsParams"/>. The inverse of the language server's descriptor projection;
 /// one trivial method per <see cref="SymbolDescriptorKind"/>, mirroring the language server's
 /// <c>SymbolBuilder</c>. Declared types are bound through a caller-supplied resolver so the same
-/// call path binds real types once the environment host composes a project/library resolver — a
+/// call path binds real types once the environment host composes a project/library resolver: a
 /// name the resolver returns <c>null</c> for stays <see cref="VBUnknownType"/>.
 /// </summary>
 public static class SymbolDescriptorReader
@@ -108,7 +109,9 @@ public static class SymbolDescriptorReader
                     workspaceRoot, parentUri, node.Scope, node.Name, node.Range, node.SelectionRange, node.AccessModifier);
                 Symbol property = symbol with
                 {
-                    ResolvedType = Declared(node.DeclaredTypeName),
+                    ResolvedType = node.IsDesignerControlArray
+                        ? Workspace.Forms.FormControlArray.TypeOf(Declared(node.DeclaredTypeName), workspaceRoot)
+                        : Declared(node.DeclaredTypeName),
                     Parameters = Parameters(symbol.Uri),
                     Locals = Locals(symbol.Uri),
                 };

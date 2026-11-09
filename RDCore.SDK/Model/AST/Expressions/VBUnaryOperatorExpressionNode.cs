@@ -14,6 +14,7 @@ namespace RDCore.SDK.Model.AST.Expressions;
 /// <param name="Token">The operator token associated with this <em>operator expression</em>.</param>
 /// <param name="Identity">A unique identifier for this specific syntax node.</param>
 /// <param name="Location">The <c>Location</c> (holds the document <c>Uri</c> and a <c>Range</c>) of the bound expression.</param>
+/// <param name="Children">The child nodes of this expression: its single operand.</param>
 public record class VBUnaryOperatorExpressionNode(string Token, SyntaxNodeId Identity, SourceLocation Location, ImmutableArray<SyntaxNode> Children)
     : VBOperatorExpression(Identity, Location, Children)
 {
@@ -27,7 +28,16 @@ public record class VBUnaryOperatorExpressionNode(string Token, SyntaxNodeId Ide
         : this(Token, Identity, Location, (ImmutableArray<SyntaxNode>)[Operand]) { }
 
     /// <summary>
-    /// The operand — <c>Children[0]</c>.
+    /// Where in the document the operator token is written: the <c>Not</c> of <c>Not a</c>, where <see cref="ExpressionNode.Location"/> is the whole operation.
+    /// </summary>
+    /// <remarks>
+    /// A diagnostic about the operator is located here. A run-time error of the operation is located at the operation itself. <see langword="null"/> for
+    /// parentheses, which are two tokens, for an operation the code does not write, and for a node created without one.
+    /// </remarks>
+    public SourceLocation? OperatorLocation { get; init; }
+
+    /// <summary>
+    /// The operand: <c>Children[0]</c>.
     /// </summary>
     public ExpressionNode Operand => (ExpressionNode)Children[0];
 }

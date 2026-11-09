@@ -1,7 +1,7 @@
 ﻿using CommandLine;
 using Microsoft.Extensions.Logging;
 using RDCore.SDK.Client;
-using RDCore.SDK.ConsoleIO;
+using RDCore.SDK.Logging;
 using RDCore.SDK.Extensibility;
 using RDCore.SDK.Model;
 using RangeAttribute = System.ComponentModel.DataAnnotations.RangeAttribute;
@@ -211,7 +211,19 @@ public record class SdkAppOptions
 public record class SdkEnvironmentOptions
 {
     /// <summary>
-    /// <c>true</c> for a 64-bit environment (<c>LongPtr</c> width, <c>#If Win64</c> / <c>#If VBA7</c>).
+    /// The engine a program runs with when its configuration names none: the default of <see cref="ExecutionEngine"/>, and of a
+    /// <see cref="Runtime.RuntimeEnvironmentProfile"/> made without one.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="Runtime.Abstract.Execution.VBExecutionEngine.Compiled"/>: a procedure that compiled code cannot run is interpreted, so a program runs in either
+    /// engine alike. The <c>ExecutionEngine</c> of the platform's <c>RDCore.CLI/appsettings.json</c> holds the same value, and a test holds the two to it: a
+    /// change of the default changes both.
+    /// </remarks>
+    public const Runtime.Abstract.Execution.VBExecutionEngine DefaultExecutionEngine = Runtime.Abstract.Execution.VBExecutionEngine.Compiled;
+
+    /// <summary>
+    /// <c>true</c> for a 64-bit environment (<c>LongPtr</c> width, and the <c>Win64</c> or <c>Linux64</c> conditional-compilation constant of the
+    /// operating system the environment runs on).
     /// </summary>
     public bool Is64Bit { get; set; } = true;
     /// <summary>
@@ -239,6 +251,12 @@ public record class SdkEnvironmentOptions
     /// label before it, bug for bug with MS-VBA).
     /// </summary>
     public Runtime.Abstract.Execution.VBErlLineNumbering ErlLineNumbering { get; set; }
+
+    /// <summary>
+    /// What <c>Err.Clear</c> does to the line <c>Erl</c> reports: <c>Reset</c> (the default: <c>0</c>, as
+    /// there is no error any more) or <c>Kept</c> (the line of the error it cleared, as MS-VBA does).
+    /// </summary>
+    public Runtime.Abstract.Execution.VBErlAfterErrClear ErlAfterErrClear { get; set; }
 
     /// <summary>
     /// 🎯 Whether a <c>Declare</c>'d library import may actually be called. <c>true</c> by default; set it
@@ -283,10 +301,10 @@ public record class SdkEnvironmentOptions
     public SdkRegionalOptions Regional { get; set; } = new();
 
     /// <summary>
-    /// 🎯 What runs the code of a program: <c>Interpreter</c> (the default) or <c>Compiled</c> (IL where every instruction of a procedure can be compiled, the
-    /// interpreter elsewhere).
+    /// 🎯 What runs the code of a program: <c>Interpreter</c> or <c>Compiled</c> (IL where every instruction of a procedure can be compiled, the interpreter
+    /// elsewhere); <see cref="DefaultExecutionEngine"/> unless said otherwise.
     /// </summary>
-    public Runtime.Abstract.Execution.VBExecutionEngine ExecutionEngine { get; set; }
+    public Runtime.Abstract.Execution.VBExecutionEngine ExecutionEngine { get; set; } = DefaultExecutionEngine;
 
     /// <summary>
     /// 🎯 Whether a program is built to be debugged or to be run: <c>Debug</c> (the default) or <c>Release</c>, in which a <c>Stop</c> statement ends the
@@ -306,6 +324,23 @@ public record class SdkEnvironmentOptions
 /// </summary>
 public record class SdkRegionalOptions
 {
+    /// <summary>
+    /// The language of the platform's user interface, as a culture name (<c>en</c>, <c>fr</c>, <c>fr-CA</c>): empty by default, for the machine's.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// It is the language of every message of every component: the client's, the language server's and those of the components it starts. It is only the
+    /// language: how a number or a date is written and read stays with the other regional settings, and the session's <see cref="SdkEnvironmentOptions.Lcid"/>
+    /// still decides how text compares and what <c>Format</c> writes. It is applied when a component starts (<see cref="UserInterfaceLanguage"/>), and is
+    /// never a part of <see cref="ToSettings"/>.
+    /// </para>
+    /// <para>
+    /// A name that is no culture the platform knows leaves the machine's language, with a warning. The platform's messages are in English and French: a
+    /// culture of another language (<c>de</c>) is shown in English, by .NET's resource fallback, and says so once.
+    /// </para>
+    /// </remarks>
+    public string Language { get; set; } = string.Empty;
+
     /// <summary>
     /// What separates the whole part of a number from its fraction: <c>.</c> by default.
     /// </summary>
@@ -493,7 +528,7 @@ public record class SdkWorkspaceOptions
     /// server it connects to, in the <c>initializationOptions</c> of its <c>initialize</c> request
     /// (<see cref="Platform.Protocol.RDCoreInitializationOptions"/>). It decides what is built from the workspace: where the variable an
     /// undeclared name declares lives (<see cref="Workspace.SupportedLanguage.ImplicitDeclarationScope"/>), and which statements exist.
-    /// The standard library is not one of them: it is <c>VBA</c> whatever the language (<see cref="Runtime.StdLib.StdLibSymbolProvider.LibraryName"/>).
+    /// The standard library is not one of them: it is <c>VBA</c> whatever the language (<see cref="Runtime.StdLib.StandardLibrary.LibraryName"/>).
     /// </remarks>
     public string Language { get; set; } = Workspace.SupportedLanguages.RDVBA.Id;
 
@@ -607,38 +642,6 @@ public record class BlockedExtensionOption
 {
     public string Title { get; set; } = default!;
     public ExtensionValidationFlags Flags { get; set; }
-}
-
-/// <summary>
-/// Platform-level MSAL (Microsoft Authentication Layer) configuration options.
-/// </summary>
-/// <remarks>
-/// 🧩 Forks that do not wish to leverage the RDCore cloud infrastructure (or implement their own) can do so by overwriting these settings 
-/// if authentication with <strong>Microsoft Entra</strong> is a requirement. There is no SDK-level support for other identity providers.
-/// </remarks>
-public record class MsalOptions
-{
-    private const string _defaultTenantId = "6709cc6b-06d2-4773-a8d0-3c4aa50d54d8";
-    private const string _defaultClientId = "TBD";
-    private const string _defaultRedirectUrl = "/signin-rdcore";
-    private const string _defaultApiScope = $"api://{_defaultClientId}/api.access";
-
-    /// <summary>
-    /// The <strong>Microsoft Entra</strong> tenant ID acting as the <em>authentication authority.</em>
-    /// </summary>
-    public string TenantId { get; set; } = _defaultTenantId;
-    /// <summary>
-    /// The <strong>Microsoft Entra</strong> client ID identifying the RDCore cloud application.
-    /// </summary>
-    public string ClientId { get; set; } = _defaultClientId;
-    /// <summary>
-    /// The <em>redirect URL</em> used for RDCore authentication, relative to the configured <c>BaseWebUrl</c>
-    /// </summary>
-    public string RedirectUrl { get; set; } = _defaultRedirectUrl;
-    /// <summary>
-    /// The <em>authorization scope</em> of the <strong>RDCore</strong> application with the API.
-    /// </summary>
-    public string ApiScope { get; set; } = _defaultApiScope;
 }
 
 /// <summary>

@@ -3,7 +3,7 @@ using Microsoft.Extensions.Options;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
 using OmniSharp.Extensions.LanguageServer.Protocol.Server;
 using OmniSharp.Extensions.LanguageServer.Protocol.Window;
-using RDCore.SDK.ConsoleIO;
+using RDCore.SDK.Logging;
 using RDCore.SDK.Server.Configuration;
 
 namespace RDCore.SDK.Server.Logging;
@@ -16,8 +16,8 @@ namespace RDCore.SDK.Server.Logging;
 /// still reaches the component's own file log.
 /// </summary>
 /// <param name="languageServer">The facade whose <c>window/logMessage</c> channel carries the forwarded records.</param>
-/// <param name="serverOptions">Supplies <see cref="SdkServerOptions.WireErrorDetail"/> — how a forwarded source path is rewritten.</param>
-public sealed class ScrubbingLanguageServerLoggerProvider(ILanguageServerFacade languageServer, IOptions<SdkServerOptions> serverOptions) : ILoggerProvider
+/// <param name="serverOptions">Supplies <see cref="SdkServerOptions.WireErrorDetail"/>: how a forwarded source path is rewritten.</param>
+internal sealed class ScrubbingLanguageServerLoggerProvider(ILanguageServerFacade languageServer, IOptions<SdkServerOptions> serverOptions) : ILoggerProvider
 {
     // read for each record: how a path is rewritten is a live setting, which the client can change while the server runs.
     /// <inheritdoc/>

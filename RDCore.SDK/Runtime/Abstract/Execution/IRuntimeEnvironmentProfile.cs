@@ -15,10 +15,19 @@ namespace RDCore.SDK.Runtime.Abstract.Execution;
 public interface IRuntimeEnvironmentProfile
 {
     /// <summary>
-    /// <c>true</c> for a 64-bit environment. Determines <c>LongPtr</c> width and the value of the
-    /// <c>#If Win64</c> / <c>#If VBA7</c> pre-compiler directives.
+    /// <c>true</c> for a 64-bit environment. Determines <c>LongPtr</c> width and, on its own operating system (<see cref="OperatingSystem"/>), the value of
+    /// the <c>Win64</c> and <c>Linux64</c> conditional-compilation constants.
     /// </summary>
     bool Is64Bit { get; }
+
+    /// <summary>
+    /// The operating system the environment runs on. With <see cref="Is64Bit"/>, it decides the built-in <c>Win32</c>, <c>Win64</c>, <c>Mac</c>,
+    /// <c>Linux</c> and <c>Linux64</c> conditional-compilation constants: each is <c>1</c> only on its own operating system, and <c>0</c> on every other.
+    /// </summary>
+    /// <remarks>
+    /// The environment host's is the one it runs on. <see cref="VBOperatingSystem.Windows"/> unless said otherwise.
+    /// </remarks>
+    VBOperatingSystem OperatingSystem { get; }
 
     /// <summary>
     /// The environment locale identifier (LCID). <c>0</c> means the invariant locale.
@@ -82,6 +91,12 @@ public interface IRuntimeEnvironmentProfile
     VBErlLineNumbering ErlLineNumbering { get; }
 
     /// <summary>
+    /// What <c>Err.Clear</c> does to the line <c>Erl</c> reports: <see cref="VBErlAfterErrClear.Reset"/> unless a workspace asks for
+    /// MS-VBA's behaviour.
+    /// </summary>
+    VBErlAfterErrClear ErlAfterErrClear { get; }
+
+    /// <summary>
     /// The language the code is written in: what the environment is a dialect of, and so which symbols and statements exist at all.
     /// </summary>
     /// <remarks>
@@ -106,8 +121,8 @@ public interface IRuntimeEnvironmentProfile
     bool AllowAutomation { get; }
 
     /// <summary>
-    /// 🎯 What runs the code of a program: the interpreter, or IL compiled from it where every instruction can be. <see cref="VBExecutionEngine.Interpreter"/>
-    /// unless said otherwise.
+    /// 🎯 What runs the code of a program: the interpreter, or IL compiled from it where every instruction can be.
+    /// <see cref="Server.Configuration.SdkEnvironmentOptions.DefaultExecutionEngine"/> unless said otherwise.
     /// </summary>
     VBExecutionEngine ExecutionEngine { get; }
 

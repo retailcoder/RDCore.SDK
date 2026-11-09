@@ -1,5 +1,6 @@
 ﻿#pragma warning disable IDE0130 // Namespace does not match folder structure
 using RDCore.SDK.Model.Types.Abstract;
+using RDCore.SDK.Model.Types.Complex;
 using RDCore.SDK.Model.Values.Abstract;
 using RDCore.SDK.Model.Values.Bindings;
 using RDCore.SDK.Model.Values.Intrinsic;
@@ -8,11 +9,12 @@ using RDCore.SDK.Model.Values.Runtime;
 namespace RDCore.SDK.Model.Types;
 
 /// <summary>
-/// A <see cref="VBIntrinsicType{Object[]}"/> representing any type of <em>array</em> data type.
+/// A <see cref="VBIntrinsicType{T}"/> representing any type of <em>array</em> data type.
 /// </summary>
 /// <remarks>
 /// The <em>managed type</em> of a value of this data type is <c>object[]</c>.
 /// </remarks>
+/// <param name="ItemType">The data type of the elements of the array.</param>
 public abstract record class VBArrayType(VBType ItemType) :
     VBIntrinsicType<object[]>(VBTypeNames.VBArray), IEnumerableType
 {
@@ -21,6 +23,14 @@ public abstract record class VBArrayType(VBType ItemType) :
     /// Gets an instance of the <c>VBResizableArrayType</c>.
     /// </summary>
     public static VBArrayType TypeInfo => _instance.Value;
+
+    // the same element type, of the same kind and name - an Enum is not mapped to Long, and a String * N is a String of another kind - or two Enums, as the
+    // call binds the parameter to it (RuntimeExpressionEvaluator.IsOfDeclaredType). A type that is not known is not a type that differs. The static semantics
+    // of an argument list check an array argument by it (ArgumentListStaticSemantics), and a completion list offers one by it (CompletionArrayArgument).
+    internal static bool SameElementType(VBType expected, VBType item)
+        => expected is VBUnknownType || item is VBUnknownType
+            || expected is VBEnumType && item is VBEnumType
+            || expected.GetType() == item.GetType() && string.Equals(expected.Name, item.Name, StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
     /// Gets an empty (uninitialized) <c>VBResizableArrayValue</c> of this type's <see cref="ItemType"/>.

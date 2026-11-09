@@ -25,7 +25,7 @@ public record class VBStdModuleType(string Name, bool IsHidden = false) : VBType
     /// <param name="isHidden"><c>true</c> if the module type is hidden.</param>
     /// <remarks>
     /// <paramref name="members"/> has no default: with one it collides with the primary constructor's
-    /// <c>(Name, IsHidden = false)</c> for a call site giving only <paramref name="name"/> — both
+    /// <c>(Name, IsHidden = false)</c> for a call site giving only <paramref name="name"/>: both
     /// would be equally applicable, and the call would not compile (<c>CS0121</c>). Requiring
     /// <paramref name="members"/> keeps every arity unambiguous.
     /// </remarks>
@@ -45,7 +45,7 @@ public record class VBStdModuleType(string Name, bool IsHidden = false) : VBType
     ImmutableArray<VBDeferredTypeMemberSymbol> IVBMemberOwnerType.DeferredMembers { get; init; } = [];
 }
 
-public record class VBDeferredModuleType(string Name, Uri Uri) : VBDeferredType(Name, Uri)
+internal record class VBDeferredModuleType(string Name, Uri Uri) : VBDeferredType(Name, Uri)
 {
     private static readonly Lazy<VBVoidValue> _defaultValue = new(() => VBVoidValue.Void, LazyThreadSafetyMode.PublicationOnly);
     public override VBTypedValue DefaultValue => _defaultValue.Value;

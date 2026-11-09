@@ -42,6 +42,8 @@ public abstract class AppHost<TApp>() : IDisposable
     // both reading the benign StartingServerState.ExitCode of 0. A server that never started must
     // never report the same exit code as a clean shutdown.
     private Exception? _unhandledFault;
+    // what the setting of the language of the user interface came to, when the configuration was read.
+    private UserInterfaceLanguageSetting? _language;
 
     private static readonly Lazy<AssemblyName> _info = new(() => Assembly.GetEntryAssembly()?.GetName()!, LazyThreadSafetyMode.PublicationOnly);
 
@@ -56,8 +58,10 @@ public abstract class AppHost<TApp>() : IDisposable
     /// Gets the <see cref="AssemblyName"/> of this application.
     /// </summary>
     /// <remarks>
-    /// 👉 This provides the <c>Name</c> and <c>Version</c> values for both
-    /// <see cref="ServerInfo"/> and <see cref="ClientInfo"/> unless the application overrides this default.
+    /// 👉 Its numeric <c>Version</c> is the one workspace (<c>.rdproj</c>) versions are stamped with and that the language
+    /// server's <c>WorkspaceService.LoadAsync</c> compares them against; the loader re-stamps a loaded project with it
+    /// (see the <see cref="ProjectFile"/> copy constructor), so that check currently compares the running version with itself.<br/>
+    /// 👉 The version reported in <see cref="ServerInfo"/> and <see cref="ClientInfo"/> is <see cref="AssemblyDisplayVersion"/>'s.
     /// </remarks>
     public static AssemblyName Info => _info.Value;
 
@@ -122,6 +126,12 @@ public abstract class AppHost<TApp>() : IDisposable
         FollowLiveLogLevel(_host.Services);
         LogIfEnabled(LogLevel.Information, "Application resolved successfully. Starting application host...");
 
+        // what came of the language of the user interface is said once, as the application starts.
+        if (_language is { Message: { } language } setting)
+        {
+            LogIfEnabled(setting.Level, language);
+        }
+
         await BeforeAppStartAsync(_host.Services);
 
         try
@@ -177,16 +187,25 @@ public abstract class AppHost<TApp>() : IDisposable
     /// (<see cref="SdkAppCommandLineArgs"/>), which is what a client or a server application is started with, and
     /// answers a request for help or version text and a command line it cannot make sense of.
     /// <para>
-    /// 👉 An application whose arguments are not the platform's — a command-line tool that takes a verb and the
-    /// verb's own options — overrides this and answers <see langword="false"/>: every option of the verb is one the
+    /// 👉 An application whose arguments are not the platform's (a command-line tool that takes a verb and the
+    /// verb's own options) overrides this and answers <see langword="false"/>: every option of the verb is one the
     /// platform's parser has never heard of, and would be rejected as a mistake before the verb was ever reached.
     /// What is wrong with such a command line is for the verb to say.
     /// </para>
+    /// <para>
+    /// An override that answers a command line builds and starts nothing.
+    /// </para>
+    /// <para>
+    /// <see cref="RunAsync"/> calls this first, and so may an entry point that answers a command line before it builds anything.
+    /// </para>
     /// </remarks>
     /// <param name="args">The command-line arguments as received.</param>
-    /// <param name="exitCode">The process exit code, when this returns <see langword="true"/>.</param>
-    /// <returns><see langword="true"/> if the command line has been answered and there is nothing to run.</returns>
-    protected internal virtual bool TryAnswerCommandLine(string[] args, out int exitCode)
+    /// <param name="exitCode">The process exit code, when this returns <see langword="true"/>. The base implementation answers <c>0</c> for a help or version request, and <c>-1</c> for a command line that cannot be parsed.</param>
+    /// <returns>
+    /// <see langword="true"/> if the command line has been answered: the caller does not run the host, and <see cref="RunAsync"/> returns
+    /// <paramref name="exitCode"/>. <see langword="false"/> if the caller goes on to run it.
+    /// </returns>
+    public virtual bool TryAnswerCommandLine(string[] args, out int exitCode)
         => SdkCommandLine.TryAnswer(args, out exitCode);
 
     /// <summary>
@@ -220,8 +239,27 @@ public abstract class AppHost<TApp>() : IDisposable
         {
         }
 
+        // the builder reads appsettings.json, then the environment and the command line; what the user set goes between the first and the others. The
+        // deployed file is not added again: added after them, it would say what a Configuration__ environment variable is meant to override. The deployed
+        // file is the one in the application's own folder, wherever the process was started from: the generic host's default is the working directory.
+        HostApplicationBuilder? builder = null;
+        System.Runtime.ExceptionServices.ExceptionDispatchInfo? unreadable = null;
+        try
+        {
+            builder = Host.CreateApplicationBuilder(new HostApplicationBuilderSettings { ContentRootPath = AppContext.BaseDirectory });
+            builder.Configuration.AddUserSettings(UserSettingsStore.PathIn(PlatformEnvironment.Default), Settings);
+
+            // the language of the user interface comes first: everything the application writes is in it, the help a command line asks for included.
+            _language = UserInterfaceLanguage.Apply(builder.Configuration);
+        }
+        catch (Exception exception)
+        {
+            // a configuration that cannot be read keeps the application from starting, and not from answering a question about its command line.
+            unreadable = System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(exception);
+        }
+
         // a command line that asked a question (--help, --version) or that the parser could not make
-        // sense of is answered here, before any of the host exists: nothing built, nothing started. Both
+        // sense of is answered here, before any of the host is built: nothing configured, nothing started. Both
         // used to fall through into configuration, where the parser's default instance failed the
         // client's "a client cannot start without a workspace" guard - so `rdc --help` printed a
         // NullReferenceException stack trace underneath the help it had just been asked for.
@@ -232,11 +270,8 @@ public abstract class AppHost<TApp>() : IDisposable
 
         try
         {
-            // the builder reads appsettings.json, then the environment and the command line; what the user set goes between the first and the others. The
-            // deployed file is not added again: added after them, it used to say what a Configuration__ environment variable was meant to override.
-            var builder = Host.CreateApplicationBuilder();
-            var configuration = builder.Configuration;
-            configuration.AddUserSettings(UserSettingsStore.PathIn(PlatformEnvironment.Default), Settings);
+            unreadable?.Throw();
+            var configuration = builder!.Configuration;
             Configure(configuration, builder.Services, args);
 
             // bound the generic host's shutdown so a wedged background task cannot hang the process
@@ -255,7 +290,7 @@ public abstract class AppHost<TApp>() : IDisposable
         catch (Exception exception)
         {
             // something went wrong:
-            (WritesToConsole ? Console.Out : Console.Error).WriteLine(exception.ToString());
+            await (WritesToConsole ? Console.Out : Console.Error).WriteLineAsync(exception.ToString());
             return -1;
         }
         finally
@@ -272,7 +307,8 @@ public abstract class AppHost<TApp>() : IDisposable
     /// <summary>
     /// Override to supply application-specific <c>IConfiguration</c> configuration.
     /// </summary>
-    /// <param name="builder">An <see cref="IConfigurationBuilder"/> to configure application settings.</param>
+    /// <param name="configuration">An <see cref="IConfigurationBuilder"/> to configure application settings.</param>
+    /// <param name="services">The services of the application host being built, to register the application's own services in.</param>
     /// <param name="args">Any command-line arguments that were supplied to the application, parsed into <see cref="SdkAppOptions"/>.</param>
     /// <remarks>
     /// 🧩 The base implementation binds and configures <c>appsettings.json</c> options, with command-line arguments as overrides.
@@ -338,18 +374,25 @@ public abstract class AppHost<TApp>() : IDisposable
                 // logger, whether or not its override calls the base.
                 if (!WritesToConsole)
                 {
-                    RemoveConsoleLogger(services);
+                    RemoveDefaultLogger(services, typeof(Microsoft.Extensions.Logging.Console.ConsoleLoggerProvider));
                 }
+
+                // a component logs to its file. The generic host also writes every warning and error to the Windows Application event log, which one
+                // session fills with dozens of entries, and back-to-back sessions overwrite in an hour.
+                RemoveDefaultLogger(services, typeof(Microsoft.Extensions.Logging.EventLog.EventLogLoggerProvider));
+
+                // the language server's container logs through this logging too.
+                builder.WithoutDeferredOutputWarnings();
             });
     }
 
-    // the console logger the generic host adds by default.
-    private static void RemoveConsoleLogger(IServiceCollection services)
+    // a logger the generic host adds by default.
+    private static void RemoveDefaultLogger(IServiceCollection services, Type provider)
     {
-        foreach (var console in services.Where(descriptor => descriptor.ServiceType == typeof(ILoggerProvider)
-            && descriptor.ImplementationType == typeof(Microsoft.Extensions.Logging.Console.ConsoleLoggerProvider)).ToList())
+        foreach (var registered in services.Where(descriptor => descriptor.ServiceType == typeof(ILoggerProvider)
+            && descriptor.ImplementationType == provider).ToList())
         {
-            _ = services.Remove(console);
+            _ = services.Remove(registered);
         }
     }
 

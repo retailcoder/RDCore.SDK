@@ -9,7 +9,7 @@ namespace RDCore.SDK.Model.Types;
 /// <summary>
 /// The MS-VBAL 3.3.2 reserved data-type names and 3.3.1 type-declaration characters, each mapped to
 /// its singleton <see cref="VBType"/>. This is the intrinsic-only fallback every component shares
-/// when binding a declared type from a bare name without a project or library resolver — the
+/// when binding a declared type from a bare name without a project or library resolver: the
 /// language server's AST symbol provider and the environment host's <c>rdcore/host/symbols/define</c>
 /// handler resolve intrinsics identically from here, so a type that is <c>VBUnknownType</c> on one
 /// side is <c>VBUnknownType</c> on the other.
@@ -116,12 +116,12 @@ public static class IntrinsicVBTypes
     /// </summary>
     /// <remarks>
     /// This is how a declaration written in C# states an intrinsic VBA type: naming the value a member
-    /// produces or a parameter accepts names the type, without restating it. The standard-library
-    /// interfaces in <see cref="RDCore.SDK.Runtime.Abstract.StdLib"/> are declared that way.
+    /// produces or a parameter accepts names the type, without restating it. The standard library's
+    /// interfaces are declared that way.
     /// <para>
     /// The mapping covers exactly the intrinsics a declaration can name, which is the same set
-    /// <see cref="TryResolve"/> resolves by name. The values that have no declarable type - a
-    /// <see cref="VBEmptyValue"/>, a <see cref="VBMissingValue"/>, a <see cref="VBErrorValue"/> - are
+    /// <see cref="TryResolve(string, out VBType)"/> resolves by name. The values that have no declarable type (a
+    /// <see cref="VBEmptyValue"/>, a <see cref="VBMissingValue"/>, a <see cref="VBErrorValue"/>) are
     /// subtypes a <c>Variant</c> holds rather than types anything is declared as, and resolve here no
     /// more than <c>Dim x As Empty</c> compiles. <c>LongPtr</c> is absent for the same reason it is
     /// absent by name: its width depends on the host bitness.
