@@ -13,11 +13,16 @@ namespace RDCore.SDK.Client.Connection;
 /// </summary>
 /// <remarks>
 /// <para>
-/// The JSON is handed to OmniSharp as written by <see cref="RDCorePlatformJson.Options"/>, and handed back as OmniSharp read it: Newtonsoft only carries it, so the
-/// wire is the Protocol package's whatever OmniSharp's serializer would have made of the types.
+/// An IDE whose language client is OmniSharp's, and which starts the language server itself (<see cref="RDCoreLanguageServerLaunch"/>), speaks the platform
+/// handshake over its own connection with this channel: <c>new RDCorePlatformClient(new OmniSharpPlatformChannel(client))</c>, once <c>initialize</c> is
+/// answered.
 /// </para>
 /// <para>
-/// 👉 A string that looks like an ISO 8601 date and time (19 to 40 characters, a digit first, a <c>T</c> at the eleventh) is written as it is, but is not always
+/// The JSON is handed to OmniSharp as written by <see cref="RDCorePlatformJson.Options"/>, and handed back as OmniSharp read it: Newtonsoft only carries it, so the
+/// wire is the Protocol package's, whatever OmniSharp's serializer would have made of the types.
+/// </para>
+/// <para>
+/// A string that looks like an ISO 8601 date and time (19 to 40 characters, a digit first, a <c>T</c> at the eleventh) is written as it is, but is not always
 /// <em>read</em> as it was: OmniSharp parses every incoming message with a reader of its own that takes such a string for a date, whatever its serializer says, and
 /// writes it back as the date it read. One with an offset, a <c>Z</c> or a fraction of a second then arrives otherwise (<c>"…12:34:56+02:00"</c> in the offset of the
 /// machine, <c>"….000Z"</c> without its fraction); one without, as VBA's <c>Format</c> writes them, arrives as it was. A channel that does not read through OmniSharp
@@ -31,7 +36,7 @@ namespace RDCore.SDK.Client.Connection;
 /// Completes when the process the client is connected to exits: a request it has not answered by then fails with a <see cref="ServerProtocolSdkException"/>.
 /// <see langword="null"/> for a client whose peer is not a process of its own.
 /// </param>
-internal sealed class OmniSharpPlatformChannel(ILanguageClient client, ILogger? logger = null, string? peer = null, Task? lost = null) : IRDCorePlatformChannel
+public sealed class OmniSharpPlatformChannel(ILanguageClient client, ILogger? logger = null, string? peer = null, Task? lost = null) : IRDCorePlatformChannel
 {
     private readonly ILogger _logger = logger ?? NullLogger.Instance;
     private readonly HashSet<string> _registered = new(StringComparer.Ordinal);
