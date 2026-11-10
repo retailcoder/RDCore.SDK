@@ -55,7 +55,8 @@ public static partial class FormDesigner
     /// </summary>
     /// <remarks>
     /// A VBA UserForm's is at its <c>OleObjectBlob</c> property's offset. A Visual Basic 6.0 form's is the whole file that the first
-    /// property citing one names, in the form's block or in any of its controls' (<c>Picture = "Form1.frx":0000</c>), at offset <c>0</c>.
+    /// property citing one names, in the form's block or in any of its controls', grouped properties included
+    /// (<c>Picture = "Form1.frx":0000</c>), at offset <c>0</c>.
     /// </remarks>
     /// <param name="source">The form module's source.</param>
     /// <exception cref="FormDesignerFormatException">The designer block is not terminated.</exception>
@@ -82,14 +83,14 @@ public static partial class FormDesigner
     /// </summary>
     /// <remarks>
     /// A VBA UserForm's controls are read from its designer data, which is the descriptor's <see cref="FormDescriptor.State"/>. A Visual Basic 6.0 form's are
-    /// read from its text; its <see cref="FormDescriptor.DesignerText"/> is that text, and its <see cref="FormDescriptor.State"/> the whole companion file.
+    /// read from its text; its <see cref="FormDescriptor.DesignerText"/> is that text, and its <see cref="FormDescriptor.State"/> the whole companion file,
+    /// or empty when <paramref name="companion"/> is.
     /// </remarks>
     /// <param name="source">The form module's source.</param>
     /// <param name="companion">The content of the module's companion file (<see cref="CompanionOf(string)"/>), when the module
     /// keeps designer data there; ignored when it does not.</param>
     /// <exception cref="FormDesignerFormatException">The designer block is not terminated, a VBA UserForm keeps designer data in
-    /// a companion file and <paramref name="companion"/> is empty, or that designer data cannot be read. A Visual Basic 6.0 form
-    /// read without its companion file is read with an empty <see cref="FormDescriptor.State"/>.</exception>
+    /// a companion file and <paramref name="companion"/> is empty, or that designer data cannot be read.</exception>
     public static FormDescriptor? Read(string? source, ReadOnlyMemory<byte> companion = default)
     {
         if (ReadSource(source) is not { } designer)
