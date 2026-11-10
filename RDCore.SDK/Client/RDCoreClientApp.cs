@@ -46,7 +46,7 @@ public interface IRDCoreClientApp : IRDCoreApp
     /// </summary>
     Task WaitForReadyAsync(CancellationToken token);
     /// <summary>
-    /// Completes once the connection is terminally lost — the child exited and restart-with-backoff was exhausted.
+    /// Completes once the connection is terminally lost: the child exited and restart-with-backoff was exhausted.
     /// </summary>
     Task WaitForTerminalAsync();
     /// <summary>
@@ -91,8 +91,6 @@ public sealed record class WorkDoneTracking(ProgressToken? Token, IDisposable? T
 /// <summary>
 /// A client-side (LSP) RDCore app.
 /// </summary>
-/// <param name="connectionFactory">Creates the <see cref="ChildConnection"/> to the child server.</param>
-/// <param name="logger">A standard logger.</param>
 /// <remarks>
 /// 🧩 Most RDCore apps are server-side, but if you were making an IDE or a CLI app, this would be your LSP app.
 /// </remarks>
@@ -108,6 +106,12 @@ public abstract class RDCoreClientApp : IRDCoreClientApp
     private IServiceProvider? _hostServices;
     private bool _disposed;
 
+    /// <summary>
+    /// Creates the app.
+    /// </summary>
+    /// <param name="options">The options of the application.</param>
+    /// <param name="connectionFactory">Creates the <see cref="ChildConnection"/> to the child server.</param>
+    /// <param name="logger">A standard logger.</param>
     protected RDCoreClientApp(
         IOptions<SdkAppOptions> options,
         IChildConnectionFactory connectionFactory,
@@ -203,6 +207,7 @@ public abstract class RDCoreClientApp : IRDCoreClientApp
     /// Bootstraps and starts the application.
     /// </summary>
     /// <param name="provider">An <see cref="IServiceProvider"/> to configure the application.</param>
+    /// <param name="args">The command-line arguments of the application, given to <see cref="BeforeRunAsync"/>.</param>
     public async Task RunAsync(IServiceProvider provider, string[] args)
     {
         _hostServices = provider;
@@ -216,16 +221,16 @@ public abstract class RDCoreClientApp : IRDCoreClientApp
     /// Gets information about this LSP client application and its configuration.
     /// </summary>
     /// <remarks>
-    /// 🧩 The base implementation returns the <c>Name</c> and <c>Version</c> of the executing <see cref="Assembly"/>,
-    /// which is everything <see cref="ClientInfo"/> needs.
+    /// 🧩 The base implementation returns the <c>Name</c> of the entry <see cref="Assembly"/> and its <see cref="AssemblyDisplayVersion"/>
+    /// (the informational version, prerelease suffix and <c>+commit</c> build metadata included), which is everything <see cref="ClientInfo"/> needs.
     /// </remarks>
     protected virtual ClientInfo GetClientInfo()
     {
-        var assemblyName = Assembly.GetEntryAssembly()?.GetName();
+        var assembly = Assembly.GetEntryAssembly();
         return new()
         {
-            Name = assemblyName?.Name ?? "RDCore.CustomLanguageClientApp",
-            Version = (assemblyName?.Version ?? new Version()).ToString(3),
+            Name = assembly?.GetName().Name ?? "RDCore.CustomLanguageClientApp",
+            Version = AssemblyDisplayVersion.Get(assembly),
         };
     }
 
@@ -240,7 +245,7 @@ public abstract class RDCoreClientApp : IRDCoreClientApp
             CoreServerComponent.ParsingServer => manifest.ParseServer,
             CoreServerComponent.EnvironmentHost => manifest.HostService,
             // an extension lives in <ExtensionsDirectory>/<Title>/<Name>, platform-root-relative;
-            // RDCoreServerProcess.StartAsync resolves it against the platform root.
+            // RDCoreServerProcess.StartAsync resolves it against the platform root, and refuses it if that is not under the root.
             CoreServerComponent.Extension => $"{manifest.ExtensionsDirectory}/{ExtensionInfo!.Title}/{ExtensionInfo!.Name}",
             _ => throw new NotSupportedException($"Cannot resolve a server executable for platform component '{PlatformComponent}'.")
         };
@@ -333,10 +338,38 @@ public abstract class RDCoreClientApp : IRDCoreClientApp
 
     /// <summary>
     /// What this client says of itself in the <c>initializationOptions</c> of the <c>initialize</c> request: the language the workspace is
-    /// written in, which only the client knows, and which the server needs to know before it builds anything.
+    /// written in, which only the client knows, and which the server needs to know before it builds anything; whether it runs unattended, as it says in
+    /// the platform handshake that follows (<see cref="RDCoreInitializationOptions.Unattended"/>); and whether it answers what the server asks before
+    /// that (<see cref="AnswersDuringInitialize"/>).
     /// </summary>
     protected virtual RDCoreInitializationOptions CreateInitializationOptions()
-        => new() { Language = _options.Value.Workspace.Language, Locale = Server.ClientLocale.TagOf(Thread.CurrentThread.CurrentUICulture) };
+        => InitializationOptionsOf(_options.Value.Workspace.Language, Thread.CurrentThread.CurrentUICulture, GetExpectedCapabilities(), AnswersDuringInitialize);
+
+    /// <summary>
+    /// Whether this client answers what the language server asks its user before <c>initialize</c> is answered (<c>window/showMessageRequest</c>), with a
+    /// choice or with none, and never with an error (<see cref="RDCoreInitializationOptions.AnswersDuringInitialize"/>).
+    /// </summary>
+    /// <remarks>
+    /// 🧩 The base implementation says it does not: a client that has no handler for the request answers it with an error, which the language client this
+    /// one is built on holds until it is initialized, and the server is not asked to wait for it. A client that answers, and is there to, overrides this; one
+    /// that runs unattended says it does not, whatever this says.
+    /// </remarks>
+    protected virtual bool AnswersDuringInitialize => false;
+
+    // what a client says in its initializationOptions, from what it is: whether it runs unattended is what it expects of the language server in the handshake,
+    // and a client that runs unattended answers nothing.
+    internal static RDCoreInitializationOptions InitializationOptionsOf(
+        string? language, System.Globalization.CultureInfo culture, CorePlatformClientCapabilities expected, bool answersDuringInitialize = false)
+    {
+        var unattended = expected.LanguageServer?.Unattended?.IsSupported == true;
+        return new()
+        {
+            Language = language,
+            Locale = Server.ClientLocale.TagOf(culture),
+            Unattended = unattended,
+            AnswersDuringInitialize = answersDuringInitialize && !unattended,
+        };
+    }
 
     /// <summary>
     /// Applies the app-specific parts of the language client configuration. The transport (input/output)
@@ -356,6 +389,11 @@ public abstract class RDCoreClientApp : IRDCoreClientApp
             .OnStarted(OnLanguageClientStartedAsync)
             .OnInitialize(HandleLanguageClientInitializeAsync)
             .OnInitialized(HandleLanguageClientInitializedAsync);
+
+        // a request the server makes runs to its end and is answered, as a server's does (ServerRequestScheduling.WithEveryRequestAnswered): by default a
+        // window/showMessageRequest that waits for the user is abandoned when a $/progress or a window/workDoneProgress/create arrives, and OmniSharp 0.19.9
+        // then answers the server nothing.
+        options.WithContentModifiedSupport(false);
 
         // the server asks for the live settings (workspace/configuration).
         OmniSharp.Extensions.LanguageServer.Protocol.Workspace.ConfigurationExtensions.OnConfiguration(options, (request, _) => Task.FromResult(AnswerConfiguration(request)));

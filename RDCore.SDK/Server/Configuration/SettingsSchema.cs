@@ -144,10 +144,15 @@ public sealed class SettingsSchema
     public static SettingsSchema For<TOptions>(string section, ResourceManager? descriptions = null)
         => For(typeof(TOptions), section, descriptions);
 
-    /// <inheritdoc cref="For{TOptions}(string, ResourceManager?)"/>
+    /// <summary>
+    /// The schema of a settings type.
+    /// </summary>
     /// <param name="optionsType">The settings type.</param>
-    /// <param name="section">The key of the section the type is bound from, under <see cref="Root"/>.</param>
-    /// <param name="descriptions">Where the descriptions of the settings are.</param>
+    /// <param name="section">
+    /// The key of the section the type is bound from, under <see cref="Root"/>: <c>CLI</c> for <c>Configuration:CLI</c>; empty for a type whose properties are
+    /// the sections themselves.
+    /// </param>
+    /// <param name="descriptions">Where the descriptions of the settings are; <see langword="null"/> when nothing describes them.</param>
     public static SettingsSchema For(Type optionsType, string section, ResourceManager? descriptions = null)
     {
         var settings = new List<SettingDescriptor>();

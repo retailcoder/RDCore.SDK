@@ -17,6 +17,9 @@ public interface IRDCoreServerProcess : IDisposable
     /// <summary>
     /// Runs a server executable with command-line arguments mapping the specified <c>LanguageClientSettings</c>.
     /// </summary>
+    /// <param name="relativePath">The path of the server executable, relative to the platform root.</param>
+    /// <param name="pipeName">The name of the named pipe, passed to the server as <c>-n</c>.</param>
+    /// <param name="tokenSource">The caller's cancellation token source.</param>
     /// <param name="mode">
     /// The mode <c>rdc.exe</c> runs in, set as <c>RDCORE_MODE</c> in the child environment: <see cref="RDCoreServerProcess.HostMode"/> for the environment host,
     /// <see cref="RDCoreServerProcess.ExternalMode"/> for the external host; <see langword="null"/> for a server that is not <c>rdc.exe</c>.
@@ -58,7 +61,8 @@ public interface IRDCoreServerProcess : IDisposable
 /// A <em>language server application</em> is any <c>RDCore.SDK</c> server platform application that can run a sidecar LSP server.
 /// </remarks>
 /// <param name="FileSystem">Provides an abstraction over the file system.</param>
-/// <param name="Configuration">The current <see cref="IConfiguration"/> .</param>
+/// <param name="PlatformEnvironment">The platform environment that resolves a server's path against the platform root.</param>
+/// <param name="Options">The application options that supply the workspace, the language, and the server settings.</param>
 /// <param name="Logger">A standard <see cref="ILogger"/>.</param>
 public class RDCoreServerProcess(
     IFileSystem FileSystem,
@@ -152,7 +156,9 @@ public class RDCoreServerProcess(
         _serverProcess?.Dispose();
         _serverProcess = null;
 
-        var fullPath = PlatformEnvironment.Resolve(relativePath);
+        // the path is the platform manifest's, or an extension's that its manifest names: a platform starts only what is under its root, and starts it where the
+        // check found it. What is in this process's own folder is its own (rdc starting rdc, its external host), whatever the root is said to be.
+        var fullPath = PlatformRootConfinement.Confined(PlatformEnvironment.Root, PlatformEnvironment.Resolve(relativePath), AppContext.BaseDirectory);
         var workspace = Options.Value.Workspace.WorkspaceUri;
         var trace = LogLevel.Trace; // Options.Value.Server.TraceLevel;
         var verbose = true; //Options.Value.Server.Verbose;

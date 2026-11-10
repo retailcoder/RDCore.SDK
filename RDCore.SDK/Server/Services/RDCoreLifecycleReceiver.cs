@@ -22,16 +22,29 @@ namespace RDCore.SDK.Server.Services;
 /// never fires, and the host's own wait on the process token
 /// (<c>RDCoreServerApp.RunAsync</c>'s <c>serverExit.WaitAsync(...)</c>) hangs instead of exiting.
 /// 👉 Registered ahead of <c>OmniSharp</c>'s own <c>IReceiver</c> via <c>LanguageServerOptions.Services</c>
-/// (see <c>ConfigureCoreSdkHandlers</c>) — the internal registration uses DryIoc's <c>Keep</c> semantics,
+/// (<see cref="ServerRequestScheduling.WithLifecycleReceiver"/>): the internal registration uses DryIoc's <c>Keep</c> semantics,
 /// so whichever <see cref="IReceiver"/> is registered first wins.
+/// <para>
+/// Once the server is initialized, a request marked <see cref="HandledOnArrivalAttribute"/> is kept, and handled as it arrives (<see cref="ArrivalRequests"/>):
+/// what is not returned here is never scheduled.
+/// </para>
+/// <para>
+/// It also keeps the <c>locale</c> of the <c>initialize</c> request (<see cref="InitializeLocale"/>), which OmniSharp reads the request without.
+/// </para>
 /// </remarks>
-internal sealed class RDCoreLifecycleReceiver(ILogger<RDCoreLifecycleReceiver> logger) : Receiver
+/// <param name="logger">Logs each request the receiver rejects, and each notification it drops, before the server is initialized.</param>
+/// <param name="arrivals">Handles the marked requests as they arrive; <see langword="null"/> when none are, and every request is scheduled.</param>
+/// <param name="initializeLocale">Keeps the <c>locale</c> of the <c>initialize</c> request; <see langword="null"/> when it is not kept.</param>
+internal sealed class RDCoreLifecycleReceiver(ILogger<RDCoreLifecycleReceiver> logger, ArrivalRequests? arrivals = null, InitializeLocale? initializeLocale = null) : Receiver
 {
     public override (IEnumerable<Renor> results, bool hasResponse) GetRequests(JToken container)
     {
         if (_initialized)
         {
-            return base.GetRequests(container);
+            var (received, responds) = base.GetRequests(container);
+            return arrivals is null
+                ? (received, responds)
+                : (received.Where(renor => !(renor.IsRequest && arrivals.TryHandle(renor.Request!))).ToList(), responds);
         }
 
         var (parsed, hasResponse) = base.GetRequests(container);
@@ -39,6 +52,11 @@ internal sealed class RDCoreLifecycleReceiver(ILogger<RDCoreLifecycleReceiver> l
 
         foreach (var renor in parsed)
         {
+            if (initializeLocale is not null && renor.IsRequest && renor.Request!.Method == GeneralNames.Initialize)
+            {
+                initializeLocale.Locale = LocaleOf(renor.Request.Params);
+            }
+
             if (renor.IsResponse || renor.IsError
                 || (renor.IsRequest && renor.Request!.Method == GeneralNames.Initialize)
                 || (renor.IsNotification && (renor.Notification!.Method == GeneralNames.Initialized || renor.Notification!.Method == GeneralNames.Exit)))
@@ -60,4 +78,7 @@ internal sealed class RDCoreLifecycleReceiver(ILogger<RDCoreLifecycleReceiver> l
 
         return (allowed, hasResponse);
     }
+
+    private static string? LocaleOf(JToken? parameters)
+        => parameters is JObject named && named["locale"] is { Type: JTokenType.String } locale ? locale.Value<string>() : null;
 }

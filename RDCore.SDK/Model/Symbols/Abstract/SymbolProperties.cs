@@ -91,9 +91,11 @@ public static class SymbolProperties
     /// </remarks>
     public static readonly SymbolProperty<string> Library = new(nameof(Library));
     /// <summary>
-    /// The precedence of the library a symbol is of among the libraries of a project: of two libraries that declare a name, the one with the higher number is the
-    /// one the name means. The standard library, which has none, is the lowest; a library a project references comes after it, in the order of the project's
-    /// references; and one that is only loaded because another depends on it comes before the ones the project references.
+    /// The reference precedence of the library a symbol is of among the libraries of a project: of two libraries that declare a name, the one with the lower number
+    /// is the one the name means, as the earlier reference has the higher precedence (<strong>MS-VBAL §4.1</strong>). The standard library, which has none, comes
+    /// before every reference; a library a project references is its position in the project's references, from <c>1</c>, a reference to the standard library, or a second
+    /// one to the same library, not counted; one that is only loaded because another depends on it comes after every one the project references; and a symbol
+    /// of any other library that carries none comes after all of them.
     /// </summary>
     public static readonly SymbolProperty<int> LibraryPriority = new(nameof(LibraryPriority));
     /// <summary>
@@ -110,6 +112,12 @@ public static class SymbolProperties
     /// class module symbol without parsing its attributes (e.g. <c>ProjectSymbolProvider</c>) don't yet.
     /// </summary>
     public static readonly SymbolProperty<bool> Creatable = new(nameof(Creatable));
+    /// <summary>
+    /// Whether creating an object of a <see cref="VBClassModuleSymbol"/> of a library always fails, though it is <see cref="Creatable"/>: <c>New</c> of it
+    /// compiles, and raises run-time error -2147221164 <em>Class not registered</em> where the object is created, as <strong>MS-VBA</strong> does for
+    /// <c>New ErrObject</c> (recorded in Excel). <c>false</c> when unset.
+    /// </summary>
+    public static readonly SymbolProperty<bool> CreationAlwaysFails = new(nameof(CreationAlwaysFails));
     /// <summary>
     /// A small documentation string about this symbol.
     /// </summary>
@@ -172,7 +180,7 @@ public static class SymbolProperties
     /// for any parameter that is <c>ByRef</c> (<strong>MS-VBA</strong>, recorded in Excel; RD-VBAL §5.6.13.1).
     /// </summary>
     /// <remarks>
-    /// Set by the standard library's reader. It says nothing of how the argument is passed, which is the parameter's <see cref="VBParameterSymbol.ParameterKind"/>.
+    /// Set by the standard library's reader. It says nothing of how the argument is passed, which is the parameter's <see cref="VBProject.VBParameterSymbol.ParameterKind"/>.
     /// </remarks>
     public static readonly SymbolProperty<bool> TypeLibraryByRef = new(nameof(TypeLibraryByRef));
     /// <summary>
@@ -185,13 +193,13 @@ public static class SymbolProperties
     public static readonly SymbolProperty<bool> PassedByAddress = new(nameof(PassedByAddress));
     /// <summary>
     /// What a parameter declared <c>Variant</c> expects of an object given to it, when it reads the value of its argument as MS-VBA compiles it: <c>CInt</c>'s
-    /// does, <c>Round</c>'s does not (<see cref="Semantics.Static.ObjectValueStaticSemantics"/>).
+    /// does, <c>Round</c>'s does not (<see cref="Model.Symbols.ValueDestination"/>).
     /// </summary>
     /// <remarks>
-    /// Set by the standard library's reader, off <see cref="Runtime.Abstract.StdLib.StdLibValueAttribute"/>. Absent on every other parameter: one declared
+    /// Set by the standard library's reader, off <c>StdLibValueAttribute</c>. Absent on every other parameter: one declared
     /// with a value type expects a value of that type, which its declared type says, and a <c>Variant</c> one a workspace declares takes an object as it is.
     /// </remarks>
-    public static readonly SymbolProperty<Semantics.Static.ValueDestination> ValueDestination = new(nameof(ValueDestination));
+    public static readonly SymbolProperty<Model.Symbols.ValueDestination> ValueDestination = new(nameof(ValueDestination));
     /// <summary>
     /// The value of a member of an enumeration that something other than the workspace's source declares: the library that stated it, or the standard library.
     /// </summary>

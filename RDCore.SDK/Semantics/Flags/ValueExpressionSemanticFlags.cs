@@ -78,7 +78,7 @@ public enum ValueExpressionSemanticFlags
     /// <summary>
     /// It is an addition, a subtraction or a multiplication of <c>Byte</c>, <c>Integer</c> or <c>Long</c> values, one of which is <c>Abs</c>, <c>Int</c> or
     /// <c>Fix</c> of a number: MS-VBA types that call as the number's type, and the operation overflows (error 6) where MS-VBAL, which declares the call
-    /// <c>As Variant</c>, has a <c>Variant</c> operation widen to a larger type (<see cref="Static.ArgumentTypedFunctions"/>).
+    /// <c>As Variant</c>, has a <c>Variant</c> operation widen to a larger type (<c>ArgumentTypedFunctions</c>).
     /// </summary>
     OverflowsWhereVariantWidens = 1 << 12,
 
@@ -123,4 +123,36 @@ public enum ValueExpressionSemanticFlags
     /// already been specified for the array; <strong>MS-VBA</strong> compiles it as the array, and raises run-time error 9 (Subscript out of range) when it runs.
     /// </summary>
     ArrayGivenASecondEmptyArgumentList = 1 << 18,
+
+    /// <summary>
+    /// It is a public variable of an object named as a member of it (<c>b.Count</c>, <c>Me.Count</c>, <c>.Count</c> in a <c>With</c> block), or an element
+    /// of one (<c>b.V(0)</c>), given to a <c>ByRef</c> parameter: of a procedure of the workspace, a <c>ParamArray</c>, a <c>Declare</c>d procedure, or the
+    /// event a <c>RaiseEvent</c> raises. <strong>MS-VBAL §5.6.12</strong> classifies it as a variable, which <strong>§5.3.1.11</strong> passes by reference;
+    /// <strong>MS-VBA</strong> passes a copy, and what the procedure assigns to the parameter is not written back to the object's variable (RD-VBAL
+    /// §5.3.1.11). Named by itself in its own class, the variable is passed by reference.
+    /// </summary>
+    ObjectVariablePassedAsACopy = 1 << 19,
+
+    /// <summary>
+    /// It is a public variable of an object named as a member of it, or an element of one, as <see cref="ObjectVariablePassedAsACopy"/> has it, given to a
+    /// procedure called late (<c>o.Twice b.Count</c>, <c>o</c> an <c>Object</c>), whose parameters are not known until it runs. If the procedure takes it
+    /// <c>ByRef</c>, <strong>MS-VBAL §5.3.1.11</strong> passes the variable by reference; <strong>MS-VBA</strong> passes a copy, which what the procedure
+    /// assigns to the parameter is not written back to (oracle\s58 F04, RD-VBAL §5.3.1.11).
+    /// </summary>
+    ObjectVariablePassedLateAsACopy = 1 << 20,
+
+    /// <summary>
+    /// It is a <c>New</c> expression of a class whose objects are never created (<c>New ErrObject</c>): its library says the class can be created, so
+    /// <strong>MS-VBAL §5.6.8</strong> makes the expression valid, and <strong>MS-VBA</strong> compiles it; it raises run-time error -2147221164 <em>Class not
+    /// registered</em> whenever it runs (recorded in Excel: <c>oracle\s62</c> X04, X08).
+    /// </summary>
+    NewAlwaysFails = 1 << 21,
+
+    /// <summary>
+    /// It is an operation (<c>Not</c>, <c>And</c>, <c>Xor</c>, <c>Eqv</c>, <c>Imp</c>, or a comparison with a <c>Boolean</c>) of a constant whose value is a
+    /// number that is not <c>0</c> and not <c>-1</c>, and its truth value can differ from what the truth values of its operands give
+    /// (<see cref="TruthValueOperations"/>): the logical operators work on bits (<strong>MS-VBAL §5.6.9.8</strong>), and only <c>-1</c> has every bit of
+    /// <c>True</c>. <c>Not 1</c> is <c>-2</c>, which is <c>True</c>.
+    /// </summary>
+    TrueValueIsNotMinusOne = 1 << 22,
 }

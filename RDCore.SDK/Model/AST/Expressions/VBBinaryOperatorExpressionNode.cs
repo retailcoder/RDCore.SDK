@@ -18,7 +18,7 @@ public record class VBBinaryOperatorExpressionNode : VBOperatorExpression
     /// <param name="location">The <c>Location</c> (holds the document <c>Uri</c> and a <c>Range</c>) of the bound expression.</param>
     /// <param name="children">The left and right operands, in that order.</param>
     /// <exception cref="ArgumentException">
-    /// <paramref name="children"/> is not exactly two <see cref="ExpressionNode"/> operands — the
+    /// <paramref name="children"/> is not exactly two <see cref="ExpressionNode"/> operands: the
     /// grammar guarantees a binary operator has two, so this signals a parse-listener desync.
     /// </exception>
     public VBBinaryOperatorExpressionNode(string token, SyntaxNodeId identity, SourceLocation location, ImmutableArray<SyntaxNode> children)
@@ -44,12 +44,22 @@ public record class VBBinaryOperatorExpressionNode : VBOperatorExpression
     public string Token { get; }
 
     /// <summary>
-    /// The left-hand side operand — <c>Children[0]</c>.
+    /// Where in the document the operator token is written: the <c>+</c> of <c>a + b</c>, where <see cref="ExpressionNode.Location"/> is the whole operation.
+    /// </summary>
+    /// <remarks>
+    /// A diagnostic about the operator is located here, so that each operator of a chain (<c>a + b + c</c>, whose two operations begin at the same
+    /// position) has a location of its own. A run-time error of the operation is located at the operation itself. <see langword="null"/> for an operation
+    /// the code does not write (one a statement makes of its own operands) and for a node created without one.
+    /// </remarks>
+    public SourceLocation? OperatorLocation { get; init; }
+
+    /// <summary>
+    /// The left-hand side operand: <c>Children[0]</c>.
     /// </summary>
     public ExpressionNode Left => (ExpressionNode)Children[0];
 
     /// <summary>
-    /// The right-hand side operand — <c>Children[1]</c>.
+    /// The right-hand side operand: <c>Children[1]</c>.
     /// </summary>
     public ExpressionNode Right => (ExpressionNode)Children[1];
 

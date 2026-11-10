@@ -11,7 +11,7 @@ using OmniSharp.Extensions.LanguageServer.Protocol.Server;
 using OmniSharp.Extensions.LanguageServer.Protocol.Window;
 using OmniSharp.Extensions.LanguageServer.Server;
 using RDCore.SDK.Client;
-using RDCore.SDK.ConsoleIO;
+using RDCore.SDK.Logging;
 using RDCore.SDK.Formatting;
 using RDCore.SDK.Platform;
 using RDCore.SDK.Server.Configuration;
@@ -67,7 +67,7 @@ public abstract class RDCoreServerApp(
     /// <remarks>
     /// 👉 Platform services such as <see cref="Platform.IPlatformCompositionService"/> and the orchestration
     /// services are registered here, not on the internal server container. Server apps that bring up child
-    /// components must pass <strong>this</strong> provider to <see cref="IRDCoreClientApp.RunAsync"/>.
+    /// components must pass <strong>this</strong> provider to <see cref="IRDCoreApp.RunAsync(IServiceProvider, string[])"/>.
     /// </remarks>
     protected IServiceProvider ExternalServices { get; private set; } = default!;
 
@@ -80,7 +80,7 @@ public abstract class RDCoreServerApp(
     /// </summary>
     /// <remarks>
     /// A client may send a notification about a document the server does not serve - a <c>README.md</c> it opens - which OmniSharp hands to no handler. The
-    /// selector is registered for the handlers, and says which changes are waited for (<see cref="IncomingDocumentChanges.Serve"/>): one that no handler applies
+    /// selector is registered for the handlers, and says which changes are waited for (<see cref="IncomingDocumentChanges.Serve(Func{Uri, bool})"/>): one that no handler applies
     /// would be waited for forever.
     /// </remarks>
     protected virtual TextDocumentSelector? DocumentSelector => null;
@@ -301,8 +301,10 @@ public abstract class RDCoreServerApp(
     private void ConfigureServer(LanguageServerOptions serverOptions)
     {
         serverOptions
-            .WithInput(PipeReader.Create(_incomingChanges.Tap(_namedPipe)))
-            .WithOutput(PipeWriter.Create(_namedPipe))
+            // OmniSharp completes both as it handles exit, under the loops that read and write them: the input then ends, and a message still being
+            // written is no longer cancelled through the writer that was completed. Neither disposes the pipe, which this app does as it is disposed.
+            .WithInput(new ServerInput(PipeReader.Create(_incomingChanges.Tap(_namedPipe))))
+            .WithOutput(ServerOutput.Over(_namedPipe))
             // basic server app information:
             .WithServerInfo(GetServerInfo())
             // wire-up lifecycle delegates:
@@ -316,8 +318,9 @@ public abstract class RDCoreServerApp(
             // a request whose handler throws is answered on one line, which a client shows as it is, and the whole exception is written to this server's own
             // log:
             .WithOneLineErrors(logger)
-            // the client's live settings, which the server asks for (workspace/configuration) when it is initialized and whenever they change:
-            .WithConfigurationSection(LiveSettingsProtocol.Section)
+            // the client's live settings, which the server asks for (workspace/configuration) when it is initialized and whenever they change, of any client
+            // that answers it:
+            .WithClientConfiguration(LiveSettingsProtocol.Section)
             // core SDK handlers:
             .ConfigureCoreSdkHandlers()
             // OmniSharp 0.19.9 cannot write a pull diagnostic report, and the throw takes the entire
@@ -354,6 +357,7 @@ public abstract class RDCoreServerApp(
                 builder.Services.AddSingleton<ILoggerProvider, ScrubbingLanguageServerLoggerProvider>();
                 // and to the file, which otherwise has nothing of the connection's own failures.
                 builder.Services.AddSingleton<ILoggerProvider>(new ContainerFileLoggerProvider(logger));
+                builder.WithoutDeferredOutputWarnings();
             });
 
             // app-specific service registrations:
@@ -392,16 +396,16 @@ public abstract class RDCoreServerApp(
     /// Gets information about this LSP server application and its configuration.
     /// </summary>
     /// <remarks>
-    /// 🧩 The base implementation returns the <c>Name</c> and <c>Version</c> of the executing <see cref="Assembly"/>,
-    /// which is everything <see cref="ServerInfo"/> needs.
+    /// 🧩 The base implementation returns the <c>Name</c> of the entry <see cref="Assembly"/> and its <see cref="AssemblyDisplayVersion"/>
+    /// (the informational version, prerelease suffix and <c>+commit</c> build metadata included), which is everything <see cref="ServerInfo"/> needs.
     /// </remarks>
     protected virtual ServerInfo GetServerInfo()
     {
-        var assemblyName = Assembly.GetEntryAssembly()?.GetName();
+        var assembly = Assembly.GetEntryAssembly();
         return new()
         {
-            Name = assemblyName?.Name ?? "RDCore.CustomLanguageServerApp",
-            Version = (assemblyName?.Version ?? new Version()).ToString(3)
+            Name = assembly?.GetName().Name ?? "RDCore.CustomLanguageServerApp",
+            Version = AssemblyDisplayVersion.Get(assembly)
         };
     }
 
@@ -425,7 +429,7 @@ public abstract class RDCoreServerApp(
     // client says it changed - OmniSharp's own pull, for the section it was configured with - and the answer is set on the component's settings.
     private void FollowClientConfiguration(ILanguageServer server)
     {
-        _configurationFollower = ClientConfigurationFollower.Follow(ExternalServices, server, () => OnLiveSettingsChangedAsync(server), message => LogIfEnabled(LogLevel.Information, message));
+        _configurationFollower = ClientConfigurationFollower.StartFollowing(ExternalServices, server, () => OnLiveSettingsChangedAsync(server), message => LogIfEnabled(LogLevel.Information, message));
     }
 
     private ClientConfigurationFollower? _configurationFollower;
@@ -460,8 +464,14 @@ public abstract class RDCoreServerApp(
         // what the client says of itself comes before everything that is built from it: the capabilities below, and whatever an
         // application brings up in its own handler - the children a language server starts are told the same locale.
         ApplyInitializationOptions(request);
-        var locale = ClientLocale.Of(request.Locale, ReadInitializationOptions(request.InitializationOptions));
-        if (ClientLocale.Apply(locale) is { } culture)
+        var locale = ClientLocale.Of(ClientLocale.Said(server, request), ReadInitializationOptions(request.InitializationOptions));
+        // the platform's own setting is the language of every component, whatever the client shows: a client that is not the platform's (an IDE) says its own.
+        if (UserInterfaceLanguage.Resolve(options.Value.Environment.Regional.Language) is { Overrides: true } setting)
+        {
+            _ = ClientLocale.Apply(setting.Culture.Name);
+            LogIfEnabled(LogLevel.Information, $"🌐 The user interface is in '{setting.Culture.Name}' (Environment.Regional.Language), whatever the client's locale ('{locale}').");
+        }
+        else if (ClientLocale.Apply(locale) is { } culture)
         {
             LogIfEnabled(LogLevel.Information, $"🌐 The client's user interface is in '{culture.Name}'.");
         }
@@ -510,6 +520,25 @@ public abstract class RDCoreServerApp(
     }
 
     /// <summary>
+    /// Whether the client of an <c>initialize</c> request says nobody is there to answer what the server would ask its user
+    /// (<see cref="Platform.Protocol.RDCoreInitializationOptions.Unattended"/>).
+    /// </summary>
+    /// <param name="request">The request.</param>
+    protected internal static bool ClientRunsUnattended(InitializeParams request) => ReadInitializationOptions(request.InitializationOptions)?.Unattended == true;
+
+    /// <summary>
+    /// Whether the client of an <c>initialize</c> request answers what the server asks its user before the request is answered
+    /// (<see cref="Platform.Protocol.RDCoreInitializationOptions.AnswersDuringInitialize"/>): it says it does, and does not run unattended.
+    /// </summary>
+    /// <remarks>
+    /// A server asks nothing while it answers <c>initialize</c> of a client this is <see langword="false"/> for: it would wait for an answer that does not come,
+    /// and the client for the answer to <c>initialize</c>.
+    /// </remarks>
+    /// <param name="request">The request.</param>
+    protected internal static bool ClientAnswersDuringInitialize(InitializeParams request)
+        => ReadInitializationOptions(request.InitializationOptions) is { AnswersDuringInitialize: true, Unattended: false };
+
+    /// <summary>
     /// Reads the <c>initializationOptions</c> of an <c>initialize</c> request, which the protocol leaves a client free to put anything in.
     /// </summary>
     /// <param name="initializationOptions">What the request carried.</param>
@@ -555,7 +584,7 @@ public abstract class RDCoreServerApp(
     /// The request wins: it is LSP's own way for a client to say which process owns this server, and
     /// only a client that spawned the server itself could have passed <c>-p</c>. Nothing read the
     /// request at all, so a client that sent a <c>processId</c> was told in the log that it had sent
-    /// none — and nothing watched it, leaving the whole platform running after the client that owned it
+    /// none, and nothing watched it, leaving the whole platform running after the client that owned it
     /// was gone. A <c>null</c> <c>processId</c> is LSP's "the parent is not a process I can name".
     /// </remarks>
     internal static int ClientProcessId(long? requested, int configured, out bool outOfRange)
@@ -618,5 +647,5 @@ internal static class LanguageServerOptionsExtensions
         // through per spec, so ExitHandler above never runs and the host hangs instead of exiting
         // (see RDCoreLifecycleReceiver). DryIoc's internal registration keeps whichever IReceiver was
         // registered first, so registering ours here pre-empts it.
-        .WithServices(services => services.AddSingleton<IReceiver, RDCoreLifecycleReceiver>());
+        .WithLifecycleReceiver();
 }

@@ -4,7 +4,7 @@ namespace RDCore.SDK.Runtime.Abstract.Execution;
 /// What an <see cref="IExternalCallInterceptor"/> decided about a call.
 /// </summary>
 /// <param name="Reason">
-/// Why the call was refused, in words a person reading a diagnostic needs — <see langword="null"/> when it
+/// Why the call was refused, in words a person reading a diagnostic needs: <see langword="null"/> when it
 /// was not refused.
 /// </param>
 public readonly record struct ExternalCallDecision(string? Reason)
@@ -18,7 +18,7 @@ public readonly record struct ExternalCallDecision(string? Reason)
     /// Refuse the call.
     /// </summary>
     /// <param name="reason">
-    /// Why — it reaches the workspace as the verbose half of a <c>Permission denied</c> run-time error, so
+    /// Why: it reaches the workspace as the verbose half of a <c>Permission denied</c> run-time error, so
     /// it should say what was refused and on what grounds.
     /// </param>
     public static ExternalCallDecision Block(string reason) => new(reason);
@@ -43,9 +43,8 @@ public readonly record struct ExternalCallDecision(string? Reason)
 /// <em>every</em> external call, not only the dangerous ones.
 /// </para>
 /// <para>
-/// 🚧 An interceptor cannot yet <em>answer</em> a call. That is the same seam a mock needs, and is where the
-/// planned Unit Testing extension's <c>MsgBox</c>/<c>InputBox</c> substitution lands — TODO extend
-/// <see cref="ExternalCallDecision"/> with a result rather than adding a second mechanism beside this one.
+/// An interceptor allows or refuses a call (<see cref="ExternalCallDecision"/>). It cannot answer the call
+/// with a result of its own.
 /// </para>
 /// </remarks>
 public interface IExternalCallInterceptor
@@ -80,10 +79,10 @@ public interface IExternalCallProvider
     bool CanDispatch(ExternalCallRequest request);
 
     /// <summary>
-    /// Runs it, and returns what it yielded — an error in the result rather than thrown, as everywhere else
+    /// Runs it, and returns what it yielded: an error in the result rather than thrown, as everywhere else
     /// in the semantics layer.
     /// </summary>
     /// <param name="request">The call to run. <see cref="CanDispatch"/> has already accepted it.</param>
-    /// <param name="resolver">A read-only interface over the current execution context.</param>
-    Shared.RuntimeSemanticsEvaluationResult Dispatch(ExternalCallRequest request, ISymbolResolver resolver);
+    /// <param name="resolver">The running session's symbols and their storage.</param>
+    Shared.RuntimeSemanticsEvaluationResult Dispatch(ExternalCallRequest request, IRuntimeSymbolResolver resolver);
 }

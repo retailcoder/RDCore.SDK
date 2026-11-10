@@ -37,11 +37,11 @@ public record class VBClassModuleSymbol : VBModuleSymbol
         : base(workspaceRoot, parentUri, name, Abstract.ScopeKind.Instance, SymbolKindExt.Class) { }
 
     /// <summary>
-    /// This class's default interface (MS-VBAL's own term) — the members reachable through a
+    /// This class's default interface (MS-VBAL's own term): the members reachable through a
     /// member-access expression typed against this class, whether through <c>Me</c> or any other
     /// variable declared as this class. A pure function of <see cref="VBModuleSymbol.Members"/>
-    /// (<see cref="Types.Complex.VBClassType.FromClassModule"/> computes it), fixed the moment the
-    /// class's own member list is known — populated exactly once, alongside <c>Members</c>, by
+    /// (<see cref="Types.Complex.VBClassType.FromClassModule(VBClassModuleSymbol)"/> computes it), fixed the moment the
+    /// class's own member list is known: populated exactly once, alongside <c>Members</c>, by
     /// <c>WorkspaceSymbolResolver.Compose</c>'s second pass. Consumers (<c>New</c>, <c>As</c>-type
     /// clauses, <c>Me</c>) read this directly rather than recomputing it at resolution time.
     /// </summary>
@@ -49,10 +49,10 @@ public record class VBClassModuleSymbol : VBModuleSymbol
 
     /// <summary>
     /// The interface names named by this class module's own <c>Implements</c> directives
-    /// (<strong>MS-VBAL §5.2.4.2</strong>), exactly as written — unresolved, and not yet checked for
+    /// (<strong>MS-VBAL §5.2.4.2</strong>), exactly as written: unresolved, and not yet checked for
     /// validity (self-reference, duplicates, or a name that doesn't resolve to a class at all).
-    /// Captured directly off the AST, alongside <see cref="Symbols.Abstract.VBModuleSymbol.Directives"/>,
-    /// in <c>WorkspaceSymbolResolver.Compose</c>'s first pass — before any other module's symbol is
+    /// Captured directly off the AST, alongside <see cref="VBModuleSymbol.Directives"/>,
+    /// in <c>WorkspaceSymbolResolver.Compose</c>'s first pass: before any other module's symbol is
     /// known, so resolving these to real <see cref="VBClassModuleSymbol"/> references has to wait for
     /// <see cref="ImplementedInterfaces"/>.
     /// </summary>
@@ -67,20 +67,20 @@ public record class VBClassModuleSymbol : VBModuleSymbol
 
     /// <summary>
     /// <see cref="ImplementedInterfaceNames"/>, resolved to the sibling <see cref="VBClassModuleSymbol"/>
-    /// each name refers to — populated by a third pass in <c>WorkspaceSymbolResolver.Compose</c>, once
+    /// each name refers to: populated by a third pass in <c>WorkspaceSymbolResolver.Compose</c>, once
     /// every module in the composition has its own symbol built. A name that doesn't resolve to a
     /// class in this composition (or that resolves back to this same class) is silently dropped rather
-    /// than reported — full MS-VBAL §5.2.4.2/§5.3.1.9 validity checking is not modeled yet.
+    /// than reported: full MS-VBAL §5.2.4.2/§5.3.1.9 validity checking is not modeled yet.
     /// </summary>
     /// <remarks>
-    /// <see cref="Types.Complex.VBClassType.FromClassModule"/> reads this to populate
-    /// <see cref="Types.Complex.VBClassType.Supertypes"/> — every consumer of that type gets a correct
+    /// <see cref="Types.Complex.VBClassType.FromClassModule(VBClassModuleSymbol)"/> reads this to populate
+    /// <see cref="Types.Complex.VBClassType.Supertypes"/>: every consumer of that type gets a correct
     /// <c>Supertypes</c> array for free once this is resolved, with no other code to update.
     /// <para>
     /// What is assigned is what the source declares. What is read also has what the language implements for every
     /// class module, first: <see cref="ClassLifecycleInterface"/>, whose members are <c>Initialize</c> and
     /// <c>Terminate</c>. It is an interface of the module like any other, which is why whatever builds a list of the
-    /// interfaces a module implements — an editor's dropdown among them — finds it there. Its members have an
+    /// interfaces a module implements (an editor's dropdown among them) finds it there. Its members have an
     /// implementation of their own (<see cref="SymbolProperties.DefaultImplementation"/>), so a module that writes no
     /// handler still implements every one of them, as <strong>MS-VBAL §5.3.1.9</strong> requires. It is still not a
     /// name workspace code can refer to.
@@ -183,7 +183,7 @@ public record class VBClassModuleSymbol : VBModuleSymbol
 
     /// <summary>
     /// Whether this class implements <paramref name="interfaceMember"/> of <paramref name="implemented"/>
-    /// (<strong>MS-VBAL §5.3.1.9</strong>): it has the procedure for it (<see cref="FindImplementation"/>), or the
+    /// (<strong>MS-VBAL §5.3.1.9</strong>): it has the procedure for it (<see cref="FindImplementation(VBClassModuleSymbol, VBTypeMemberSymbol)"/>), or the
     /// member has an implementation of its own (<see cref="SymbolProperties.DefaultImplementation"/>). What a check that
     /// an <c>Implements</c> directive is complete asks, of each member of the interface.
     /// </summary>
@@ -243,13 +243,13 @@ public record class VBClassModuleSymbol : VBModuleSymbol
     /// <summary>
     /// Whether this is a document module: the code of a host's document, as the project says (<see cref="Workspace.ModuleKinds.Of(Workspace.RDCoreModule?, string?)"/>),
     /// whether or not RD-VBA knows the host (<see cref="HostClass"/>). Only the host makes its documents, so no program creates an object of this class: a
-    /// <c>New</c> of it is <see cref="Errors.VBCompileErrorId.InvalidUseOfNewKeyword"/>, as MS-VBA has it of a worksheet's.
+    /// <c>New</c> of it is <em>Invalid use of New keyword</em> (<c>VBC09368</c>), the error MS-VBA gives for <c>New</c> of a worksheet's class.
     /// </summary>
     public bool IsDocument { get; init; }
 
     /// <summary>
     /// Whether a live instance of this class is COM Automation-capable (<c>IDispatch</c>) or
-    /// <c>IUnknown</c>-only. Defaults to <see cref="VBAutomationKind.Dispatch"/> — true of every
+    /// <c>IUnknown</c>-only. Defaults to <see cref="VBAutomationKind.Dispatch"/>: true of every
     /// RD-VBA class module today; <see cref="VBAutomationKind.Unknown"/> is groundwork for a future
     /// external/COM reference kind, not constructed anywhere yet.
     /// </summary>

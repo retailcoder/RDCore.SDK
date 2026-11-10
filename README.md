@@ -7,14 +7,14 @@
 > 👋 Hi! New here? _Rubberduck_ was always an open-source initiative. **RDCore honors it with an Open-Core formula**.  
 > <small>See [rubberduckvba.ca](https://rubberduckvba.ca) for more information.</small>
 
-This repository holds the two **⚖️MIT** libraries of the [RDCore](https://github.com/rubberduck-vba/RDCore) platform:
+This repository holds these libraries of the [RDCore](https://github.com/rubberduck-vba/RDCore) platform, licensed under **⚖️MIT**:
 
 - **RDCore.SDK**: the language model (MS-VBAL types, symbols, syntax trees, semantics and diagnostics) and the plumbing every platform component shares (hosting, configuration, logging, workspaces, the server and client app bases). Every RDCore component and extension builds on it.
 - **RDCore.SDK.Protocol**: what a client of the platform needs and nothing else. It holds the `rdcore/*` methods and their messages, the platform handshake, and how to start the language server. It uses System.Text.Json only, with no OmniSharp, so an IDE can talk to RDCore without taking on the platform's dependencies. HexIDE's RDCore add-in references it.
 
-The platform built on these libraries, the RD-VBA runtime included, lives in the [RDCore](https://github.com/rubberduck-vba/RDCore) repository, under **⚖️GPLv3**. What you build with RDCore is yours (see [RDCore's NOTICE](https://github.com/rubberduck-vba/RDCore/blob/main/NOTICE.md)).
+The platform built on these libraries, the RD-VBA runtime included, lives in the [RDCore](https://github.com/rubberduck-vba/RDCore) repository, under **⚖️GPLv3 or later**. What you build with RDCore is yours (see [RDCore's NOTICE](https://github.com/rubberduck-vba/RDCore/blob/main/NOTICE.md)).
 
-The MIT license in [LICENSE](LICENSE) covers the two libraries of this repository and no other part of the platform. A French version of the license is available on request.
+The MIT license in [LICENSE](LICENSE) covers the libraries of this repository. A French version of the license is available on request.
 
 ## 📊 Project Status
 RDCore is in active **pre-alpha** development, and these libraries with it: their API will still change before 1.0.

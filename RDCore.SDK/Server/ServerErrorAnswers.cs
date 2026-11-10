@@ -10,7 +10,7 @@ namespace RDCore.SDK.Server;
 /// <summary>
 /// What an RDCore server answers a request whose handler fails unexpectedly.
 /// </summary>
-public static class ServerErrorAnswers
+internal static class ServerErrorAnswers
 {
     /// <summary>
     /// Has the server answer a request whose handler throws with <c>InternalError</c> (-32603) and the exception's message on one line, and write the whole
@@ -54,6 +54,7 @@ internal sealed record class OneLineErrorLog(ILogger Logger);
 
 // around every request's handler: an exception the handler did not foresee is answered on one line, and written whole to the server's log.
 internal sealed class OneLineErrorBehavior<TRequest, TResponse>(OneLineErrorLog log) : IPipelineBehavior<TRequest, TResponse>
+    where TRequest : notnull
 {
     public async Task<TResponse> Handle(TRequest request, CancellationToken cancellationToken, RequestHandlerDelegate<TResponse> next)
     {
