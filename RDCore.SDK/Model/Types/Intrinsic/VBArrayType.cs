@@ -16,7 +16,7 @@ namespace RDCore.SDK.Model.Types;
 /// </remarks>
 /// <param name="ItemType">The data type of the elements of the array.</param>
 public abstract record class VBArrayType(VBType ItemType) :
-    VBIntrinsicType<object[]>(VBTypeNames.VBArray), IEnumerableType
+    VBIntrinsicType<object[]>(VBTypeNames.VBArray)
 {
     private static readonly Lazy<VBArrayType> _instance = new(() => new VBResizableArrayType(VBVariantType.TypeInfo), LazyThreadSafetyMode.PublicationOnly);
     /// <summary>

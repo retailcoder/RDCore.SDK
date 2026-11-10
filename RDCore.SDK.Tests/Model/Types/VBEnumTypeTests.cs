@@ -20,13 +20,33 @@ public sealed class VBEnumTypeTests
 {
     private static readonly Uri Root = TestUri.WorkspaceRoot();
 
+    private static VBEnumMemberSymbol ColourSymbol() => new(Root, TestUri.TestModuleUri(), "Colour", ScopeKind.Module, SymbolKindExt.Enum,
+        VBUnknownType.TypeInfo, SourceRange.Empty, SourceRange.Empty, AccessModifier.Public);
+
     private static VBEnumType Colour()
     {
-        var symbol = new VBEnumMemberSymbol(Root, TestUri.TestModuleUri(), "Colour", ScopeKind.Module, SymbolKindExt.Enum,
-            VBUnknownType.TypeInfo, SourceRange.Empty, SourceRange.Empty, AccessModifier.Public);
+        var symbol = ColourSymbol();
         return new VBEnumType(symbol, [new VBEnumConstMemberSymbol(
             Root, symbol.Uri, "Red", ScopeKind.Module, SymbolKindExt.EnumMember, SourceRange.Empty, SourceRange.Empty)]);
     }
+
+    [TestMethod]
+    public void AnEnumTypeOfItsSymbolAlone_IsNamedAsItsSymbol_AndHasNoMembers()
+    {
+        var symbol = ColourSymbol();
+
+        var type = new VBEnumType(symbol);
+
+        Assert.AreSame(symbol, type.Symbol);
+        Assert.AreEqual("Colour", type.Name);
+        Assert.IsFalse(type.IsHidden);
+        Assert.IsFalse(type.Members.IsDefault);
+        Assert.AreEqual(0, type.Members.Length);
+    }
+
+    [TestMethod]
+    public void AnEnumTypeOfItsConstants_HasThemAsMembers()
+        => CollectionAssert.AreEqual(new[] { "Red" }, Colour().Members.Select(member => member.Name).ToArray());
 
     [TestMethod]
     public void AsDeclaredType_AnEnum_IsLong()
