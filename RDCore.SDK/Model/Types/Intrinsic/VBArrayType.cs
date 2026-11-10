@@ -31,7 +31,7 @@ public abstract record class VBArrayType(VBType ItemType) :
     /// </summary>
     /// <remarks>
     /// Two element types are the same when they are of the same kind and name: an <c>Enum</c> is not taken as a <c>Long</c>, and a fixed-length
-    /// <c>String * N</c> is a <c>String</c> of another kind. Any two <c>Enum</c> types are the same, as the call binds them. A type that is not known
+    /// <c>String * N</c> is a <c>String</c> of another kind. Two <c>Enum</c> types are the same whatever their names, as the call binds them. A type that is not known
     /// (<see cref="VBUnknownType"/>) is not a type that differs.
     /// </remarks>
     /// <param name="expected">The element type of the array the parameter declares.</param>

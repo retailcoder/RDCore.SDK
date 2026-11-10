@@ -214,8 +214,8 @@ public static class ScopeTreeBuilder
     };
 
     /// <summary>
-    /// Whether a member of a module is visible to the other modules of its project (<strong>MS-VBAL §5.2.3</strong>): the project scope places it
-    /// (see <see cref="Build"/>), and a name resolver binds it from a sibling module.
+    /// Whether a member of a module is visible to the other modules of its project (<strong>MS-VBAL §5.2.3</strong>): a visible member is placed
+    /// in the project scope (see <see cref="Build"/>), where a name resolver binds it from a sibling module.
     /// </summary>
     /// <remarks>
     /// A member declared <c>Public</c>, <c>Global</c> or <c>Friend</c> is visible, and one declared <c>Private</c> is not. A member declared with no access
