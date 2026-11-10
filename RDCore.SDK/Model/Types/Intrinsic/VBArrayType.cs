@@ -16,7 +16,7 @@ namespace RDCore.SDK.Model.Types;
 /// </remarks>
 /// <param name="ItemType">The data type of the elements of the array.</param>
 public abstract record class VBArrayType(VBType ItemType) :
-    VBIntrinsicType<object[]>(VBTypeNames.VBArray), IEnumerableType
+    VBIntrinsicType<object[]>(VBTypeNames.VBArray)
 {
     private static readonly Lazy<VBArrayType> _instance = new(() => new VBResizableArrayType(VBVariantType.TypeInfo), LazyThreadSafetyMode.PublicationOnly);
     /// <summary>
@@ -24,10 +24,20 @@ public abstract record class VBArrayType(VBType ItemType) :
     /// </summary>
     public static VBArrayType TypeInfo => _instance.Value;
 
-    // the same element type, of the same kind and name - an Enum is not mapped to Long, and a String * N is a String of another kind - or two Enums, as the
-    // call binds the parameter to it (RuntimeExpressionEvaluator.IsOfDeclaredType). A type that is not known is not a type that differs. The static semantics
-    // of an argument list check an array argument by it (ArgumentListStaticSemantics), and a completion list offers one by it (CompletionArrayArgument).
-    internal static bool SameElementType(VBType expected, VBType item)
+    /// <summary>
+    /// Whether an array whose elements are of <paramref name="item"/> is an array of the element type <paramref name="expected"/>, as a call binds an
+    /// array argument to an array parameter: the static semantics of an argument list check an array argument by it, and a completion list offers an
+    /// array by it.
+    /// </summary>
+    /// <remarks>
+    /// Two element types are the same when they are of the same kind and name: an <c>Enum</c> is not taken as a <c>Long</c>, and a fixed-length
+    /// <c>String * N</c> is a <c>String</c> of another kind. Two <c>Enum</c> types are the same whatever their names, as the call binds them. A type that is not known
+    /// (<see cref="VBUnknownType"/>) is not a type that differs.
+    /// </remarks>
+    /// <param name="expected">The element type of the array the parameter declares.</param>
+    /// <param name="item">The element type of the array given.</param>
+    /// <returns><see langword="true"/> when the array given has the same element type, or when either type is not known.</returns>
+    public static bool SameElementType(VBType expected, VBType item)
         => expected is VBUnknownType || item is VBUnknownType
             || expected is VBEnumType && item is VBEnumType
             || expected.GetType() == item.GetType() && string.Equals(expected.Name, item.Name, StringComparison.OrdinalIgnoreCase);

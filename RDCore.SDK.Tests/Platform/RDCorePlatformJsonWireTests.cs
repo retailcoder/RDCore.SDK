@@ -5,6 +5,7 @@ using RDCore.SDK.Model.Source;
 using RDCore.SDK.Platform;
 using RDCore.SDK.Platform.Protocol;
 using RDCore.SDK.Runtime.Abstract.Execution;
+using RDCore.SDK.Semantics.Refactoring;
 using RDCore.SDK.Server.Serialization;
 using RDCore.SDK.Workspace;
 using System.Collections;
@@ -154,7 +155,8 @@ public sealed class RDCorePlatformJsonWireTests
         yield return (apply, new RubberduckIndenterSettingsApplyRequest(apply));
         yield return Same(new RubberduckIndenterSettingsApplyResult { Applied = 1, Refused = ["Formatting.Nope"] });
 
-        yield return Same(new RefactorPrepareParams { Kind = "refactor.extract.method", Uri = Module, Range = Range });
+        yield return (new RefactorPrepareParams { Kind = RefactoringKinds.ExtractMethod, Uri = Module, Range = Range },
+            new RefactorPrepareRequest { Kind = RefactoringKinds.ExtractMethod, Uri = Module, Range = Range });
         yield return Same(new RefactorPrepareResult
         {
             Choices =
@@ -187,16 +189,17 @@ public sealed class RDCorePlatformJsonWireTests
                 },
             ],
         });
-        yield return Same(new RefactorApplyParams
+        static T Applied<T>() where T : RefactorApplyParams, new() => new T
         {
-            Kind = "refactor.extract.method", Uri = Module, Range = Range,
+            Kind = RefactoringKinds.ExtractMethod, Uri = Module, Range = Range,
             Answers =
             [
                 new RefactorAnswer { Id = "name", Value = "Total" },
                 new RefactorAnswer { Id = "parameters", Items = [new RefactorItemAnswer { Id = "total", Answers = [new RefactorAnswer { Id = "byRef", Value = "false" }] }] },
             ],
             Accepted = ["extractMethod.writeBack"],
-        });
+        };
+        yield return (Applied<RefactorApplyParams>(), Applied<RefactorApplyRequest>());
         yield return Same(new RefactorWorkspaceEdit
         {
             Created = [new Uri("file:///c:/workspace/IShape.cls")],

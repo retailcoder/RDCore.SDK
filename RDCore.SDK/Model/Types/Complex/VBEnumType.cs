@@ -11,13 +11,28 @@ namespace RDCore.SDK.Model.Types.Complex;
 /// <summary>
 /// Represents any <c>Enum</c> type.
 /// </summary>
-public sealed record class VBEnumType(Symbol Symbol, bool IsHidden = false) : VBType(typeof(Type), Symbol.Name, IsHidden), IVBMemberOwnerType
+public sealed record class VBEnumType : VBType, IVBMemberOwnerType
 {
+    /// <summary>
+    /// Creates the type of an enumeration, named as its symbol.
+    /// </summary>
+    /// <param name="symbol">The symbol of the enumeration's declaration.</param>
+    /// <param name="members">
+    /// Its constants; none when <see langword="null"/>, for a type whose members are given later (<see cref="WithMembers"/>). A declared enumeration has at
+    /// least one (<strong>MS-VBAL §5.2.3.4</strong>).
+    /// </param>
+    /// <param name="isHidden">Whether the type has no specified semantics, as an internal type of a library.</param>
     public VBEnumType(Symbol symbol, IEnumerable<VBEnumConstMemberSymbol>? members = null, bool isHidden = false)
-        : this(symbol, isHidden)
+        : base(typeof(Type), symbol.Name, isHidden)
     {
-        Members = [.. (members ?? []).Cast<VBTypeMemberSymbol>()]; // NOTE: an enum without any members would not be statically compilable MS-VBA
+        Symbol = symbol;
+        Members = [.. (members ?? []).Cast<VBTypeMemberSymbol>()];
     }
+
+    /// <summary>
+    /// The symbol of the enumeration's declaration.
+    /// </summary>
+    public Symbol Symbol { get; init; }
 
     private static readonly Lazy<VBLongValue> _defaultValue = new(() => VBLongType.Zero, LazyThreadSafetyMode.PublicationOnly);
     public override VBTypedValue DefaultValue => _defaultValue.Value;

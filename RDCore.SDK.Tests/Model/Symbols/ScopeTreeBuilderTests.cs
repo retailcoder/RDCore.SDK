@@ -348,4 +348,37 @@ public sealed class ScopeTreeBuilderTests
 
         Assert.IsNull(tree.Global.EnclosingModuleDirectives());
     }
+
+    [TestMethod]
+    public void AMemberDeclaredPublicGlobalOrFriend_IsProjectVisible_AndOneDeclaredPrivateIsNot()
+    {
+        var module = Module("Mod1");
+
+        Assert.IsTrue(ScopeTreeBuilder.IsProjectVisible(Field(module.Uri, "Total", AccessModifier.Public)));
+        Assert.IsTrue(ScopeTreeBuilder.IsProjectVisible(Field(module.Uri, "Total", AccessModifier.Global)));
+        Assert.IsTrue(ScopeTreeBuilder.IsProjectVisible(Procedure(module.Uri, "DoWork", AccessModifier.Friend)));
+        Assert.IsFalse(ScopeTreeBuilder.IsProjectVisible(Procedure(module.Uri, "DoWork", AccessModifier.Private)));
+    }
+
+    [TestMethod]
+    public void AMemberDeclaredWithNoAccessModifier_IsProjectVisible_ExceptAModuleVariableOrAConstant()
+    {
+        var module = Module("Mod1");
+        var constant = new VBConstantMemberSymbol(Root, module.Uri, "Limit", ScopeKind.Module, VBLongType.TypeInfo, R, R, AccessModifier.Implicit);
+
+        Assert.IsTrue(ScopeTreeBuilder.IsProjectVisible(Procedure(module.Uri, "DoWork")));
+        Assert.IsTrue(ScopeTreeBuilder.IsProjectVisible(Enum(module.Uri, "Colour", "Red").Enum));
+        Assert.IsFalse(ScopeTreeBuilder.IsProjectVisible(Field(module.Uri, "Total")));
+        Assert.IsFalse(ScopeTreeBuilder.IsProjectVisible(constant));
+    }
+
+    [TestMethod]
+    public void ASymbolWithNoAccessModifier_IsNotProjectVisible()
+    {
+        var module = Module("Mod1");
+        var procedure = Procedure(module.Uri, "DoWork");
+
+        Assert.IsFalse(ScopeTreeBuilder.IsProjectVisible(module));
+        Assert.IsFalse(ScopeTreeBuilder.IsProjectVisible(Local(procedure.Uri, "temp")));
+    }
 }

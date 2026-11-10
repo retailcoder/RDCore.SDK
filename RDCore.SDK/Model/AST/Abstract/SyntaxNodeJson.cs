@@ -187,6 +187,11 @@ public static class SyntaxNodeJson
     // a location: {"Uri": ..., "Range": [...]}, the Uri written only where it is not the one written last, in a payload (PayloadDocuments).
     private sealed class SourceLocationJsonConverter : JsonConverter<Source.SourceLocation>
     {
+        // the Uri is written as it was spelled, a path or a URI. Read as an absolute one first: off Windows, RelativeOrAbsolute reads a rooted path
+        // (/home/ws/Module1.bas) as a relative URI, which Absolute reads as the file it names. Only what no absolute URI can be made of is relative.
+        private static Uri LocationUri(string text)
+            => Uri.TryCreate(text, UriKind.Absolute, out var absolute) ? absolute : new Uri(text, UriKind.Relative);
+
         public override Source.SourceLocation Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             ExpectStart(ref reader, "location");
@@ -199,7 +204,7 @@ public static class SyntaxNodeJson
                 reader.Read();
                 if (string.Equals(name, nameof(Source.SourceLocation.Uri), StringComparison.OrdinalIgnoreCase))
                 {
-                    uri = reader.TokenType == JsonTokenType.Null ? null : new Uri(reader.GetString()!, UriKind.RelativeOrAbsolute);
+                    uri = reader.TokenType == JsonTokenType.Null ? null : LocationUri(reader.GetString()!);
                     if (payload is not null)
                     {
                         payload.Location = uri;

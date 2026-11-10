@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <!-- the single version source of this repository: its package and assemblies; a release tag must equal v<VersionPrefix>[-suffix], the suffix passed as -p:VersionSuffix. -->
-    <VersionPrefix>0.1.0</VersionPrefix>
+    <VersionPrefix>0.1.1</VersionPrefix>
   </PropertyGroup>
 
   <!-- what the package of this repository says about itself on nuget.org. -->
@@ -21,12 +21,16 @@
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <!-- nuget.org wants a PNG or a JPEG for a package's icon, not an .ico: the ducky of logo.ico, at 256 x 256. -->
     <PackageIcon>ducky.png</PackageIcon>
+    <!-- what nuget.org shows on the package's page: assets/nuget-readme.md, written for the package's readers and packed as README.md at the package's root.
+         The repository's own README.md is not packed. -->
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(IsPackable)' != 'false'">
     <None Include="$(MSBuildThisFileDirectory)assets/ducky.png" Pack="true" PackagePath="" Visible="false" />
     <!-- the license's text in the package, beside PackageLicenseExpression. -->
     <None Include="$(MSBuildThisFileDirectory)LICENSE" Pack="true" PackagePath="" Visible="false" />
+    <None Include="$(MSBuildThisFileDirectory)assets/nuget-readme.md" Pack="true" PackagePath="README.md" Visible="false" />
   </ItemGroup>
 
 </Project>

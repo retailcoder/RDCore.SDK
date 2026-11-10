@@ -17,17 +17,13 @@ namespace RDCore.SDK.Model.Types;
 public record class VBErrorType : VBIntrinsicType<int>
 {
     /// <summary>
-    /// Creates the <c>Error</c> data type. Use <see cref="TypeInfo"/>.
-    /// </summary>
-    public VBErrorType() : this(VBTypeNames.VBError) { }
-
-    /// <summary>
-    /// Creates a data type whose values are error values under another name.
+    /// Creates a data type whose values are error values: the <c>Error</c> data type itself (<see cref="TypeInfo"/>), or a kind of it under another name
+    /// (<see cref="VBMissingType"/>).
     /// </summary>
     /// <param name="name">The name of the data type.</param>
     protected VBErrorType(string name) : base(name) { }
 
-    private static readonly Lazy<VBErrorType> _instance = new(() => new(), LazyThreadSafetyMode.PublicationOnly);
+    private static readonly Lazy<VBErrorType> _instance = new(() => new(VBTypeNames.VBError), LazyThreadSafetyMode.PublicationOnly);
     /// <summary>
     /// The <c>Error</c> data type.
     /// </summary>
