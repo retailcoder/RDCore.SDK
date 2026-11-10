@@ -17,7 +17,11 @@ public interface IRDCoreServerProcess : IDisposable
     /// <summary>
     /// Runs a server executable with command-line arguments mapping the specified <c>LanguageClientSettings</c>.
     /// </summary>
-    /// <param name="relativePath">The path of the server executable, relative to the platform root.</param>
+    /// <param name="relativePath">
+    /// The path of the server executable, relative to the platform root, with or without <c>.exe</c>: a manifest written on Windows names
+    /// <c>RDCore.ParseServer.exe</c>, which is <c>RDCore.ParseServer</c> elsewhere. The executable is started as named when it is there, and as the other
+    /// spelling otherwise.
+    /// </param>
     /// <param name="pipeName">The name of the named pipe, passed to the server as <c>-n</c>.</param>
     /// <param name="tokenSource">The caller's cancellation token source.</param>
     /// <param name="mode">
@@ -158,7 +162,7 @@ public class RDCoreServerProcess(
 
         // the path is the platform manifest's, or an extension's that its manifest names: a platform starts only what is under its root, and starts it where the
         // check found it. What is in this process's own folder is its own (rdc starting rdc, its external host), whatever the root is said to be.
-        var fullPath = PlatformRootConfinement.Confined(PlatformEnvironment.Root, PlatformEnvironment.Resolve(relativePath), AppContext.BaseDirectory);
+        var fullPath = PlatformRootConfinement.Confined(PlatformEnvironment.Root, ExecutableOf(PlatformEnvironment.Resolve(relativePath)), AppContext.BaseDirectory);
         var workspace = Options.Value.Workspace.WorkspaceUri;
         var trace = LogLevel.Trace; // Options.Value.Server.TraceLevel;
         var verbose = true; //Options.Value.Server.Verbose;
@@ -190,6 +194,19 @@ public class RDCoreServerProcess(
         }
 
         return Task.CompletedTask;
+    }
+
+    // the executable as named, or else as this platform names it: a manifest written on Windows names an .exe, which an apphost elsewhere has no extension for,
+    // and one written elsewhere names none. Left as named when neither is there, so that the system says it can't find what the manifest names.
+    private string ExecutableOf(string named)
+    {
+        if (FileSystem.File.Exists(named))
+        {
+            return named;
+        }
+
+        var other = named.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ? named[..^4] : named + ".exe";
+        return FileSystem.File.Exists(other) ? other : named;
     }
 
     /// <summary>

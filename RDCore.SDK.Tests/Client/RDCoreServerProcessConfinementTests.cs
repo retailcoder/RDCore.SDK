@@ -174,4 +174,21 @@ public sealed class RDCoreServerProcessConfinementTests
 
         Assert.IsInstanceOfType<Win32Exception>(failed, failed.Message);
     }
+
+    // a manifest written on another system spells the executable as that system does: Server.exe on Windows, Server elsewhere. The one deployed here, an empty
+    // file, is what the system is asked to start, and it says it can't run it, not that it can't find it (2 is ENOENT, and ERROR_FILE_NOT_FOUND on Windows).
+    [TestMethod]
+    public async Task AnExecutableNamedAsAnotherSystemNamesIt_IsStartedAsDeployed()
+    {
+        var deployed = Path.Combine(_root, "Extensions", "Title", Executable);
+        Directory.CreateDirectory(Path.GetDirectoryName(deployed)!);
+        File.WriteAllText(deployed, string.Empty);
+        var named = OperatingSystem.IsWindows() ? "Server" : "Server.exe";
+
+        var failed = await StartAsync($"Extensions/Title/{named}");
+
+        var refused = (Win32Exception)failed;
+        Assert.AreNotEqual(2, refused.NativeErrorCode, refused.Message);
+        StringAssert.Contains(refused.Message, PlatformRootConfinement.RealPath(deployed));
+    }
 }
