@@ -1,7 +1,4 @@
-﻿using RDCore.SDK.Model.Symbols.Abstract;
-using RDCore.SDK.Runtime.Shared;
-using System.Collections.Concurrent;
-using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics.CodeAnalysis;
 
 namespace RDCore.SDK.Model.Symbols;
 
@@ -27,28 +24,6 @@ public sealed class ScopeTree
     /// The root scope: every lookup that is not bound sooner ends here.
     /// </summary>
     public LexicalScope Global { get; }
-
-    /// <summary>
-    /// What each name means as a value, where it was looked up from: a name is resolved against this tree once
-    /// (<c>ScopeTreeSymbolResolver.ResolveValue</c>).
-    /// </summary>
-    /// <remarks>
-    /// The resolution of a name is a function of the tree, which does not change once it is built: a symbol table that changes builds another tree, whose
-    /// resolutions are its own, and begin empty. Nothing is ever taken out, and nothing has to be - what a tree resolved is true of that tree. A name is the
-    /// same name in any case (MS-VBAL §3.3.5.1), as the tree declares it.
-    /// </remarks>
-    internal ConcurrentDictionary<ValueResolutionKey, SymbolResolutionResult> ValueResolutions { get; } = new();
-
-    /// <summary>
-    /// A name, and where it was looked up from.
-    /// </summary>
-    internal readonly record struct ValueResolutionKey(string Name, ScopeKind Scope, string Handle)
-    {
-        public bool Equals(ValueResolutionKey other)
-            => Scope == other.Scope && string.Equals(Name, other.Name, StringComparison.OrdinalIgnoreCase) && string.Equals(Handle, other.Handle, StringComparison.Ordinal);
-
-        public override int GetHashCode() => HashCode.Combine(StringComparer.OrdinalIgnoreCase.GetHashCode(Name), Scope, StringComparer.Ordinal.GetHashCode(Handle));
-    }
 
     /// <summary>
     /// The scope a name lookup should start from when it originates at <paramref name="uri"/>: the
