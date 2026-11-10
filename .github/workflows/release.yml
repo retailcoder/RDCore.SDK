@@ -38,7 +38,8 @@ jobs:
    - name: Resolve the version
      id: version
      run: |
-       prefix=$(grep -oP '(?<=<VersionPrefix>)[^<]+' Directory.Build.props)
+       # the element only: the comment above it names <VersionPrefix> too
+       prefix=$(grep -oP '^\s*<VersionPrefix>\K[^<]+' Directory.Build.props)
        if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
          tag="${GITHUB_REF_NAME}"
          # v<prefix> or v<prefix>-<suffix>, the prefix exactly as Directory.Build.props has it
