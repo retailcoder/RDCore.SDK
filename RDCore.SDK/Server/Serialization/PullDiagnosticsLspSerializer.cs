@@ -29,24 +29,22 @@ namespace RDCore.SDK.Server.Serialization;
 /// <c>textDocument/diagnostic</c> right up to the wire and no further.
 /// </para>
 /// <para>
-/// The throw is not survivable either. <c>OutputHandler.ProcessOutputStream</c> is one loop over one
+/// The throw also ends the connection's output. <c>OutputHandler.ProcessOutputStream</c> is one loop over one
 /// channel carrying every outbound frame; it catches, logs at <c>Trace</c>, and calls <c>Error</c>, which
 /// completes the writer and disposes the handler. One unserializable response therefore ends all output
 /// for the life of the process, and the trace line explaining it is routed over <c>window/logMessage</c>,
 /// which is the transport that has just been disposed.
 /// </para>
 /// <para>
-/// Fixed upstream in <c>v0.19.10</c>, which was tagged and never published to NuGet, so a version bump is
-/// not available.
+/// OmniSharp's fix is in its <c>v0.19.10</c> tag, which is not published to NuGet.
 /// </para>
 /// <para>
-/// <b>The contract resolver is put back at the point of use, because it has to be.</b>
+/// <b>The contract resolver is put back at the point of use.</b>
 /// <c>LspSerializer.Reset</c> assigns a brand new <c>LspContractResolver</c> straight onto
 /// <c>Settings</c>, bypassing <c>CreateSerializerSettings</c> entirely, and every <c>With*</c> method and
 /// <c>SetServerCapabilities</c> calls it while the client capabilities are being read. So a resolver set at
-/// construction is silently discarded during <c>initialize</c>, which looks exactly like the repair not
-/// working. <c>Reset</c> is private and the methods that call it are not virtual, so there is nothing to
-/// override; checking at the point of use is what is left.
+/// construction is discarded during <c>initialize</c>. <c>Reset</c> is private and the methods that call it
+/// are not virtual, so none of them can be overridden: the resolver is checked where it is used instead.
 /// </para>
 /// <para>
 /// <b>The converters are added once, at construction.</b> <c>Reset</c> replaces OmniSharp's own converters and

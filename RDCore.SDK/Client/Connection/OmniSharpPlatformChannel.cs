@@ -19,10 +19,10 @@ namespace RDCore.SDK.Client.Connection;
 /// </para>
 /// <para>
 /// The JSON is handed to OmniSharp as written by <see cref="RDCorePlatformJson.Options"/>, and handed back as OmniSharp read it: Newtonsoft only carries it, so the
-/// wire is the Protocol package's whatever OmniSharp's serializer would have made of the types.
+/// wire is the Protocol package's, whatever OmniSharp's serializer would have made of the types.
 /// </para>
 /// <para>
-/// 👉 A string that looks like an ISO 8601 date and time (19 to 40 characters, a digit first, a <c>T</c> at the eleventh) is written as it is, but is not always
+/// A string that looks like an ISO 8601 date and time (19 to 40 characters, a digit first, a <c>T</c> at the eleventh) is written as it is, but is not always
 /// <em>read</em> as it was: OmniSharp parses every incoming message with a reader of its own that takes such a string for a date, whatever its serializer says, and
 /// writes it back as the date it read. One with an offset, a <c>Z</c> or a fraction of a second then arrives otherwise (<c>"…12:34:56+02:00"</c> in the offset of the
 /// machine, <c>"….000Z"</c> without its fraction); one without, as VBA's <c>Format</c> writes them, arrives as it was. A channel that does not read through OmniSharp
