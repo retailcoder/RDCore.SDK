@@ -6,7 +6,9 @@ using RDCore.SDK.Client;
 using RDCore.SDK.Client.Connection;
 using RDCore.SDK.Platform;
 using RDCore.SDK.Platform.Protocol;
+using RDCore.SDK.Model.Source;
 using RDCore.SDK.Runtime.Abstract.Execution;
+using RDCore.SDK.Semantics.Refactoring;
 using RDCore.SDK.Server.Serialization;
 using System.IO.Pipelines;
 using System.Text.Json;
@@ -266,5 +268,81 @@ public sealed class RDCorePlatformClientWireTests
         Assert.AreEqual(RubberduckIndenterSettingsSource.SmartIndenterRegistry, applied?.Source);
         Assert.AreEqual("4", applied?.Settings["Formatting.IndentSpaces"]);
         Assert.AreEqual(1, answer.Applied);
+    }
+
+    [TestMethod]
+    [Timeout(60_000, CooperativeCancellation = true)]
+    public async Task ARefactorPrepare_ReachesTheServersHandler_AndItsChoicesAndNoticesComeBackAsTheServerWroteThem()
+    {
+        var module = new Uri("file:///c:/workspace/Module1.bas");
+        RefactorPrepareRequest? received = null;
+        using var connected = await ConnectAsync(server => server.OnRequest<RefactorPrepareRequest, RefactorPrepareResult>(RDCorePlatformProtocol.RefactorPrepare, (request, _) =>
+        {
+            received = request;
+            return Task.FromResult(new RefactorPrepareResult
+            {
+                Choices =
+                [
+                    new RefactorChoice { Id = "name", Kind = RefactorChoiceKind.Name, Label = "Name", Default = "Total" },
+                    new RefactorChoice
+                    {
+                        Id = "parameters", Kind = RefactorChoiceKind.List, Label = "Parameters", CanReorder = true,
+                        Items = [new RefactorItem { Id = "x", Label = "ByRef x As Long", Reason = "written here", Choices = [new RefactorChoice { Id = "byRef", Kind = RefactorChoiceKind.Flag, Default = "true" }] }],
+                    },
+                ],
+                Notices =
+                [
+                    new RefactorNotice { Code = "onErrorGoTo", Kind = RefactorNoticeKind.Change, Message = "m", Location = new SourceLocation(request.Uri!, request.Range) },
+                    new RefactorNotice { Code = "erl", Kind = RefactorNoticeKind.Note, Message = "n" },
+                ],
+            });
+        }));
+
+        var result = await connected.Platform.RefactorPrepareAsync(
+            new RefactorPrepareParams { Kind = RefactoringKinds.ExtractMethod, Uri = module, Range = new SourceRange(1, 0, 3, 7) }, CancellationToken.None);
+
+        Assert.AreEqual(RefactoringKinds.ExtractMethod, received?.Kind);
+        Assert.AreEqual(module, received?.Uri);
+        Assert.AreEqual(new SourceRange(1, 0, 3, 7), received?.Range);
+        Assert.AreEqual("Total", result.Choices[0].Default);
+        Assert.AreEqual(RefactorChoiceKind.List, result.Choices[1].Kind);
+        Assert.IsTrue(result.Choices[1].CanReorder);
+        Assert.AreEqual("written here", result.Choices[1].Items.Single().Reason);
+        Assert.AreEqual(RefactorChoiceKind.Flag, result.Choices[1].Items.Single().Choices.Single().Kind);
+        Assert.AreEqual(RefactorNoticeKind.Change, result.Notices[0].Kind);
+        Assert.AreEqual(new SourceLocation(module, new SourceRange(1, 0, 3, 7)), result.Notices[0].Location);
+        Assert.AreEqual(RefactorNoticeKind.Note, result.Notices[1].Kind);
+        Assert.IsNull(result.Notices[1].Location);
+    }
+
+    [TestMethod]
+    [Timeout(60_000, CooperativeCancellation = true)]
+    public async Task ARefactorApply_ReachesTheServersHandler_WithTheAnswers_AndTheEditComesBackAsTheServerWroteIt()
+    {
+        var module = new Uri("file:///c:/workspace/Module1.bas");
+        RefactorApplyRequest? received = null;
+        using var connected = await ConnectAsync(server => server.OnRequest<RefactorApplyRequest, RefactorWorkspaceEdit>(RDCorePlatformProtocol.RefactorApply, (request, _) =>
+        {
+            received = request;
+            return Task.FromResult(new RefactorWorkspaceEdit
+            {
+                Documents = [new RefactorDocumentEdit { Uri = request.Uri, Version = 2, Edits = [new RefactorTextEdit { Range = request.Range, NewText = "Total x" }] }],
+            });
+        }));
+
+        var edit = await connected.Platform.RefactorApplyAsync(new RefactorApplyParams
+        {
+            Kind = RefactoringKinds.ExtractMethod, Uri = module, Range = new SourceRange(1, 0, 3, 7),
+            Answers = [new RefactorAnswer { Id = "parameters", Items = [new RefactorItemAnswer { Id = "x", Answers = [new RefactorAnswer { Id = "byRef", Value = "false" }] }] }],
+            Accepted = ["onErrorGoTo"],
+        }, CancellationToken.None);
+
+        Assert.AreEqual("false", received?.Answers.Single().Items.Single().Answers.Single().Value);
+        CollectionAssert.AreEqual(new[] { "onErrorGoTo" }, received?.Accepted.ToArray());
+        var document = edit.Documents.Single();
+        Assert.AreEqual(module, document.Uri);
+        Assert.AreEqual(2, document.Version);
+        Assert.AreEqual(new SourceRange(1, 0, 3, 7), document.Edits.Single().Range);
+        Assert.AreEqual("Total x", document.Edits.Single().NewText);
     }
 }
