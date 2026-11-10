@@ -250,8 +250,9 @@ public abstract class RDCoreClientApp : IRDCoreClientApp
             _ => throw new NotSupportedException($"Cannot resolve a server executable for platform component '{PlatformComponent}'.")
         };
 
-        // keeps two extensions from sharing a pipe base name (the random suffix already separates instances).
-        var pipeDiscriminator = ExtensionInfo?.Title is { Length: > 0 } extensionTitle ? $".{extensionTitle}" : string.Empty;
+        // ExpectedComponent is what we are connecting TO (a proxy's PlatformComponent is the child's;
+        // the standalone client connects to the language server).
+        var child = PlatformComponent == CoreServerComponent.ClientApp ? CoreServerComponent.LanguageServer : PlatformComponent;
 
         _connection = _connectionFactory.Create();
         _started.TrySetResult();
@@ -261,12 +262,11 @@ public abstract class RDCoreClientApp : IRDCoreClientApp
         await _connection.ConnectAsync(new ChildConnectionRequest
         {
             ServerExecutablePath = path,
-            PipeName = $"RDCore.{PlatformComponent}{pipeDiscriminator}.Pipe.{Random.Shared.NextInt64()}",
+            // the child's own name for it: an extension's title would make it too long to be a pipe on macOS.
+            PipeName = PlatformPipeName.New(child),
             // the environment host is rdc.exe itself, run in host mode:
             Mode = PlatformComponent == CoreServerComponent.EnvironmentHost ? RDCoreServerProcess.HostMode : null,
-            // ExpectedComponent is what we are connecting TO (a proxy's PlatformComponent is the child's;
-            // the standalone client connects to the language server).
-            ExpectedComponent = PlatformComponent == CoreServerComponent.ClientApp ? CoreServerComponent.LanguageServer : PlatformComponent,
+            ExpectedComponent = child,
             ExpectedCapabilities = GetExpectedCapabilities(),
             ConnectTimeoutSeconds = server.ConnectTimeoutSeconds,
             MaxRestartAttempts = server.MaxRestartAttempts,
