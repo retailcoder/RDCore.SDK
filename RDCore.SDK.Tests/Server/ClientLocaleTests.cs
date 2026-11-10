@@ -148,4 +148,20 @@ public sealed class ClientLocaleTests
 
         Assert.AreEqual("fr-CA", ClientLocale.Of(null, RDCoreServerApp.ReadInitializationOptions(sent)));
     }
+
+    // a platform's client in French, and a server on an English machine: the server applies what the client says, and a thread it begins later speaks it too.
+    [TestMethod]
+    public async Task WhatAPlatformsClientInFrenchSays_IsTheServersLanguage_OnAThreadItBeginsLater()
+    {
+        var said = RDCore.SDK.Client.RDCoreClientApp.InitializationOptionsOf(null, CultureInfo.GetCultureInfo("fr-CA"), new());
+        var sent = JToken.FromObject(said);
+        CultureInfo.DefaultThreadCurrentUICulture = null;
+        CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("en-US");
+
+        Assert.IsNotNull(ClientLocale.Apply(ClientLocale.Of(null, RDCoreServerApp.ReadInitializationOptions(sent))));
+        var later = await Task.Factory.StartNew(() => CultureInfo.CurrentUICulture.Name, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+
+        Assert.AreEqual("fr-CA", said.Locale);
+        Assert.AreEqual("fr-CA", later);
+    }
 }
