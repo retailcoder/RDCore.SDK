@@ -76,7 +76,7 @@ jobs:
    - name: Pack
      run: dotnet pack RDCore.SDK.slnx --configuration Release --no-build -p:VersionSuffix=${{ steps.version.outputs.suffix }} --output packages
 
-   - name: The package is the version, the protocol inside it
+   - name: The package is the version, and holds the protocol
      run: |
        ls packages
        v="${{ steps.version.outputs.version }}"
