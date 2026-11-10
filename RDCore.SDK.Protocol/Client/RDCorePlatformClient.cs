@@ -141,6 +141,26 @@ public sealed class RDCorePlatformClient(IRDCorePlatformChannel channel)
         => Send<SessionDebugExecuteParams, DebugEvaluateResult>(RDCorePlatformProtocol.SessionDebugExecute, request, token);
 
     /// <summary>
+    /// Asks what a refactoring of a document's range asks its user, and what it refuses or would change (<see cref="RDCorePlatformProtocol.RefactorPrepare"/>), for
+    /// a client that expects <see cref="Refactoring"/>: what its dialog shows.
+    /// </summary>
+    /// <param name="request">The refactoring, by its kind, and the document and range it is of.</param>
+    /// <param name="token">Cancels the request.</param>
+    /// <returns>The choices, each with its default, and the notices: the refusals, and the changes the user accepts.</returns>
+    public Task<RefactorPrepareResult> RefactorPrepareAsync(RefactorPrepareParams request, CancellationToken token)
+        => Send<RefactorPrepareParams, RefactorPrepareResult>(RDCorePlatformProtocol.RefactorPrepare, request, token);
+
+    /// <summary>
+    /// Asks for the edit a refactoring makes with its user's answers (<see cref="RDCorePlatformProtocol.RefactorApply"/>), which the client applies. A refactoring
+    /// that is refused, or whose answers it refuses, fails the request, its message saying why in the language of the user interface.
+    /// </summary>
+    /// <param name="request">The refactoring, the document and range it is of, the user's answers, and the changes the user accepts.</param>
+    /// <param name="token">Cancels the request.</param>
+    /// <returns>The edit of the workspace, which the language server does not apply.</returns>
+    public Task<RefactorWorkspaceEdit> RefactorApplyAsync(RefactorApplyParams request, CancellationToken token)
+        => Send<RefactorApplyParams, RefactorWorkspaceEdit>(RDCorePlatformProtocol.RefactorApply, request, token);
+
+    /// <summary>
     /// Shows the program's <c>MsgBox</c> calls (<see cref="RDCorePlatformProtocol.SessionMessageBox"/>), for a client that expects <see cref="SessionInteraction"/>.
     /// </summary>
     /// <param name="handler">Shows a message box and answers the button the user chose; <see cref="MessageBoxResult.NotHandled"/> when it showed none.</param>

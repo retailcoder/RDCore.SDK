@@ -14,7 +14,7 @@ namespace RDCore.SDK.Platform.Protocol;
 /// (<see cref="RefactorChoice"/>).
 /// </para>
 /// </remarks>
-public sealed record class RefactorPrepareParams
+public record class RefactorPrepareParams
 {
     /// <summary>
     /// Which refactoring: the kind of its code action (<strong>LSP 3.17</strong> §Code Action Request), as the language server offers it.
@@ -43,7 +43,8 @@ public sealed record class RefactorPrepareResult
     public IReadOnlyList<RefactorChoice> Choices { get; init; } = [];
 
     /// <summary>
-    /// Why the refactoring is refused, and what it would change of what the code does, which the user accepts (<see cref="RefactorNoticeKind"/>).
+    /// Why the refactoring is refused, what it would change of what the code does, which the user accepts, and what the user should know of it
+    /// (<see cref="RefactorNoticeKind"/>).
     /// </summary>
     public IReadOnlyList<RefactorNotice> Notices { get; init; } = [];
 }
@@ -186,10 +187,15 @@ public enum RefactorNoticeKind
     /// (<see cref="RefactorApplyParams.Accepted"/>).
     /// </summary>
     Change,
+
+    /// <summary>
+    /// What the user should know of the refactoring, which does not need accepting: the refactoring is applied whether or not the user has seen it.
+    /// </summary>
+    Note,
 }
 
 /// <summary>
-/// Why a refactoring is refused, or what it would change of what the code does.
+/// Why a refactoring is refused, what it would change of what the code does, or what the user should know of it.
 /// </summary>
 public sealed record class RefactorNotice
 {
@@ -199,7 +205,7 @@ public sealed record class RefactorNotice
     public string Code { get; init; } = string.Empty;
 
     /// <summary>
-    /// Whether it refuses the refactoring, or says a change the user accepts.
+    /// Whether it refuses the refactoring, says a change the user accepts, or says what the user should know.
     /// </summary>
     public RefactorNoticeKind Kind { get; init; }
 
@@ -228,7 +234,7 @@ public sealed record class RefactorNotice
 /// <remarks>
 /// The edit is not applied by the language server: the client applies it, as it applies the edit of a code action.
 /// </remarks>
-public sealed record class RefactorApplyParams
+public record class RefactorApplyParams
 {
     /// <inheritdoc cref="RefactorPrepareParams.Kind"/>
     public string Kind { get; init; } = string.Empty;

@@ -18,4 +18,16 @@ public static class RefactoringCommands
     /// references (<strong>LSP 3.17</strong> <c>Location[]</c>): the arguments of VS Code's <c>editor.action.showReferences</c>.
     /// </summary>
     public const string ShowReferences = "rdcore.showReferences";
+
+    /// <summary>
+    /// Applies a refactoring with the client's own dialog: the command of a refactoring's code action, offered to a client that expects the
+    /// <see cref="RDCore.SDK.Client.Refactoring"/> capability. Its one argument is the refactoring's <see cref="RDCore.SDK.Platform.Protocol.RefactorPrepareParams"/>:
+    /// the client sends it as <see cref="RDCore.SDK.Client.RDCorePlatformProtocol.RefactorPrepare"/>, shows its user the choices and notices it is answered, and
+    /// sends <see cref="RDCore.SDK.Client.RDCorePlatformProtocol.RefactorApply"/> with the user's answers, unless the user cancels; then it applies the edit it is
+    /// answered.
+    /// </summary>
+    /// <remarks>
+    /// A client that does not expect the capability is offered the same code action with its edit, which the refactoring makes with its defaults.
+    /// </remarks>
+    public const string Refactor = "rdcore.refactor";
 }
