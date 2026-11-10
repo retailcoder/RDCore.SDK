@@ -25,9 +25,30 @@
     <PackageReference Include="System.IO.Abstractions" Version="22.2.0" />
   </ItemGroup>
 
+  <!-- the protocol ships inside this package as its own assembly, so it is no package dependency: its assembly, xmldoc and fr resources
+       go in lib/, and its symbols in the .snupkg. -->
   <ItemGroup>
-    <ProjectReference Include="..\RDCore.SDK.Protocol\RDCore.SDK.Protocol.csproj" />
+    <ProjectReference Include="..\RDCore.SDK.Protocol\RDCore.SDK.Protocol.csproj" PrivateAssets="all" />
   </ItemGroup>
+
+  <PropertyGroup>
+    <TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);IncludeProtocolInPackage</TargetsForTfmSpecificBuildOutput>
+    <TargetsForTfmSpecificDebugSymbolsInPackage>$(TargetsForTfmSpecificDebugSymbolsInPackage);IncludeProtocolSymbolsInPackage</TargetsForTfmSpecificDebugSymbolsInPackage>
+  </PropertyGroup>
+
+  <Target Name="IncludeProtocolInPackage" DependsOnTargets="ResolveReferences">
+    <ItemGroup>
+      <_ProtocolOutput Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.ReferenceSourceTarget)' == 'ProjectReference' And '%(ReferenceCopyLocalPaths.Extension)' != '.pdb'" />
+      <BuildOutputInPackage Include="@(_ProtocolOutput)" TargetPath="%(_ProtocolOutput.DestinationSubDirectory)%(_ProtocolOutput.Filename)%(_ProtocolOutput.Extension)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="IncludeProtocolSymbolsInPackage" DependsOnTargets="ResolveReferences">
+    <ItemGroup>
+      <_ProtocolSymbols Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.ReferenceSourceTarget)' == 'ProjectReference' And '%(ReferenceCopyLocalPaths.Extension)' == '.pdb'" />
+      <TfmSpecificDebugSymbolsFile Include="@(_ProtocolSymbols)" TargetFramework="$(TargetFramework)" TargetPath="%(_ProtocolSymbols.Filename)%(_ProtocolSymbols.Extension)" />
+    </ItemGroup>
+  </Target>
 
   <ItemGroup>
     <Compile Update="ServerOptionsHelpText.Designer.cs">

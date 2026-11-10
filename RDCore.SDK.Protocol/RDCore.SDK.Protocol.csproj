@@ -11,6 +11,8 @@
     <WarningsAsErrors>CS1591</WarningsAsErrors>
     <AssemblyTitle>RDCore SDK Protocol</AssemblyTitle>
     <Description>The messages a client exchanges with the RDCore platform, with no dependency on the platform itself.</Description>
+    <!-- it ships inside the RDCore.SDK package. -->
+    <IsPackable>false</IsPackable>
   </PropertyGroup>
 
   <ItemGroup>
