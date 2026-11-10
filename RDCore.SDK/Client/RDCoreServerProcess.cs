@@ -19,8 +19,8 @@ public interface IRDCoreServerProcess : IDisposable
     /// </summary>
     /// <param name="relativePath">
     /// The path of the server executable, relative to the platform root, with or without <c>.exe</c>: a manifest written on Windows names
-    /// <c>RDCore.ParseServer.exe</c>, which is <c>RDCore.ParseServer</c> elsewhere. The executable is started as named when it is there, and as the other
-    /// spelling otherwise.
+    /// <c>RDCore.ParseServer.exe</c>, which is <c>RDCore.ParseServer</c> elsewhere. The executable is started as named when it is there, and in the other
+    /// spelling otherwise. When neither is there, the start fails for the path as named.
     /// </param>
     /// <param name="pipeName">The name of the named pipe, passed to the server as <c>-n</c>.</param>
     /// <param name="tokenSource">The caller's cancellation token source.</param>
@@ -196,8 +196,8 @@ public class RDCoreServerProcess(
         return Task.CompletedTask;
     }
 
-    // the executable as named, or else as this platform names it: a manifest written on Windows names an .exe, which an apphost elsewhere has no extension for,
-    // and one written elsewhere names none. Left as named when neither is there, so that the system says it can't find what the manifest names.
+    // the executable as named, or else in the other spelling: a manifest written on Windows names an .exe, and an apphost elsewhere has no extension; a
+    // manifest written elsewhere names none. Left as named when neither is there, so that the system reports the path the manifest names as not found.
     private string ExecutableOf(string named)
     {
         if (FileSystem.File.Exists(named))

@@ -176,7 +176,7 @@ public sealed class RDCoreServerProcessConfinementTests
     }
 
     // a manifest written on another system spells the executable as that system does: Server.exe on Windows, Server elsewhere. The one deployed here, an empty
-    // file, is what the system is asked to start, and it says it can't run it, not that it can't find it (2 is ENOENT, and ERROR_FILE_NOT_FOUND on Windows).
+    // file, is what the system is asked to start: it refuses to run it, with an error other than not found (2, ENOENT, and ERROR_FILE_NOT_FOUND on Windows).
     [TestMethod]
     public async Task AnExecutableNamedAsAnotherSystemNamesIt_IsStartedAsDeployed()
     {

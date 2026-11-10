@@ -105,8 +105,8 @@ public class ExtensionsClient(
 
         // reflect the managed assembly (the companion .dll next to the launch executable) for its name,
         // version, publisher metadata, and advertised platform capabilities. The executable is RDCore.Diagnostics.exe on Windows and
-        // RDCore.Diagnostics elsewhere, and its assembly is RDCore.Diagnostics.dll on both: only an .exe is taken off, since a name
-        // without one has no extension to change (".Diagnostics" is not one).
+        // RDCore.Diagnostics elsewhere, and its assembly is RDCore.Diagnostics.dll on both. Only an .exe is taken off: Path.ChangeExtension
+        // would take the ".Diagnostics" of RDCore.Diagnostics for an extension, and load RDCore.dll.
         var assemblyStem = executablePath.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ? executablePath[..^4] : executablePath;
         var assembly = Assembly.LoadFrom(assemblyStem + ".dll");
         var assemblyName = assembly.GetName();
