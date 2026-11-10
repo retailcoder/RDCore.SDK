@@ -55,12 +55,9 @@ public readonly record struct RuntimeSemanticsEvaluationResult<TValue>(
     VBTypedValue? IRuntimeSemanticsEvaluationResult.Result => Result;
 
     /// <inheritdoc cref="RuntimeSemanticsEvaluationResult.Success(VBTypedValue)"/>
-    /// <param name="result">The successfully evaluated <em>runtime semantics evaluation</em> result.</param>
     public static RuntimeSemanticsEvaluationResult<TValue> Success(TValue result) => new(result, null);
 
     /// <inheritdoc cref="RuntimeSemanticsEvaluationResult.Error(IVBRaisableError, VBTypedValue?)"/>
-    /// <param name="error">The runtime error metadata describing the evaluation failure.</param>
-    /// <param name="result">The result value assigned before the failure, if any.</param>
     public static RuntimeSemanticsEvaluationResult<TValue> Error(IVBRaisableError error, TValue? result = null) => new(result, error);
 
     /// <inheritdoc cref="RuntimeSemanticsEvaluationResult.InternalError"/>

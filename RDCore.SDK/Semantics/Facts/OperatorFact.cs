@@ -42,15 +42,16 @@ public abstract record class OperatorFact(
     public SourceLocation? OperatorLocation { get; init; }
 }
 
-/// <summary>An operation of an arithmetic operator (<strong>MS-VBAL 5.6.9.3</strong>).</summary>
+/// <summary>
+/// An operation of an arithmetic operator (<strong>MS-VBAL 5.6.9.3</strong>).
+/// </summary>
 /// <param name="Node">The <c>Identity</c> of the syntax node the operation is evaluated for.</param>
-/// <param name="Location">Where in the document the operation is.</param>
+/// <param name="Location">Where in the document the operation is: the whole expression, operands included, where a run-time error of the operation is located.</param>
 /// <param name="Operator">The operator: one of the <c>Tokens</c> operators.</param>
 /// <param name="EffectiveType">The <em>effective type</em> of the operation, if it has one.</param>
 /// <param name="IsValueKnown">Whether every operand of the operation is known, as opposed to a value its type merely allows.</param>
 /// <param name="Error">The run-time error the operation raises. Only stated when the operands are known, or when their types alone guarantee it.</param>
 /// <param name="Flags">What is known of the operation.</param>
-/// <inheritdoc cref="OperatorFact"/>
 public sealed record class ArithmeticOperatorFact(
     SyntaxNodeId Node,
     SourceLocation Location,
@@ -61,16 +62,17 @@ public sealed record class ArithmeticOperatorFact(
     ArithmeticOperatorSemanticFlags Flags)
     : OperatorFact(Node, Location, Operator, EffectiveType, IsValueKnown, Error);
 
-/// <summary>An operation of a relational operator (<strong>MS-VBAL 5.6.9.5</strong>).</summary>
+/// <summary>
+/// An operation of a relational operator (<strong>MS-VBAL 5.6.9.5</strong>).
+/// </summary>
 /// <param name="Node">The <c>Identity</c> of the syntax node the operation is evaluated for.</param>
-/// <param name="Location">Where in the document the operation is.</param>
+/// <param name="Location">Where in the document the operation is: the whole expression, operands included, where a run-time error of the operation is located.</param>
 /// <param name="Operator">The operator: one of the <c>Tokens</c> operators.</param>
 /// <param name="EffectiveType">The <em>effective type</em> of the operation, if it has one.</param>
 /// <param name="IsValueKnown">Whether every operand of the operation is known, as opposed to a value its type merely allows.</param>
 /// <param name="Error">The run-time error the operation raises. Only stated when the operands are known, or when their types alone guarantee it.</param>
 /// <param name="Flags">What is known of the operation.</param>
 /// <param name="Comparison">How the operation compares <c>String</c> values where it is evaluated.</param>
-/// <inheritdoc cref="OperatorFact"/>
 public sealed record class ComparisonOperatorFact(
     SyntaxNodeId Node,
     SourceLocation Location,
@@ -82,15 +84,16 @@ public sealed record class ComparisonOperatorFact(
     StringComparisonRules Comparison)
     : OperatorFact(Node, Location, Operator, EffectiveType, IsValueKnown, Error);
 
-/// <summary>An operation of a logical operator (<strong>MS-VBAL 5.6.9.8</strong>).</summary>
+/// <summary>
+/// An operation of a logical operator (<strong>MS-VBAL 5.6.9.8</strong>).
+/// </summary>
 /// <param name="Node">The <c>Identity</c> of the syntax node the operation is evaluated for.</param>
-/// <param name="Location">Where in the document the operation is.</param>
+/// <param name="Location">Where in the document the operation is: the whole expression, operands included, where a run-time error of the operation is located.</param>
 /// <param name="Operator">The operator: one of the <c>Tokens</c> operators.</param>
 /// <param name="EffectiveType">The <em>effective type</em> of the operation, if it has one.</param>
 /// <param name="IsValueKnown">Whether every operand of the operation is known, as opposed to a value its type merely allows.</param>
 /// <param name="Error">The run-time error the operation raises. Only stated when the operands are known, or when their types alone guarantee it.</param>
 /// <param name="Flags">What is known of the operation.</param>
-/// <inheritdoc cref="OperatorFact"/>
 public sealed record class LogicalOperatorFact(
     SyntaxNodeId Node,
     SourceLocation Location,
@@ -101,15 +104,16 @@ public sealed record class LogicalOperatorFact(
     LogicalOperatorSemanticFlags Flags)
     : OperatorFact(Node, Location, Operator, EffectiveType, IsValueKnown, Error);
 
-/// <summary>An operation of the concatenation operator (<strong>MS-VBAL 5.6.9.4</strong>).</summary>
+/// <summary>
+/// An operation of the concatenation operator (<strong>MS-VBAL 5.6.9.4</strong>).
+/// </summary>
 /// <param name="Node">The <c>Identity</c> of the syntax node the operation is evaluated for.</param>
-/// <param name="Location">Where in the document the operation is.</param>
+/// <param name="Location">Where in the document the operation is: the whole expression, operands included, where a run-time error of the operation is located.</param>
 /// <param name="Operator">The operator: one of the <c>Tokens</c> operators.</param>
 /// <param name="EffectiveType">The <em>effective type</em> of the operation, if it has one.</param>
 /// <param name="IsValueKnown">Whether every operand of the operation is known, as opposed to a value its type merely allows.</param>
 /// <param name="Error">The run-time error the operation raises. Only stated when the operands are known, or when their types alone guarantee it.</param>
 /// <param name="Flags">What is known of the operation.</param>
-/// <inheritdoc cref="OperatorFact"/>
 public sealed record class ConcatOperatorFact(
     SyntaxNodeId Node,
     SourceLocation Location,
@@ -139,7 +143,6 @@ public sealed record class ConcatOperatorFact(
 /// <param name="Member">The name of the member that is accessed, as the code writes it or, when the code does not name it, as the class declares it;
 /// <see langword="null"/> when there is no telling which member it is (the object is not known, or is late-bound).</param>
 /// <param name="Flags">What is known of the access.</param>
-/// <inheritdoc cref="OperatorFact"/>
 public sealed record class MemberAccessFact(
     SyntaxNodeId Node,
     SourceLocation Location,
