@@ -21,7 +21,8 @@
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <!-- nuget.org wants a PNG or a JPEG for a package's icon, not an .ico: the ducky of logo.ico, at 256 x 256. -->
     <PackageIcon>ducky.png</PackageIcon>
-    <!-- what nuget.org shows on the package's page: assets/nuget-readme.md, which is for the package's readers, not the repository's (README.md). -->
+    <!-- what nuget.org shows on the package's page: assets/nuget-readme.md, written for the package's readers and packed as README.md at the package's root.
+         The repository's own README.md is not packed. -->
     <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
