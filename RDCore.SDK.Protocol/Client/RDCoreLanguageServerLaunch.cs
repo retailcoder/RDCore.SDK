@@ -218,9 +218,10 @@ public sealed class RDCoreLanguageServerLaunch
     }
 
     /// <summary>
-    /// A new pipe name for a language server, one no other instance has: <c>RDCore.LanguageServer.Pipe.&lt;random&gt;</c>.
+    /// A new pipe name for a language server, one no other instance has: <see cref="PlatformPipeName.New"/> of
+    /// <see cref="CoreServerComponent.LanguageServer"/>, short enough to be a pipe on every supported system.
     /// </summary>
-    public static string NewPipeName() => $"RDCore.LanguageServer.Pipe.{Random.Shared.NextInt64()}";
+    public static string NewPipeName() => PlatformPipeName.New(CoreServerComponent.LanguageServer);
 
     /// <summary>
     /// The start of the language server as a <see cref="ProcessStartInfo"/>, for a client that starts it itself.
