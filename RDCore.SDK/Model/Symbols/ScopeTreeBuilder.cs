@@ -213,10 +213,18 @@ public static class ScopeTreeBuilder
         _ => false,
     };
 
-    // MS-VBAL §5.2.3 project-level visibility: an explicit Public / Global / Friend member is visible
-    // to sibling modules; a Private one is not; an implicit modifier makes a procedure-like member
-    // Public but a module variable or constant Private.
-    internal static bool IsProjectVisible(Symbol symbol)
+    /// <summary>
+    /// Whether a member of a module is visible to the other modules of its project (<strong>MS-VBAL §5.2.3</strong>): the project scope places it
+    /// (see <see cref="Build"/>), and a name resolver binds it from a sibling module.
+    /// </summary>
+    /// <remarks>
+    /// A member declared <c>Public</c>, <c>Global</c> or <c>Friend</c> is visible, and one declared <c>Private</c> is not. A member declared with no access
+    /// modifier is visible, except a module variable or a constant, which is private by default. A symbol that is not an
+    /// <see cref="AccessibleTypedSymbol"/> has no access modifier, and is not visible.
+    /// </remarks>
+    /// <param name="symbol">The member to check.</param>
+    /// <returns><see langword="true"/> when the other modules of the project see <paramref name="symbol"/>.</returns>
+    public static bool IsProjectVisible(Symbol symbol)
     {
         if (symbol is not AccessibleTypedSymbol accessible)
         {
