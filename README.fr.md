@@ -17,7 +17,7 @@ La plateforme construite sur ces bibliothèques, incluant le runtime RD-VBA, se 
 La licence MIT de [LICENSE](LICENSE) couvre les bibliothèques de ce dépôt. Une version française de la licence est disponible sur demande.
 
 ## 📊 État du projet
-RDCore est en développement **pré-alpha** actif, et ces bibliothèques avec lui : leur API changera encore avant la version 1.0.
+Ces bibliothèques sont en version **alpha** : leur API changera encore avant la version 1.0.
 
 **Contributions**  
 
@@ -43,7 +43,7 @@ dotnet test RDCore.SDK.slnx
 
 ---
 ### Voir aussi
-- [La référence de l'API du SDK](https://rubberduck-vba.github.io/RDCore/api/RDCore.SDK.Model.Errors.VBCompileErrorId.html)
+- [La référence de l'API du SDK](https://rubberduck-vba.github.io/RDCore.SDK/api/RDCore.SDK.html)
 - [RDCore](https://github.com/rubberduck-vba/RDCore)
 - [CONTRIBUTING.md](CONTRIBUTING.md)
 - [CODE_OF_CONDUCT.fr.md](CODE_OF_CONDUCT.fr.md)
@@ -54,7 +54,7 @@ dotnet test RDCore.SDK.slnx
 
 <hr/>
 <p align='left' style='margin-left: 32px;'>
-<a href='https://rubberduck-vba.github.io/RDCore/index.fr.html'>ACCUEIL</a> • <a href='https://rubberduck-vba.github.io/RDCore/index.html'>HOME</a>  | ℹ️ <a href='https://rubberduck-vba.github.io/RDCore/introduction.fr.html'>BIENVENUE</a> • <a href='https://rubberduck-vba.github.io/RDCore/introduction.html'>WELCOME</a>  | 🧩 <a href='https://rubberduck-vba.github.io/RDCore/getting-started.fr.html'>BÂTISSONS</a> • <a href='https://rubberduck-vba.github.io/RDCore/getting-started.html'>BUILD</a>  | <a href='https://rubberduck-vba.github.io/RDCore/specs/rd-vbal.html'><strong>RD-VBAL</strong></a>  |  <a href='https://rubberduck-vba.github.io/RDCore/api/RDCore.SDK.Model.Errors.VBCompileErrorId.html'>SDK</a>  | 🌐 <a href='https://rubberduckvba.ca'>rubberduckvba.ca</a>
+<a href='https://rubberduck-vba.github.io/RDCore/index.fr.html'>ACCUEIL</a> • <a href='https://rubberduck-vba.github.io/RDCore/index.html'>HOME</a>  | ℹ️ <a href='https://rubberduck-vba.github.io/RDCore/introduction.fr.html'>BIENVENUE</a> • <a href='https://rubberduck-vba.github.io/RDCore/introduction.html'>WELCOME</a>  | 🧩 <a href='https://rubberduck-vba.github.io/RDCore/getting-started.fr.html'>BÂTISSONS</a> • <a href='https://rubberduck-vba.github.io/RDCore/getting-started.html'>BUILD</a>  | <a href='https://rubberduck-vba.github.io/RDCore/specs/rd-vbal.html'><strong>RD-VBAL</strong></a>  |  <a href='https://rubberduck-vba.github.io/RDCore.SDK/api/RDCore.SDK.html'>SDK</a>  | 🌐 <a href='https://rubberduckvba.ca'>rubberduckvba.ca</a>
 </p>
 <hr/>
 <p align='center'><img alt='Logo™ 9562-7303 Québec inc.' src='./assets/vector-ducky.svg' style='width:200px; align:center;' /></p>
