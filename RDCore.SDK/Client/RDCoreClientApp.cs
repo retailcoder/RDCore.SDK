@@ -250,8 +250,8 @@ public abstract class RDCoreClientApp : IRDCoreClientApp
             _ => throw new NotSupportedException($"Cannot resolve a server executable for platform component '{PlatformComponent}'.")
         };
 
-        // ExpectedComponent is what we are connecting TO (a proxy's PlatformComponent is the child's;
-        // the standalone client connects to the language server).
+        // the component this connects to: a proxy's PlatformComponent is the child's, and the standalone client connects to the
+        // language server.
         var child = PlatformComponent == CoreServerComponent.ClientApp ? CoreServerComponent.LanguageServer : PlatformComponent;
 
         _connection = _connectionFactory.Create();

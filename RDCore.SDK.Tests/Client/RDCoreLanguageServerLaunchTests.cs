@@ -107,14 +107,14 @@ public sealed class RDCoreLanguageServerLaunchTests
         Assert.AreEqual(first.PipeName, first.Arguments[1]);
     }
 
-    // a Mac's temporary folder, where .NET makes a pipe the socket CoreFxPipe_<name>: its path is capped at 104 characters, so a name has 44. Checked as a Mac
-    // has it, on every system: Linux's /tmp/ leaves more room than any name takes.
+    // a Mac's temporary folder, where .NET makes a pipe the socket CoreFxPipe_<name>: its path is capped at 104 characters, so a name
+    // has 44. Checked as a Mac has it, on every system: Linux's /tmp/ leaves more room than any name takes.
     [TestMethod]
     public void ANewPipeName_IsAPipeOnMacOS()
     {
         const string macTemporaryFolder = "/var/folders/h5/t85nd63d71x27_8gl5gw3l_w0000gn/T/";
 
-        // the names are random: enough of them for the longest a name can be to be among them.
+        // the random part has a fixed length, and the longest of a hundred names stands for every one.
         var longest = Enumerable.Range(0, 100).Select(_ => RDCoreLanguageServerLaunch.NewPipeName()).MaxBy(name => name.Length)!;
 
         var socket = $"{macTemporaryFolder}CoreFxPipe_{longest}";

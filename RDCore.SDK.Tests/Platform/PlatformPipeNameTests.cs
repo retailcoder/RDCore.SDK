@@ -4,13 +4,13 @@ using RDCore.SDK.Platform;
 namespace RDCore.Tests.Platform;
 
 /// <summary>
-/// The name of a pipe of the platform is a pipe on every supported system: on macOS, the socket .NET makes of it in the temporary folder has a path of at most 104
-/// characters, with room to spare.
+/// The name of a pipe of the platform is a pipe on every supported system: on macOS, the socket .NET makes of it in the temporary
+/// folder has a path of at most 104 characters, with room to spare.
 /// </summary>
 [TestClass]
 public sealed class PlatformPipeNameTests
 {
-    // a Mac's $TMPDIR, as long as a Mac's is, and the cap on a socket's path there. Checked as a Mac has it, on every system.
+    // a Mac's $TMPDIR, 49 characters, and the cap on a socket's path there. Checked as a Mac has it, on every system.
     private const string MacTemporaryFolder = "/var/folders/h5/t85nd63d71x27_8gl5gw3l_w0000gn/T/";
     private const int MacSocketPathCap = 104;
 
@@ -32,7 +32,8 @@ public sealed class PlatformPipeNameTests
         StringAssert.Matches(name, new System.Text.RegularExpressions.Regex("^rdc-[a-z]+-[0-9a-z]{12}$"));
     }
 
-    // what is left once a name is as long as one can be: a longer temporary folder, and a suffix a component appends for a second pipe of its own (".Calls").
+    // what is left once a name is as long as one can be: room for a longer temporary folder, and for a suffix a component appends for a
+    // second pipe of its own (".Calls").
     [TestMethod]
     public void TheLongestName_LeavesRoomOnMacOS()
     {
