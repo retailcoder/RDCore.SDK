@@ -13,6 +13,11 @@ namespace RDCore.SDK.Server.Serialization;
 /// </summary>
 /// <remarks>
 /// <para>
+/// Every server of the platform answers with it (<see cref="RDCoreServerApp"/> sets it). A server or a client that speaks the platform's wire over OmniSharp
+/// without an <see cref="RDCoreServerApp"/>, such as a test of a component's handlers over a pipe, sets the same one:
+/// <c>options.WithSerializer(new PullDiagnosticsLspSerializer())</c>.
+/// </para>
+/// <para>
 /// OmniSharp 0.19.9 writes the keys of <c>WorkspaceEdit.changeAnnotations</c> as the text of the identifier record
 /// (<c>changeAnnotationIdentifier { Identifier = x }</c>), because the record has no type converter for a dictionary key. No client finds the annotation an
 /// edit names (<c>annotationId: "x"</c>) under that key. Here a key is the identifier, both ways.
@@ -51,13 +56,20 @@ namespace RDCore.SDK.Server.Serialization;
 /// threads that find it reset wrap it once.
 /// </para>
 /// </remarks>
-internal sealed class PullDiagnosticsLspSerializer
+public sealed class PullDiagnosticsLspSerializer
     : LspSerializer, OmniSharp.Extensions.JsonRpc.ISerializer
 {
     private readonly object _repairing = new();
 
+    /// <summary>
+    /// The serializer of an <strong>LSP 3</strong> connection.
+    /// </summary>
     public PullDiagnosticsLspSerializer() : this(ClientVersion.Lsp3) { }
 
+    /// <summary>
+    /// The serializer of a connection with a client of the given version of LSP.
+    /// </summary>
+    /// <param name="clientVersion">The version of LSP the client speaks.</param>
     public PullDiagnosticsLspSerializer(ClientVersion clientVersion) : base(clientVersion)
     {
         Settings.Converters.Add(new RelatedDocumentDiagnosticReportConverter());
