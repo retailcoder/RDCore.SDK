@@ -1,6 +1,6 @@
 name: Release
 
-# Publishes RDCore.SDK and RDCore.SDK.Protocol to nuget.org from a v<VersionPrefix>[-suffix] tag a maintainer pushes.
+# Publishes RDCore.SDK to nuget.org from a v<VersionPrefix>[-suffix] tag a maintainer pushes.
 # The build job runs the repo's code with read-only permissions; the publish job runs none of it, waits for a required
 # reviewer on the `release` environment, and pushes with a short-lived key from NuGet trusted publishing (no stored secret).
 # A dry run (Run workflow) builds, tests and packs, and keeps the packages as an artifact; it never publishes.
@@ -38,7 +38,8 @@ jobs:
    - name: Resolve the version
      id: version
      run: |
-       prefix=$(grep -oP '(?<=<VersionPrefix>)[^<]+' Directory.Build.props)
+       # the element only: the comment above it names <VersionPrefix> too
+       prefix=$(grep -oP '^\s*<VersionPrefix>\K[^<]+' Directory.Build.props)
        if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
          tag="${GITHUB_REF_NAME}"
          # v<prefix> or v<prefix>-<suffix>, the prefix exactly as Directory.Build.props has it
@@ -75,16 +76,14 @@ jobs:
    - name: Pack
      run: dotnet pack RDCore.SDK.slnx --configuration Release --no-build -p:VersionSuffix=${{ steps.version.outputs.suffix }} --output packages
 
-   - name: The packages are the version
+   - name: The package is the version
      run: |
        ls packages
-       for id in RDCore.SDK RDCore.SDK.Protocol; do
-         for ext in nupkg snupkg; do
-           f="packages/$id.${{ steps.version.outputs.version }}.$ext"
-           [ -f "$f" ] || { echo "::error::Missing $f"; exit 1; }
-         done
+       v="${{ steps.version.outputs.version }}"
+       for ext in nupkg snupkg; do
+         [ -f "packages/RDCore.SDK.$v.$ext" ] || { echo "::error::Missing packages/RDCore.SDK.$v.$ext"; exit 1; }
        done
-       [ "$(ls packages | wc -l)" -eq 4 ] || { echo "::error::Expected exactly the two packages and their symbols."; exit 1; }
+       [ "$(ls packages | wc -l)" -eq 2 ] || { echo "::error::Expected exactly the package and its symbols."; exit 1; }
 
    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
      with:

@@ -25,9 +25,30 @@
     <PackageReference Include="System.IO.Abstractions" Version="22.2.0" />
   </ItemGroup>
 
+  <!-- the protocol ships inside this package as its own assembly, so it is no package dependency: its assembly, xmldoc and fr resources
+       go in lib/, and its symbols in the .snupkg. -->
   <ItemGroup>
-    <ProjectReference Include="..\RDCore.SDK.Protocol\RDCore.SDK.Protocol.csproj" />
+    <ProjectReference Include="..\RDCore.SDK.Protocol\RDCore.SDK.Protocol.csproj" PrivateAssets="all" />
   </ItemGroup>
+
+  <PropertyGroup>
+    <TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);IncludeProtocolInPackage</TargetsForTfmSpecificBuildOutput>
+    <TargetsForTfmSpecificDebugSymbolsInPackage>$(TargetsForTfmSpecificDebugSymbolsInPackage);IncludeProtocolSymbolsInPackage</TargetsForTfmSpecificDebugSymbolsInPackage>
+  </PropertyGroup>
+
+  <!-- the files come from this project's own output, where the build copied them: pack runs with no build. -->
+  <Target Name="IncludeProtocolInPackage">
+    <ItemGroup>
+      <BuildOutputInPackage Include="$(OutDir)RDCore.SDK.Protocol.dll;$(OutDir)RDCore.SDK.Protocol.xml" />
+      <BuildOutputInPackage Include="$(OutDir)fr\RDCore.SDK.Protocol.resources.dll" TargetPath="fr\RDCore.SDK.Protocol.resources.dll" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="IncludeProtocolSymbolsInPackage">
+    <ItemGroup>
+      <TfmSpecificDebugSymbolsFile Include="$(OutDir)RDCore.SDK.Protocol.pdb" TargetFramework="$(TargetFramework)" TargetPath="RDCore.SDK.Protocol.pdb" />
+    </ItemGroup>
+  </Target>
 
   <ItemGroup>
     <Compile Update="ServerOptionsHelpText.Designer.cs">
