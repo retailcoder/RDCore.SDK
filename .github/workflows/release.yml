@@ -1,6 +1,6 @@
 name: Release
 
-# Publishes RDCore.SDK (RDCore.SDK.Protocol inside it) to nuget.org from a v<VersionPrefix>[-suffix] tag a maintainer pushes.
+# Publishes RDCore.SDK to nuget.org from a v<VersionPrefix>[-suffix] tag a maintainer pushes.
 # The build job runs the repo's code with read-only permissions; the publish job runs none of it, waits for a required
 # reviewer on the `release` environment, and pushes with a short-lived key from NuGet trusted publishing (no stored secret).
 # A dry run (Run workflow) builds, tests and packs, and keeps the packages as an artifact; it never publishes.
