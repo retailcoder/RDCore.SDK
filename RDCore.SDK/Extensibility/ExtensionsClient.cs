@@ -74,7 +74,10 @@ public class ExtensionsClient(
     /// <summary>
     /// Creates a serializable <see cref="ExtensionInfo"/> model for the specified extension executable <c>name</c>, with the specified <c>description</c>.
     /// </summary>
-    /// <param name="name">The name of the executable extension.</param>
+    /// <param name="name">
+    /// The file name of the extension's executable: <c>RDCore.Diagnostics.exe</c> on Windows, <c>RDCore.Diagnostics</c> elsewhere. Its assembly is the
+    /// <c>.dll</c> of the same name beside it.
+    /// </param>
     /// <param name="description">A short description of the extension.</param>
     /// <remarks>
     /// The implementation validates that it is executing this method inside the target extension folder.
@@ -100,9 +103,12 @@ public class ExtensionsClient(
             fileHash = Convert.ToBase64String(SHA512.HashData(executableStream));
         }
 
-        // reflect the managed assembly (the companion .dll next to the launch .exe) for its name,
-        // version, publisher metadata, and advertised platform capabilities.
-        var assembly = Assembly.LoadFrom(fileSystem.Path.ChangeExtension(executablePath, ".dll"));
+        // reflect the managed assembly (the companion .dll next to the launch executable) for its name,
+        // version, publisher metadata, and advertised platform capabilities. The executable is RDCore.Diagnostics.exe on Windows and
+        // RDCore.Diagnostics elsewhere, and its assembly is RDCore.Diagnostics.dll on both: only an .exe is taken off, since a name
+        // without one has no extension to change (".Diagnostics" is not one).
+        var assemblyStem = executablePath.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ? executablePath[..^4] : executablePath;
+        var assembly = Assembly.LoadFrom(assemblyStem + ".dll");
         var assemblyName = assembly.GetName();
 
         var version = assemblyName.Version ?? new Version(0, 0, 0);
