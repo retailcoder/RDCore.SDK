@@ -146,7 +146,7 @@ public sealed class RDCorePlatformClient(IRDCorePlatformChannel channel)
     /// </summary>
     /// <param name="request">The refactoring, by its kind, and the document and range it is of.</param>
     /// <param name="token">Cancels the request.</param>
-    /// <returns>The choices, each with its default, and the notices: the refusals, and the changes the user accepts.</returns>
+    /// <returns>The choices, each with its default, and the notices: the refusals, the changes the user accepts, and what the user should know.</returns>
     public Task<RefactorPrepareResult> RefactorPrepareAsync(RefactorPrepareParams request, CancellationToken token)
         => Send<RefactorPrepareParams, RefactorPrepareResult>(RDCorePlatformProtocol.RefactorPrepare, request, token);
 
