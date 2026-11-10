@@ -9,7 +9,8 @@ namespace RDCore.SDK.Workspace.Forms;
 /// </summary>
 /// <param name="FileName">The companion file's name, as the module writes it (<c>ExampleView.frx</c>): relative to the
 /// module's own file.</param>
-/// <param name="Offset">The offset of the designer data in the companion file.</param>
+/// <param name="Offset">The offset of the designer data in the companion file: <c>0</c> for a Visual Basic 6.0 form, whose
+/// designer data is the whole file.</param>
 public sealed record class FormDesignerReference(string FileName, long Offset);
 
 /// <summary>
@@ -27,8 +28,9 @@ public sealed record class FormDesignerReference(string FileName, long Offset);
 /// header is not documented; its layout is what the VBE writes.</item>
 /// <item>A <b>Visual Basic 6.0</b> form (<c>Begin VB.Form Form1</c>) holds its controls too, as nested <c>Begin</c> …
 /// <c>End</c> blocks, each with its properties; <c>BeginProperty</c> … <c>EndProperty</c> blocks group a property's own
-/// properties (a <c>Font</c>). Its <c>.frx</c> file holds binary property values (pictures, lists), which the controls'
-/// declarations do not need.</item>
+/// properties (a <c>Font</c>). Its <c>.frx</c> file holds binary property values (pictures, lists), which a property
+/// cites as <c>"Form1.frx":0000</c>. The controls' declarations do not need it; the library that hosts the form reads it
+/// with the designer block's text (<see cref="FormDescriptor.DesignerText"/>).</item>
 /// </list>
 /// The reader takes the companion file's content from its caller, which owns the file system:
 /// <see cref="CompanionOf(string)"/> says which file and where.
@@ -49,62 +51,94 @@ public static partial class FormDesigner
 
     /// <summary>
     /// Where the designer data of the form module <paramref name="source"/> is, or <c>null</c> when the module is not a
-    /// form module or keeps no designer data in a companion file (its <c>OleObjectBlob</c> property).
+    /// form module or keeps no designer data in a companion file.
     /// </summary>
+    /// <remarks>
+    /// A VBA UserForm's is at its <c>OleObjectBlob</c> property's offset. A Visual Basic 6.0 form's is the whole file that the first
+    /// property citing one names, in the form's block or in any of its controls', grouped properties included
+    /// (<c>Picture = "Form1.frx":0000</c>), at offset <c>0</c>.
+    /// </remarks>
     /// <param name="source">The form module's source.</param>
     /// <exception cref="FormDesignerFormatException">The designer block is not terminated.</exception>
     public static FormDesignerReference? CompanionOf(string? source)
-        => ReadBlock(source) is { } block ? CompanionOf(block) : null;
+        => ReadSource(source) is { } designer ? CompanionOf(designer) : null;
 
-    private static FormDesignerReference? CompanionOf(DesignerBlock block)
-        => block.Properties.GetValueOrDefault("OleObjectBlob") is { } blob && FileReference().Match(blob) is { Success: true } match
+    private static FormDesignerReference? CompanionOf(DesignerSource designer)
+    {
+        if (ClassOf(designer.Root.Class).Kind == FormDesignerKind.VisualBasic6)
+        {
+            return designer.Cited;
+        }
+
+        return designer.Root.Properties.GetValueOrDefault("OleObjectBlob") is { } blob && FileReference().Match(blob) is { Success: true } match
             ? new FormDesignerReference(
                 match.Groups["file"].Value.Replace("\"\"", "\""),
                 long.Parse(match.Groups["offset"].Value, NumberStyles.HexNumber, CultureInfo.InvariantCulture))
             : null;
+    }
 
     /// <summary>
     /// What the form module <paramref name="source"/> declares, or <c>null</c> when it is not a form module (it has no
     /// designer block).
     /// </summary>
+    /// <remarks>
+    /// A VBA UserForm's controls are read from its designer data, which is the descriptor's <see cref="FormDescriptor.State"/>. A Visual Basic 6.0 form's are
+    /// read from its text; its <see cref="FormDescriptor.DesignerText"/> is that text, and its <see cref="FormDescriptor.State"/> the whole companion file,
+    /// or empty when <paramref name="companion"/> is.
+    /// </remarks>
     /// <param name="source">The form module's source.</param>
     /// <param name="companion">The content of the module's companion file (<see cref="CompanionOf(string)"/>), when the module
     /// keeps designer data there; ignored when it does not.</param>
-    /// <exception cref="FormDesignerFormatException">The designer block is not terminated, the module keeps designer data in
+    /// <exception cref="FormDesignerFormatException">The designer block is not terminated, a VBA UserForm keeps designer data in
     /// a companion file and <paramref name="companion"/> is empty, or that designer data cannot be read.</exception>
     public static FormDescriptor? Read(string? source, ReadOnlyMemory<byte> companion = default)
     {
-        if (ReadBlock(source) is not { } block)
+        if (ReadSource(source) is not { } designer)
         {
             return null;
         }
 
+        var block = designer.Root;
         var (kind, @class) = ClassOf(block.Class);
         var controls = block.Children.Select(ToDescriptor).ToList();
         var state = ReadOnlyMemory<byte>.Empty;
-        if (kind == FormDesignerKind.MSForms && CompanionOf(block) is { } reference)
+        string? text = null;
+        if (kind == FormDesignerKind.MSForms && CompanionOf(designer) is { } reference)
         {
             state = BlobAt(companion, reference.Offset);
             controls = [.. MSFormsDesignerStorage.ReadControls(CompoundFile.Open(state))];
         }
+        else if (kind == FormDesignerKind.VisualBasic6)
+        {
+            text = designer.Text;
+            state = designer.Cited is null ? ReadOnlyMemory<byte>.Empty : companion;
+        }
 
-        return new FormDescriptor(block.Name, kind, @class, block.Properties, controls) { State = state };
+        return new FormDescriptor(block.Name, kind, @class, block.Properties, controls) { State = state, DesignerText = text };
     }
 
     /// <summary>
     /// The designer's state of the form module <paramref name="source"/>: for a VBA UserForm, the compound file its companion file keeps at the offset its
-    /// <c>OleObjectBlob</c> says, which is what Microsoft Forms loads a form from (<c>IPersistStorage</c>). Empty when the module keeps no designer data in a
-    /// companion file.
+    /// <c>OleObjectBlob</c> says, which is what Microsoft Forms loads a form from (<c>IPersistStorage</c>); for a Visual Basic 6.0 form, the whole companion
+    /// file. Empty when the module keeps no designer data in a companion file.
     /// </summary>
     /// <remarks>
-    /// The state is opaque here: <see cref="Read"/> reads what a form declares from it, and the form host hands it, as it is, to the library that hosts the form.
+    /// The state is opaque here: <see cref="Read"/> reads what a UserForm declares from it, and the form host hands it, as it is, to the library that hosts the
+    /// form.
     /// </remarks>
     /// <param name="source">The form module's source.</param>
     /// <param name="companion">The content of the module's companion file (<see cref="CompanionOf(string)"/>).</param>
-    /// <exception cref="FormDesignerFormatException">The designer block is not terminated, the module keeps designer data in a companion file and
+    /// <exception cref="FormDesignerFormatException">The designer block is not terminated, a VBA UserForm keeps designer data in a companion file and
     /// <paramref name="companion"/> is empty, or the designer data is not where it says.</exception>
     public static ReadOnlyMemory<byte> StateOf(string? source, ReadOnlyMemory<byte> companion)
-        => ReadBlock(source) is { } block && CompanionOf(block) is { } reference ? BlobAt(companion, reference.Offset) : ReadOnlyMemory<byte>.Empty;
+    {
+        if (ReadSource(source) is not { } designer || CompanionOf(designer) is not { } reference)
+        {
+            return ReadOnlyMemory<byte>.Empty;
+        }
+
+        return ClassOf(designer.Root.Class).Kind == FormDesignerKind.VisualBasic6 ? companion : BlobAt(companion, reference.Offset);
+    }
 
     // the designer data at `offset` of a companion file: its blob header, then that many bytes
     private static ReadOnlyMemory<byte> BlobAt(ReadOnlyMemory<byte> companion, long offset)
@@ -163,9 +197,13 @@ public static partial class FormDesigner
 
     private sealed record class DesignerBlock(string Class, string Name, Dictionary<string, string> Properties, List<DesignerBlock> Children);
 
+    // the designer block, the source from its first line through the block's End, and the first companion file a property of
+    // the block cites at any depth, grouped properties included
+    private sealed record class DesignerSource(DesignerBlock Root, string Text, FormDesignerReference? Cited);
+
     // the designer block after the VERSION header: null when the source has no VERSION header, or when what follows it is
     // not a `Begin <class> <name>` block (a class module's header is `BEGIN` alone)
-    private static DesignerBlock? ReadBlock(string? source)
+    private static DesignerSource? ReadSource(string? source)
     {
         if (string.IsNullOrEmpty(source))
         {
@@ -202,10 +240,17 @@ public static partial class FormDesigner
         var root = new DesignerBlock(begin.Groups["class"].Value, begin.Groups["name"].Value, new(StringComparer.OrdinalIgnoreCase), []);
         var open = new Stack<DesignerBlock>([root]);
         var propertyDepth = 0;
+        FormDesignerReference? cited = null;
         for (index++; index < lines.Length; index++)
         {
-            // a grouped property's own properties (a Font's Name, Size) are not the control's
             var line = lines[index].Trim();
+            if (cited is null && PropertyLine().Match(line) is { Success: true } citing
+                && FileReference().Match(ValueOf(citing.Groups["value"].Value)) is { Success: true } file)
+            {
+                cited = new FormDesignerReference(file.Groups["file"].Value.Replace("\"\"", "\""), 0);
+            }
+
+            // a grouped property's own properties (a Font's Name, Size) are not the control's
             if (line.StartsWith("BeginProperty", StringComparison.OrdinalIgnoreCase))
             {
                 propertyDepth++;
@@ -234,7 +279,9 @@ public static partial class FormDesigner
                 open.Pop();
                 if (open.Count == 0)
                 {
-                    return root;
+                    // each line but the last kept its '\n' in the split: the text ends with the End line's own line break
+                    var end = lines.Take(index + 1).Sum(text => text.Length) + Math.Min(index + 1, lines.Length - 1);
+                    return new DesignerSource(root, source[..end], cited);
                 }
             }
             else if (PropertyLine().Match(line) is { Success: true } property)
