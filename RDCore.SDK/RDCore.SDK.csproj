@@ -36,17 +36,17 @@
     <TargetsForTfmSpecificDebugSymbolsInPackage>$(TargetsForTfmSpecificDebugSymbolsInPackage);IncludeProtocolSymbolsInPackage</TargetsForTfmSpecificDebugSymbolsInPackage>
   </PropertyGroup>
 
-  <Target Name="IncludeProtocolInPackage" DependsOnTargets="ResolveReferences">
+  <!-- the files come from this project's own output, where the build copied them: pack runs with no build. -->
+  <Target Name="IncludeProtocolInPackage">
     <ItemGroup>
-      <_ProtocolOutput Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.ReferenceSourceTarget)' == 'ProjectReference' And '%(ReferenceCopyLocalPaths.Extension)' != '.pdb'" />
-      <BuildOutputInPackage Include="@(_ProtocolOutput)" TargetPath="%(_ProtocolOutput.DestinationSubDirectory)%(_ProtocolOutput.Filename)%(_ProtocolOutput.Extension)" />
+      <BuildOutputInPackage Include="$(OutDir)RDCore.SDK.Protocol.dll;$(OutDir)RDCore.SDK.Protocol.xml" />
+      <BuildOutputInPackage Include="$(OutDir)fr\RDCore.SDK.Protocol.resources.dll" TargetPath="fr\RDCore.SDK.Protocol.resources.dll" />
     </ItemGroup>
   </Target>
 
-  <Target Name="IncludeProtocolSymbolsInPackage" DependsOnTargets="ResolveReferences">
+  <Target Name="IncludeProtocolSymbolsInPackage">
     <ItemGroup>
-      <_ProtocolSymbols Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.ReferenceSourceTarget)' == 'ProjectReference' And '%(ReferenceCopyLocalPaths.Extension)' == '.pdb'" />
-      <TfmSpecificDebugSymbolsFile Include="@(_ProtocolSymbols)" TargetFramework="$(TargetFramework)" TargetPath="%(_ProtocolSymbols.Filename)%(_ProtocolSymbols.Extension)" />
+      <TfmSpecificDebugSymbolsFile Include="$(OutDir)RDCore.SDK.Protocol.pdb" TargetFramework="$(TargetFramework)" TargetPath="RDCore.SDK.Protocol.pdb" />
     </ItemGroup>
   </Target>
 
