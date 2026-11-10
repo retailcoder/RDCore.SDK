@@ -132,14 +132,26 @@ public sealed record class FormDescriptor(
     };
 
     /// <summary>
-    /// The designer's state of the form, as the library that hosts it loads it: for a VBA UserForm, the compound file its <c>.frx</c> keeps
-    /// (<see cref="FormDesigner.StateOf"/>), opaque here. Empty for a form whose designer keeps none, and for one read without its companion file.
+    /// The designer's state of the form, as the library that hosts it loads it (<see cref="FormDesigner.StateOf"/>), opaque here: for a VBA UserForm, the
+    /// compound file its <c>.frx</c> keeps; for a Visual Basic 6.0 form, the whole <c>.frx</c>. Empty for a form whose designer keeps none, and for one read
+    /// without its companion file.
     /// </summary>
     /// <remarks>
-    /// What a form declares is read from it once (<see cref="Controls"/>); the state itself travels with the descriptor so that whatever runs the form - the
-    /// environment host, which has no file of the workspace - can hand it to the form host as it is.
+    /// What a form declares is read once (<see cref="Controls"/>); the state itself travels with the descriptor so that whatever runs the form (the
+    /// environment host, which has no file of the workspace) can hand it to the form host as it is.
     /// </remarks>
     public ReadOnlyMemory<byte> State { get; init; }
+
+    /// <summary>
+    /// The text of a Visual Basic 6.0 form's designer: the module's source from its first line through the designer block's <c>End</c> line, with the
+    /// <c>VERSION</c> header, the <c>Object</c> lines and the <c>Begin</c> … <c>End</c> block, and without the <c>Attribute</c> lines and the code that
+    /// follow it. <c>null</c> for a VBA UserForm and for another designer.
+    /// </summary>
+    /// <remarks>
+    /// It travels with the descriptor, with <see cref="State"/>, so that the library that hosts the form reads the form's properties from it where no file
+    /// of the workspace is at hand.
+    /// </remarks>
+    public string? DesignerText { get; init; }
 
     /// <summary>
     /// Every control of the form, at any depth, in the order the designer persisted them.

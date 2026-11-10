@@ -196,8 +196,66 @@ public sealed class FormDesignerTests
     }
 
     [TestMethod]
-    public void CompanionOf_VisualBasic6Form_IsNone()
+    public void CompanionOf_VisualBasic6FormThatCitesNoFrx_IsNone()
         => Assert.IsNull(FormDesigner.CompanionOf(VisualBasic6Module));
+
+    // a picture of the form's, and one in a grouped property of a control's, the way an ImageList's images are written
+    private static readonly string VisualBasic6ModuleWithPictures = VisualBasic6Module
+        .Replace(
+            "         Name            =   \"Tahoma\"\r\n",
+            "         Name            =   \"Tahoma\"\r\n         Picture         =   \"My \"\"Form\"\".frx\":0024\r\n")
+        .Replace(
+            "   StartUpPosition =   3  'Windows Default\r\n",
+            "   StartUpPosition =   3  'Windows Default\r\n   Icon            =   \"Form1.frx\":0000\r\n");
+
+    [TestMethod]
+    [DataRow(true, "Form1.frx")]
+    [DataRow(false, "My \"Form\".frx")]
+    public void CompanionOf_VisualBasic6Form_IsTheWholeFileItsFirstCitingPropertyNames(bool formCites, string expected)
+    {
+        var source = formCites ? VisualBasic6ModuleWithPictures : VisualBasic6ModuleWithPictures.Replace("   Icon            =   \"Form1.frx\":0000\r\n", "");
+
+        Assert.AreEqual(new FormDesignerReference(expected, 0), FormDesigner.CompanionOf(source));
+    }
+
+    [TestMethod]
+    public void Read_VisualBasic6Form_KeepsItsDesignersTextAndItsWholeFrx_WhichTravelWithIt()
+    {
+        byte[] frx = [1, 2, 3, 4, 5];
+        var form = FormDesigner.Read(VisualBasic6ModuleWithPictures, frx)!;
+
+        var designer = VisualBasic6ModuleWithPictures[..(VisualBasic6ModuleWithPictures.IndexOf("Attribute", StringComparison.Ordinal))];
+        Assert.AreEqual(designer, form.DesignerText);
+        Assert.IsTrue(form.DesignerText!.EndsWith("End\r\n", StringComparison.Ordinal));
+        CollectionAssert.AreEqual(frx, form.State.ToArray());
+        CollectionAssert.AreEqual(frx, FormDesigner.StateOf(VisualBasic6ModuleWithPictures, frx).ToArray());
+
+        // the environment host has no file of the workspace: what it creates the form from is what the parse result carries to it.
+        var travelled = RDCore.SDK.Platform.Protocol.PlatformJson.Deserialize<FormDescriptor>(RDCore.SDK.Platform.Protocol.PlatformJson.Serialize(form));
+        Assert.AreEqual(form.DesignerText, travelled.DesignerText);
+        CollectionAssert.AreEqual(frx, travelled.State.ToArray());
+    }
+
+    [TestMethod]
+    [DataRow("\r\n")]
+    [DataRow("\n")]
+    [DataRow("")]
+    public void Read_VisualBasic6Form_DesignersText_EndsWithItsEndLine_WhateverFollows(string ending)
+    {
+        var source = VisualBasic6Module.Replace("\r\n", "\n")[..^("Attribute VB_Name = \"Form1\"\n".Length + 1)] + ending;
+
+        var form = FormDesigner.Read(source)!;
+
+        Assert.AreEqual(source, form.DesignerText);
+    }
+
+    [TestMethod]
+    public void Read_VisualBasic6FormWithoutItsFrx_HasNoState_AndAUserFormsDescriptorHasNoDesignersText()
+    {
+        Assert.IsTrue(FormDesigner.Read(VisualBasic6ModuleWithPictures)!.State.IsEmpty);
+        Assert.IsTrue(FormDesigner.Read(VisualBasic6Module, new byte[] { 9 })!.State.IsEmpty);
+        Assert.IsNull(FormDesigner.Read(Text("ExampleView.frm"), Fixture("ExampleView.frx"))!.DesignerText);
+    }
 
     [TestMethod]
     public void Read_VisualBasic6Form_ReadsItsControlsFromItsText()
