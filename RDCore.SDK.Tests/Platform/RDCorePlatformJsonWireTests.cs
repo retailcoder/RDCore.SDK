@@ -205,13 +205,13 @@ public sealed class RDCorePlatformJsonWireTests
             Created = [new Uri("file:///c:/workspace/IShape.cls")],
             Documents = [new RefactorDocumentEdit { Uri = Module, Version = 3, Edits = [new RefactorTextEdit { Range = Range, NewText = "Total = Sum(total)" }] }],
         });
-        static T Checked<T>() where T : RefactorCheckParams, new() => new T
+        static T Checked<T>() where T : RefactorIdentifierCheckParams, new() => new T
         {
             Kind = RefactoringKinds.ExtractMethod, Uri = Module, Range = Range,
             Answers = [new RefactorAnswer { Id = "parameters", Items = [new RefactorItemAnswer { Id = "total", Answers = [new RefactorAnswer { Id = "name", Value = "Sum" }] }] }],
         };
-        yield return (Checked<RefactorCheckParams>(), Checked<RefactorCheckRequest>());
-        yield return Same(new RefactorCheckResult
+        yield return (Checked<RefactorIdentifierCheckParams>(), Checked<RefactorCheckIdentifierRequest>());
+        yield return Same(new RefactorIdentifierCheckResult
         {
             Notices = [new RefactorNotice { Code = "extractMethod.shadows", Kind = RefactorNoticeKind.Note, Message = "m", Related = new SourceLocation(Module, Range), Choice = "name", Item = "total" }],
         });
@@ -274,8 +274,8 @@ public sealed class RDCorePlatformJsonWireTests
         ("RefactorPrepareResult", """{"choices":[{"id":"name","kind":0,"label":"Name","description":null,"default":"NewMethod","options":[],"items":[],"canReorder":false},{"id":"access","kind":1,"label":"Access","description":"Who can call it","default":"Private","options":[{"value":"Private","label":"Private","description":"This module"}],"items":[],"canReorder":false},{"id":"parameters","kind":3,"label":"Parameters","description":null,"default":null,"options":[],"items":[{"id":"total","label":"ByRef total As Long","reason":"The selection assigns it","choices":[{"id":"byRef","kind":2,"label":"ByRef","description":null,"default":"true","options":[],"items":[],"canReorder":false}]}],"canReorder":true}],"notices":[{"code":"extractMethod.writeBack","kind":1,"message":"m","location":{"uri":"file:///c:/workspace/Module1.bas","range":{"start":{"line":1,"character":2},"end":{"line":3,"character":4},"isEmpty":false}},"related":{"uri":"file:///c:/workspace/Module1.bas","range":{"start":{"line":1,"character":2},"end":{"line":3,"character":4},"isEmpty":false}},"choice":null,"item":null}]}"""),
         ("RefactorApplyParams", """{"kind":"refactor.extract.method","uri":"file:///c:/workspace/Module1.bas","range":{"start":{"line":1,"character":2},"end":{"line":3,"character":4},"isEmpty":false},"answers":[{"id":"name","value":"Total","items":[]},{"id":"parameters","value":null,"items":[{"id":"total","answers":[{"id":"byRef","value":"false","items":[]}]}]}],"accepted":["extractMethod.writeBack"]}"""),
         ("RefactorWorkspaceEdit", """{"created":["file:///c:/workspace/IShape.cls"],"documents":[{"uri":"file:///c:/workspace/Module1.bas","version":3,"edits":[{"range":{"start":{"line":1,"character":2},"end":{"line":3,"character":4},"isEmpty":false},"newText":"Total = Sum(total)"}]}]}"""),
-        ("RefactorCheckParams", """{"kind":"refactor.extract.method","uri":"file:///c:/workspace/Module1.bas","range":{"start":{"line":1,"character":2},"end":{"line":3,"character":4},"isEmpty":false},"answers":[{"id":"parameters","value":null,"items":[{"id":"total","answers":[{"id":"name","value":"Sum","items":[]}]}]}]}"""),
-        ("RefactorCheckResult", """{"notices":[{"code":"extractMethod.shadows","kind":2,"message":"m","location":null,"related":{"uri":"file:///c:/workspace/Module1.bas","range":{"start":{"line":1,"character":2},"end":{"line":3,"character":4},"isEmpty":false}},"choice":"name","item":"total"}]}"""),
+        ("RefactorIdentifierCheckParams", """{"kind":"refactor.extract.method","uri":"file:///c:/workspace/Module1.bas","range":{"start":{"line":1,"character":2},"end":{"line":3,"character":4},"isEmpty":false},"answers":[{"id":"parameters","value":null,"items":[{"id":"total","answers":[{"id":"name","value":"Sum","items":[]}]}]}]}"""),
+        ("RefactorIdentifierCheckResult", """{"notices":[{"code":"extractMethod.shadows","kind":2,"message":"m","location":null,"related":{"uri":"file:///c:/workspace/Module1.bas","range":{"start":{"line":1,"character":2},"end":{"line":3,"character":4},"isEmpty":false}},"choice":"name","item":"total"}]}"""),
         ("Refactoring", """{"isSupported":true}"""),
     ];
 
@@ -377,7 +377,7 @@ public sealed class RDCorePlatformJsonWireTests
         ("SessionPoke", "rdcore/session/memory/poke"),
         ("RefactorPrepare", "rdcore/refactor/prepare"),
         ("RefactorApply", "rdcore/refactor/apply"),
-        ("RefactorCheck", "rdcore/refactor/check"),
+        ("RefactorCheckIdentifier", "rdcore/refactor/checkIdentifier"),
     ];
 
     [TestMethod]

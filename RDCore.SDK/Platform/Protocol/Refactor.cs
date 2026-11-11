@@ -22,8 +22,8 @@ public sealed record class RefactorPrepareRequest : RefactorPrepareParams, IRequ
 public sealed record class RefactorApplyRequest : RefactorApplyParams, IRequest, IRequest<RefactorWorkspaceEdit>;
 
 /// <summary>
-/// <see cref="RefactorCheckParams"/> as a request of <c>rdcore/refactor/check</c>, answered with a <see cref="RefactorCheckResult"/>: the type a language
-/// server's handler of the request takes.
+/// <see cref="RefactorIdentifierCheckParams"/> as a request of <c>rdcore/refactor/checkIdentifier</c>, answered with a
+/// <see cref="RefactorIdentifierCheckResult"/>: the type a language server's handler of the request takes.
 /// </summary>
-[Method(RDCorePlatformProtocol.RefactorCheck, Direction.ClientToServer)]
-public sealed record class RefactorCheckRequest : RefactorCheckParams, IRequest, IRequest<RefactorCheckResult>;
+[Method(RDCorePlatformProtocol.RefactorCheckIdentifier, Direction.ClientToServer)]
+public sealed record class RefactorCheckIdentifierRequest : RefactorIdentifierCheckParams, IRequest, IRequest<RefactorIdentifierCheckResult>;

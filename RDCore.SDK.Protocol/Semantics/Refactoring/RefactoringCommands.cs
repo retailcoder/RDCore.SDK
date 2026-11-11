@@ -23,7 +23,7 @@ public static class RefactoringCommands
     /// Applies a refactoring with the client's own dialog: the command of a refactoring's code action, offered to a client that expects the
     /// <see cref="RDCore.SDK.Client.Refactoring"/> capability. Its one argument is the refactoring's <see cref="RDCore.SDK.Platform.Protocol.RefactorPrepareParams"/>:
     /// the client sends it as <see cref="RDCore.SDK.Client.RDCorePlatformProtocol.RefactorPrepare"/>, shows its user the choices and notices it is answered, shows
-    /// beside each answer what <see cref="RDCore.SDK.Client.RDCorePlatformProtocol.RefactorCheck"/> says it raises, and sends
+    /// beside each identifier its user types what <see cref="RDCore.SDK.Client.RDCorePlatformProtocol.RefactorCheckIdentifier"/> says it raises, and sends
     /// <see cref="RDCore.SDK.Client.RDCorePlatformProtocol.RefactorApply"/> with the user's answers, unless the user cancels, and applies the edit it is answered with.
     /// </summary>
     /// <remarks>

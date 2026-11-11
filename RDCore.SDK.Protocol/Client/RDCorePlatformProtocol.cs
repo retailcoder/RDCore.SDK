@@ -129,8 +129,8 @@ public static class RDCorePlatformProtocol
     public const string RefactorApply = "rdcore/refactor/apply";
 
     /// <summary>
-    /// Asks the language server what its user's answers to a refactoring of a document's range raise before it is applied: an answer it refuses, such as a name
-    /// the code cannot declare, or a note on one it takes, such as a name that hides another declaration.
+    /// Asks the language server about an identifier the user is typing for a refactoring of a document's range, before it is applied: whether it can be declared
+    /// where the refactoring declares it, and what it would hide.
     /// </summary>
-    public const string RefactorCheck = "rdcore/refactor/check";
+    public const string RefactorCheckIdentifier = "rdcore/refactor/checkIdentifier";
 }

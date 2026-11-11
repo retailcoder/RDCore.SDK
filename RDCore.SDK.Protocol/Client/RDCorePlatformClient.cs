@@ -161,14 +161,16 @@ public sealed class RDCorePlatformClient(IRDCorePlatformChannel channel)
         => Send<RefactorApplyParams, RefactorWorkspaceEdit>(RDCorePlatformProtocol.RefactorApply, request, token);
 
     /// <summary>
-    /// Asks what its user's answers to a refactoring raise before it is applied (<see cref="RDCorePlatformProtocol.RefactorCheck"/>): what a dialog shows beside
-    /// each answer as its user types it.
+    /// Asks about an identifier the user is typing for a refactoring, before it is applied (<see cref="RDCorePlatformProtocol.RefactorCheckIdentifier"/>):
+    /// whether it can be declared where the refactoring declares it, and what it would hide, which a dialog shows beside it as its user types it.
     /// </summary>
-    /// <param name="request">The refactoring, the document and range it is of, and the user's answers.</param>
+    /// <param name="request">The refactoring, the document and range it is of, and the user's answers, whose Name choices hold the identifiers.</param>
     /// <param name="token">Cancels the request.</param>
-    /// <returns>The notices the answers raise, each with the choice it is of: an answer the refactoring refuses, or what the user should know of one it takes.</returns>
-    public Task<RefactorCheckResult> RefactorCheckAsync(RefactorCheckParams request, CancellationToken token)
-        => Send<RefactorCheckParams, RefactorCheckResult>(RDCorePlatformProtocol.RefactorCheck, request, token);
+    /// <returns>
+    /// The notices the identifiers raise, each with the choice it answers: an identifier the refactoring refuses, or what the user should know of one it takes.
+    /// </returns>
+    public Task<RefactorIdentifierCheckResult> RefactorCheckIdentifierAsync(RefactorIdentifierCheckParams request, CancellationToken token)
+        => Send<RefactorIdentifierCheckParams, RefactorIdentifierCheckResult>(RDCorePlatformProtocol.RefactorCheckIdentifier, request, token);
 
     /// <summary>
     /// Shows the program's <c>MsgBox</c> calls (<see cref="RDCorePlatformProtocol.SessionMessageBox"/>), for a client that expects <see cref="SessionInteraction"/>.

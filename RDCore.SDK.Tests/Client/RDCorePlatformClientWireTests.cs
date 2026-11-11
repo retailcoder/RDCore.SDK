@@ -348,14 +348,15 @@ public sealed class RDCorePlatformClientWireTests
 
     [TestMethod]
     [Timeout(60_000, CooperativeCancellation = true)]
-    public async Task ARefactorCheck_ReachesTheServersHandler_WithTheAnswers_AndTheNoticesComeBackWithTheChoiceEachIsOf()
+    public async Task ARefactorIdentifierCheck_ReachesTheServersHandler_WithTheAnswers_AndTheNoticesComeBackWithTheChoiceEachAnswers()
     {
         var module = new Uri("file:///c:/workspace/Module1.bas");
-        RefactorCheckRequest? received = null;
-        using var connected = await ConnectAsync(server => server.OnRequest<RefactorCheckRequest, RefactorCheckResult>(RDCorePlatformProtocol.RefactorCheck, (request, _) =>
+        RefactorCheckIdentifierRequest? received = null;
+        using var connected = await ConnectAsync(server => server.OnRequest<RefactorCheckIdentifierRequest, RefactorIdentifierCheckResult>(
+            RDCorePlatformProtocol.RefactorCheckIdentifier, (request, _) =>
         {
             received = request;
-            return Task.FromResult(new RefactorCheckResult
+            return Task.FromResult(new RefactorIdentifierCheckResult
             {
                 Notices =
                 [
@@ -365,7 +366,7 @@ public sealed class RDCorePlatformClientWireTests
             });
         }));
 
-        var result = await connected.Platform.RefactorCheckAsync(new RefactorCheckParams
+        var result = await connected.Platform.RefactorCheckIdentifierAsync(new RefactorIdentifierCheckParams
         {
             Kind = RefactoringKinds.ExtractMethod, Uri = module, Range = new SourceRange(1, 0, 3, 7),
             Answers = [new RefactorAnswer { Id = "name", Value = "Sum" }],
