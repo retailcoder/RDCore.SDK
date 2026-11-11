@@ -132,13 +132,13 @@ public sealed record class FormDescriptor(
     };
 
     /// <summary>
-    /// The form's <c>ClientLeft</c> designer property, in points: where its client area is, from the left of the screen. The designer block writes it in twips,
+    /// The form's <c>ClientLeft</c> designer property, in points: the distance of its client area from the left of the desktop. The designer block writes it in twips,
     /// 20 to a point. <c>null</c> when the designer block does not set it, or sets it to something that is not a number.
     /// </summary>
     public double? ClientLeft => PointsOf("ClientLeft");
 
     /// <summary>
-    /// The form's <c>ClientTop</c> designer property, in points: where its client area is, from the top of the screen. The designer block writes it in twips,
+    /// The form's <c>ClientTop</c> designer property, in points: the distance of its client area from the top of the desktop. The designer block writes it in twips,
     /// 20 to a point. <c>null</c> when the designer block does not set it, or sets it to something that is not a number.
     /// </summary>
     public double? ClientTop => PointsOf("ClientTop");

@@ -425,7 +425,7 @@ public sealed class FormDesignerTests
         try
         {
             Assert.AreEqual(2.275, FormWith("   ClientLeft      =   45.5\r\n").ClientLeft);
-            Assert.IsNull(FormWith("   ClientLeft      =   45,5\r\n").ClientLeft, "a decimal comma is no number of a designer block");
+            Assert.IsNull(FormWith("   ClientLeft      =   45,5\r\n").ClientLeft, "a designer block writes no decimal comma");
         }
         finally
         {
