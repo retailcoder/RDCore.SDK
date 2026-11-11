@@ -178,7 +178,8 @@ public sealed record class RefactorItem
 public enum RefactorNoticeKind
 {
     /// <summary>
-    /// The refactoring is refused, and why: it is not applied, whatever the answers.
+    /// The refactoring is refused, and why: it is not applied, whatever the answers. A refusal of an answer (<see cref="RefactorNotice.Choice"/>) refuses the
+    /// refactoring with that answer only.
     /// </summary>
     Refusal,
 
@@ -224,6 +225,17 @@ public sealed record class RefactorNotice
     /// the <c>GoTo</c> that jumps into the selection.
     /// </summary>
     public SourceLocation? Related { get; init; }
+
+    /// <summary>
+    /// The choice whose answer the notice is of (<see cref="RefactorChoice.Id"/>); <see langword="null"/> for a notice of the refactoring itself.
+    /// </summary>
+    public string? Choice { get; init; }
+
+    /// <summary>
+    /// The item of a list whose choice's answer the notice is of (<see cref="RefactorItem.Id"/>); <see langword="null"/> for an answer to a choice of the
+    /// refactoring itself.
+    /// </summary>
+    public string? Item { get; init; }
 }
 
 /// <summary>
@@ -291,6 +303,42 @@ public sealed record class RefactorItemAnswer
     /// The answers to the item's choices; a choice that is not answered takes its default.
     /// </summary>
     public IReadOnlyList<RefactorAnswer> Answers { get; init; } = [];
+}
+
+/// <summary>
+/// Asks the language server what its user's answers to a refactoring raise before it is applied (<c>rdcore/refactor/check</c>), and is answered the notices
+/// (<see cref="RefactorCheckResult"/>): a dialog asks it as its user answers, and shows each notice beside the answer it is of.
+/// </summary>
+/// <remarks>
+/// It applies nothing, and refuses nothing: an answer the refactoring would refuse is answered a <see cref="RefactorNoticeKind.Refusal"/>, which
+/// <c>rdcore/refactor/apply</c> answers with an error when it is sent the same answers.
+/// </remarks>
+public record class RefactorCheckParams
+{
+    /// <inheritdoc cref="RefactorPrepareParams.Kind"/>
+    public string Kind { get; init; } = string.Empty;
+
+    /// <inheritdoc cref="RefactorPrepareParams.Uri"/>
+    public Uri? Uri { get; init; }
+
+    /// <inheritdoc cref="RefactorPrepareParams.Range"/>
+    public SourceRange Range { get; init; }
+
+    /// <inheritdoc cref="RefactorApplyParams.Answers"/>
+    public IReadOnlyList<RefactorAnswer> Answers { get; init; } = [];
+}
+
+/// <summary>
+/// What a user's answers to a refactoring raise: a name the code cannot declare where it goes, or one that hides another declaration.
+/// </summary>
+public sealed record class RefactorCheckResult
+{
+    /// <summary>
+    /// The notices the answers raise, each with the choice it is of (<see cref="RefactorNotice.Choice"/>): a <see cref="RefactorNoticeKind.Refusal"/> for an
+    /// answer the refactoring refuses, a <see cref="RefactorNoticeKind.Note"/> for what the user should know of an answer it takes. Empty when the answers
+    /// raise nothing; the notices of the refactoring itself are those of <c>rdcore/refactor/prepare</c>.
+    /// </summary>
+    public IReadOnlyList<RefactorNotice> Notices { get; init; } = [];
 }
 
 /// <summary>

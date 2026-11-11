@@ -20,3 +20,10 @@ public sealed record class RefactorPrepareRequest : RefactorPrepareParams, IRequ
 /// </summary>
 [Method(RDCorePlatformProtocol.RefactorApply, Direction.ClientToServer)]
 public sealed record class RefactorApplyRequest : RefactorApplyParams, IRequest, IRequest<RefactorWorkspaceEdit>;
+
+/// <summary>
+/// <see cref="RefactorCheckParams"/> as a request of <c>rdcore/refactor/check</c>, answered with a <see cref="RefactorCheckResult"/>: the type a language
+/// server's handler of the request takes.
+/// </summary>
+[Method(RDCorePlatformProtocol.RefactorCheck, Direction.ClientToServer)]
+public sealed record class RefactorCheckRequest : RefactorCheckParams, IRequest, IRequest<RefactorCheckResult>;

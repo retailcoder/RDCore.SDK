@@ -127,4 +127,10 @@ public static class RDCorePlatformProtocol
     /// Asks the language server for the edit a refactoring of a document's range makes with its user's answers, which the client applies.
     /// </summary>
     public const string RefactorApply = "rdcore/refactor/apply";
+
+    /// <summary>
+    /// Asks the language server what its user's answers to a refactoring of a document's range raise before it is applied: an answer it refuses, such as a name
+    /// the code cannot declare, or one that hides another declaration.
+    /// </summary>
+    public const string RefactorCheck = "rdcore/refactor/check";
 }
