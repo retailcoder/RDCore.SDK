@@ -126,6 +126,29 @@ public sealed class RDCoreLanguageServerLaunch
             throw new ArgumentException(string.Format(LaunchMessages.WorkspaceIsNotAnAbsoluteFileUri, workspace), parameter);
         }
 
+        var (root, manifest, executable) = Located(platformRoot);
+        return (root, manifest, executable, uri);
+    }
+
+    /// <summary>
+    /// The language server of the platform at <paramref name="platformRoot"/>, as <see cref="Prepare"/> would start it: the real path of
+    /// the executable its manifest names, under the platform root, with or without <c>.exe</c>.
+    /// </summary>
+    /// <remarks>
+    /// It tells whether a folder is a whole platform before anything is started, for a program that deploys one or offers one to a user.
+    /// </remarks>
+    /// <param name="platformRoot">The platform root.</param>
+    /// <returns>The language server's executable, as a full path.</returns>
+    /// <exception cref="DirectoryNotFoundException">The platform root does not exist.</exception>
+    /// <exception cref="FileNotFoundException">The platform root has no manifest, or the manifest names a language server that is not there.</exception>
+    /// <exception cref="InvalidDataException">
+    /// The manifest is not one, names no language server, or names an executable that is not under the platform root, or one through a link that can't be followed.
+    /// </exception>
+    public static string FindLanguageServer(string platformRoot) => Located(platformRoot).Executable;
+
+    // the platform root as a full path, its manifest, and the real path of the language server it names.
+    private static (string Root, PlatformManifest Manifest, string Executable) Located(string platformRoot)
+    {
         var root = Path.GetFullPath(platformRoot);
         if (!Directory.Exists(root))
         {
@@ -151,7 +174,7 @@ public sealed class RDCoreLanguageServerLaunch
         var named = Confined(root, realRoot, "langService", manifest.LangService, Named(root, manifest.LangService));
         var executable = ExecutableOf(named)
             ?? throw new FileNotFoundException(string.Format(LaunchMessages.LanguageServerIsNotThere, root), named);
-        return (root, manifest, Confined(root, realRoot, "langService", manifest.LangService, executable), uri);
+        return (root, manifest, Confined(root, realRoot, "langService", manifest.LangService, executable));
     }
 
     // a path of the manifest, which is relative to the platform root and written with either slash. Its ".." is the system's to take (PlatformRootConfinement.RealPath):

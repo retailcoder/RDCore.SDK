@@ -289,6 +289,39 @@ public sealed class RDCoreLanguageServerLaunchTests
         Assert.AreEqual(Path.Combine(_root, "RDCore.LanguageServer", Executable), launch.ExecutablePath);
     }
 
+    // what a program that deploys a platform, or offers one, checks before anything is started: the executable Prepare would start.
+    [TestMethod]
+    [DataRow("RDCore.LanguageServer.exe", "RDCore.LanguageServer.exe", DisplayName = "named and deployed for Windows")]
+    [DataRow("RDCore.LanguageServer.exe", "RDCore.LanguageServer", DisplayName = "named for Windows, deployed elsewhere")]
+    [DataRow("RDCore.LanguageServer", "RDCore.LanguageServer.exe", DisplayName = "named without the extension, deployed on Windows")]
+    public void TheLanguageServerOfARoot_IsFound_WithoutAWorkspace_AsPrepareFindsIt(string named, string deployed)
+    {
+        WithManifest(Manifest($"RDCore.LanguageServer/{named}"));
+        File.WriteAllText(Path.Combine(_root, "RDCore.LanguageServer", deployed), string.Empty);
+
+        var found = RDCoreLanguageServerLaunch.FindLanguageServer(_root);
+
+        Assert.AreEqual(Path.Combine(_root, "RDCore.LanguageServer", deployed), found);
+        Assert.AreEqual(RDCoreLanguageServerLaunch.Prepare(Options()).ExecutablePath, found);
+    }
+
+    [TestMethod]
+    public void ARootThatIsNotAWholePlatform_IsSaid_AsPrepareSaysIt()
+    {
+        Assert.ThrowsExactly<DirectoryNotFoundException>(() => RDCoreLanguageServerLaunch.FindLanguageServer(Path.Combine(_root, "nowhere")));
+        Assert.ThrowsExactly<FileNotFoundException>(() => RDCoreLanguageServerLaunch.FindLanguageServer(_root));
+
+        WithManifest(Manifest(string.Empty));
+        Assert.ThrowsExactly<InvalidDataException>(() => RDCoreLanguageServerLaunch.FindLanguageServer(_root));
+
+        WithManifest(Manifest($"RDCore.LanguageServer/{Executable}"));
+        Assert.ThrowsExactly<FileNotFoundException>(() => RDCoreLanguageServerLaunch.FindLanguageServer(_root));
+
+        File.WriteAllText(Path.Combine(_outside, Executable), string.Empty);
+        WithManifest(Manifest($"../outside/{Executable}"));
+        Assert.ThrowsExactly<InvalidDataException>(() => RDCoreLanguageServerLaunch.FindLanguageServer(_root));
+    }
+
     [TestMethod]
     public void TheManifest_NamesTheSystemThePlatformWasBuiltFor()
     {
