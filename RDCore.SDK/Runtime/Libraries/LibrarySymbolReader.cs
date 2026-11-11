@@ -39,7 +39,7 @@ namespace RDCore.SDK.Runtime.Libraries;
 /// </para>
 /// <para>
 /// An application object (<see cref="ClassDescription.IsApplication"/>) is a class like any other, except the Visual Basic 6.0 library's (<c>VB.Global</c>,
-/// known by the library's <see cref="LibraryOrigin.Guid"/>). That one is a standard module of the library, as VBA's <c>Global</c> is: its members are
+/// known by the library's <see cref="LibraryOrigin.Guid"/>). That one is a standard module of the library, like VBA's own global module: its members are
 /// procedures of the module, with no <c>Me</c>, and names of the project at the library's rank, and it has neither a type nor events.
 /// </para>
 /// </remarks>
@@ -102,7 +102,7 @@ public sealed class LibrarySymbolReader(Uri workspaceRoot, bool is64Bit = true)
                     ReadAfterDependencies(byName[named]);
                 }
 
-                // the Visual Basic 6.0 library's application object is a module of the library: its members are names of the project, and it is no type.
+                // the Visual Basic 6.0 library's application object is a module of the library: its members are names of the project, and it is not a type.
                 if (description.IsApplication && IsVisualBasic(library))
                 {
                     var module = new VBStandardModuleSymbol(workspaceRoot, new VBProjectSymbol(workspaceRoot, library.Name).Uri, description.Name)
