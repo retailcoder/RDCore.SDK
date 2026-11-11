@@ -21,6 +21,11 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>LaunchMessages.resx</DependentUpon>
     </Compile>
+    <Compile Update="Platform\PlatformMessages.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>PlatformMessages.resx</DependentUpon>
+    </Compile>
   </ItemGroup>
 
   <ItemGroup>
@@ -28,6 +33,11 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>LaunchMessages.Designer.cs</LastGenOutput>
       <CustomToolNamespace>RDCore.SDK.Client</CustomToolNamespace>
+    </EmbeddedResource>
+    <EmbeddedResource Update="Platform\PlatformMessages.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>PlatformMessages.Designer.cs</LastGenOutput>
+      <CustomToolNamespace>RDCore.SDK.Platform</CustomToolNamespace>
     </EmbeddedResource>
   </ItemGroup>
 
