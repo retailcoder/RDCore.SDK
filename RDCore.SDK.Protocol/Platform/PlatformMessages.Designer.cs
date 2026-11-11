@@ -68,5 +68,23 @@ namespace RDCore.SDK.Platform {
                 return ResourceManager.GetString("NotAVersion", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   Looks up a localized string similar to The file &apos;{0}&apos; is not a release manifest: {1}.
+        /// </summary>
+        internal static string ReleaseManifestIsNotOne {
+            get {
+                return ResourceManager.GetString("ReleaseManifestIsNotOne", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to The release manifest &apos;{0}&apos; is {1} bytes long, where {2} is the most..
+        /// </summary>
+        internal static string ReleaseManifestIsTooLarge {
+            get {
+                return ResourceManager.GetString("ReleaseManifestIsTooLarge", resourceCulture);
+            }
+        }
     }
 }

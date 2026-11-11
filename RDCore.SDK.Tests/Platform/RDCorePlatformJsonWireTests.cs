@@ -388,13 +388,14 @@ public sealed class RDCorePlatformJsonWireTests
         }
 
         // the client logic sends and answers messages, and is none; the pre-launch preparations (the language server's, the debug adapter's) are local to the
-        // client, and the manifest is a file of the platform root, as a version is a value of one.
+        // client, and the manifests are files of the platform root, as a version is a value of one.
         Type[] notMessages =
         [
             typeof(RDCorePlatformClient),
             typeof(RDCoreLanguageServerLaunch), typeof(RDCoreLanguageServerLaunchOptions),
             typeof(RDCoreDebugAdapterLaunch), typeof(RDCoreDebugAdapterLaunchOptions),
             typeof(PlatformManifest), typeof(PlatformVersion),
+            typeof(PlatformReleaseManifest), typeof(PlatformReleasePackage), typeof(PlatformReleaseRuntime),
         ];
         // the project file model is a workspace's .rdproj, which a client reads from disk: it is no message either.
         var projectFileModel = typeof(ProjectFile).Namespace;

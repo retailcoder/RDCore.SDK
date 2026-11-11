@@ -121,4 +121,12 @@
     <value>'{0}' is not a version: one is written as Semantic Versioning 2.0 writes it, such as 0.1.0 or 0.2.0-alpha.3.</value>
     <comment>{0}: the text read as a version.</comment>
   </data>
+  <data name="ReleaseManifestIsNotOne" xml:space="preserve">
+    <value>The file '{0}' is not a release manifest: {1}</value>
+    <comment>{0}: the path of release.json; {1}: what the JSON reader said.</comment>
+  </data>
+  <data name="ReleaseManifestIsTooLarge" xml:space="preserve">
+    <value>The release manifest '{0}' is {1} bytes long, where {2} is the most.</value>
+    <comment>{0}: the path of release.json; {1}: its size; {2}: the largest size read.</comment>
+  </data>
 </root>
