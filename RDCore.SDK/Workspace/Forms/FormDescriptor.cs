@@ -132,6 +132,36 @@ public sealed record class FormDescriptor(
     };
 
     /// <summary>
+    /// The form's <c>ClientLeft</c> designer property, in points: where its client area is, from the left of the screen. The designer block writes it in twips,
+    /// 20 to a point. <c>null</c> when the designer block does not set it, or sets it to something that is not a number.
+    /// </summary>
+    public double? ClientLeft => PointsOf("ClientLeft");
+
+    /// <summary>
+    /// The form's <c>ClientTop</c> designer property, in points: where its client area is, from the top of the screen. The designer block writes it in twips,
+    /// 20 to a point. <c>null</c> when the designer block does not set it, or sets it to something that is not a number.
+    /// </summary>
+    public double? ClientTop => PointsOf("ClientTop");
+
+    /// <summary>
+    /// The form's <c>ClientWidth</c> designer property, in points: the width of its window's client area. The designer block writes it in twips, 20 to a point.
+    /// <c>null</c> when the designer block does not set it, or sets it to something that is not a number.
+    /// </summary>
+    public double? ClientWidth => PointsOf("ClientWidth");
+
+    /// <summary>
+    /// The form's <c>ClientHeight</c> designer property, in points: the height of its window's client area. The designer block writes it in twips, 20 to a
+    /// point. <c>null</c> when the designer block does not set it, or sets it to something that is not a number.
+    /// </summary>
+    public double? ClientHeight => PointsOf("ClientHeight");
+
+    // a designer property in twips, as points: the designer block writes numbers the same way in every locale.
+    private double? PointsOf(string property)
+        => double.TryParse(Properties.GetValueOrDefault(property), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var twips)
+            ? twips / 20
+            : null;
+
+    /// <summary>
     /// The designer's state of the form, as the library that hosts it loads it (<see cref="FormDesigner.StateOf"/>), opaque here: for a VBA UserForm, the
     /// compound file its <c>.frx</c> keeps; for a Visual Basic 6.0 form, the whole <c>.frx</c>. Empty for a form whose designer keeps none, and for one read
     /// without its companion file.
