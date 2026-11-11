@@ -1,5 +1,6 @@
 ﻿using System.Buffers.Binary;
 using System.Text;
+using System.IO.Abstractions.TestingHelpers;
 using RDCore.SDK.Workspace.Forms;
 
 namespace RDCore.Tests.Workspace.Forms;
@@ -384,5 +385,104 @@ public sealed class FormDesignerTests
 
         Assert.IsFalse(string.IsNullOrWhiteSpace(exception.Message));
         Assert.AreEqual(FormDesignerFormatProblem.MissingFormStream, exception.Problem);
+    }
+
+    // a workspace folder with the form module, and its companion file beside it unless the row leaves it out.
+    private static (MockFileSystem FileSystem, string ModulePath) Workspace(string source, MockFileData? companion)
+    {
+        var modulePath = MockUnixSupport.Path(@"C:\work\forms\ExampleView.frm");
+        var files = new Dictionary<string, MockFileData> { [modulePath] = new(source) };
+        if (companion is not null)
+        {
+            files[MockUnixSupport.Path(@"C:\work\forms\ExampleView.frx")] = companion;
+        }
+
+        return (new MockFileSystem(files), modulePath);
+    }
+
+    [TestMethod]
+    public void ReadCompanion_OfAUserForm_IsTheFileItNamesBesideIt()
+    {
+        var frx = Fixture("ExampleView.frx");
+        var (fileSystem, modulePath) = Workspace(Text("ExampleView.frm"), new MockFileData(frx));
+
+        var companion = FormDesigner.ReadCompanion(fileSystem, modulePath, Text("ExampleView.frm"), out var problem);
+
+        Assert.IsNull(problem);
+        CollectionAssert.AreEqual(frx, companion.ToArray());
+    }
+
+    [TestMethod]
+    [DataRow("Attribute VB_Name = \"Module1\"\r\n", DisplayName = "not a form module")]
+    [DataRow("VERSION 5.00\r\nBegin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} ExampleView \r\n   Caption = \"ExampleView\"\r\nEnd\r\n", DisplayName = "a UserForm with no OleObjectBlob")]
+    public void ReadCompanion_OfAModuleThatNamesNone_IsEmpty_WithNoProblem(string source)
+    {
+        var (fileSystem, modulePath) = Workspace(source, new MockFileData(Fixture("ExampleView.frx")));
+
+        var companion = FormDesigner.ReadCompanion(fileSystem, modulePath, source, out var problem);
+
+        Assert.IsNull(problem);
+        Assert.IsTrue(companion.IsEmpty);
+    }
+
+    [TestMethod]
+    public void ReadCompanion_ThatIsNotThere_IsEmpty_WithNoProblem()
+    {
+        var (fileSystem, modulePath) = Workspace(Text("ExampleView.frm"), companion: null);
+
+        var companion = FormDesigner.ReadCompanion(fileSystem, modulePath, Text("ExampleView.frm"), out var problem);
+
+        Assert.IsNull(problem);
+        Assert.IsTrue(companion.IsEmpty);
+    }
+
+    [TestMethod]
+    public void ReadCompanion_ThatCannotBeRead_IsEmpty_WithTheProblem()
+    {
+        var (fileSystem, modulePath) = Workspace(Text("ExampleView.frm"), new MockFileData(Fixture("ExampleView.frx")) { AllowedFileShare = FileShare.None });
+
+        var companion = FormDesigner.ReadCompanion(fileSystem, modulePath, Text("ExampleView.frm"), out var problem);
+
+        Assert.IsInstanceOfType<IOException>(problem);
+        Assert.IsTrue(companion.IsEmpty);
+    }
+
+    [TestMethod]
+    public void ReadCompanion_OfAnUnterminatedDesignerBlock_IsEmpty_WithTheProblem()
+    {
+        const string source = "VERSION 5.00\r\nBegin VB.Form Form1\r\n   Picture = \"ExampleView.frx\":0000\r\n";
+        var (fileSystem, modulePath) = Workspace(source, new MockFileData(Fixture("ExampleView.frx")));
+
+        var companion = FormDesigner.ReadCompanion(fileSystem, modulePath, source, out var problem);
+
+        Assert.AreEqual(FormDesignerFormatProblem.UnterminatedBlock, Assert.IsInstanceOfType<FormDesignerFormatException>(problem).Problem);
+        Assert.IsTrue(companion.IsEmpty);
+    }
+
+    [TestMethod]
+    public void Read_WithTheProblem_OfAReadableForm_IsWhatReadDeclares()
+    {
+        var form = FormDesigner.Read(Text("ExampleView.frm"), Fixture("ExampleView.frx"), out var problem);
+
+        Assert.IsNull(problem);
+        Assert.AreEqual(Tree(FormDesigner.Read(Text("ExampleView.frm"), Fixture("ExampleView.frx"))!.Controls), Tree(form!.Controls));
+    }
+
+    [TestMethod]
+    public void Read_WithTheProblem_OfAUserFormWithoutItsFrx_IsNull_WithTheProblem()
+    {
+        var form = FormDesigner.Read(Text("ExampleView.frm"), ReadOnlyMemory<byte>.Empty, out var problem);
+
+        Assert.IsNull(form);
+        Assert.AreEqual(FormDesignerFormatProblem.MissingCompanion, problem?.Problem);
+    }
+
+    [TestMethod]
+    public void Read_WithTheProblem_OfAModuleThatIsNoForm_IsNull_WithNoProblem()
+    {
+        var form = FormDesigner.Read("Attribute VB_Name = \"Module1\"\r\n", ReadOnlyMemory<byte>.Empty, out var problem);
+
+        Assert.IsNull(form);
+        Assert.IsNull(problem);
     }
 }
