@@ -10,7 +10,9 @@ namespace RDCore.SDK.Platform;
 /// <param name="Root">The folder it is deployed in: <c>versions/&lt;version&gt;</c> under the shared root.</param>
 public sealed record DeployedPlatform(PlatformVersion Version, string Root)
 {
-    /// <summary>The path of the platform's manifest, <c>rdcore.json</c>.</summary>
+    /// <summary>
+    /// The path of the platform's manifest, <c>rdcore.json</c>.
+    /// </summary>
     public string Manifest => Path.Combine(Root, PlatformManifest.FileName);
 }
 
@@ -33,26 +35,36 @@ public sealed record DeployedPlatform(PlatformVersion Version, string Root)
 /// </para>
 /// <para>
 /// <b>Old versions are removed whole, or not at all</b> (<see cref="RemoveOldVersions"/>): the current one and the one before it are kept. A
-/// version is renamed out of the way first, which fails while a process runs from it on Windows, and is left where it is until a later
-/// deployment finds it unused.
+/// version is renamed out of the way first. On Windows the rename fails while a process runs from the version, which is then left where it
+/// is until a later deployment finds it unused.
 /// </para>
 /// </remarks>
 /// <param name="root">The root's folder, such as <see cref="ForThisUser"/>.</param>
 public sealed class SharedPlatformRoot(string root)
 {
-    /// <summary>The name of the file that names the current version and the one before it: <c>installer.json</c>.</summary>
+    /// <summary>
+    /// The name of the file that names the current version and the one before it: <c>installer.json</c>.
+    /// </summary>
     public const string StateFileName = "installer.json";
 
-    /// <summary>The name of the folder deployed versions are in: <c>versions</c>.</summary>
+    /// <summary>
+    /// The name of the folder deployed versions are in: <c>versions</c>.
+    /// </summary>
     public const string VersionsFolderName = "versions";
 
-    /// <summary>The name of the file held for one deployment: <c>install.lock</c>.</summary>
+    /// <summary>
+    /// The name of the file held for one deployment: <c>install.lock</c>.
+    /// </summary>
     public const string LockFileName = "install.lock";
 
-    /// <summary>The suffix of a version's folder while it is written: <c>.partial</c>.</summary>
+    /// <summary>
+    /// The suffix of a version's folder while it is written: <c>.partial</c>.
+    /// </summary>
     public const string PartialSuffix = ".partial";
 
-    /// <summary>The suffix of a version's folder while it is removed: <c>.removing</c>.</summary>
+    /// <summary>
+    /// The suffix of a version's folder while it is removed: <c>.removing</c>.
+    /// </summary>
     public const string RemovingSuffix = ".removing";
 
     private static readonly TimeSpan LockRetry = TimeSpan.FromMilliseconds(200);
@@ -64,14 +76,18 @@ public sealed class SharedPlatformRoot(string root)
     public static string ForThisUser =>
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "RDCore", "Platform");
 
-    /// <summary>The root's folder.</summary>
+    /// <summary>
+    /// The root's folder.
+    /// </summary>
     public string Root { get; } = root;
 
-    /// <summary>The folder deployed versions are in.</summary>
+    /// <summary>
+    /// The folder deployed versions are in.
+    /// </summary>
     public string Versions => Path.Combine(Root, VersionsFolderName);
 
     /// <summary>
-    /// The platform in use, or null when none is named, or the one named is gone, or isn't a whole platform.
+    /// The platform in use, or null when none is named, or the one named is gone, or is not a whole platform.
     /// </summary>
     public DeployedPlatform? Current
     {
@@ -87,10 +103,14 @@ public sealed class SharedPlatformRoot(string root)
         }
     }
 
-    /// <summary>The version <c>installer.json</c> names as the one before the current one, or null when it names none.</summary>
+    /// <summary>
+    /// The version <c>installer.json</c> names as the one before the current one, or null when it names none.
+    /// </summary>
     public PlatformVersion? Previous => PlatformVersion.TryParse(ReadState().Previous, out var previous) ? previous : null;
 
-    /// <summary>Where <paramref name="version"/> is, or would be, deployed.</summary>
+    /// <summary>
+    /// Where <paramref name="version"/> is, or would be, deployed.
+    /// </summary>
     /// <param name="version">The version.</param>
     public string VersionRoot(PlatformVersion version)
     {
@@ -98,7 +118,9 @@ public sealed class SharedPlatformRoot(string root)
         return Path.Combine(Versions, version.Text);
     }
 
-    /// <summary>Where <paramref name="version"/> is written before it is moved into place: its folder, with <see cref="PartialSuffix"/>.</summary>
+    /// <summary>
+    /// Where <paramref name="version"/> is written before it is moved into place: its folder, with <see cref="PartialSuffix"/>.
+    /// </summary>
     /// <param name="version">The version.</param>
     public string PartialRoot(PlatformVersion version) => VersionRoot(version) + PartialSuffix;
 
@@ -122,7 +144,7 @@ public sealed class SharedPlatformRoot(string root)
 
     /// <summary>
     /// Holds the root for one deployment, across processes: an exclusive handle on <c>install.lock</c>, released with the handle, and by
-    /// the system if the process dies holding it. It creates the root when it isn't there.
+    /// the system if the process dies holding it. It creates the root when it is not there.
     /// </summary>
     /// <param name="waiting">Told once, when another deployment holds the root; null tells no one.</param>
     /// <param name="cancellationToken">Stops the wait.</param>
@@ -154,11 +176,11 @@ public sealed class SharedPlatformRoot(string root)
 
     /// <summary>
     /// Moves <paramref name="version"/>'s <see cref="PartialRoot"/>, written whole, into place, as the version's folder. A folder of that
-    /// version that isn't a whole platform is what is left of a deployment someone broke, and is replaced. Call it with the root held.
+    /// version that is not a whole platform is what an interrupted deployment left, and is replaced. Call it with the root held.
     /// </summary>
     /// <param name="version">The version written.</param>
-    /// <exception cref="DirectoryNotFoundException">The partial folder isn't there.</exception>
-    /// <exception cref="FileNotFoundException">The partial folder has no manifest, or not the language server its manifest names.</exception>
+    /// <exception cref="DirectoryNotFoundException">The partial folder is not there.</exception>
+    /// <exception cref="FileNotFoundException">The partial folder has no manifest, or lacks the language server its manifest names.</exception>
     /// <exception cref="InvalidDataException">The partial folder's manifest is not one, or names a language server outside it.</exception>
     public void MoveIntoPlace(PlatformVersion version)
     {
@@ -172,10 +194,11 @@ public sealed class SharedPlatformRoot(string root)
     }
 
     /// <summary>
-    /// Makes <paramref name="version"/>, deployed, the platform in use, unless the current one is newer: true when it is the current one
-    /// after. The current one becomes the previous one. Call it with the root held.
+    /// Makes <paramref name="version"/>, deployed, the platform in use, unless the current one is newer. The current one becomes the
+    /// previous one. Call it with the root held.
     /// </summary>
     /// <param name="version">A deployed version.</param>
+    /// <returns>Whether <paramref name="version"/> is the current version afterwards.</returns>
     public bool MakeCurrentUnlessOlder(PlatformVersion version)
     {
         ArgumentNullException.ThrowIfNull(version);
@@ -200,9 +223,9 @@ public sealed class SharedPlatformRoot(string root)
 
     /// <summary>
     /// Removes every deployed version but the current one, the one before it and <paramref name="keep"/>, each one whole: renamed out of
-    /// the way with <see cref="RemovingSuffix"/> first, which fails while a process runs from it on Windows, and only then deleted. One that
-    /// can't be renamed or deleted is left, for a later deployment. A folder whose name isn't a version is left as it is. Call it with the
-    /// root held.
+    /// the way with <see cref="RemovingSuffix"/> first, then deleted. On Windows the rename fails while a process runs from the version. A
+    /// version that cannot be renamed or deleted is left for a later deployment. A folder whose name is not a version is left as it is. Call
+    /// it with the root held.
     /// </summary>
     /// <param name="keep">A version kept as well, such as the one just deployed.</param>
     public void RemoveOldVersions(PlatformVersion keep)
@@ -219,7 +242,7 @@ public sealed class SharedPlatformRoot(string root)
             var name = Path.GetFileName(folder);
             if (name.EndsWith(RemovingSuffix, StringComparison.Ordinal))
             {
-                // a removal an earlier deployment couldn't finish: nothing runs from it, as it was renamed.
+                // a removal an earlier deployment could not finish: nothing runs from it, as it was renamed.
                 TryDelete(folder);
                 continue;
             }
