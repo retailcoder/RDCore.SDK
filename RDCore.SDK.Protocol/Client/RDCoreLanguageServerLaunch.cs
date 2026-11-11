@@ -142,7 +142,8 @@ public sealed class RDCoreLanguageServerLaunch
     /// <exception cref="DirectoryNotFoundException">The platform root does not exist.</exception>
     /// <exception cref="FileNotFoundException">The platform root has no manifest, or the manifest names a language server that is not there.</exception>
     /// <exception cref="InvalidDataException">
-    /// The manifest is not one, names no language server, or names an executable that is not under the platform root, or one through a link that can't be followed.
+    /// The manifest is not one, names no language server, or names an executable that is not under the platform root, or one through a link that cannot be
+    /// followed.
     /// </exception>
     public static string FindLanguageServer(string platformRoot) => Located(platformRoot).Executable;
 

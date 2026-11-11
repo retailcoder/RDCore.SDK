@@ -15,44 +15,62 @@ namespace RDCore.SDK.Platform;
 /// </remarks>
 public sealed record class PlatformReleaseManifest
 {
-    /// <summary>The name of the release manifest at the platform root.</summary>
+    /// <summary>
+    /// The name of the release manifest at the platform root.
+    /// </summary>
     public const string FileName = "release.json";
 
     /// <summary>
-    /// The largest release manifest read, in bytes: 4 MiB, many times what a platform's list of files takes.
+    /// The largest release manifest that is read, in bytes: 4 MiB, many times what a platform's list of files takes.
     /// </summary>
     public const int MaxBytes = 4 << 20;
 
     private static readonly JsonSerializerOptions Options = new() { PropertyNameCaseInsensitive = true };
 
-    /// <summary>The version of the manifest's format: 1.</summary>
+    /// <summary>
+    /// The version of the manifest's format: 1.
+    /// </summary>
     public int Schema { get; init; }
 
-    /// <summary>The product released: <c>RDCore</c>.</summary>
+    /// <summary>
+    /// The product released: <c>RDCore</c>.
+    /// </summary>
     public string Name { get; init; } = string.Empty;
 
-    /// <summary>The version of the platform released, as its <c>rdcore.json</c>'s <c>platformVersion</c> names it.</summary>
+    /// <summary>
+    /// The version of the platform released, as its <c>rdcore.json</c>'s <c>platformVersion</c> names it.
+    /// </summary>
     public string Version { get; init; } = string.Empty;
 
-    /// <summary>The commit the platform was built from.</summary>
+    /// <summary>
+    /// The commit the platform was built from.
+    /// </summary>
     public string? Commit { get; init; }
 
-    /// <summary>The runtime identifier the platform was built for, such as <c>win-x64</c> or <c>osx-arm64</c>: the manifest's <c>rid</c>.</summary>
+    /// <summary>
+    /// The runtime identifier the platform was built for, such as <c>win-x64</c> or <c>osx-arm64</c>: the manifest's <c>rid</c>.
+    /// </summary>
     [JsonPropertyName("rid")]
     public string? RuntimeIdentifier { get; init; }
 
-    /// <summary>How the platform is deployed: <c>framework-dependent</c>, which needs <see cref="Runtime"/> on the machine.</summary>
+    /// <summary>
+    /// How the platform is deployed: <c>framework-dependent</c>, which needs <see cref="Runtime"/> on the machine.
+    /// </summary>
     public string? Deployment { get; init; }
 
-    /// <summary>The RDCore.SDK package the platform was built with.</summary>
+    /// <summary>
+    /// The RDCore.SDK package the platform was built with.
+    /// </summary>
     public PlatformReleasePackage? Sdk { get; init; }
 
-    /// <summary>The .NET runtime the platform runs on.</summary>
+    /// <summary>
+    /// The .NET runtime the platform runs on.
+    /// </summary>
     public PlatformReleaseRuntime? Runtime { get; init; }
 
     /// <summary>
     /// The RDCore.SDK version the platform was built with, from <see cref="Sdk"/>; null when it names another package, or a version that
-    /// isn't one.
+    /// is not one.
     /// </summary>
     [JsonIgnore]
     public PlatformVersion? SdkVersion =>
@@ -63,7 +81,7 @@ public sealed record class PlatformReleaseManifest
 
     /// <summary>
     /// Whether the platform was built with an RDCore.SDK compatible with <paramref name="sdk"/>, by
-    /// <see cref="PlatformVersion.IsCompatibleWith"/>; false when the manifest doesn't say which one it was built with.
+    /// <see cref="PlatformVersion.IsCompatibleWith"/>; false when the manifest does not say which one it was built with.
     /// </summary>
     /// <param name="sdk">The RDCore.SDK version a client was built with, such as <see cref="RDCoreSdk.Version"/>.</param>
     public bool IsBuiltWith(PlatformVersion sdk)
@@ -72,9 +90,11 @@ public sealed record class PlatformReleaseManifest
         return SdkVersion is { } built && built.IsCompatibleWith(sdk);
     }
 
-    /// <summary>Reads a release manifest from its content.</summary>
+    /// <summary>
+    /// Reads a release manifest from its content.
+    /// </summary>
     /// <param name="utf8Json">The manifest's content, in UTF-8.</param>
-    /// <exception cref="InvalidDataException">It is longer than <see cref="MaxBytes"/>, or not a release manifest.</exception>
+    /// <exception cref="InvalidDataException">The content is longer than <see cref="MaxBytes"/>, or not a release manifest.</exception>
     public static PlatformReleaseManifest Parse(ReadOnlySpan<byte> utf8Json) => Parse(utf8Json, FileName);
 
     /// <summary>
@@ -82,8 +102,8 @@ public sealed record class PlatformReleaseManifest
     /// </summary>
     /// <param name="platformRoot">The platform root.</param>
     /// <exception cref="InvalidDataException">The manifest is longer than <see cref="MaxBytes"/>, or not a release manifest.</exception>
-    /// <exception cref="IOException">The manifest can't be read.</exception>
-    /// <exception cref="UnauthorizedAccessException">The manifest can't be read.</exception>
+    /// <exception cref="IOException">The manifest cannot be read.</exception>
+    /// <exception cref="UnauthorizedAccessException">The manifest cannot be read.</exception>
     public static PlatformReleaseManifest? Read(string platformRoot)
     {
         var file = new FileInfo(Path.Combine(platformRoot, FileName));
@@ -120,22 +140,34 @@ public sealed record class PlatformReleaseManifest
         new(string.Format(CultureInfo.CurrentCulture, PlatformMessages.ReleaseManifestIsTooLarge, path, size, MaxBytes));
 }
 
-/// <summary>A package a released platform was built with: the <c>sdk</c> of <see cref="PlatformReleaseManifest"/>.</summary>
+/// <summary>
+/// A package a released platform was built with: the <c>sdk</c> of <see cref="PlatformReleaseManifest"/>.
+/// </summary>
 public sealed record class PlatformReleasePackage
 {
-    /// <summary>The package's id: <c>RDCore.SDK</c>.</summary>
+    /// <summary>
+    /// The package's id: <c>RDCore.SDK</c>.
+    /// </summary>
     public string Package { get; init; } = string.Empty;
 
-    /// <summary>The package's version, such as <c>0.1.1-alpha</c>.</summary>
+    /// <summary>
+    /// The package's version, such as <c>0.1.1-alpha</c>.
+    /// </summary>
     public string Version { get; init; } = string.Empty;
 }
 
-/// <summary>The .NET runtime a released platform runs on: the <c>runtime</c> of <see cref="PlatformReleaseManifest"/>.</summary>
+/// <summary>
+/// The .NET runtime a released platform runs on: the <c>runtime</c> of <see cref="PlatformReleaseManifest"/>.
+/// </summary>
 public sealed record class PlatformReleaseRuntime
 {
-    /// <summary>The shared framework's name: <c>Microsoft.NETCore.App</c>.</summary>
+    /// <summary>
+    /// The shared framework's name: <c>Microsoft.NETCore.App</c>.
+    /// </summary>
     public string Name { get; init; } = string.Empty;
 
-    /// <summary>The oldest version of it the platform runs on, such as <c>10.0.0</c>.</summary>
+    /// <summary>
+    /// The oldest version of it the platform runs on, such as <c>10.0.0</c>.
+    /// </summary>
     public string MinimumVersion { get; init; } = string.Empty;
 }

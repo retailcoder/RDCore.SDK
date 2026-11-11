@@ -8,7 +8,9 @@ namespace RDCore.SDK;
 /// </summary>
 public static class RDCoreSdk
 {
-    /// <summary>The package's id: <c>RDCore.SDK</c>, as a release manifest names it (<see cref="PlatformReleasePackage.Package"/>).</summary>
+    /// <summary>
+    /// The package's id: <c>RDCore.SDK</c>, as a release manifest names it (<see cref="PlatformReleasePackage.Package"/>).
+    /// </summary>
     public const string PackageId = "RDCore.SDK";
 
     /// <summary>

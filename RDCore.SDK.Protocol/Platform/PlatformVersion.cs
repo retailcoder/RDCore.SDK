@@ -8,8 +8,8 @@ namespace RDCore.SDK.Platform;
 /// <c>0.1.0</c>, <c>0.2.0-alpha.3</c>.
 /// </summary>
 /// <remarks>
-/// It is read as <c>rdcore.json</c>'s <c>platformVersion</c>, a release tag without its leading <c>v</c>, and <c>release.json</c>'s
-/// <c>sdk</c> name it. Versions are ordered as Semantic Versioning 2.0 orders them: a prerelease comes before its release, and build
+/// It is the version that <c>rdcore.json</c>'s <c>platformVersion</c>, a release tag without its leading <c>v</c>, and
+/// <c>release.json</c>'s <c>sdk</c> name. Versions are ordered as Semantic Versioning 2.0 orders them: a prerelease comes before its release, and build
 /// metadata is ignored. Every program that deploys a platform reads, orders and names a version this way, so that a version deployed by one
 /// is found by the others, in the same folder.
 /// </remarks>
@@ -22,13 +22,19 @@ public sealed record PlatformVersion : IComparable<PlatformVersion>
         Text = text;
     }
 
-    /// <summary>The major, minor and patch numbers.</summary>
+    /// <summary>
+    /// The major, minor and patch numbers.
+    /// </summary>
     public Version Core { get; }
 
-    /// <summary>The prerelease identifiers, such as <c>alpha</c> and <c>3</c>; empty for a release.</summary>
+    /// <summary>
+    /// The prerelease identifiers, such as <c>alpha</c> and <c>3</c>; empty for a release.
+    /// </summary>
     public IReadOnlyList<string> Prerelease { get; }
 
-    /// <summary>Whether this is a prerelease.</summary>
+    /// <summary>
+    /// Whether this is a prerelease.
+    /// </summary>
     public bool IsPrerelease => Prerelease.Count > 0;
 
     /// <summary>
@@ -59,7 +65,9 @@ public sealed record PlatformVersion : IComparable<PlatformVersion>
         ? string.Create(CultureInfo.InvariantCulture, $"{Core.Major}.x")
         : string.Create(CultureInfo.InvariantCulture, $"0.{Core.Minor}.x");
 
-    /// <summary>Reads a version, with or without a leading <c>v</c>; false when it is not one.</summary>
+    /// <summary>
+    /// Reads a version, with or without a leading <c>v</c>; false when it is not one.
+    /// </summary>
     /// <param name="text">The version's text, such as <c>0.2.0-alpha.3</c>, <c>v0.2.0</c> or <c>0.1.1-alpha+2062f98</c>.</param>
     /// <param name="version">The version read; null when it is not one.</param>
     public static bool TryParse(string? text, [NotNullWhen(true)] out PlatformVersion? version)
@@ -82,7 +90,7 @@ public sealed record PlatformVersion : IComparable<PlatformVersion>
             value = value[..plus];
         }
 
-        // a deployed version's folder is named by it, and Windows doesn't tell RC from rc: a version is case-insensitive, and written in lowercase.
+        // a deployed version's folder is named by it, and Windows does not tell RC from rc: a version is case-insensitive, and written in lowercase.
         value = value.ToLowerInvariant();
         var dash = value.IndexOf('-');
         var core = dash >= 0 ? value[..dash] : value;
@@ -108,11 +116,13 @@ public sealed record PlatformVersion : IComparable<PlatformVersion>
         return true;
     }
 
-    // Semantic Versioning forbids it in a number, so 01.0.0 and 1.0.0 can't be two versions, or one with two folders.
+    // Semantic Versioning forbids it in a number, so 01.0.0 and 1.0.0 cannot be two versions, or one with two folders.
     private static bool HasLeadingZero(string identifier) =>
         identifier.Length > 1 && identifier[0] == '0' && identifier.All(char.IsAsciiDigit);
 
-    /// <summary>Reads a version, with or without a leading <c>v</c>.</summary>
+    /// <summary>
+    /// Reads a version, with or without a leading <c>v</c>.
+    /// </summary>
     /// <param name="text">The version's text, such as <c>0.2.0-alpha.3</c>.</param>
     /// <exception cref="FormatException"><paramref name="text"/> is not a version.</exception>
     public static PlatformVersion Parse(string text) =>
@@ -169,29 +179,39 @@ public sealed record PlatformVersion : IComparable<PlatformVersion>
         return string.CompareOrdinal(a, b);
     }
 
-    /// <summary>Whether both are the same version, by <see cref="CompareTo"/>.</summary>
+    /// <summary>
+    /// Whether both are the same version, by <see cref="CompareTo"/>.
+    /// </summary>
     /// <param name="other">The other version.</param>
     public bool Equals(PlatformVersion? other) => other is not null && CompareTo(other) == 0;
 
     /// <inheritdoc/>
     public override int GetHashCode() => HashCode.Combine(Core, string.Join('.', Prerelease));
 
-    /// <summary>Whether <paramref name="left"/> comes before <paramref name="right"/>.</summary>
+    /// <summary>
+    /// Whether <paramref name="left"/> comes before <paramref name="right"/>.
+    /// </summary>
     /// <param name="left">The first version.</param>
     /// <param name="right">The second version.</param>
     public static bool operator <(PlatformVersion left, PlatformVersion right) => Compare(left, right) < 0;
 
-    /// <summary>Whether <paramref name="left"/> comes after <paramref name="right"/>.</summary>
+    /// <summary>
+    /// Whether <paramref name="left"/> comes after <paramref name="right"/>.
+    /// </summary>
     /// <param name="left">The first version.</param>
     /// <param name="right">The second version.</param>
     public static bool operator >(PlatformVersion left, PlatformVersion right) => Compare(left, right) > 0;
 
-    /// <summary>Whether <paramref name="left"/> comes before <paramref name="right"/>, or is it.</summary>
+    /// <summary>
+    /// Whether <paramref name="left"/> comes before <paramref name="right"/>, or is the same version.
+    /// </summary>
     /// <param name="left">The first version.</param>
     /// <param name="right">The second version.</param>
     public static bool operator <=(PlatformVersion left, PlatformVersion right) => Compare(left, right) <= 0;
 
-    /// <summary>Whether <paramref name="left"/> comes after <paramref name="right"/>, or is it.</summary>
+    /// <summary>
+    /// Whether <paramref name="left"/> comes after <paramref name="right"/>, or is the same version.
+    /// </summary>
     /// <param name="left">The first version.</param>
     /// <param name="right">The second version.</param>
     public static bool operator >=(PlatformVersion left, PlatformVersion right) => Compare(left, right) >= 0;
@@ -199,6 +219,8 @@ public sealed record PlatformVersion : IComparable<PlatformVersion>
     private static int Compare(PlatformVersion? left, PlatformVersion? right) =>
         left is null ? (right is null ? 0 : -1) : left.CompareTo(right);
 
-    /// <summary>The version's <see cref="Text"/>.</summary>
+    /// <summary>
+    /// The version's <see cref="Text"/>.
+    /// </summary>
     public override string ToString() => Text;
 }

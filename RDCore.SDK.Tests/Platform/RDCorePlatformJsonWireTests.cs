@@ -388,7 +388,7 @@ public sealed class RDCorePlatformJsonWireTests
         }
 
         // the client logic sends and answers messages, and is none; the pre-launch preparations (the language server's, the debug adapter's) are local to the
-        // client, the manifests are files of the platform root, as a version is a value of one, and the shared platform root is folders.
+        // client; the manifests are files of the platform root, a version is a value they hold, and the shared platform root is a set of folders.
         Type[] notMessages =
         [
             typeof(RDCorePlatformClient),

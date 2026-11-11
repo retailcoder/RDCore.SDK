@@ -61,7 +61,7 @@ namespace RDCore.SDK.Platform {
         }
 
         /// <summary>
-        ///   Looks up a localized string similar to &apos;{0}&apos; is not a version: one is written as Semantic Versioning 2.0 writes it, such as 0.1.0 or 0.2.0-alpha.3..
+        ///   Looks up a localized string similar to &apos;{0}&apos; is not a version: a version is written as Semantic Versioning 2.0 writes one, such as 0.1.0 or 0.2.0-alpha.3..
         /// </summary>
         internal static string NotAVersion {
             get {
@@ -79,7 +79,7 @@ namespace RDCore.SDK.Platform {
         }
 
         /// <summary>
-        ///   Looks up a localized string similar to The release manifest &apos;{0}&apos; is {1} bytes long, where {2} is the most..
+        ///   Looks up a localized string similar to The release manifest &apos;{0}&apos; is {1} bytes long; the largest that is read is {2} bytes..
         /// </summary>
         internal static string ReleaseManifestIsTooLarge {
             get {

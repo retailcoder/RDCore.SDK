@@ -19,7 +19,7 @@ public record class PlatformManifest
 
     /// <summary>
     /// The runtime identifier the platform was built for, such as <c>win-x64</c> or <c>osx-arm64</c>: the manifest's <c>rid</c>. Empty when
-    /// the manifest doesn't name one.
+    /// the manifest does not name one.
     /// </summary>
     [JsonPropertyName("rid")]
     public string RuntimeIdentifier { get; init; } = string.Empty;

@@ -118,12 +118,12 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="NotAVersion" xml:space="preserve">
-    <value>'{0}' n'est pas une version : une version s'écrit comme l'écrit Semantic Versioning 2.0, par exemple 0.1.0 ou 0.2.0-alpha.3.</value>
+    <value>'{0}' n'est pas une version : une version s'écrit selon Semantic Versioning 2.0, par exemple 0.1.0 ou 0.2.0-alpha.3.</value>
   </data>
   <data name="ReleaseManifestIsNotOne" xml:space="preserve">
     <value>Le fichier '{0}' n'est pas un manifeste de publication : {1}</value>
   </data>
   <data name="ReleaseManifestIsTooLarge" xml:space="preserve">
-    <value>Le manifeste de publication '{0}' fait {1} octets, alors que {2} est le maximum.</value>
+    <value>Le manifeste de publication '{0}' fait {1} octets; le plus grand qui soit lu fait {2} octets.</value>
   </data>
 </root>

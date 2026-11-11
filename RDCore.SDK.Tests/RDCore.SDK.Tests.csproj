@@ -25,7 +25,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- the version this build stamps into the SDKs assemblies, which RDCoreSdk.Version reads back. -->
+    <!-- the version this build stamps into the SDK's assemblies, which RDCoreSdk.Version reads back. -->
     <AssemblyMetadata Include="BuiltVersion" Value="$(Version)" />
   </ItemGroup>
 
