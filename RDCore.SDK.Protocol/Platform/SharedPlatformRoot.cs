@@ -231,7 +231,10 @@ public sealed class SharedPlatformRoot(string root)
     /// version that cannot be renamed or deleted is left for a later deployment. A folder whose name is not a version is left as it is. Call
     /// it with the root held.
     /// </summary>
-    /// <remarks>A version that is held (<see cref="Hold"/>) is kept too, and so is a held one an earlier removal left renamed, which is put back.</remarks>
+    /// <remarks>
+    /// A version that is held (<see cref="Hold"/>) is kept too. A held one that an earlier removal left renamed is put back where the system
+    /// allows the rename, and left as it is on Windows, where it does not.
+    /// </remarks>
     /// <param name="keep">A version kept as well, such as the one just deployed.</param>
     public void RemoveOldVersions(PlatformVersion keep)
     {
@@ -295,7 +298,7 @@ public sealed class SharedPlatformRoot(string root)
     /// </para>
     /// <para>
     /// On Windows the open manifest also stops the version's folder from being renamed or deleted by anything else. On Linux and macOS, .NET
-    /// takes an advisory lock (<c>flock</c>) for a shared file: <see cref="RemoveOldVersions"/> honours it, and a program that deletes the
+    /// takes an advisory lock (<c>flock</c>) for a shared file: <see cref="RemoveOldVersions"/> honors it, and a program that deletes the
     /// folder without asking does not. There, a process run with <c>DOTNET_SYSTEM_IO_DISABLEFILELOCKING</c> set takes no lock, and its
     /// lease keeps nothing deployed.
     /// </para>
