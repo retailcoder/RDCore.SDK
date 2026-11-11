@@ -47,6 +47,15 @@ public sealed record class RefactorPrepareResult
     /// (<see cref="RefactorNoticeKind"/>).
     /// </summary>
     public IReadOnlyList<RefactorNotice> Notices { get; init; } = [];
+
+    /// <summary>
+    /// The range of the document the refactoring is of, as it takes the request's (<see cref="RefactorPrepareParams.Range"/>): a selection grows to the whole
+    /// statements it touches, which is what an extraction moves; <see langword="null"/> when there is none, as when the request's range holds no statement.
+    /// </summary>
+    /// <remarks>
+    /// A client shows it before the refactoring is applied, so that its user sees what it will change.
+    /// </remarks>
+    public SourceRange? Range { get; init; }
 }
 
 /// <summary>
