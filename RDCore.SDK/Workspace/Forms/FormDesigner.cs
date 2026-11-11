@@ -82,8 +82,10 @@ public static partial class FormDesigner
     /// beside the module's own file.
     /// </summary>
     /// <remarks>
-    /// What every program that loads a workspace's form modules reads with each one's text, before <see cref="Read(string, ReadOnlyMemory{byte}, out FormDesignerFormatException)"/>:
-    /// a module whose companion cannot be read is still loaded, and its form declares no controls.
+    /// A program that loads a workspace's form modules reads each one's companion with its text, then gives both to
+    /// <see cref="Read(string, ReadOnlyMemory{byte}, out FormDesignerFormatException)"/>. A module whose companion is not read is still loaded. A VBA
+    /// UserForm's controls are in its companion, so without it the read gives the problem and the form declares no controls. A Visual Basic 6.0 form's
+    /// controls are in its text, so it declares them, with an empty <see cref="FormDescriptor.State"/>.
     /// </remarks>
     /// <param name="fileSystem">The file system the module is on.</param>
     /// <param name="modulePath">The path of the form module's file.</param>
