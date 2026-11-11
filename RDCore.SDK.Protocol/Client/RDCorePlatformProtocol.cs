@@ -130,7 +130,7 @@ public static class RDCorePlatformProtocol
 
     /// <summary>
     /// Asks the language server what its user's answers to a refactoring of a document's range raise before it is applied: an answer it refuses, such as a name
-    /// the code cannot declare, or one that hides another declaration.
+    /// the code cannot declare, or a note on one it takes, such as a name that hides another declaration.
     /// </summary>
     public const string RefactorCheck = "rdcore/refactor/check";
 }

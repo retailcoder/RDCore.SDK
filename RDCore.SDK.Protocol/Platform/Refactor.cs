@@ -232,8 +232,8 @@ public sealed record class RefactorNotice
     public string? Choice { get; init; }
 
     /// <summary>
-    /// The item of a list whose choice's answer the notice is of (<see cref="RefactorItem.Id"/>); <see langword="null"/> for an answer to a choice of the
-    /// refactoring itself.
+    /// The item of a <see cref="RefactorChoiceKind.List"/> choice (<see cref="RefactorItem.Id"/>) when <see cref="Choice"/> is one of that item's own choices;
+    /// <see langword="null"/> when it is a choice of the refactoring itself, and for a notice of the refactoring.
     /// </summary>
     public string? Item { get; init; }
 }
@@ -306,7 +306,7 @@ public sealed record class RefactorItemAnswer
 }
 
 /// <summary>
-/// Asks the language server what its user's answers to a refactoring raise before it is applied (<c>rdcore/refactor/check</c>), and is answered the notices
+/// Asks the language server what its user's answers to a refactoring raise before it is applied (<c>rdcore/refactor/check</c>), and is answered with the notices
 /// (<see cref="RefactorCheckResult"/>): a dialog asks it as its user answers, and shows each notice beside the answer it is of.
 /// </summary>
 /// <remarks>

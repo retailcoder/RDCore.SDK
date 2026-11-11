@@ -369,7 +369,7 @@ public record class CliCommand(bool IsSupported = false) : CorePlatformClientCap
 /// <c>codeAction/resolve</c> for a client that shows a dialog of its own before a refactoring is applied.
 /// </summary>
 /// <remarks>
-/// These requests serve every refactoring, whose choices are described as data. A client that does not expect it is offered the same refactorings as
+/// These requests serve every refactoring, whose choices are described as data. A client that does not expect the capability is offered the same refactorings as
 /// code actions, which complete with their defaults.
 /// </remarks>
 /// <param name="IsSupported">Whether the capability is expected, or provided.</param>
