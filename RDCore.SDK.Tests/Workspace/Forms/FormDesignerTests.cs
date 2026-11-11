@@ -1,4 +1,5 @@
 ﻿using System.Buffers.Binary;
+using System.Globalization;
 using System.Text;
 using System.IO.Abstractions.TestingHelpers;
 using RDCore.SDK.Workspace.Forms;
@@ -385,6 +386,52 @@ public sealed class FormDesignerTests
 
         Assert.IsFalse(string.IsNullOrWhiteSpace(exception.Message));
         Assert.AreEqual(FormDesignerFormatProblem.MissingFormStream, exception.Problem);
+    }
+
+    // a VB6 form's designer block, which needs no companion file, with the client area's properties the row gives.
+    private static FormDescriptor FormWith(string clientProperties)
+        => FormDesigner.Read("VERSION 5.00\r\nBegin VB.Form Form1 \r\n   Caption         =   \"Form1\"\r\n" + clientProperties + "End\r\nAttribute VB_Name = \"Form1\"\r\n")!;
+
+    [TestMethod]
+    public void ClientArea_IsTheDesignerBlocksTwips_InPoints()
+    {
+        var form = FormWith("   ClientHeight    =   3000\r\n   ClientLeft      =   45\r\n   ClientTop       =   375\r\n   ClientWidth     =   4000\r\n");
+
+        Assert.AreEqual(2.25, form.ClientLeft);
+        Assert.AreEqual(18.75, form.ClientTop);
+        Assert.AreEqual(200, form.ClientWidth);
+        Assert.AreEqual(150, form.ClientHeight);
+    }
+
+    [TestMethod]
+    public void ClientArea_ThatTheDesignerBlockDoesNotSet_IsNull()
+    {
+        var form = FormWith(string.Empty);
+
+        Assert.IsNull(form.ClientLeft);
+        Assert.IsNull(form.ClientTop);
+        Assert.IsNull(form.ClientWidth);
+        Assert.IsNull(form.ClientHeight);
+    }
+
+    [TestMethod]
+    public void ClientArea_ThatIsNotANumber_IsNull()
+        => Assert.IsNull(FormWith("   ClientWidth     =   abc\r\n").ClientWidth);
+
+    [TestMethod]
+    public void ClientArea_IsReadTheSameInEveryLocale()
+    {
+        var culture = CultureInfo.CurrentCulture;
+        CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("fr-CA");
+        try
+        {
+            Assert.AreEqual(2.275, FormWith("   ClientLeft      =   45.5\r\n").ClientLeft);
+            Assert.IsNull(FormWith("   ClientLeft      =   45,5\r\n").ClientLeft, "a designer block writes no decimal comma");
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = culture;
+        }
     }
 
     // a workspace folder with the form module, and its companion file beside it unless the row leaves it out.
