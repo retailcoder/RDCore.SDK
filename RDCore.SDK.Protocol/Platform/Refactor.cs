@@ -53,7 +53,8 @@ public sealed record class RefactorPrepareResult
     /// statements it touches, which is what an extraction moves; <see langword="null"/> when there is none, as when the request's range holds no statement.
     /// </summary>
     /// <remarks>
-    /// A client shows it before the refactoring is applied, so that its user sees what it will change.
+    /// A client shows it before the refactoring is applied, so that its user sees what it will change. It is given whether or not a notice refuses the
+    /// refactoring, so that the user also sees what is refused.
     /// </remarks>
     public SourceRange? Range { get; init; }
 }
