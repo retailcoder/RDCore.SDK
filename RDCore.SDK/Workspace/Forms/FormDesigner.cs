@@ -78,6 +78,74 @@ public static partial class FormDesigner
     }
 
     /// <summary>
+    /// Reads the companion file of the form module at <paramref name="modulePath"/>: the file its source names (<see cref="CompanionOf(string)"/>), which is
+    /// beside the module's own file.
+    /// </summary>
+    /// <remarks>
+    /// A program that loads a workspace's form modules reads each one's companion with its text, then gives both to
+    /// <see cref="Read(string, ReadOnlyMemory{byte}, out FormDesignerFormatException)"/>. A module whose companion is not read is still loaded. A VBA
+    /// UserForm's controls are in its companion, so without it the read gives the problem and the form declares no controls. A Visual Basic 6.0 form's
+    /// controls are in its text, so it declares them, with an empty <see cref="FormDescriptor.State"/>.
+    /// </remarks>
+    /// <param name="fileSystem">The file system the module is on.</param>
+    /// <param name="modulePath">The path of the form module's file.</param>
+    /// <param name="source">The form module's source.</param>
+    /// <param name="problem">
+    /// Why the companion file was not read: a <see cref="FormDesignerFormatException"/> when the designer block is not terminated, an
+    /// <see cref="IOException"/> when the file cannot be read. <c>null</c> when it was read, and when there is none to read.
+    /// </param>
+    /// <returns>
+    /// The content of the companion file. Empty, with no problem, when the module names no companion file or the file is not there; empty, with the problem,
+    /// when the designer block or the file cannot be read.
+    /// </returns>
+    public static ReadOnlyMemory<byte> ReadCompanion(System.IO.Abstractions.IFileSystem fileSystem, string modulePath, string? source, out Exception? problem)
+    {
+        problem = null;
+        try
+        {
+            if (CompanionOf(source) is { } reference
+                && fileSystem.Path.Combine(fileSystem.Path.GetDirectoryName(modulePath) ?? string.Empty, reference.FileName) is var path
+                && fileSystem.File.Exists(path))
+            {
+                return fileSystem.File.ReadAllBytes(path);
+            }
+        }
+        catch (Exception exception) when (exception is FormDesignerFormatException or IOException)
+        {
+            problem = exception;
+        }
+
+        return ReadOnlyMemory<byte>.Empty;
+    }
+
+    /// <summary>
+    /// What the form module <paramref name="source"/> declares, as <see cref="Read(string, ReadOnlyMemory{byte})"/> reads it, or <c>null</c> when it is not a
+    /// form module or its designer data cannot be read, which <paramref name="problem"/> then says.
+    /// </summary>
+    /// <remarks>
+    /// A form whose designer data cannot be read declares nothing, so its module is loaded as one whose form has no controls.
+    /// </remarks>
+    /// <param name="source">The form module's source.</param>
+    /// <param name="companion">The content of the module's companion file (<see cref="ReadCompanion"/>).</param>
+    /// <param name="problem">
+    /// Why the designer data cannot be read (<see cref="FormDesignerFormatException.Problem"/>); <c>null</c> when it was read, and for a module that is not a
+    /// form module.
+    /// </param>
+    public static FormDescriptor? Read(string? source, ReadOnlyMemory<byte> companion, out FormDesignerFormatException? problem)
+    {
+        problem = null;
+        try
+        {
+            return Read(source, companion);
+        }
+        catch (FormDesignerFormatException exception)
+        {
+            problem = exception;
+            return null;
+        }
+    }
+
+    /// <summary>
     /// What the form module <paramref name="source"/> declares, or <c>null</c> when it is not a form module (it has no
     /// designer block).
     /// </summary>

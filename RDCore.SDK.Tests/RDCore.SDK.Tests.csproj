@@ -25,6 +25,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- the version this build stamps into the SDK's assemblies, which RDCoreSdk.Version reads back. -->
+    <AssemblyMetadata Include="BuiltVersion" Value="$(Version)" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Using Include="Microsoft.VisualStudio.TestTools.UnitTesting" />
   </ItemGroup>
 

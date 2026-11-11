@@ -37,6 +37,11 @@ namespace RDCore.SDK.Runtime.Libraries;
 /// A class is read after those it names whenever it can be, and where two name each other the one that is read second names the first as a type that is
 /// resolved by its name when it is used (<see cref="VBUnresolvedType"/>), as a workspace's classes that name one another are.
 /// </para>
+/// <para>
+/// An application object (<see cref="ClassDescription.IsApplication"/>) is a class like any other, except the Visual Basic 6.0 library's (<c>VB.Global</c>,
+/// known by the library's <see cref="LibraryOrigin.Guid"/>). That one is a standard module of the library, like VBA's own global module: its members are
+/// procedures of the module, with no <c>Me</c>, and names of the project at the library's rank, and it has neither a type nor events.
+/// </para>
 /// </remarks>
 /// <param name="workspaceRoot">
 /// The workspace the symbols are addressed under. Library symbols are not <em>of</em> the workspace, but every <see cref="Symbol"/> is addressed relative to
@@ -97,6 +102,16 @@ public sealed class LibrarySymbolReader(Uri workspaceRoot, bool is64Bit = true)
                     ReadAfterDependencies(byName[named]);
                 }
 
+                // the Visual Basic 6.0 library's application object is a module of the library: its members are names of the project, and it is not a type.
+                if (description.IsApplication && IsVisualBasic(library))
+                {
+                    var module = new VBStandardModuleSymbol(workspaceRoot, new VBProjectSymbol(workspaceRoot, library.Name).Uri, description.Name)
+                        .With(SymbolProperties.Library, library.Name);
+                    symbols.Add(module);
+                    symbols.AddRange(description.Members.Select(member => ReadMember(library, description, member, module.Uri, types, ScopeKind.Module)));
+                    return;
+                }
+
                 var symbol = ReadClass(library, description, types);
 
                 // the class's default interface is a type name too (`As MSForms.IReturnBoolean`), with the class's members, and an object of the class is one.
@@ -120,7 +135,8 @@ public sealed class LibrarySymbolReader(Uri workspaceRoot, bool is64Bit = true)
         }
 
         // what shadows what is read off the symbols that are names of the project - the library's project, its module of enumerations, the enumerations and their
-        // constants, the classes. The members of a class are reached through an object, and no name of the project is one of them.
+        // constants, the classes, and the Visual Basic 6.0 library's Global module and its members. The members of a class are reached through an object, and no
+        // name of the project is one of them.
         var rankOf = priorities ?? libraries.Select((library, index) => (library.Name, Rank: index + 1)).ToDictionary(entry => entry.Name, entry => entry.Rank, StringComparer.OrdinalIgnoreCase);
         return [.. symbols.Select(symbol => symbol.GetProperty(SymbolProperties.Library) is { } library && rankOf.TryGetValue(library, out var rank)
             ? symbol.With(SymbolProperties.LibraryPriority, rank)
@@ -135,6 +151,12 @@ public sealed class LibrarySymbolReader(Uri workspaceRoot, bool is64Bit = true)
             .Select(type => type.EndsWith("()", StringComparison.Ordinal) ? type[..^2] : type)
             .Where(type => type.Length > 0 && !type.Contains('.'))
             .Distinct(StringComparer.OrdinalIgnoreCase);
+
+    // the Visual Basic 6.0 library (VB6.OLB), known by its type library's GUID, whatever its version.
+    private static readonly Guid VisualBasicLibraryGuid = new("FCFB3D2E-A0FA-1068-A738-08002B3371B5");
+
+    private static bool IsVisualBasic(LibraryDescription library)
+        => library.Origin?.Guid is { } guid && Guid.TryParse(guid, out var parsed) && parsed == VisualBasicLibraryGuid;
 
     private VBEnumMemberSymbol ReadEnum(LibraryDescription library, EnumDescription description, Uri ownerUri)
     {
@@ -193,29 +215,30 @@ public sealed class LibrarySymbolReader(Uri workspaceRoot, bool is64Bit = true)
     }
 
     private VBTypeMemberSymbol ReadMember(
-        LibraryDescription library, ClassDescription owner, MemberDescription description, Uri ownerUri, TypeNames types)
+        LibraryDescription library, ClassDescription owner, MemberDescription description, Uri ownerUri, TypeNames types,
+        ScopeKind scope = ScopeKind.Instance)
     {
         var returnType = description.Type is { Length: > 0 } type ? types.Resolve(type, library) : VBVoidType.TypeInfo;
 
         Symbol member = description.Kind switch
         {
             MemberKind.PropertyGet => new VBPropertyGetMemberSymbol(
-                workspaceRoot, ownerUri, ScopeKind.Instance, description.Name, SourceRange.Empty, SourceRange.Empty, AccessModifier.Public) { ResolvedType = returnType },
+                workspaceRoot, ownerUri, scope, description.Name, SourceRange.Empty, SourceRange.Empty, AccessModifier.Public) { ResolvedType = returnType },
             MemberKind.PropertyLet => new VBPropertyLetMemberSymbol(
-                workspaceRoot, ownerUri, description.Name, ScopeKind.Instance, SymbolKindExt.Property, VBVoidType.TypeInfo,
+                workspaceRoot, ownerUri, description.Name, scope, SymbolKindExt.Property, VBVoidType.TypeInfo,
                 SourceRange.Empty, SourceRange.Empty, AccessModifier.Public),
             MemberKind.PropertySet => new VBPropertySetMemberSymbol(
-                workspaceRoot, ownerUri, description.Name, ScopeKind.Instance, SymbolKindExt.Property, VBVoidType.TypeInfo,
+                workspaceRoot, ownerUri, description.Name, scope, SymbolKindExt.Property, VBVoidType.TypeInfo,
                 SourceRange.Empty, SourceRange.Empty, AccessModifier.Public),
             _ when returnType is VBVoidType => new VBProcedureMemberSymbol(
-                workspaceRoot, ownerUri, description.Name, ScopeKind.Instance, SymbolKindExt.Procedure, VBVoidType.TypeInfo,
+                workspaceRoot, ownerUri, description.Name, scope, SymbolKindExt.Procedure, VBVoidType.TypeInfo,
                 SourceRange.Empty, SourceRange.Empty, AccessModifier.Public),
             _ => new VBFunctionMemberSymbol(
-                workspaceRoot, ownerUri, description.Name, ScopeKind.Instance, SymbolKindExt.Function, returnType,
+                workspaceRoot, ownerUri, description.Name, scope, SymbolKindExt.Function, returnType,
                 SourceRange.Empty, SourceRange.Empty, AccessModifier.Public),
         };
 
-        var parameters = ReadParameters(library, description.Parameters, member.Uri, withMe: true, types);
+        var parameters = ReadParameters(library, description.Parameters, member.Uri, withMe: scope == ScopeKind.Instance, types);
         member = member switch
         {
             VBReturningMemberSymbol returning => returning with { Parameters = parameters },
