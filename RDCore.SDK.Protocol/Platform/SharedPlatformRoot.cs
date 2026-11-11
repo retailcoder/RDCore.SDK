@@ -38,6 +38,10 @@ public sealed record DeployedPlatform(PlatformVersion Version, string Root)
 /// version is renamed out of the way first. On Windows the rename fails while a process runs from the version, which is then left where it
 /// is until a later deployment finds it unused.
 /// </para>
+/// <para>
+/// <b>A held version is not removed</b> (<see cref="Hold"/>): a program holds the version a server runs from for as long as the server runs,
+/// whichever program deployed it, and a removal leaves that version where it is, on every system.
+/// </para>
 /// </remarks>
 /// <param name="root">The root's folder, such as <see cref="ForThisUser"/>.</param>
 public sealed class SharedPlatformRoot(string root)
@@ -227,6 +231,7 @@ public sealed class SharedPlatformRoot(string root)
     /// version that cannot be renamed or deleted is left for a later deployment. A folder whose name is not a version is left as it is. Call
     /// it with the root held.
     /// </summary>
+    /// <remarks>A version that is held (<see cref="Hold"/>) is kept too, and so is a held one an earlier removal left renamed, which is put back.</remarks>
     /// <param name="keep">A version kept as well, such as the one just deployed.</param>
     public void RemoveOldVersions(PlatformVersion keep)
     {
@@ -242,8 +247,16 @@ public sealed class SharedPlatformRoot(string root)
             var name = Path.GetFileName(folder);
             if (name.EndsWith(RemovingSuffix, StringComparison.Ordinal))
             {
-                // a removal an earlier deployment could not finish: nothing runs from it, as it was renamed.
-                TryDelete(folder);
+                // a removal an earlier deployment could not finish: deleted, unless a lease taken before its rename still holds it.
+                if (IsHeld(folder))
+                {
+                    TryMove(folder, folder[..^RemovingSuffix.Length]);
+                }
+                else
+                {
+                    TryDelete(folder);
+                }
+
                 continue;
             }
 
@@ -252,18 +265,79 @@ public sealed class SharedPlatformRoot(string root)
                 continue;
             }
 
+            // renamed first, so that no lease is taken on it after it is checked: one taken before holds the renamed folder still.
             var removing = folder + RemovingSuffix;
-            try
-            {
-                Directory.Move(folder, removing);
-            }
-            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+            if (!TryMove(folder, removing))
             {
                 // still in use.
                 continue;
             }
 
+            if (IsHeld(removing))
+            {
+                TryMove(removing, folder);
+                continue;
+            }
+
             TryDelete(removing);
+        }
+    }
+
+    /// <summary>
+    /// Keeps <paramref name="platform"/> deployed for as long as the lease is held: <see cref="RemoveOldVersions"/> leaves it where it is. Hold
+    /// it while a server runs from it, and dispose of it once the server has stopped. Any number of programs can hold the same version, and
+    /// the system releases a lease with the process that holds it.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The lease is the version's manifest, held open for reading and shared for reading only. A removal checks it by opening the manifest
+    /// unshared, which fails while any lease holds it.
+    /// </para>
+    /// <para>
+    /// On Windows the open manifest also stops the version's folder from being renamed or deleted by anything else. On Linux and macOS, .NET
+    /// takes an advisory lock (<c>flock</c>) for a shared file: <see cref="RemoveOldVersions"/> honours it, and a program that deletes the
+    /// folder without asking does not. There, a process run with <c>DOTNET_SYSTEM_IO_DISABLEFILELOCKING</c> set takes no lock, and its
+    /// lease keeps nothing deployed.
+    /// </para>
+    /// </remarks>
+    /// <param name="platform">The deployed version, such as <see cref="Current"/>.</param>
+    /// <returns>The lease: dispose of it to release the version.</returns>
+    /// <exception cref="FileNotFoundException">The version has no manifest.</exception>
+    /// <exception cref="DirectoryNotFoundException">The version is not deployed.</exception>
+    public static IDisposable Hold(DeployedPlatform platform)
+    {
+        ArgumentNullException.ThrowIfNull(platform);
+        return new FileStream(platform.Manifest, FileMode.Open, FileAccess.Read, FileShare.Read);
+    }
+
+    // whether a lease holds the version at the folder: its manifest cannot be opened unshared. A folder with no manifest holds nothing.
+    private static bool IsHeld(string folder)
+    {
+        try
+        {
+            using var unshared = new FileStream(Path.Combine(folder, PlatformManifest.FileName), FileMode.Open, FileAccess.Read, FileShare.None);
+            return false;
+        }
+        catch (Exception exception) when (exception is FileNotFoundException or DirectoryNotFoundException)
+        {
+            return false;
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            return true;
+        }
+    }
+
+    private static bool TryMove(string from, string to)
+    {
+        try
+        {
+            Directory.Move(from, to);
+            return true;
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            return false;
         }
     }
 

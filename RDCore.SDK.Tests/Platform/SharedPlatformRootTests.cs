@@ -166,6 +166,66 @@ public sealed class SharedPlatformRootTests
     [TestMethod]
     public void RemovingOldVersions_FromARootWithNone_DoesNothing() => _root.RemoveOldVersions(keep: V("0.1.0"));
 
+    // 0.1.0 and 0.2.0 deployed, and older than the current one, the one before it and the one kept.
+    private DeployedPlatform DeployOldOnes()
+    {
+        foreach (var version in new[] { "0.1.0", "0.2.0", "0.3.0", "0.4.0", "0.5.0" })
+        {
+            Deploy(version);
+        }
+
+        _root.MakeCurrentUnlessOlder(V("0.3.0"));
+        _root.MakeCurrentUnlessOlder(V("0.4.0"));
+        return new DeployedPlatform(V("0.1.0"), _root.VersionRoot(V("0.1.0")));
+    }
+
+    private string[] Deployed() => Directory.EnumerateDirectories(_root.Versions).Select(Path.GetFileName).Order().ToArray()!;
+
+    [TestMethod]
+    public void AHeldVersion_IsNotRemoved()
+    {
+        var old = DeployOldOnes();
+
+        using (SharedPlatformRoot.Hold(old))
+        {
+            _root.RemoveOldVersions(keep: V("0.5.0"));
+        }
+
+        CollectionAssert.AreEqual(new[] { "0.1.0", "0.3.0", "0.4.0", "0.5.0" }, Deployed());
+        Assert.IsTrue(SharedPlatformRoot.IsWhole(old.Root));
+    }
+
+    [TestMethod]
+    public void AReleasedVersion_IsRemoved()
+    {
+        var old = DeployOldOnes();
+        SharedPlatformRoot.Hold(old).Dispose();
+
+        _root.RemoveOldVersions(keep: V("0.5.0"));
+
+        CollectionAssert.AreEqual(new[] { "0.3.0", "0.4.0", "0.5.0" }, Deployed());
+    }
+
+    [TestMethod]
+    public void AHeldVersion_ThatAnEarlierRemovalLeftRenamed_IsPutBack()
+    {
+        Deploy("0.2.0");
+        var renamed = _root.VersionRoot(V("0.1.0")) + SharedPlatformRoot.RemovingSuffix;
+        WritePlatform(renamed, "0.1.0");
+
+        using (SharedPlatformRoot.Hold(new DeployedPlatform(V("0.1.0"), renamed)))
+        {
+            _root.RemoveOldVersions(keep: V("0.2.0"));
+        }
+
+        // on Windows a held folder cannot be renamed, so it is left as it is, and not deleted; elsewhere it is put back.
+        CollectionAssert.AreEqual(OperatingSystem.IsWindows() ? new[] { "0.1.0" + SharedPlatformRoot.RemovingSuffix, "0.2.0" } : new[] { "0.1.0", "0.2.0" }, Deployed());
+    }
+
+    [TestMethod]
+    public void AVersionThatIsNotDeployed_CannotBeHeld() =>
+        Assert.Throws<IOException>(() => SharedPlatformRoot.Hold(new DeployedPlatform(V("0.1.0"), _root.VersionRoot(V("0.1.0")))));
+
     [TestMethod]
     public async Task TheRoot_IsHeldByOneDeploymentAtATime_AndTheWaitingOneIsToldOnce()
     {
