@@ -1,4 +1,6 @@
-﻿namespace RDCore.SDK.Platform;
+﻿using System.Text.Json.Serialization;
+
+namespace RDCore.SDK.Platform;
 
 /// <summary>
 /// The platform manifest, <c>rdcore.json</c> at the platform root: where each component of a deployed platform is.
@@ -14,6 +16,13 @@ public record class PlatformManifest
 
     /// <summary>The version of the deployed platform.</summary>
     public string PlatformVersion { get; init; } = string.Empty;
+
+    /// <summary>
+    /// The runtime identifier the platform was built for, such as <c>win-x64</c> or <c>osx-arm64</c>: the manifest's <c>rid</c>. Empty when
+    /// the manifest doesn't name one.
+    /// </summary>
+    [JsonPropertyName("rid")]
+    public string RuntimeIdentifier { get; init; } = string.Empty;
 
     /// <summary>When the manifest was written, in UTC.</summary>
     public DateTime GeneratedUtc { get; init; } = default;

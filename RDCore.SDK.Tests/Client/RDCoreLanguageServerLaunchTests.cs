@@ -289,6 +289,22 @@ public sealed class RDCoreLanguageServerLaunchTests
         Assert.AreEqual(Path.Combine(_root, "RDCore.LanguageServer", Executable), launch.ExecutablePath);
     }
 
+    [TestMethod]
+    public void TheManifest_NamesTheSystemThePlatformWasBuiltFor()
+    {
+        WithManifest("""{ "platformVersion": "0.1.0", "rid": "osx-arm64", "langService": "RDCore.LanguageServer/RDCore.LanguageServer" }""");
+
+        Assert.AreEqual("osx-arm64", RDCoreLanguageServerLaunch.ReadManifest(_root).RuntimeIdentifier);
+    }
+
+    [TestMethod]
+    public void AManifestThatNamesNoSystem_HasAnEmptyOne()
+    {
+        WithManifest(Manifest($"RDCore.LanguageServer/{Executable}"));
+
+        Assert.AreEqual(string.Empty, RDCoreLanguageServerLaunch.ReadManifest(_root).RuntimeIdentifier);
+    }
+
     private static string ManifestNaming(string property, string path) => property switch
     {
         "langService" => Manifest(path),
