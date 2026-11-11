@@ -149,6 +149,10 @@ public sealed record class ClassDescription
     /// Whether the class is the one the library's host is, which a host makes members of implicitly available (<c>Excel.Application</c>). Its members are never
     /// names of a project that references the library: a project says which object it is talking to.
     /// </summary>
+    /// <remarks>
+    /// The Visual Basic 6.0 library's <c>Global</c> is the exception: <see cref="LibrarySymbolReader"/> reads it as a standard module of the library, as VBA's
+    /// <c>Global</c> is one, so that its members are names of the project (<c>Forms</c>, <c>VB.Forms</c>, <c>VB.Global.Forms</c>).
+    /// </remarks>
     public bool IsApplication { get; init; }
 
     /// <summary>
