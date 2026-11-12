@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <!-- the single version source of this repository: its package and assemblies; a release tag must equal v<VersionPrefix>[-suffix], the suffix passed as -p:VersionSuffix. -->
-    <VersionPrefix>0.1.2</VersionPrefix>
+    <VersionPrefix>0.1.3</VersionPrefix>
   </PropertyGroup>
 
   <!-- what the package of this repository says about itself on nuget.org. -->
