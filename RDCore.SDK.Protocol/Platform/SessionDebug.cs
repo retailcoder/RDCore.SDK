@@ -81,8 +81,8 @@ public record class SessionDebugBreakpointsParams
 /// <remarks>
 /// The mode is the runtime session's: it applies to every later run under a debugger, and to the program that runs when it is set, until it is set again. A program
 /// that waits at an error is answered <see cref="ExecutionOutcome.Suspended"/>, as at a <c>Stop</c>, with the error in <see cref="ExecuteResult.ErrorNumber"/>,
-/// <see cref="ExecuteResult.ErrorMessage"/> and <see cref="ExecuteResult.ErrorLine"/>. Resumed, it deals with the error as it would have: the statement that raised
-/// it is run again. A run that is not under a debugger never waits at an error.
+/// <see cref="ExecuteResult.ErrorMessage"/> and <see cref="ExecuteResult.ErrorLine"/>. Resumed, it runs the statement that raised the error again,
+/// which raises it again unless what raised it was changed. A run that is not under a debugger never waits at an error.
 /// </remarks>
 public record class SessionDebugErrorBreakParams
 {

@@ -36,7 +36,7 @@ public sealed record class SessionDebugBreakpointsRequest : SessionDebugBreakpoi
 
 /// <summary>
 /// <see cref="SessionDebugErrorBreakParams"/> as a request of <c>rdcore/session/debug/errorBreak</c>, handled as it arrives (<see cref="HandledOnArrivalAttribute"/>):
-/// the next error the running program raises is weighed by it.
+/// the mode applies from the next error the running program raises.
 /// </summary>
 [HandledOnArrival]
 [Method(RDCorePlatformProtocol.SessionDebugErrorBreak, Direction.ClientToServer)]

@@ -5,12 +5,18 @@ namespace RDCore.SDK.Runtime.Abstract.Execution;
 /// </summary>
 public enum ErrorBreakMode
 {
-    /// <summary>None: an error is dealt with as the program says, and the debugger does not see it.</summary>
+    /// <summary>
+    /// No error: an error is dealt with as the program says, and the debugger does not see it.
+    /// </summary>
     None,
 
-    /// <summary>The errors that nothing on the call stack has a handler for, and that will end the program.</summary>
+    /// <summary>
+    /// The errors that nothing on the call stack has a handler for, and that will end the program.
+    /// </summary>
     Unhandled,
 
-    /// <summary>Every error, where it is raised, whatever handler there is to catch it.</summary>
+    /// <summary>
+    /// Every error, where it is raised, whatever handler there is to catch it.
+    /// </summary>
     All,
 }
