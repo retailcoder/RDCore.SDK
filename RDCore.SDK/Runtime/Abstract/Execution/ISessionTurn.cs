@@ -132,8 +132,9 @@ public interface ISessionTurn
     /// Says that the program waits at a stop - a <c>Stop</c>, a breakpoint, an error a debugger waits at - for as long as the returned scope is not disposed.
     /// </summary>
     /// <remarks>
-    /// No code of the program runs meanwhile, as none does in MS-VBA's break mode: an event of the program that comes waits for the program to be resumed, and is handled
-    /// then; it is neither handled nor dropped. Called by whoever holds the program where it stops. The default does nothing.
+    /// No code of the program runs meanwhile, as none does in MS-VBA's break mode. An event of the program that comes meanwhile is not dropped: it waits, and is handled
+    /// once the program is resumed, in the order such events came, and after the thread that waited at the stop has the turn back, so that the code the program goes on
+    /// with comes first. Called on the thread that waits at the stop, by whatever holds the program there. The default does nothing.
     /// </remarks>
     /// <returns>The scope of the stop.</returns>
     IDisposable Stopped() => SessionTurnScope.None;
