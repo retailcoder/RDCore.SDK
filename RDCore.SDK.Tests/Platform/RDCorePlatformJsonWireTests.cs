@@ -93,6 +93,7 @@ public sealed class RDCorePlatformJsonWireTests
         yield return Same(new SessionDebugEditStatusParams());
         yield return Same(new SessionDebugTerminateParams { Wipe = true });
         yield return Same(new SessionDebugBreakpointsParams { ModuleName = "Module1", Breakpoints = [new SessionBreakpointLine { Line = 2, IsEnabled = false, Condition = "i > 3" }] });
+        yield return Same(new SessionDebugErrorBreakParams { Mode = ErrorBreakMode.Unhandled });
         yield return Same(new SessionDebugStackParams());
         yield return Same(new SessionDebugVariablesParams { FrameId = 1, Scope = DebugVariableScope.Module, Reference = 9 });
         yield return Same(new SessionDebugEvaluateParams { FrameId = 1, Expression = "i + 1" });
@@ -249,6 +250,7 @@ public sealed class RDCorePlatformJsonWireTests
         ("SessionDebugEditStatusParams", """{}"""),
         ("SessionDebugTerminateParams", """{"wipe":true}"""),
         ("SessionDebugBreakpointsParams", """{"moduleName":"Module1","breakpoints":[{"line":2,"isEnabled":false,"condition":"i > 3"}]}"""),
+        ("SessionDebugErrorBreakParams", """{"mode":1}"""),
         ("SessionDebugStackParams", """{}"""),
         ("SessionDebugVariablesParams", """{"frameId":1,"scope":1,"reference":9}"""),
         ("SessionDebugEvaluateParams", """{"frameId":1,"expression":"i + 1"}"""),
@@ -364,6 +366,7 @@ public sealed class RDCorePlatformJsonWireTests
         ("SessionDebugEditStatus", "rdcore/session/debug/editStatus"),
         ("SessionDebugTerminate", "rdcore/session/debug/terminate"),
         ("SessionDebugBreakpoints", "rdcore/session/debug/breakpoints"),
+        ("SessionDebugErrorBreak", "rdcore/session/debug/errorBreak"),
         ("SessionDebugStack", "rdcore/session/debug/stack"),
         ("SessionDebugVariables", "rdcore/session/debug/variables"),
         ("SessionDebugEvaluate", "rdcore/session/debug/evaluate"),

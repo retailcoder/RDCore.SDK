@@ -34,6 +34,14 @@ public sealed record class SessionDebugTerminateRequest : SessionDebugTerminateP
 [Method(RDCorePlatformProtocol.SessionDebugBreakpoints, Direction.ClientToServer)]
 public sealed record class SessionDebugBreakpointsRequest : SessionDebugBreakpointsParams, IRequest, IRequest<DebugBreakpointsResult>;
 
+/// <summary>
+/// <see cref="SessionDebugErrorBreakParams"/> as a request of <c>rdcore/session/debug/errorBreak</c>, handled as it arrives (<see cref="HandledOnArrivalAttribute"/>):
+/// the mode applies from the next error the running program raises.
+/// </summary>
+[HandledOnArrival]
+[Method(RDCorePlatformProtocol.SessionDebugErrorBreak, Direction.ClientToServer)]
+public sealed record class SessionDebugErrorBreakRequest : SessionDebugErrorBreakParams, IRequest, IRequest<DebugAck>;
+
 /// <summary><see cref="SessionDebugStackParams"/> as a request of <c>rdcore/session/debug/stack</c>.</summary>
 [Method(RDCorePlatformProtocol.SessionDebugStack, Direction.ClientToServer)]
 public sealed record class SessionDebugStackRequest : SessionDebugStackParams, IRequest, IRequest<DebugStackResult>;

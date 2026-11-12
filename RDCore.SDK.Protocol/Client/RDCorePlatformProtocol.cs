@@ -60,6 +60,11 @@ public static class RDCorePlatformProtocol
     /// <summary>Asks the language server to set the lines of a module that a program under a debugger waits at.</summary>
     public const string SessionDebugBreakpoints = "rdcore/session/debug/breakpoints";
 
+    /// <summary>
+    /// Asks the language server to set which run-time errors a program under a debugger waits at. See <see cref="SessionDebugErrorBreakParams"/>.
+    /// </summary>
+    public const string SessionDebugErrorBreak = "rdcore/session/debug/errorBreak";
+
     /// <summary>Asks the language server for the call stack of the program that waits.</summary>
     public const string SessionDebugStack = "rdcore/session/debug/stack";
 
