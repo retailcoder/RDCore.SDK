@@ -75,6 +75,24 @@ public record class SessionDebugBreakpointsParams
 }
 
 /// <summary>
+/// Request for <c>rdcore/session/debug/errorBreak</c>: sets which run-time errors a program under a debugger (<see cref="SessionExecuteParams.Debug"/>) waits at,
+/// where they are raised; answered a <see cref="DebugAck"/>.
+/// </summary>
+/// <remarks>
+/// The mode is the runtime session's: it applies to every later run under a debugger, and to the program that runs when it is set, until it is set again. A program
+/// that waits at an error is answered <see cref="ExecutionOutcome.Suspended"/>, as at a <c>Stop</c>, with the error in <see cref="ExecuteResult.ErrorNumber"/>,
+/// <see cref="ExecuteResult.ErrorMessage"/> and <see cref="ExecuteResult.ErrorLine"/>. Resumed, it runs the statement that raised the error again,
+/// which raises it again unless what raised it was changed. A run that is not under a debugger never waits at an error.
+/// </remarks>
+public record class SessionDebugErrorBreakParams
+{
+    /// <summary>
+    /// Which errors the program waits at. <see cref="ErrorBreakMode.None"/>, the mode of a session nothing has set it in, waits at none.
+    /// </summary>
+    public ErrorBreakMode Mode { get; init; }
+}
+
+/// <summary>
 /// A breakpoint as a client asks for it: a line, whether it is on, and the condition it waits on, as the person typed it.
 /// </summary>
 /// <remarks>

@@ -17,13 +17,15 @@ namespace RDCore.SDK.Semantics;
 public sealed class ConditionalCompilationBlocks
 {
     private readonly ImmutableArray<ImmutableArray<SourceRange>> _blocks;
+    private readonly ImmutableArray<(int Branches, bool HasElse)> _shapes;
 
-    private ConditionalCompilationBlocks(ImmutableArray<ImmutableArray<SourceRange>> blocks) => _blocks = blocks;
+    private ConditionalCompilationBlocks(ImmutableArray<ImmutableArray<SourceRange>> blocks, ImmutableArray<(int Branches, bool HasElse)> shapes)
+        => (_blocks, _shapes) = (blocks, shapes);
 
     /// <summary>
     /// A module with no <c>#If</c> block: nothing is an alternative of anything.
     /// </summary>
-    public static ConditionalCompilationBlocks None { get; } = new([]);
+    public static ConditionalCompilationBlocks None { get; } = new([], []);
 
     /// <summary>
     /// The blocks of a module, read off its precompiler trivia, nested ones included.
@@ -37,12 +39,51 @@ public sealed class ConditionalCompilationBlocks
         }
 
         var blocks = ImmutableArray.CreateBuilder<ImmutableArray<SourceRange>>();
+        var shapes = ImmutableArray.CreateBuilder<(int Branches, bool HasElse)>();
         foreach (var node in precompilerTrivia)
         {
-            Collect(node, blocks);
+            Collect(node, blocks, shapes);
         }
 
-        return new(blocks.ToImmutable());
+        return new(blocks.ToImmutable(), shapes.ToImmutable());
+    }
+
+    /// <summary>
+    /// Whether a block has an <c>#Else</c> branch, so that exactly one of its branches is compiled, whatever the constants are (<strong>MS-VBAL §3.4</strong>).
+    /// A block without one compiles none of its branches when no condition is true.
+    /// </summary>
+    /// <param name="block">The ordinal of the block, as <see cref="BranchesAt"/> gives it with the same <paramref name="counted"/>.</param>
+    /// <param name="counted">Which blocks are counted, as <see cref="BranchesAt"/> counts them.</param>
+    /// <exception cref="ArgumentOutOfRangeException">No counted block has that ordinal.</exception>
+    public bool HasElse(int block, Func<SourceRange, bool> counted) => ShapeOf(block, counted).HasElse;
+
+    /// <summary>
+    /// How many branches a block has: its <c>#If</c>, each <c>#ElseIf</c>, and its <c>#Else</c>, whatever they hold, an empty one included. A branch that holds
+    /// nothing holds no position: <see cref="BranchesAt"/> gives no ordinal of it.
+    /// </summary>
+    /// <param name="block">The ordinal of the block, as <see cref="BranchesAt"/> gives it with the same <paramref name="counted"/>.</param>
+    /// <param name="counted">Which blocks are counted, as <see cref="BranchesAt"/> counts them.</param>
+    /// <exception cref="ArgumentOutOfRangeException">No counted block has that ordinal.</exception>
+    public int BranchCount(int block, Func<SourceRange, bool> counted) => ShapeOf(block, counted).Branches;
+
+    private (int Branches, bool HasElse) ShapeOf(int block, Func<SourceRange, bool> counted)
+    {
+        var ordinal = 0;
+        for (var index = 0; index < _blocks.Length; index++)
+        {
+            var branches = _blocks[index];
+            if (branches.IsDefaultOrEmpty || !counted(new SourceRange(branches[0].Start, branches[^1].End)))
+            {
+                continue;
+            }
+
+            if (ordinal++ == block)
+            {
+                return _shapes[index];
+            }
+        }
+
+        throw new ArgumentOutOfRangeException(nameof(block), block, null);
     }
 
     /// <summary>
@@ -120,7 +161,7 @@ public sealed class ConditionalCompilationBlocks
         return -1;
     }
 
-    private static void Collect(SyntaxNode node, ImmutableArray<ImmutableArray<SourceRange>>.Builder blocks)
+    private static void Collect(SyntaxNode node, ImmutableArray<ImmutableArray<SourceRange>>.Builder blocks, ImmutableArray<(int Branches, bool HasElse)>.Builder shapes)
     {
         switch (node)
         {
@@ -128,12 +169,16 @@ public sealed class ConditionalCompilationBlocks
                 var bodies = BranchBodies(ifBlock);
                 blocks.Add([.. bodies.Select(body => body.SourceLocation.Range)]);
 
+                // the #If, each #ElseIf and the #Else, whether they hold anything or not.
+                var hasElse = ifBlock.Children.OfType<PrecompilerElseBlockStatementNode>().Any();
+                shapes.Add((1 + ifBlock.Children.OfType<PrecompilerElseIfBlockStatementNode>().Count() + (hasElse ? 1 : 0), hasElse));
+
                 // a branch may itself contain a block.
                 foreach (var body in bodies)
                 {
                     foreach (var child in body.Children)
                     {
-                        Collect(child, blocks);
+                        Collect(child, blocks, shapes);
                     }
                 }
 
@@ -141,7 +186,7 @@ public sealed class ConditionalCompilationBlocks
             case PrecompilerTriviaNode trivia:
                 foreach (var child in trivia.Children)
                 {
-                    Collect(child, blocks);
+                    Collect(child, blocks, shapes);
                 }
 
                 break;

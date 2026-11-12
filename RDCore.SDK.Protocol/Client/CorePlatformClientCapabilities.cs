@@ -178,9 +178,9 @@ public class LanguageServerCapabilities
     public RubberduckIndenterSettings RubberduckIndenterSettings { get; set; } = new();
 
     /// <summary>
-    /// If supported, the language server says what a refactoring asks its user before it is applied, over <c>rdcore/refactor/prepare</c>, and answers the edit
-    /// it makes with the user's answers, over <c>rdcore/refactor/apply</c>: what a client that has a dialog of its own asks with. Any client is offered the refactorings as
-    /// LSP code actions, which complete with their defaults.
+    /// If supported, the language server says what a refactoring asks its user before it is applied, over <c>rdcore/refactor/prepare</c>, what an identifier
+    /// the user is typing raises, over <c>rdcore/refactor/checkIdentifier</c>, and answers the edit it makes with the user's answers, over <c>rdcore/refactor/apply</c>: what a client
+    /// that has a dialog of its own asks with. Any client is offered the refactorings as LSP code actions, which complete with their defaults.
     /// </summary>
     public Refactoring Refactoring { get; set; } = new();
 }
@@ -364,12 +364,12 @@ public record class DiagnoseDocument(bool IsSupported = false) : CorePlatformCli
 public record class CliCommand(bool IsSupported = false) : CorePlatformClientCapability(IsSupported);
 
 /// <summary>
-/// Advertises that the language server says what a refactoring asks its user (<c>rdcore/refactor/prepare</c>), and answers the edit it makes with the
-/// user's answers (<c>rdcore/refactor/apply</c>): the counterpart to LSP's own <c>codeAction/resolve</c> for a client that shows a dialog of its own before a refactoring is
-/// applied.
+/// Advertises that the language server says what a refactoring asks its user (<c>rdcore/refactor/prepare</c>), what an identifier the user is
+/// typing raises (<c>rdcore/refactor/checkIdentifier</c>), and answers the edit it makes with the user's answers (<c>rdcore/refactor/apply</c>): the counterpart to LSP's own
+/// <c>codeAction/resolve</c> for a client that shows a dialog of its own before a refactoring is applied.
 /// </summary>
 /// <remarks>
-/// One pair of requests serves every refactoring, whose choices are described as data. A client that does not expect it is offered the same refactorings as
+/// These requests serve every refactoring, whose choices are described as data. A client that does not expect the capability is offered the same refactorings as
 /// code actions, which complete with their defaults.
 /// </remarks>
 /// <param name="IsSupported">Whether the capability is expected, or provided.</param>

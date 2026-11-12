@@ -112,6 +112,15 @@ public sealed class RDCorePlatformClient(IRDCorePlatformChannel channel)
     public Task<DebugBreakpointsResult> DebugBreakpointsAsync(SessionDebugBreakpointsParams request, CancellationToken token)
         => Send<SessionDebugBreakpointsParams, DebugBreakpointsResult>(RDCorePlatformProtocol.SessionDebugBreakpoints, request, token);
 
+    /// <summary>
+    /// Sets which run-time errors a program under a debugger waits at (<see cref="RDCorePlatformProtocol.SessionDebugErrorBreak"/>).
+    /// </summary>
+    /// <param name="request">The errors to wait at, for this run and every later one.</param>
+    /// <param name="token">Cancels the request.</param>
+    /// <returns>The acknowledgement, once the runtime session has the mode.</returns>
+    public Task<DebugAck> DebugErrorBreakAsync(SessionDebugErrorBreakParams request, CancellationToken token)
+        => Send<SessionDebugErrorBreakParams, DebugAck>(RDCorePlatformProtocol.SessionDebugErrorBreak, request, token);
+
     /// <summary>Asks for the call stack of the suspended program (<see cref="RDCorePlatformProtocol.SessionDebugStack"/>).</summary>
     /// <param name="request">The request.</param>
     /// <param name="token">Cancels the request.</param>
@@ -159,6 +168,18 @@ public sealed class RDCorePlatformClient(IRDCorePlatformChannel channel)
     /// <returns>The edit of the workspace, which the language server does not apply.</returns>
     public Task<RefactorWorkspaceEdit> RefactorApplyAsync(RefactorApplyParams request, CancellationToken token)
         => Send<RefactorApplyParams, RefactorWorkspaceEdit>(RDCorePlatformProtocol.RefactorApply, request, token);
+
+    /// <summary>
+    /// Asks about an identifier the user is typing for a refactoring, before it is applied (<see cref="RDCorePlatformProtocol.RefactorCheckIdentifier"/>):
+    /// whether it can be declared where the refactoring declares it, and what it would hide, which a dialog shows beside it as its user types it.
+    /// </summary>
+    /// <param name="request">The refactoring, the document and range it is of, and the user's answers, whose Name choices hold the identifiers.</param>
+    /// <param name="token">Cancels the request.</param>
+    /// <returns>
+    /// The notices the identifiers raise, each with the choice it answers: an identifier the refactoring refuses, or what the user should know of one it takes.
+    /// </returns>
+    public Task<RefactorIdentifierCheckResult> RefactorCheckIdentifierAsync(RefactorIdentifierCheckParams request, CancellationToken token)
+        => Send<RefactorIdentifierCheckParams, RefactorIdentifierCheckResult>(RDCorePlatformProtocol.RefactorCheckIdentifier, request, token);
 
     /// <summary>
     /// Shows the program's <c>MsgBox</c> calls (<see cref="RDCorePlatformProtocol.SessionMessageBox"/>), for a client that expects <see cref="SessionInteraction"/>.
