@@ -47,7 +47,8 @@ public sealed record class CompletionCandidate(string Label, CompletionItemKind 
     /// </para>
     /// <para>
     /// The <c>sortText</c> orders a label the word starts before one whose humps it matches, and both before one it does not match; then by
-    /// <see cref="Rank"/>, then by the label in any case.
+    /// <see cref="Rank"/>, then by the label in any case: by the name it writes, so a name in brackets (<c>[My Field]</c>) sorts among the others by
+    /// <c>My Field</c>.
     /// </para>
     /// </remarks>
     /// <param name="match">How the label matches the word typed (<see cref="CompletionCandidates.MatchOf"/>).</param>
@@ -58,7 +59,7 @@ public sealed record class CompletionCandidate(string Label, CompletionItemKind 
         InsertText = InsertText,
         Detail = Detail,
         Documentation = Documentation is { Length: > 0 } documentation ? new StringOrMarkupContent(documentation) : null,
-        SortText = $"{TierOf(match)}{Rank:D2}{Label.ToLowerInvariant()}",
+        SortText = $"{TierOf(match)}{Rank:D2}{CompletionCandidates.NameOf(Label).ToString().ToLowerInvariant()}",
     };
 
     internal static char TierOf(CompletionMatch match) => match switch
@@ -149,7 +150,13 @@ public static class CompletionCandidates
     /// <c>Lng</c>, <c>Ptr</c>, <c>IOError</c> is <c>IO</c>, <c>Error</c>, and <c>VBA</c> is one hump;</description></item>
     /// <item><description>a run of digits is one hump, and a letter after it starts the next: <c>Win32Api</c> is <c>Win</c>, <c>32</c>, <c>Api</c>;</description></item>
     /// <item><description><c>Class_Initialize</c> is <c>Class</c>, <c>Initialize</c>, and <c>_NewEnum</c> is <c>New</c>, <c>Enum</c>.</description></item>
+    /// <item><description>a letter after a character that is neither a letter nor a digit starts one: <c>[My Field]</c> is <c>My</c>, <c>Field</c>, so
+    /// <c>MF</c> matches it.</description></item>
     /// </list>
+    /// <para>
+    /// A name written in brackets (<strong>MS-VBAL §3.3.5.3</strong> <c>foreign-name</c>) is matched by the name between them, and a word that starts with
+    /// an opening bracket matches as the rest of it does: <c>My</c> and <c>[My</c> both match <c>[My Field]</c>, and <c>[To</c> matches <c>Total</c>.
+    /// </para>
     /// <para>
     /// The word matches the humps when it can be cut into as many parts as there are humps from the first, each part the start of its hump, in order: no hump
     /// is skipped, and the humps after the last part are not needed. <c>MP</c> and <c>MuPl</c> match <c>MultiPlayer</c>, <c>LoPi</c> matches
@@ -175,6 +182,20 @@ public static class CompletionCandidates
     {
         ArgumentNullException.ThrowIfNull(label);
         ArgumentNullException.ThrowIfNull(word);
+        return MatchOf(NameOf(label), NameOf(word));
+    }
+
+    // the name a label writes, or a word starts: what is between the brackets of a name written in them (MS-VBAL §3.3.5.3 <foreign-name>), and what follows
+    // the opening bracket of one that is still being typed.
+    internal static ReadOnlySpan<char> NameOf(string text) => text switch
+    {
+        ['[', .., ']'] => text.AsSpan(1, text.Length - 2),
+        ['[', ..] => text.AsSpan(1),
+        _ => text,
+    };
+
+    private static CompletionMatch MatchOf(ReadOnlySpan<char> label, ReadOnlySpan<char> word)
+    {
         if (label.StartsWith(word, StringComparison.OrdinalIgnoreCase))
         {
             return CompletionMatch.Prefix;
@@ -237,7 +258,7 @@ public static class CompletionCandidates
     }
 
     // the index of the first character at or after `index` that is no underscore.
-    private static int PastUnderscores(string text, int index)
+    private static int PastUnderscores(ReadOnlySpan<char> text, int index)
     {
         while (index < text.Length && text[index] == '_')
         {
@@ -248,7 +269,7 @@ public static class CompletionCandidates
     }
 
     // the next hump of a label from `position`, as (start, length), `position` moved past it; a length of 0 when there is none.
-    private static (int Start, int Length) NextHump(string label, ref int position)
+    private static (int Start, int Length) NextHump(ReadOnlySpan<char> label, ref int position)
     {
         position = PastUnderscores(label, position);
         var start = position;
@@ -267,7 +288,7 @@ public static class CompletionCandidates
     }
 
     // whether the character at index starts a hump, the one before it being of the same hump or of the one before.
-    private static bool StartsHump(string label, int index)
+    private static bool StartsHump(ReadOnlySpan<char> label, int index)
     {
         var character = label[index];
         var before = label[index - 1];
@@ -276,7 +297,8 @@ public static class CompletionCandidates
             return !char.IsDigit(before);
         }
 
-        if (char.IsDigit(before))
+        // a name in brackets can hold a space, or any other character but a letter or a digit: what follows one starts a hump.
+        if (char.IsDigit(before) || !char.IsLetter(before) && char.IsLetter(character))
         {
             return true;
         }
@@ -373,7 +395,8 @@ public static class CompletionCandidates
     /// <param name="cursor">
     /// Where the cursor is in the client's document, as the completion request gives it. For a document that is part of a module, such as a program that is
     /// the body of one, this is the position in the document and not in the module. The item of a candidate that also replaces text after the cursor
-    /// (<see cref="CompletionCandidate.ReplacedAfter"/>) carries a <c>textEdit</c> over the word typed and that text, in the client's document. <see langword="null"/> when no position is known; every item
+    /// (<see cref="CompletionCandidate.ReplacedAfter"/>) carries a <c>textEdit</c> over the word typed and that text, in the client's document; so does every
+    /// item of a word typed from the opening bracket of a name in brackets, which a client does not take as part of the word. <see langword="null"/> when no position is known; every item
     /// then replaces the word typed only.
     /// </param>
     public static CompletionList ListOf(string word, IReadOnlyList<CompletionGroup> first, IReadOnlyList<CompletionCandidate> candidates, Position? cursor = null)
@@ -406,7 +429,7 @@ public static class CompletionCandidates
         }
 
         items.Sort((left, right) => string.CompareOrdinal(left.Item.SortText, right.Item.SortText));
-        var selected = word.Length > 0 ? items.FindIndex(item => string.Equals(item.Item.Label, word, StringComparison.OrdinalIgnoreCase)) : -1;
+        var selected = word.Length > 0 ? items.FindIndex(item => NameOf(item.Item.Label).Equals(NameOf(word), StringComparison.OrdinalIgnoreCase)) : -1;
         if (selected < 0)
         {
             selected = items.FindIndex(item => item.IsSelectable);
@@ -421,9 +444,10 @@ public static class CompletionCandidates
     }
 
     // an item that replaces more than the word typed says what it replaces, from the start of the word to the end of what it replaces after the cursor: a
-    // client replaces the word typed otherwise, and keeps the rest.
+    // client replaces the word typed otherwise, and keeps the rest. A client's word has no `[`, so the item of a word typed from one replaces it too, and the
+    // client narrows the list by the text it replaces: an item whose label has no bracket is narrowed by the label after one.
     private static CompletionItem Placed(CompletionItem item, CompletionCandidate candidate, string word, Position? cursor)
-        => candidate.ReplacedAfter > 0 && cursor is { } at && at.Character >= word.Length
+        => (candidate.ReplacedAfter > 0 || word is ['[', ..]) && cursor is { } at && at.Character >= word.Length
             ? item with
             {
                 TextEdit = new TextEdit
@@ -431,6 +455,7 @@ public static class CompletionCandidates
                     Range = new LspRange(at.Line, at.Character - word.Length, at.Line, at.Character + candidate.ReplacedAfter),
                     NewText = candidate.InsertText ?? candidate.Label,
                 },
+                FilterText = word is ['[', ..] && candidate.Label is not ['[', ..] ? $"[{candidate.Label}" : item.FilterText,
             }
             : item;
 
@@ -682,7 +707,7 @@ public static class CompletionCandidates
     public static Symbol? NamespaceOf(ISymbolResolver resolver, Uri origin, string qualifier, bool typeContext)
     {
         var parts = qualifier.Split('.');
-        if (parts.Any(part => !IsWritable(part)))
+        if (parts.Any(part => !IsIdentifier(part)))
         {
             return null;
         }
@@ -769,10 +794,15 @@ public static class CompletionCandidates
             && symbol.Kind is not (SymbolKindExt.Event or SymbolKindExt.LineLabel or SymbolKindExt.Attribute or SymbolKindExt.Directive or SymbolKindExt.Operator
                 or SymbolKindExt.Ignored);
 
-    // a name that can be written as one: the platform names some of its symbols in ways the language cannot (an operator, a synthetic member).
-    private static bool IsWritable(Symbol symbol) => IsWritable(symbol.Name);
+    // a name that can be written: as it is, or in brackets (MS-VBAL §3.3.5.3 <foreign-name>), which hold any character of a line but a `]`. The platform names
+    // some of its symbols in ways the language cannot (an operator, a synthetic member), and the synthetic names and the hidden names of a library start with
+    // an underscore: none of them is offered.
+    private static bool IsWritable(Symbol symbol) => IsIdentifier(symbol.Name) || IsForeignName(symbol.Name);
 
-    private static bool IsWritable(string name) => name.Length > 0 && char.IsLetter(name[0]) && name.All(character => char.IsLetterOrDigit(character) || character == '_');
+    private static bool IsIdentifier(string name) => name.Length > 0 && char.IsLetter(name[0]) && name.All(character => char.IsLetterOrDigit(character) || character == '_');
+
+    private static bool IsForeignName(string name)
+        => name.Length > 0 && name[0] != '_' && name.Any(char.IsLetterOrDigit) && name.AsSpan().IndexOfAny("]\r\n") < 0;
 
     private static bool IsHidden(Symbol symbol)
         => (symbol.GetProperty(SymbolProperties.MemberFlags) & SymbolProperties.HiddenMemberFlag) != 0
@@ -780,9 +810,9 @@ public static class CompletionCandidates
 
     private static bool IsPrivate(Symbol symbol) => symbol is AccessibleTypedSymbol { AccessModifier: AccessModifier.Private };
 
-    // the candidate a symbol is: its name, its kind, and what is said of it.
+    // the candidate a symbol is: its name as it is written, in brackets when it is no identifier; its kind, and what is said of it.
     private static CompletionCandidate Describe(Symbol symbol)
-        => new(symbol.Name, KindOf(symbol), DetailOf(symbol), symbol.GetProperty(SymbolProperties.DocString), symbol);
+        => new(IsIdentifier(symbol.Name) ? symbol.Name : $"[{symbol.Name}]", KindOf(symbol), DetailOf(symbol), symbol.GetProperty(SymbolProperties.DocString), symbol);
 
     private static CompletionItemKind KindOf(Symbol symbol) => symbol switch
     {
