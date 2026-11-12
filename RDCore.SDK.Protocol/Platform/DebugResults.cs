@@ -140,6 +140,16 @@ public record class DebugStackFrame(int Id, string Procedure, string Module, int
 {
     /// <summary>The lines of the <c>GoSub</c> statements this activation will return to; none for a procedure that is not in one.</summary>
     public IReadOnlyList<int> ReturnLines { get; init; } = ReturnLines ?? [];
+
+    /// <summary>
+    /// Whether this activation is the handler of an event that a server's object raised - a click on a form, a timer of a host application - which the program was
+    /// waiting in a call for: the activations above it are the event's, and the one below it is the program's, in the call that the event was raised by.
+    /// </summary>
+    /// <remarks>
+    /// The code between the two is not the program's: a debugger shows the place, as MS-VBA's Call Stack does with <c>&lt;Non-Basic Code&gt;</c>. It is
+    /// <see langword="false"/> for every activation of a program that handles no such event.
+    /// </remarks>
+    public bool BeginsAnEvent { get; init; }
 }
 
 /// <summary>

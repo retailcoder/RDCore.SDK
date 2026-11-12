@@ -33,8 +33,21 @@ public enum SuspensionDecision
 public interface IExecutionGate
 {
     /// <summary>
-    /// Holds the calling thread, which is the program's, until it is told what to do.
+    /// Holds the calling thread until it is told what to do, when that thread runs the program's code: the program's own thread, or a thread that runs the handlers of
+    /// an event of the program (<see cref="ISessionTurn.RunsAnEventOfTheProgram"/>).
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A modal form's <c>Show</c> is a call the program waits in, and a click on the form is an event of the program, handled on the thread of the form's window: a
+    /// <c>Stop</c> or a breakpoint in its handler, or in anything that handler calls, stops the program there, as it does in MS-VBA. While it waits, such a thread
+    /// makes the calls asked of it (<see cref="ISessionTurn.ServeOfTheCallingThread"/>), so that a debugger that reads a control of the form is answered; it handles
+    /// no event of the program meanwhile (<see cref="ISessionTurn.Stopped"/>).
+    /// </para>
+    /// <para>
+    /// Any other thread - code that runs beside the program that waits, such as an expression a debugger evaluates, or the handlers of an event that code's calls
+    /// raised - is not held: it is answered <see cref="SuspensionDecision.Abandon"/>, which stops that code and not the program.
+    /// </para>
+    /// </remarks>
     /// <param name="kind">Why the program is stopped.</param>
     /// <param name="location">The statement that stopped it, or <see langword="null"/> when it was not one.</param>
     /// <returns>What to do with the program.</returns>
