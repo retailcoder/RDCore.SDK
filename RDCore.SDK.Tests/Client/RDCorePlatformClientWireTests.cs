@@ -345,4 +345,41 @@ public sealed class RDCorePlatformClientWireTests
         Assert.AreEqual(new SourceRange(1, 0, 3, 7), document.Edits.Single().Range);
         Assert.AreEqual("Total x", document.Edits.Single().NewText);
     }
+
+    [TestMethod]
+    [Timeout(60_000, CooperativeCancellation = true)]
+    public async Task ARefactorIdentifierCheck_ReachesTheServersHandler_WithTheAnswers_AndTheNoticesComeBackWithTheChoiceEachAnswers()
+    {
+        var module = new Uri("file:///c:/workspace/Module1.bas");
+        RefactorCheckIdentifierRequest? received = null;
+        using var connected = await ConnectAsync(server => server.OnRequest<RefactorCheckIdentifierRequest, RefactorIdentifierCheckResult>(
+            RDCorePlatformProtocol.RefactorCheckIdentifier, (request, _) =>
+        {
+            received = request;
+            return Task.FromResult(new RefactorIdentifierCheckResult
+            {
+                Notices =
+                [
+                    new RefactorNotice { Code = "shadows", Kind = RefactorNoticeKind.Note, Message = "n", Related = new SourceLocation(request.Uri!, request.Range), Choice = "name" },
+                    new RefactorNotice { Code = "reserved", Kind = RefactorNoticeKind.Refusal, Message = "r", Choice = "name", Item = "x" },
+                ],
+            });
+        }));
+
+        var result = await connected.Platform.RefactorCheckIdentifierAsync(new RefactorIdentifierCheckParams
+        {
+            Kind = RefactoringKinds.ExtractMethod, Uri = module, Range = new SourceRange(1, 0, 3, 7),
+            Answers = [new RefactorAnswer { Id = "name", Value = "Sum" }],
+        }, CancellationToken.None);
+
+        Assert.AreEqual(RefactoringKinds.ExtractMethod, received?.Kind);
+        Assert.AreEqual(new SourceRange(1, 0, 3, 7), received?.Range);
+        Assert.AreEqual("Sum", received?.Answers.Single().Value);
+        Assert.AreEqual(RefactorNoticeKind.Note, result.Notices[0].Kind);
+        Assert.AreEqual("name", result.Notices[0].Choice);
+        Assert.IsNull(result.Notices[0].Item);
+        Assert.AreEqual(new SourceLocation(module, new SourceRange(1, 0, 3, 7)), result.Notices[0].Related);
+        Assert.AreEqual(RefactorNoticeKind.Refusal, result.Notices[1].Kind);
+        Assert.AreEqual("x", result.Notices[1].Item);
+    }
 }
