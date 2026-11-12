@@ -19,6 +19,12 @@ namespace RDCore.SDK.Model.Errors;
 public readonly record struct VBStackTraceFrame(string ProcedureName, SourceLocation? Location, ImmutableArray<SourceLocation> GoSubs = default)
 {
     /// <summary>
+    /// The programmatic name of the module the procedure is in, whose source <see cref="Location"/> and <see cref="GoSubs"/> are positions in; empty when it is not
+    /// known.
+    /// </summary>
+    public string Module { get => field ?? string.Empty; init; }
+
+    /// <summary>
     /// The frame as one line: the procedure's name, and the 1-based line and column of its
     /// <see cref="Location"/> when that is known, then the <c>GoSub</c> statements it came from.
     /// </summary>
