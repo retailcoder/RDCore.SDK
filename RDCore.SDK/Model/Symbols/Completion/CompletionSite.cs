@@ -26,7 +26,10 @@ public enum CompletionSiteKind
 /// being typed - the rest of it need not parse, and usually does not.
 /// </summary>
 /// <param name="Kind">What is offered.</param>
-/// <param name="Prefix">The part of the name that is typed already, which the list is narrowed to: what a chosen item replaces.</param>
+/// <param name="Prefix">
+/// The part of the name that is typed already, which the list is narrowed to: what a chosen item replaces. For a name being written in brackets, it starts
+/// with the opening bracket (<c>[My Fi</c>).
+/// </param>
 /// <param name="Qualifier">
 /// For <see cref="CompletionSiteKind.Member"/>, the expression before the <c>.</c>, as it is written (<c>Foo.Bar(1)</c>); an empty string for a member access
 /// with no expression before it, which is a member of the object of the enclosing <c>With</c> block (<strong>MS-VBAL §5.4.2.21</strong>), and one that starts
@@ -54,6 +57,10 @@ public sealed record class CompletionSite(CompletionSiteKind Kind, string Prefix
     /// when the code runs, which no declaration names. Nothing is completed there (<see cref="CompletionSiteKind.None"/>), and nothing is completed right after
     /// a <c>!</c> that is the type suffix of a <c>Single</c> (<c>x!</c>) either, since no name follows one. A <c>!</c> written in the expression a member is
     /// accessed on is part of that expression (<c>Sheets![My Sheet].Ra</c>).
+    /// <para>
+    /// A name written in brackets (<strong>MS-VBAL §3.3.5.3</strong> <c>foreign-name</c>) holds any character of the line but a <c>]</c>: where its opening
+    /// bracket is not closed yet, the name is being typed from it, and the prefix is the bracket and what follows it (<c>x = [My Fi</c>).
+    /// </para>
     /// </remarks>
     /// <param name="text">The text of the line, up to the cursor.</param>
     public static CompletionSite Read(string text)
@@ -67,6 +74,11 @@ public sealed record class CompletionSite(CompletionSiteKind Kind, string Prefix
         while (start > 0 && IsIdentifierCharacter(text[start - 1]))
         {
             start--;
+        }
+
+        if (OpeningBracketOf(text) is var bracket and >= 0)
+        {
+            start = bracket;
         }
 
         var prefix = text[start..];
@@ -110,6 +122,31 @@ public sealed record class CompletionSite(CompletionSiteKind Kind, string Prefix
     }
 
     private static bool IsIdentifierCharacter(char character) => char.IsLetterOrDigit(character) || character == '_';
+
+    // the `[` of a name in brackets that is still being written at the end of the line (MS-VBAL §3.3.5.3 <foreign-name>), outside a string literal; -1 when
+    // every bracket is closed. What is between the brackets is the name, a space or a `"` included.
+    private static int OpeningBracketOf(string text)
+    {
+        var opening = -1;
+        var inString = false;
+        for (var index = 0; index < text.Length; index++)
+        {
+            switch (text[index])
+            {
+                case '"' when opening < 0:
+                    inString = !inString;
+                    break;
+                case '[' when !inString && opening < 0:
+                    opening = index;
+                    break;
+                case ']' when opening >= 0:
+                    opening = -1;
+                    break;
+            }
+        }
+
+        return opening;
+    }
 
     // a string literal that is not closed yet, or a comment, runs to the end of the line: nothing typed in either is a name.
     internal static bool IsInLiteralOrComment(string text)
