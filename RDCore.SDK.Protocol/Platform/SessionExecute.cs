@@ -121,16 +121,23 @@ public record class ExecuteResult
     public string ErrorSource { get; init; } = string.Empty;
 
     /// <summary>
-    /// Where in the submitted <see cref="SessionExecuteParams.Source"/> the error was raised, zero-based
-    /// as every position in the platform is: the line, and <see cref="ErrorCharacter"/> within it. Both
-    /// <c>-1</c> when the outcome is not a run-time error, or when nothing located it.
+    /// Where the error was raised, or where the program waits when <see cref="Outcome"/> is <see cref="ExecutionOutcome.Suspended"/>, zero-based as every position
+    /// in the platform is: the line, and <see cref="ErrorCharacter"/> within it, in the source of <see cref="ErrorModule"/>. Both <c>-1</c> for any other outcome,
+    /// or when nothing located it.
     /// </summary>
     /// <remarks>
-    /// A position in the source the <em>caller sent</em>, which is the one document both ends of the
-    /// protocol agree on. A client whose program does not live in a file — an interactive shell's buffer —
-    /// maps it back to whatever it calls a line itself.
+    /// In the submitted <see cref="SessionExecuteParams.Source"/> when <see cref="ErrorModule"/> is the module the caller sent, which is the one document both ends
+    /// of the protocol agree on: a client whose program does not live in a file (an interactive shell's buffer) maps it back to whatever it calls a line itself.
+    /// In another module of the project, it is a position in that module's own source.
     /// </remarks>
     public int ErrorLine { get; init; } = -1;
+
+    /// <summary>
+    /// The programmatic name of the module <see cref="ErrorLine"/> and <see cref="ErrorCharacter"/> are positions in: the module the caller sent
+    /// (<see cref="SessionExecuteParams.ModuleName"/>), or the module of the project that raised the error, or that the program waits in. Empty when
+    /// <see cref="ErrorLine"/> is <c>-1</c>.
+    /// </summary>
+    public string ErrorModule { get; init; } = string.Empty;
 
     /// <inheritdoc cref="ErrorLine"/>
     public int ErrorCharacter { get; init; } = -1;
@@ -177,7 +184,7 @@ public record class ExecuteResult
 /// </remarks>
 /// <param name="Procedure">The name of the procedure the activation is of.</param>
 /// <param name="Line">
-/// Zero-based line in the submitted source, or <c>-1</c> when the activation carries no location. For
+/// Zero-based line in the source of <see cref="Module"/>, or <c>-1</c> when the activation carries no location. For
 /// the activation the error was raised in, it is the line of the faulting statement or expression. For
 /// each of its callers, it is the line of the call the caller was suspended at: the call expression or
 /// call statement that was running.
@@ -191,4 +198,10 @@ public record class ExecuteStackFrame(string Procedure, int Line = -1, int Chara
 {
     /// <summary>The lines of the <c>GoSub</c> statements the activation would have returned to; none for one that was in none.</summary>
     public IReadOnlyList<int> ReturnLines { get; init; } = ReturnLines ?? [];
+
+    /// <summary>
+    /// The programmatic name of the module the procedure is in, whose source <see cref="Line"/> and <see cref="ReturnLines"/> are lines of: the module the caller
+    /// sent (<see cref="SessionExecuteParams.ModuleName"/>), or another module of the project. Empty when the activation carries no location.
+    /// </summary>
+    public string Module { get; init; } = string.Empty;
 }
