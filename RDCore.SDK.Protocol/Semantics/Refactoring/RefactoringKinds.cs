@@ -19,7 +19,7 @@ public static class RefactoringKinds
 
     /// <summary>
     /// Convert GoSub to Procedure: the <c>GoSub</c> routine a label starts becomes a procedure of its own (<strong>MS-VBAL §5.4.2.14</strong>), each
-    /// <c>GoSub</c> of it a call, and each <c>Return</c> an <c>Exit Sub</c>. The range it is asked for is on the label, or on a <c>GoSub</c> statement that
+    /// <c>GoSub</c> of it a call, and each <c>Return</c> a way out of it. The range it is asked for is on the label, or on a <c>GoSub</c> statement that
     /// names it. Its choices are the new procedure's name, and its parameters, with why each is passed as it is.
     /// </summary>
     public const string ConvertGoSub = "refactor.extract.gosub";
