@@ -134,7 +134,7 @@ public record class ExecuteResult
 
     /// <summary>
     /// The programmatic name of the module <see cref="ErrorLine"/> and <see cref="ErrorCharacter"/> are positions in: the module the caller sent
-    /// (<see cref="SessionExecuteParams.ModuleName"/>), or the module of the project that raised the error, or that the program waits in. Empty when
+    /// (<see cref="SessionExecuteParams.ModuleName"/>), or the module of the project where the error was raised, or where the program waits. Empty when
     /// <see cref="ErrorLine"/> is <c>-1</c>.
     /// </summary>
     public string ErrorModule { get; init; } = string.Empty;
