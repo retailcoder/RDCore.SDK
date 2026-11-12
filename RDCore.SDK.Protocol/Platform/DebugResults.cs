@@ -142,7 +142,7 @@ public record class DebugStackFrame(int Id, string Procedure, string Module, int
     public IReadOnlyList<int> ReturnLines { get; init; } = ReturnLines ?? [];
 
     /// <summary>
-    /// Whether this activation is the handler of an event that a server's object raised - a click on a form, a timer of a host application - which the program was
+    /// Whether this activation is the handler of an event that a server's object raised (a click on a form, a timer of a host application), which the program was
     /// waiting in a call for: the activations above it are the event's, and the one below it is the program's, in the call that the event was raised by.
     /// </summary>
     /// <remarks>

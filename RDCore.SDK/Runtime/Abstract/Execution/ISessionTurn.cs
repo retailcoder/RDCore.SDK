@@ -94,8 +94,8 @@ public interface ISessionTurn
     /// <remarks>
     /// <para>
     /// A thread that raises an event is often the only thread its objects can be called on: an apartment of COM objects, the thread of a form's window. While that
-    /// thread waits for something - the turn, or the person at a debugger when a handler of the event is stopped at a breakpoint - the calls asked of it meanwhile still
-    /// have to be made, or whoever asked for one waits for ever. <paramref name="serve"/> is how: it waits up to the time it is given, making those calls meanwhile.
+    /// thread waits for something (the turn, or the person at a debugger when a handler of the event is stopped at a breakpoint), the calls asked of it meanwhile still
+    /// have to be made, or whoever asked for one waits forever. <paramref name="serve"/> is how: it waits up to the time it is given, making those calls meanwhile.
     /// </para>
     /// <para>
     /// While the program waits at a stop (<see cref="Stopped"/>), the handlers of an event of the program wait for it to be resumed, by <paramref name="serve"/>, and run
@@ -129,7 +129,7 @@ public interface ISessionTurn
     Action<TimeSpan>? ServeOfTheCallingThread => null;
 
     /// <summary>
-    /// Says that the program waits at a stop - a <c>Stop</c>, a breakpoint, an error a debugger waits at - for as long as the returned scope is not disposed.
+    /// Says that the program waits at a stop (a <c>Stop</c>, a breakpoint, an error a debugger waits at) for as long as the returned scope is not disposed.
     /// </summary>
     /// <remarks>
     /// No code of the program runs meanwhile, as none does in MS-VBA's break mode. An event of the program that comes meanwhile is not dropped: it waits, and is handled
@@ -140,7 +140,7 @@ public interface ISessionTurn
     IDisposable Stopped() => SessionTurnScope.None;
 
     /// <summary>
-    /// Says that the calling thread runs code beside the program that waits at a stop - an expression a debugger evaluates, a statement typed at the stop - for as long as
+    /// Says that the calling thread runs code beside the program that waits at a stop (an expression a debugger evaluates, a statement typed at the stop) for as long as
     /// the returned scope is not disposed.
     /// </summary>
     /// <remarks>

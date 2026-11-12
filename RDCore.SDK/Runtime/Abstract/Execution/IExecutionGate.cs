@@ -44,8 +44,8 @@ public interface IExecutionGate
     /// no event of the program meanwhile (<see cref="ISessionTurn.Stopped"/>).
     /// </para>
     /// <para>
-    /// Any other thread - code that runs beside the program that waits, such as an expression a debugger evaluates, or the handlers of an event that code's calls
-    /// raised - is not held: it is answered <see cref="SuspensionDecision.Abandon"/>, which stops that code and not the program.
+    /// Any other thread (code that runs beside the program that waits, such as an expression a debugger evaluates, or the handlers of an event that code's calls
+    /// raised) is not held: it is answered <see cref="SuspensionDecision.Abandon"/>, which stops that code and not the program.
     /// </para>
     /// </remarks>
     /// <param name="kind">Why the program is stopped.</param>
