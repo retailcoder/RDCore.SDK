@@ -112,6 +112,15 @@ public sealed class RDCorePlatformClient(IRDCorePlatformChannel channel)
     public Task<DebugBreakpointsResult> DebugBreakpointsAsync(SessionDebugBreakpointsParams request, CancellationToken token)
         => Send<SessionDebugBreakpointsParams, DebugBreakpointsResult>(RDCorePlatformProtocol.SessionDebugBreakpoints, request, token);
 
+    /// <summary>
+    /// Sets which run-time errors a program under a debugger waits at (<see cref="RDCorePlatformProtocol.SessionDebugErrorBreak"/>).
+    /// </summary>
+    /// <param name="request">The errors to wait at, for this run and every later one.</param>
+    /// <param name="token">Cancels the request.</param>
+    /// <returns>The acknowledgement, once the runtime session has the mode.</returns>
+    public Task<DebugAck> DebugErrorBreakAsync(SessionDebugErrorBreakParams request, CancellationToken token)
+        => Send<SessionDebugErrorBreakParams, DebugAck>(RDCorePlatformProtocol.SessionDebugErrorBreak, request, token);
+
     /// <summary>Asks for the call stack of the suspended program (<see cref="RDCorePlatformProtocol.SessionDebugStack"/>).</summary>
     /// <param name="request">The request.</param>
     /// <param name="token">Cancels the request.</param>
