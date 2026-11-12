@@ -61,7 +61,7 @@ public static class RDCorePlatformProtocol
     public const string SessionDebugBreakpoints = "rdcore/session/debug/breakpoints";
 
     /// <summary>
-    /// Asks the language server to set which run-time errors a program under a debugger waits at. See <see cref="SessionDebugErrorBreakParams"/>.
+    /// Asks the language server to set which run-time errors a program under a debugger waits at. See <see cref="Platform.Protocol.SessionDebugErrorBreakParams"/>.
     /// </summary>
     public const string SessionDebugErrorBreak = "rdcore/session/debug/errorBreak";
 
