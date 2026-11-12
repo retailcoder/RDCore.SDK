@@ -155,4 +155,12 @@ public enum ValueExpressionSemanticFlags
     /// <c>True</c>. <c>Not 1</c> is <c>-2</c>, which is <c>True</c>.
     /// </summary>
     TrueValueIsNotMinusOne = 1 << 22,
+
+    /// <summary>
+    /// It is the variable a <c>For Each</c> walks, named as the target of a <c>Set</c> to <c>Nothing</c> inside that loop (<c>Set C = Nothing</c> in
+    /// <c>For Each V In C</c>). While the loop runs, RD-VBA leaves the variable as it is: the loop still holds the object, which an iteration does not
+    /// destroy. <strong>MS-VBA</strong> lets go of a <c>Collection</c> there, which is destroyed with the members the loop has not reached, and the loop
+    /// ends (observed in Excel). <strong>MS-VBAL §5.4.2.4</strong> leaves the enumeration implementation-defined.
+    /// </summary>
+    CollectionSetToNothingInItsOwnLoop = 1 << 23,
 }
