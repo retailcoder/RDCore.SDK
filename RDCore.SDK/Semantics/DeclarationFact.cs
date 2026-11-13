@@ -95,6 +95,12 @@ public enum DeclarationRole
     /// calls it as the procedure it also is.
     /// </summary>
     UnmatchedEventHandler,
+
+    /// <summary>
+    /// It is the procedure a run of the project starts with (<see cref="Workspace.ProgramEntryPoint"/>): the procedure the project names, or the
+    /// <c>Sub Main</c> of the one standard module that declares one. A run calls it, and the project's code need not. A library project has none.
+    /// </summary>
+    EntryPoint,
 }
 
 /// <summary>
@@ -125,8 +131,9 @@ public sealed record class DeclarationFact(
     DeclarationReferences? References)
 {
     /// <summary>
-    /// What the declaration is there for, when it implements a member of an interface or handles an event. A role is stated only for a member of a class
-    /// module whose interfaces and event sources the pass resolved; <see cref="DeclarationRole.None"/> is not a statement that it has none otherwise.
+    /// What the declaration is there for, when it implements a member of an interface, handles an event, or is the project's entry point. A role is stated
+    /// only for a member of a class module whose interfaces and event sources the pass resolved, and for the entry point of a project that has one;
+    /// <see cref="DeclarationRole.None"/> is not a statement that it has none otherwise.
     /// </summary>
     public DeclarationRole Role { get; init; }
 
