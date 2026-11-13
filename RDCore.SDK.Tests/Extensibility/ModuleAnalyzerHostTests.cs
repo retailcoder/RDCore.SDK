@@ -158,6 +158,34 @@ public sealed class ModuleAnalyzerHostTests
         CollectionAssert.AreEqual(new[] { "RDC01001" }, Codes(findings));
     }
 
+    // a code an analyzer does not declare would not keep it running were its declared codes all disabled: the finding is reported, and the analyzer named.
+    private sealed class Undeclaring : IModuleAnalyzer
+    {
+        public IReadOnlyList<RDCoreDiagnosticCode> Codes => [Named];
+
+        public IEnumerable<AnalyzerFinding> Analyze(ModuleAnalysisContext context)
+            => [new(Named, default, DiagnosticSeverity.Warning, "declared"), new(Other, default, DiagnosticSeverity.Warning, "not declared")];
+    }
+
+    [TestMethod]
+    public void AFindingOfACodeTheAnalyzerDoesNotDeclare_IsReported_AndTheAnalyzerNamedInAWarning()
+    {
+        var findings = ModuleAnalyzerHost.Run([new Undeclaring()], Context(), AnalysisPhase.All, _logger);
+
+        CollectionAssert.AreEqual(new[] { "RDC01001", "XYZ00042" }, Codes(findings));
+        Assert.HasCount(1, _logger.Warnings);
+        StringAssert.Contains(_logger.Warnings[0], nameof(Undeclaring));
+        StringAssert.Contains(_logger.Warnings[0], "XYZ00042");
+    }
+
+    [TestMethod]
+    [DataRow("en", SettingScope.Platform, "Disable RDC01001 in every workspace")]
+    [DataRow("en", SettingScope.Workspace, "Disable RDC01001 in this workspace")]
+    [DataRow("fr", SettingScope.Platform, "Désactiver RDC01001 dans tous les espaces de travail")]
+    [DataRow("fr", SettingScope.Workspace, "Désactiver RDC01001 dans cet espace de travail")]
+    public void TheCodeActionThatDisablesACode_IsTitledInTheLanguageOfTheReader(string language, SettingScope scope, string title)
+        => Assert.AreEqual(title, RDCore.SDK.Semantics.Refactoring.RefactoringTitles.DisableDiagnostic(Named, scope, System.Globalization.CultureInfo.GetCultureInfo(language)));
+
     [TestMethod]
     public void ByDefault_NoCodeIsDisabled()
     {

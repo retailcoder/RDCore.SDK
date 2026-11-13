@@ -21,6 +21,23 @@ public static class RefactoringTitles
     /// <param name="culture">The language of the reader; the current UI culture by default.</param>
     public static string RenameTo(string name, string newName, CultureInfo? culture = null) => Say("CodeAction_RenameTo", culture, name, newName);
 
+    /// <summary>
+    /// The title of the code action that disables the diagnostics of a code (<c>Analysis.DisabledDiagnostics</c>): <c>Disable RDC01001 in every workspace</c>,
+    /// or <c>Disable RDC01001 in this workspace</c>.
+    /// </summary>
+    /// <param name="code">The code.</param>
+    /// <param name="scope">Where the code is disabled: the user's settings of the platform, or the workspace's.</param>
+    /// <param name="culture">The language of the reader; the current UI culture by default.</param>
+    public static string DisableDiagnostic(Extensibility.Diagnostics.RDCoreDiagnosticCode code, Platform.Protocol.SettingScope scope, CultureInfo? culture = null)
+        => Say(scope == Platform.Protocol.SettingScope.Workspace ? "CodeAction_DisableDiagnostic_Workspace" : "CodeAction_DisableDiagnostic_Platform", culture, code);
+
+    /// <summary>
+    /// Why the language server does not change a list of the client's settings: the client does not take such changes from it
+    /// (<see cref="Client.ListSettingValue"/>).
+    /// </summary>
+    /// <param name="culture">The language of the reader; the current UI culture by default.</param>
+    public static string SettingListNotTaken(CultureInfo? culture = null) => Say("SettingList_NotTaken", culture);
+
     /// <summary>The title of the code lens that counts the references of a member: <c>3 references</c>.</summary>
     /// <param name="count">The number of references.</param>
     /// <param name="culture">The language of the reader; the current UI culture by default.</param>

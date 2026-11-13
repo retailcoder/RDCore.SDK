@@ -115,6 +115,16 @@
   <data name="CodeAction_RenameTo" xml:space="preserve">
     <value>Rename '{0}' to '{1}'</value>
   </data>
+  <!-- The titles of the code actions that disable the diagnostics of a code (RefactoringTitles.DisableDiagnostic): {0} is the code. -->
+  <data name="CodeAction_DisableDiagnostic_Platform" xml:space="preserve">
+    <value>Disable {0} in every workspace</value>
+  </data>
+  <data name="CodeAction_DisableDiagnostic_Workspace" xml:space="preserve">
+    <value>Disable {0} in this workspace</value>
+  </data>
+  <data name="SettingList_NotTaken" xml:space="preserve">
+    <value>This client does not take changes of its settings from the language server.</value>
+  </data>
   <!-- The title of the code lens that counts the references of a member (RefactoringTitles.References): {0} is the count. -->
   <data name="CodeLens_References_None" xml:space="preserve">
     <value>{0} references</value>

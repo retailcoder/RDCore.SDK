@@ -14,7 +14,8 @@ namespace RDCore.SDK.Extensibility.Diagnostics;
 /// </para>
 /// <para>
 /// An analyzer that is run is told which of its codes are disabled, and skips their work. A finding of a disabled code that it reports anyway is dropped, and
-/// the analyzer is named in a warning: what is disabled is never reported, whatever an analyzer does. An analyzer that fails is named in a warning too, none of
+/// the analyzer is named in a warning: what is disabled is never reported, whatever an analyzer does. A finding of a code the analyzer does not declare is
+/// reported, and the analyzer named in a warning: its codes say when it is run. An analyzer that fails is named in a warning too, none of
 /// its findings is kept, and the others' are.
 /// </para>
 /// </remarks>
@@ -58,6 +59,12 @@ public static class ModuleAnalyzerHost
 
             foreach (var finding in found)
             {
+                // a code the analyzer does not declare would not keep it running were the ones it declares all disabled: it is reported, and so is the analyzer.
+                if (analyzer.Codes.Count > 0 && !analyzer.Codes.Contains(finding.Code))
+                {
+                    logger.LogWarning("⚠️ {analyzer} reported {code}, which is not among the codes it declares.", analyzer.GetType().Name, finding.Code);
+                }
+
                 if (context.IsEnabled(finding.Code))
                 {
                     findings.Add(finding);
