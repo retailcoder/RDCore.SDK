@@ -16,14 +16,14 @@ public sealed record class VBLongPtrValue(bool Is64Bit)
     public VBLongPtrValue(IBindingHandle handle) : this(handle, is64Bit: true) { }
 
     /// <summary>
-    /// A <c>LongPtr</c> value read from a cell, of the width of the environment it is read in.
+    /// A <c>LongPtr</c> value read from a cell, 4 or 8 bytes wide as <paramref name="is64Bit"/> says.
     /// </summary>
     /// <remarks>
     /// What <see cref="VBLongPtrType_x86.CreateValue"/> and <see cref="VBLongPtrType_x64.CreateValue"/> make: a value of the type that reads the cell. The
     /// cell holds an <c>int</c> for a 32-bit pointer and a <c>long</c> for a 64-bit one.
     /// </remarks>
     /// <param name="handle">The cell the value is read from.</param>
-    /// <param name="is64Bit">Whether the pointer is a 64-bit one (<c>true</c>) or a 32-bit one (<c>false</c>).</param>
+    /// <param name="is64Bit"><see langword="true"/> for a 64-bit pointer; <see langword="false"/> for a 32-bit one.</param>
     public VBLongPtrValue(IBindingHandle handle, bool is64Bit) : this(is64Bit) { Handle = handle; }
 
     public VBLongPtrValue(long value) : this(true)
