@@ -172,3 +172,30 @@ public record class SessionDebugExecuteParams
     /// <summary>The statement, as it would be written in the procedure of the activation; one line.</summary>
     public string Statement { get; init; } = string.Empty;
 }
+
+/// <summary>
+/// Notification <c>rdcore/session/debug/stopped</c>: the language server tells a client that expects the <c>SessionStops</c> capability that the handler of an
+/// event stopped while no program runs (a <c>Stop</c>, a breakpoint, a failed <c>Debug.Assert</c>, an error a debugger waits at), and waits where it stopped.
+/// </summary>
+/// <remarks>
+/// <para>
+/// An event can be handled when no program runs: a click on a form that the prompt showed, or on a form that a macro left shown when it ended. MS-VBA enters
+/// break mode at a stop in such a handler, as it does in a program. No request of the client runs that handler, so there is nothing to answer
+/// <see cref="ExecutionOutcome.Suspended"/> to: this notification says it instead.
+/// </para>
+/// <para>
+/// The handler waits as a program waits at a stop. <c>rdcore/session/debug/stack</c>, <c>.../variables</c>, <c>.../evaluate</c> and <c>.../execute</c> act on
+/// it. <c>rdcore/session/debug/resume</c> goes on with it, and is answered when it next waits (<see cref="ExecutionOutcome.Suspended"/>) or returns
+/// (<see cref="ExecutionOutcome.Completed"/>). <c>rdcore/session/debug/terminate</c> ends it as an <c>End</c> typed at the prompt does: the handler is unwound,
+/// and the session is reset.
+/// </para>
+/// </remarks>
+public record class SessionDebugStoppedParams
+{
+    /// <summary>
+    /// The stop, as the answer of a request that ran a program which waits there says it: <see cref="ExecuteResult.Outcome"/> is
+    /// <see cref="ExecutionOutcome.Suspended"/>, <see cref="ExecuteResult.StackTrace"/> begins with the activation that waits, and the error fields say the error
+    /// for one a debugger waits at. <see cref="ExecuteResult.Output"/> is what the handler printed before it stopped.
+    /// </summary>
+    public ExecuteResult Stop { get; init; } = new();
+}

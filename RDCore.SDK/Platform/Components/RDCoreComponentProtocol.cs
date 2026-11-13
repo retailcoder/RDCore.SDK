@@ -119,6 +119,12 @@ public static class RDCoreComponentProtocol
     public const string HostDebugTerminate = "rdcore/host/debug/terminate";
 
     /// <summary>
+    /// Asks the language server whether a client takes a stop in the handler of an event that runs while no program runs: a request from the environment host,
+    /// whose handler waits if one does. The language server tells its client with <see cref="RDCorePlatformProtocol.SessionDebugStopped"/>.
+    /// </summary>
+    public const string HostDebugStopped = "rdcore/host/debug/stopped";
+
+    /// <summary>
     /// Reads one byte of the environment host's runtime session memory. The language-server side of <see cref="RDCorePlatformProtocol.SessionPeek"/>.
     /// </summary>
     public const string HostPeek = "rdcore/host/memory/peek";
