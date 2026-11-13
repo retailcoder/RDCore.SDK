@@ -21,13 +21,17 @@ public sealed class DeclarationReferenceJsonTests
     [TestMethod]
     public void TheReferencesOfADeclaration_AreReadBackAsTheyWereWritten()
     {
-        var written = Declaration(new DeclarationReferences(2, 0, 1),
+        var written = Declaration(new DeclarationReferences(2, 0, 2),
             new DeclarationReference(new SourceLocation(Module2, new SourceRange(3, 4, 3, 11)), new Uri("file:///c:/ws/Module2.bas#Module2.Main"), DeclarationReferenceKind.Read)
             {
                 DiscardsResult = true,
             },
             new DeclarationReference(new SourceLocation(Module2, new SourceRange(4, 10, 4, 17)), new Uri("file:///c:/ws/Module2.bas#Module2.Main"), DeclarationReferenceKind.Read),
-            new DeclarationReference(new SourceLocation(Module1, new SourceRange(0, 25, 0, 32)), null, DeclarationReferenceKind.PassedAsArgument));
+            new DeclarationReference(new SourceLocation(Module1, new SourceRange(0, 25, 0, 32)), null, DeclarationReferenceKind.PassedAsArgument),
+            new DeclarationReference(new SourceLocation(Module2, new SourceRange(5, 8, 5, 15)), new Uri("file:///c:/ws/Module2.bas#Module2.Main"), DeclarationReferenceKind.PassedAsArgument)
+            {
+                AssignedThroughCall = true,
+            });
 
         var read = PlatformJson.Deserialize<DeclarationFactDto>(PlatformJson.Serialize(written));
 

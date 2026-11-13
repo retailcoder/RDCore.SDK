@@ -91,6 +91,13 @@ public sealed record class DeclarationReference(SourceLocation Location, Uri? Pr
     /// (<see cref="Flags.ValueExpressionSemanticFlags.ResultDiscarded"/>).
     /// </summary>
     public bool DiscardsResult { get; init; }
+
+    /// <summary>
+    /// Whether the reference is an argument (<see cref="DeclarationReferenceKind.PassedAsArgument"/>) that the call is known to assign: the host followed the
+    /// procedure, and it assigns the <c>ByRef</c> parameter or passes it on by reference to a procedure that does (<strong>MS-VBAL §5.3.1.11</strong>).
+    /// <see langword="false"/> for an argument of a procedure the host does not follow, which may or may not assign it, and for any other reference.
+    /// </summary>
+    public bool AssignedThroughCall { get; init; }
 }
 
 /// <summary>
