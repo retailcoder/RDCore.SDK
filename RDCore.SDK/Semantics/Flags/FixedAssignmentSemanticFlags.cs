@@ -30,7 +30,7 @@ public enum FixedAssignmentSemanticFlags
     /// The <em>source</em> of a <see cref="UserDefinedTypeCopy"/> is a user-defined type that has a variable-length <c>String</c> member, at any depth.
     /// </summary>
     /// <remarks>
-    /// 👉 <strong>MS-VBAL §5.4.3.6</strong> allows <c>LSet</c> between any two user-defined types, and RD-VBA runs it, carrying the member's value across
+    /// <strong>MS-VBAL §5.4.3.6</strong> allows <c>LSet</c> between any two user-defined types, and RD-VBA runs it, carrying the member's value across
     /// where the other record has a variable-length <c>String</c> at the same offset. MS-VBA refuses the statement at compile time, with "Type mismatch",
     /// when either record has a variable-length <c>String</c> member (observed in Excel, for a member at the top level of the record): a program that
     /// relies on it does not compile in MS-VBA.
@@ -40,7 +40,7 @@ public enum FixedAssignmentSemanticFlags
     /// The <em>destination</em> of a <see cref="UserDefinedTypeCopy"/> is a user-defined type that has a variable-length <c>String</c> member, at any depth.
     /// </summary>
     /// <remarks>
-    /// 👉 See <see cref="SourceHoldsVariableLengthString"/>.
+    /// See <see cref="SourceHoldsVariableLengthString"/>.
     /// </remarks>
     DestinationHoldsVariableLengthString = 1 << 4,
     /// <summary>
@@ -48,7 +48,7 @@ public enum FixedAssignmentSemanticFlags
     /// an interface), at the top level of the type.
     /// </summary>
     /// <remarks>
-    /// 👉 <strong>MS-VBAL §5.4.3.6</strong> allows <c>LSet</c> between any two user-defined types, and RD-VBA runs it, copying the object, or its
+    /// <strong>MS-VBAL §5.4.3.6</strong> allows <c>LSet</c> between any two user-defined types, and RD-VBA runs it, copying the object, or its
     /// address, where the other record has a member at the same offset. MS-VBA refuses the statement at compile time, with "Type mismatch", when either
     /// record has a member of an object type at its top level (observed in Excel): a program that relies on it does not compile in MS-VBA. A member of a
     /// nested record, or an array of objects, is not looked at.
@@ -59,14 +59,14 @@ public enum FixedAssignmentSemanticFlags
     /// class or an interface), at the top level of the type.
     /// </summary>
     /// <remarks>
-    /// 👉 See <see cref="SourceHoldsObject"/>.
+    /// See <see cref="SourceHoldsObject"/>.
     /// </remarks>
     DestinationHoldsObject = 1 << 6,
     /// <summary>
     /// The <em>source</em> of a <see cref="UserDefinedTypeCopy"/> is a user-defined type that has a <c>Variant</c> member, at the top level of the type.
     /// </summary>
     /// <remarks>
-    /// 👉 <strong>MS-VBAL §5.4.3.6</strong> allows <c>LSet</c> between any two user-defined types, and RD-VBA runs it, carrying the member's value
+    /// <strong>MS-VBAL §5.4.3.6</strong> allows <c>LSet</c> between any two user-defined types, and RD-VBA runs it, carrying the member's value
     /// across where the other record has a <c>Variant</c> at the same offset. MS-VBA refuses the statement at compile time, with "Type mismatch", when
     /// either record has a <c>Variant</c> member at its top level (observed in Excel): a program that relies on it does not compile in MS-VBA. A member of
     /// a nested record, or an array of <c>Variant</c>, is not looked at.
@@ -77,7 +77,7 @@ public enum FixedAssignmentSemanticFlags
     /// type.
     /// </summary>
     /// <remarks>
-    /// 👉 See <see cref="SourceHoldsVariant"/>.
+    /// See <see cref="SourceHoldsVariant"/>.
     /// </remarks>
     DestinationHoldsVariant = 1 << 8,
 }
