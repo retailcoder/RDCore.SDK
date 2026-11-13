@@ -178,6 +178,12 @@ public class LanguageServerCapabilities
     public RubberduckIndenterSettings RubberduckIndenterSettings { get; set; } = new();
 
     /// <summary>
+    /// If supported, the language server asks the client to add an item to the list of a setting, or to remove one from it, over
+    /// <c>rdcore/settings/listValue</c>: what the code actions that disable a diagnostic, or allow a name, do.
+    /// </summary>
+    public ListSettingValue ListSettingValue { get; set; } = new();
+
+    /// <summary>
     /// If supported, the language server says what a refactoring asks its user before it is applied, over <c>rdcore/refactor/prepare</c>, what an identifier
     /// the user is typing raises, over <c>rdcore/refactor/checkIdentifier</c>, and answers the edit it makes with the user's answers, over <c>rdcore/refactor/apply</c>: what a client
     /// that has a dialog of its own asks with. Any client is offered the refactorings as LSP code actions, which complete with their defaults.
@@ -210,6 +216,7 @@ public class LanguageServerCapabilities
 [JsonDerivedType(typeof(Unattended))]
 [JsonDerivedType(typeof(Refactoring))]
 [JsonDerivedType(typeof(RubberduckIndenterSettings))]
+[JsonDerivedType(typeof(ListSettingValue))]
 public abstract record class CorePlatformClientCapability(bool IsSupported = true);
 
 /// <summary>
@@ -333,6 +340,16 @@ public record class Unattended(bool IsSupported = false) : CorePlatformClientCap
 /// A client on a platform that has no Rubberduck settings answers that it found none.
 /// </remarks>
 public record class RubberduckIndenterSettings(bool IsSupported = false) : CorePlatformClientCapability(IsSupported);
+
+/// <summary>
+/// Advertises that the language server asks the client to add an item to the list of a setting, or to remove one from it - <c>rdcore/settings/listValue</c>; a
+/// client that expects it answers, and keeps the list in the user's settings of the platform or in the workspace's.
+/// </summary>
+/// <remarks>
+/// A client owns its configuration and the platform writes none of it: only a client that expects this is offered the code actions that change a list - disabling
+/// a diagnostic, allowing a name - and it stores what it applies as a change of its own.
+/// </remarks>
+public record class ListSettingValue(bool IsSupported = false) : CorePlatformClientCapability(IsSupported);
 
 /// <summary>
 /// Advertises that the declaring component runs the semantic analysis pass over the code it holds and answers with its model - <c>rdcore/host/semantics</c>,

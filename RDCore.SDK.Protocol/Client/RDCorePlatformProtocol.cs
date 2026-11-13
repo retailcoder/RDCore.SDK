@@ -98,6 +98,12 @@ public static class RDCorePlatformProtocol
     public const string RubberduckIndenterSettingsApply = "rdcore/formatting/indenterSettings/apply";
 
     /// <summary>
+    /// Asks the client to add an item to the list of a setting, or to remove one from it, in the user's settings of the platform or in a workspace's. A request
+    /// the language server sends.
+    /// </summary>
+    public const string ListSettingValue = "rdcore/settings/listValue";
+
+    /// <summary>
     /// Asks the language server what the call being written at a position of a module the client supplies takes.
     /// </summary>
     public const string SessionSignatureHelp = "rdcore/session/signatureHelp";

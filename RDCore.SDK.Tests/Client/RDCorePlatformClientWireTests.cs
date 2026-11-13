@@ -272,6 +272,30 @@ public sealed class RDCorePlatformClientWireTests
 
     [TestMethod]
     [Timeout(60_000, CooperativeCancellation = true)]
+    public async Task AListSettingValueRequest_IsAnsweredByTheClientsHandler_AsTheLanguageServerReadsIt()
+    {
+        using var connected = await ConnectAsync();
+        ListSettingValueParams? asked = null;
+        using var changing = connected.Platform.OnListSettingValue((request, _) =>
+        {
+            asked = request;
+            return Task.FromResult(new ListSettingValueResult { Applied = true });
+        });
+
+        var answer = await connected.Server.SendRequest(
+            new ListSettingValueRequest { Key = "Analysis.DisabledDiagnostics", Value = "RDC01001", Scope = SettingScope.Workspace, Document = new Uri("file:///c:/ws/Module1.bas") },
+            CancellationToken.None);
+
+        Assert.IsTrue(answer.Applied);
+        Assert.AreEqual("Analysis.DisabledDiagnostics", asked?.Key);
+        Assert.AreEqual("RDC01001", asked?.Value);
+        Assert.AreEqual(SettingScope.Workspace, asked?.Scope);
+        Assert.IsFalse(asked!.Remove);
+        Assert.AreEqual(new Uri("file:///c:/ws/Module1.bas"), asked.Document);
+    }
+
+    [TestMethod]
+    [Timeout(60_000, CooperativeCancellation = true)]
     public async Task ARefactorPrepare_ReachesTheServersHandler_AndItsChoicesNoticesAndRangeComeBackAsTheServerWroteThem()
     {
         var module = new Uri("file:///c:/workspace/Module1.bas");

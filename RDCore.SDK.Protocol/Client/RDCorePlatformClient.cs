@@ -14,7 +14,8 @@ namespace RDCore.SDK.Client;
 /// </para>
 /// <para>
 /// The requests the language server sends a client are answered only by a client that registered for them (<see cref="OnMessageBox"/>, <see cref="OnInputBox"/>,
-/// <see cref="OnRubberduckIndenterSettings"/>, <see cref="OnRubberduckIndenterSettingsApply"/>), and should be registered before the handshake says the client expects
+/// <see cref="OnRubberduckIndenterSettings"/>, <see cref="OnRubberduckIndenterSettingsApply"/>, <see cref="OnListSettingValue"/>), and should be registered before the
+/// handshake says the client expects
 /// them: the language server may send one as soon as it is told.
 /// </para>
 /// </remarks>
@@ -214,6 +215,15 @@ public sealed class RDCorePlatformClient(IRDCorePlatformChannel channel)
     /// <returns>The registration; disposing it stops answering.</returns>
     public IDisposable OnRubberduckIndenterSettingsApply(Func<RubberduckIndenterSettingsApplyParams, CancellationToken, Task<RubberduckIndenterSettingsApplyResult>> handler)
         => Channel.OnRequest(RDCorePlatformProtocol.RubberduckIndenterSettingsApply, handler);
+
+    /// <summary>
+    /// Adds an item to the list of a setting, or removes one from it, as a change of the client's own (<see cref="RDCorePlatformProtocol.ListSettingValue"/>), for a
+    /// client that expects <see cref="ListSettingValue"/>.
+    /// </summary>
+    /// <param name="handler">Changes the list where <see cref="ListSettingValueParams.Scope"/> says it is kept, and says whether it did.</param>
+    /// <returns>The registration; disposing it stops answering.</returns>
+    public IDisposable OnListSettingValue(Func<ListSettingValueParams, CancellationToken, Task<ListSettingValueResult>> handler)
+        => Channel.OnRequest(RDCorePlatformProtocol.ListSettingValue, handler);
 
     private Task<TResult> Send<TParams, TResult>(string method, TParams request, CancellationToken token)
         => Channel.SendRequestAsync<TParams, TResult>(method, request, token);
