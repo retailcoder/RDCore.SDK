@@ -9,8 +9,8 @@ namespace RDCore.SDK.Workspace;
 public enum ProjectOutputType
 {
     /// <summary>
-    /// A program, which <c>rdc run</c> and <c>rdc build</c> start at its entry point (<see cref="ProjectBuild.EntryPoint"/>). A project file that says nothing is
-    /// one.
+    /// A program, which <c>rdc run</c> and <c>rdc build</c> start at its entry point (<see cref="ProjectBuild.EntryPoint"/>). A project file with no
+    /// <c>build</c> section, or a section with no <c>outputType</c>, is one.
     /// </summary>
     Application,
 
@@ -96,7 +96,7 @@ internal sealed class ProjectBuildJsonConverter : JsonConverter<ProjectBuild?>
     }
 }
 
-// Library, whatever its case, is a library; anything else is a program, as the first builds of rdc read the section.
+// Library, whatever its case, is a library; anything else is a program, so that a section written by hand always reads.
 internal sealed class ProjectOutputTypeJsonConverter : JsonConverter<ProjectOutputType>
 {
     public override ProjectOutputType Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
