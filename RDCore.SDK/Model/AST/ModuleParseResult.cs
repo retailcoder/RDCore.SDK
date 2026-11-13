@@ -16,7 +16,7 @@ public record class ModuleParseResult
     /// <summary>
     /// The source of the module that is not code, in the order it is written: the <c>.cls</c> file header (<see cref="ModuleHeaderTriviaNode"/>),
     /// comments (<see cref="CommentTriviaNode"/>) and the annotations in them (<see cref="AnnotationTriviaNode"/>, inside the range of the comment that holds them),
-    /// and the unary <c>+</c> signs, which the VBE erases (<see cref="ErasedPlusTriviaNode"/>).
+    /// the unary <c>+</c> signs, which the VBE erases (<see cref="ErasedPlusTriviaNode"/>), and the line continuations (<see cref="LineContinuationTriviaNode"/>).
     /// </summary>
     /// <remarks>
     /// Together with <see cref="SyntaxTree"/> and <see cref="PrecompilerTrivia"/> it accounts for every token of the source, which is what a formatter
