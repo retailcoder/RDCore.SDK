@@ -197,8 +197,10 @@ public sealed record class DeclarationFact(
     public LocalDeclarationKind? DeclaredBy { get; init; }
 
     /// <summary>
-    /// What a local or a parameter hides: what its name means in the rest of the module, which in its procedure it does not (<strong>MS-VBAL §5.6.10</strong>,
-    /// a name is first matched in the procedure). <see langword="null"/> when the name means nothing else there, and for any other declaration.
+    /// What the declaration hides: what its name would mean where the declaration is in scope, had it not been declared (<strong>MS-VBAL §5.6.10</strong>
+    /// matches a name in the procedure first, then in the module, then in the project and the libraries it references). A local or a parameter hides what
+    /// the name means in the rest of the module; a declaration of a module can hide one of another module or of a library (<c>Public Function Replace</c>
+    /// hides <c>VBA.Strings.Replace</c>). <see langword="null"/> when the name means nothing else, or when the host does not look for what the declaration hides.
     /// </summary>
     public HiddenDeclaration? Hides { get; init; }
 
@@ -217,7 +219,7 @@ public sealed record class DeclarationFact(
 }
 
 /// <summary>
-/// A declaration a local or a parameter hides (<see cref="DeclarationFact.Hides"/>).
+/// A declaration that another declaration hides (<see cref="DeclarationFact.Hides"/>).
 /// </summary>
 /// <param name="Symbol">The identity of the declaration hidden.</param>
 /// <param name="QualifiedName">Its name, after the module or the library that declares it: <c>Module1.Count</c>, <c>VBA.Strings.Left</c>.</param>
