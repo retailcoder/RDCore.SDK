@@ -7,10 +7,14 @@ namespace RDCore.SDK.Platform.Protocol;
 /// </summary>
 public enum SettingScope
 {
-    /// <summary>The user's settings of the platform (<c>user.settings.json</c>): every workspace the user opens.</summary>
+    /// <summary>
+    /// The user's settings of the platform (<c>user.settings.json</c>): every workspace the user opens.
+    /// </summary>
     Platform = 0,
 
-    /// <summary>The settings of the workspace a document is in: that workspace only, for whoever opens it.</summary>
+    /// <summary>
+    /// The settings of the workspace a document is in: that workspace only, for whoever opens it.
+    /// </summary>
     Workspace = 1,
 }
 
@@ -31,16 +35,24 @@ public enum SettingScope
 /// </remarks>
 public record class ListSettingValueParams
 {
-    /// <summary>The key of the setting, under <c>Configuration</c>: <c>Analysis.DisabledDiagnostics</c>.</summary>
+    /// <summary>
+    /// The key of the setting, under <c>Configuration</c>: <c>Analysis.DisabledDiagnostics</c>.
+    /// </summary>
     public string Key { get; init; } = string.Empty;
 
-    /// <summary>The item, as it is written: <c>RDC01001</c>.</summary>
+    /// <summary>
+    /// The item, as it is written: <c>RDC01001</c>.
+    /// </summary>
     public string Value { get; init; } = string.Empty;
 
-    /// <summary>Where the list is kept.</summary>
+    /// <summary>
+    /// Where the list is kept.
+    /// </summary>
     public SettingScope Scope { get; init; }
 
-    /// <summary>Whether the item is removed from the list; otherwise, it is added.</summary>
+    /// <summary>
+    /// Whether the item is removed from the list; otherwise, it is added.
+    /// </summary>
     public bool Remove { get; init; }
 
     /// <summary>

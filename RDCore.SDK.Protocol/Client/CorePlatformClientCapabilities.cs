@@ -349,6 +349,7 @@ public record class RubberduckIndenterSettings(bool IsSupported = false) : CoreP
 /// A client owns its configuration and the platform writes none of it: only a client that expects this is offered the code actions that change a list - disabling
 /// a diagnostic, allowing a name - and it stores what it applies as a change of its own.
 /// </remarks>
+/// <param name="IsSupported">Whether the capability is expected, or provided.</param>
 public record class ListSettingValue(bool IsSupported = false) : CorePlatformClientCapability(IsSupported);
 
 /// <summary>

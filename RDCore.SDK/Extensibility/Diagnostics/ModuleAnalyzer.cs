@@ -88,7 +88,7 @@ public interface IModuleAnalyzer
     /// </summary>
     /// <remarks>
     /// An analyzer that reports several codes is run while any of them is enabled, and asks of each before it does the work of finding it
-    /// (<see cref="ModuleAnalysisContext.IsEnabled"/>). Whether the codes of a diagnostic go together in one analyzer, or each in its own, is the author's choice.
+    /// (<see cref="ModuleAnalysisContext.IsEnabled"/>). An analyzer may report several codes, or each code may have an analyzer of its own.
     /// </remarks>
     IReadOnlyList<RDCoreDiagnosticCode> Codes { get; }
 

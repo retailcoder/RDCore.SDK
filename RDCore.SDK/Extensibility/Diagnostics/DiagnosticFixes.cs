@@ -93,15 +93,21 @@ public sealed record class EditFix
 /// </summary>
 public sealed record class SettingFix
 {
-    /// <summary>What the code action that adds the item is called, in the language of the analyzer's messages: <c>Allow the name 'i'</c>.</summary>
+    /// <summary>
+    /// What the code action that adds the item is called, in the language of the analyzer's messages: <c>Allow the name 'i'</c>.
+    /// </summary>
     [JsonProperty("title")]
     public string Title { get; init; } = string.Empty;
 
-    /// <summary>The key of the setting, under <c>Configuration</c>: <c>Diagnostics.MeaningfulNames.AllowedNames</c>.</summary>
+    /// <summary>
+    /// The key of the setting, under <c>Configuration</c>: <c>Diagnostics.MeaningfulNames.AllowedNames</c>.
+    /// </summary>
     [JsonProperty("key")]
     public string Key { get; init; } = string.Empty;
 
-    /// <summary>The item, as it is written: <c>i</c>.</summary>
+    /// <summary>
+    /// The item, as it is written: <c>i</c>.
+    /// </summary>
     [JsonProperty("value")]
     public string Value { get; init; } = string.Empty;
 }
