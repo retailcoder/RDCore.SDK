@@ -70,7 +70,7 @@ public enum DeclarationReferenceKind
     Write,
 
     /// <summary>
-    /// It passes it as an argument of a call that may take it by reference (<see cref="DeclarationReferences.PassedAsArguments"/>).
+    /// It passes it by reference to a call that may assign it (<see cref="DeclarationReferences.PassedAsArguments"/>).
     /// </summary>
     PassedAsArgument,
 }
@@ -98,12 +98,17 @@ public sealed record class DeclarationReference(SourceLocation Location, Uri? Pr
 /// </summary>
 /// <remarks>
 /// These are the references, all of them: a count is only ever stated for a declaration that nothing outside the code the pass analyzed can refer to
-/// (<see cref="DeclarationFact.References"/>). An expression that is passed as an argument is a reference of its own kind, because what it does is not
-/// what the expression says: the procedure it is passed to may read it, write to it, or both, when its parameter is <c>ByRef</c>.
+/// (<see cref="DeclarationFact.References"/>). An argument that a call may assign is a reference of its own kind, because what it does is not what the
+/// expression says (<strong>MS-VBAL §5.3.1.11</strong>): a procedure assigns it through a <c>ByRef</c> parameter that it writes to, or passes on by reference
+/// to a procedure that does. Where the host follows the procedure and finds that nothing assigns the parameter, or the parameter is <c>ByVal</c>, the
+/// argument is a read.
 /// </remarks>
 /// <param name="Reads">How many expressions refer to it for its value, or to call it.</param>
 /// <param name="Writes">How many expressions write to it (<see cref="Flags.ValueExpressionSemanticFlags.AssignmentTarget"/>).</param>
-/// <param name="PassedAsArguments">How many expressions pass it as an argument of a call (<see cref="Flags.ValueExpressionSemanticFlags.PassedAsArgument"/>).</param>
+/// <param name="PassedAsArguments">
+/// How many expressions pass it by reference to a call that may assign it: a procedure that assigns the parameter, or passes it on by reference to one that
+/// does, or one whose parameter the host does not follow (<see cref="Flags.ValueExpressionSemanticFlags.PassedAsArgument"/>).
+/// </param>
 public readonly record struct DeclarationReferences(int Reads, int Writes, int PassedAsArguments)
 {
     /// <summary>
