@@ -69,7 +69,15 @@ internal sealed partial class TextLines
 
     public string Of(SourceRange range) => _text[Offset(range.Start)..Offset(range.End)];
 
-    private int Offset(SourcePosition position) => _starts[position.Line] + position.Character;
+    public int Offset(SourcePosition position) => _starts[position.Line] + position.Character;
+
+    // the position of an offset of the text: on the line that starts at or before it, the last one there is.
+    public SourcePosition PositionOf(int offset)
+    {
+        var line = _starts.BinarySearch(offset);
+        line = line >= 0 ? line : ~line - 1;
+        return new SourcePosition(line, offset - _starts[line]);
+    }
 
     // the text of a member or a declaration without what ends its last line.
     public static string Unended(string text) => TrailingLineEnd().Replace(text, string.Empty);

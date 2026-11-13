@@ -4,6 +4,7 @@ using RDCore.SDK.Model.AST.Declarations;
 using RDCore.SDK.Model.AST.Directives;
 using RDCore.SDK.Model.Source;
 using RDCore.SDK.Platform.Protocol;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace RDCore.SDK.Semantics.Refactoring;
@@ -244,16 +245,7 @@ public static partial class DeclarationEdits
     /// <exception cref="ArgumentException">Two of the edits overlap.</exception>
     public static SourceRange? RangeAfter(SourceRange range, IReadOnlyList<RefactorTextEdit> edits)
     {
-        ArgumentNullException.ThrowIfNull(edits);
-        var ordered = edits.OrderBy(edit => edit.Range.Start).ToList();
-        for (var index = 1; index < ordered.Count; index++)
-        {
-            if (ordered[index].Range.Start < ordered[index - 1].Range.End)
-            {
-                throw new ArgumentException("Two of the edits overlap.", nameof(edits));
-            }
-        }
-
+        var ordered = Ordered(edits);
         if (ordered.Any(edit => (edit.Range.Start < range.End && range.Start < edit.Range.End)
             || (edit.Range.Start == edit.Range.End && range.Start < edit.Range.Start && edit.Range.Start < range.End)))
         {
@@ -268,6 +260,46 @@ public static partial class DeclarationEdits
         }
 
         return new SourceRange(start, end);
+    }
+
+    /// <summary>
+    /// The text that edits of a text leave: each edit's range replaced by what it writes.
+    /// </summary>
+    /// <param name="text">The text, its lines ended by a carriage return and a line feed, a line feed, or a carriage return.</param>
+    /// <param name="edits">The edits, in the text before them, in any order; they do not overlap (<strong>LSP 3.17</strong> §TextEdit).</param>
+    /// <exception cref="ArgumentException">Two of the edits overlap.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">An edit is of a line the text does not have.</exception>
+    public static string ApplyTo(string text, IReadOnlyList<RefactorTextEdit> edits)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        var ordered = Ordered(edits);
+        var lines = TextLines.Of(text);
+        var applied = new StringBuilder(text.Length);
+        var at = 0;
+        foreach (var edit in ordered)
+        {
+            var (from, to) = (lines.Offset(edit.Range.Start), lines.Offset(edit.Range.End));
+            applied.Append(text, at, from - at).Append(edit.NewText);
+            at = to;
+        }
+
+        return applied.Append(text, at, text.Length - at).ToString();
+    }
+
+    // the edits in the order of the text; two that overlap are refused.
+    internal static List<RefactorTextEdit> Ordered(IReadOnlyList<RefactorTextEdit> edits)
+    {
+        ArgumentNullException.ThrowIfNull(edits);
+        var ordered = edits.OrderBy(edit => edit.Range.Start).ToList();
+        for (var index = 1; index < ordered.Count; index++)
+        {
+            if (ordered[index].Range.Start < ordered[index - 1].Range.End)
+            {
+                throw new ArgumentException("Two of the edits overlap.", nameof(edits));
+            }
+        }
+
+        return ordered;
     }
 
     // a position after another, relative to that one: its characters count from that one only on that one's line.
