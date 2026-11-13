@@ -167,5 +167,5 @@ public enum ValueExpressionSemanticFlags
     /// standard library, a type library or another project, and not a module of the project. The project's own code is all the static pass analyzes; a library's
     /// members have no <see cref="DeclarationFact"/>.
     /// </summary>
-    LibraryMember = 1 << 25,
+    BoundToLibrary = 1 << 25,
 }
