@@ -60,8 +60,8 @@ public static partial class MemberEdits
     }
 
     /// <summary>
-    /// The edit that removes a member, and the blank lines that separate it from what follows it; those that separate it from what precedes it, when nothing but
-    /// blank lines follows it.
+    /// The edit that removes a member and the blank lines after it. When nothing but blank lines follows the member, the blank lines before it are removed
+    /// with it as well.
     /// </summary>
     /// <param name="text">The text of the module.</param>
     /// <param name="extent">The member's whole text (<see cref="Extent"/>).</param>
@@ -137,8 +137,10 @@ public static partial class MemberEdits
     /// <param name="moved">The whole text of the member moved (<see cref="Extent"/>).</param>
     /// <param name="target">The whole text of the member it goes next to.</param>
     /// <param name="after">Whether it goes after <paramref name="target"/>; before it when not.</param>
-    /// <exception cref="ArgumentException"><paramref name="target"/> overlaps <paramref name="moved"/>, or is where <paramref name="moved"/> already is: no edit
-    /// would move it.</exception>
+    /// <exception cref="ArgumentException">
+    /// <paramref name="target"/> overlaps <paramref name="moved"/>, or <paramref name="moved"/> is already on the side of <paramref name="target"/> that
+    /// <paramref name="after"/> names, with nothing but blank lines between them.
+    /// </exception>
     public static IReadOnlyList<RefactorTextEdit> Move(string text, MemberExtent moved, MemberExtent target, bool after)
     {
         ArgumentNullException.ThrowIfNull(text);
