@@ -8,7 +8,8 @@ namespace RDCore.SDK.Semantics.Refactoring;
 /// <remarks>
 /// <para>
 /// Each kind is a refinement of one of LSP's own (<c>refactor</c>, <c>refactor.extract</c>, <c>refactor.inline</c>, <c>refactor.rewrite</c>, <c>source</c>),
-/// so a client that asks for <c>refactor.extract</c> is offered every extraction.
+/// so a client that asks for <c>refactor.extract</c> is offered every extraction. The kinds that move code refine <c>refactor.move</c>, which is a kind of
+/// <strong>LSP 3.18</strong> and not of 3.17: a client of 3.17 asks for them as <c>refactor</c>, or by their own names.
 /// </para>
 /// <para>
 /// A client that asks for no kind is offered every action. A client that can show only some of them asks for those, by these names and LSP's own
@@ -45,4 +46,19 @@ public static class RefactoringKinds
     /// statements. Its choices are the new procedure's name, and its parameters, with why each is passed as it is.
     /// </summary>
     public const string ConvertGoSub = "refactor.extract.gosub";
+
+    /// <summary>
+    /// Move Member Up: the procedure a range is in, with the comments directly above it and its <c>Attribute</c> lines, moves above the procedure before it.
+    /// The <c>Property Get</c>, <c>Let</c> and <c>Set</c> of one name, written one after another, move together and are passed together. A move into a branch of
+    /// an <c>#If</c> block, or out of one, is refused (<strong>MS-VBAL §3.4</strong>), and the first procedure of a module does not move into its declaration
+    /// section (<strong>MS-VBAL §5.2</strong>). It asks nothing: the action has its edit.
+    /// </summary>
+    public const string MoveMemberUp = "refactor.move.member.up";
+
+    /// <summary>
+    /// Move Member Down: the procedure a range is in, with the comments directly above it and its <c>Attribute</c> lines, moves below the procedure after it,
+    /// as <see cref="MoveMemberUp"/> moves it above the one before it. A move into a branch of an <c>#If</c> block, or out of one, is refused
+    /// (<strong>MS-VBAL §3.4</strong>). It asks nothing: the action has its edit.
+    /// </summary>
+    public const string MoveMemberDown = "refactor.move.member.down";
 }
