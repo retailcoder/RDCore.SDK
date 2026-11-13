@@ -155,4 +155,12 @@ public enum ValueExpressionSemanticFlags
     /// <c>True</c>. <c>Not 1</c> is <c>-2</c>, which is <c>True</c>.
     /// </summary>
     TrueValueIsNotMinusOne = 1 << 22,
+
+    /// <summary>
+    /// A call of <c>IsMissing</c> (<strong>MS-VBAL §6.1.2.7.1.6</strong>) of a <c>Variant</c> that is not an <c>Optional</c> parameter: a required
+    /// <c>Variant</c> parameter, or a <c>Variant</c> variable. It holds the Missing value only when it was given one, from an <c>Optional</c> parameter whose
+    /// argument was omitted: a caller passes it on to the parameter, or the code assigns it to the variable. The call does not tell whether an argument of this
+    /// procedure was omitted. A name that can never hold the Missing value is <see cref="IsMissingAlwaysFalse"/> instead.
+    /// </summary>
+    IsMissingOfAVariantThatIsNotOptional = 1 << 28,
 }
