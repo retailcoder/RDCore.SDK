@@ -123,7 +123,7 @@
     <value>Disable {0} in this workspace</value>
   </data>
   <data name="SettingList_NotTaken" xml:space="preserve">
-    <value>This client does not take changes of its settings from the language server.</value>
+    <value>This client does not accept changes to its settings from the language server.</value>
   </data>
   <!-- The title of the code lens that counts the references of a member (RefactoringTitles.References): {0} is the count. -->
   <data name="CodeLens_References_None" xml:space="preserve">

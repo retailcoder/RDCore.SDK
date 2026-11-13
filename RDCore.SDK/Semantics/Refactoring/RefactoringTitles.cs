@@ -32,7 +32,7 @@ public static class RefactoringTitles
         => Say(scope == Platform.Protocol.SettingScope.Workspace ? "CodeAction_DisableDiagnostic_Workspace" : "CodeAction_DisableDiagnostic_Platform", culture, code);
 
     /// <summary>
-    /// Why the language server does not change a list of the client's settings: the client does not take such changes from it
+    /// Why the language server does not change a list of the client's settings: the client does not accept such changes from it
     /// (<see cref="Client.ListSettingValue"/>).
     /// </summary>
     /// <param name="culture">The language of the reader; the current UI culture by default.</param>
