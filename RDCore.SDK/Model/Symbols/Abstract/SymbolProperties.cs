@@ -213,6 +213,14 @@ public static class SymbolProperties
     /// that can be created.
     /// </summary>
     public static readonly SymbolProperty<string> ProgId = new(nameof(ProgId));
+    /// <summary>
+    /// Whether the <c>Property Get</c> of a library class is that of a property a form's designer sets and a program can only read
+    /// (<see cref="RDCore.SDK.Runtime.Libraries.MemberDescription.IsDesignTimeOnly"/>): assigned while the program runs, late-bound, it raises run-time error
+    /// 382, "'<em>name</em>' property cannot be set at run time", where another property the library declares with a <c>Property Get</c> alone raises run-time
+    /// error 383,
+    /// "'<em>name</em>' property is read-only". <see langword="false"/> when unset.
+    /// </summary>
+    public static readonly SymbolProperty<bool> DesignTimeOnly = new(nameof(DesignTimeOnly));
 
     /// <summary>
     /// What <c>TypeName</c> says of an object of a class of the standard library, when it is not the class's name (<c>Object</c>, for the <c>UserForms</c>

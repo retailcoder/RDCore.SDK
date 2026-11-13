@@ -15,7 +15,7 @@ namespace RDCore.SDK.Client;
 /// <para>
 /// The requests the language server sends a client are answered only by a client that registered for them (<see cref="OnMessageBox"/>, <see cref="OnInputBox"/>,
 /// <see cref="OnRubberduckIndenterSettings"/>, <see cref="OnRubberduckIndenterSettingsApply"/>), and should be registered before the handshake says the client expects
-/// them: the language server may send one as soon as it is told.
+/// them: the language server may send one as soon as it is told. The same goes for the stops it tells a client of (<see cref="OnDebugStopped"/>).
 /// </para>
 /// </remarks>
 /// <param name="channel">The connection to the language server.</param>
@@ -196,6 +196,15 @@ public sealed class RDCorePlatformClient(IRDCorePlatformChannel channel)
     /// <returns>The registration; disposing it stops answering.</returns>
     public IDisposable OnInputBox(Func<SessionInputBoxParams, CancellationToken, Task<InputBoxResult>> handler)
         => Channel.OnRequest(RDCorePlatformProtocol.SessionInputBox, handler);
+
+    /// <summary>
+    /// Takes the stops of the handlers of events that run while no program runs (<see cref="RDCorePlatformProtocol.SessionDebugStopped"/>), for a client that
+    /// expects <see cref="SessionStops"/>. The handler waits until the client resumes or ends it over <c>rdcore/session/debug/*</c>.
+    /// </summary>
+    /// <param name="handler">Shows where the handler stopped. It returns once it has: what the client does with the stop is a request of its own.</param>
+    /// <returns>The registration; disposing it stops taking them.</returns>
+    public IDisposable OnDebugStopped(Func<SessionDebugStoppedParams, CancellationToken, Task> handler)
+        => Channel.OnNotification(RDCorePlatformProtocol.SessionDebugStopped, handler);
 
     /// <summary>
     /// Answers what the client finds of the user's Rubberduck indenter settings (<see cref="RDCorePlatformProtocol.RubberduckIndenterSettings"/>), for a client that

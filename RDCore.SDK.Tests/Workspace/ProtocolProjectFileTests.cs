@@ -94,13 +94,15 @@ public sealed class ProtocolProjectFileTests
         await Assert.ThrowsAsync<JsonException>(() => ReadAsync("{ \"ProjectInfo\": { ]"));
     }
 
-    // a project file's version is the version of its format, major.minor; what follows them is not compared. The first builds stamped 1.0.0, the next 0.1.x.
+    // a project file's version is the version of its format, major.minor; what follows them is not compared. The first builds stamped 1.0.0, the next 0.1.x,
+    // and the format 1.0 came before 1.1, which adds the build section.
     [TestMethod]
     [DataRow(null, ProjectFileSchemaMatch.Unstamped)]
     [DataRow("", ProjectFileSchemaMatch.Unstamped)]
-    [DataRow("1.0", ProjectFileSchemaMatch.Same)]
-    [DataRow("1.0.0", ProjectFileSchemaMatch.Same, DisplayName = "1.0.0, as the first builds stamped it")]
-    [DataRow("1.0.0-rc3", ProjectFileSchemaMatch.Same)]
+    [DataRow("1.1", ProjectFileSchemaMatch.Same)]
+    [DataRow("1.1.0-rc3", ProjectFileSchemaMatch.Same)]
+    [DataRow("1.0", ProjectFileSchemaMatch.Older, DisplayName = "1.0, the format before the build section")]
+    [DataRow("1.0.0", ProjectFileSchemaMatch.Older, DisplayName = "1.0.0, as the first builds stamped it")]
     [DataRow("0.1.3", ProjectFileSchemaMatch.Older, DisplayName = "0.1.3, as the next builds stamped it")]
     [DataRow("0.87.2-rc3", ProjectFileSchemaMatch.Older)]
     [DataRow("1.2", ProjectFileSchemaMatch.NewerMinor)]
@@ -131,7 +133,7 @@ public sealed class ProtocolProjectFileTests
     {
         const string json = """
             {
-              "Version": "1.1",
+              "Version": "1.2",
               "Theme": { "Accent": "teal" },
               "ProjectInfo": {
                 "Name": "Newer",
@@ -146,7 +148,7 @@ public sealed class ProtocolProjectFileTests
         var project = await ReadAsync(json);
         var written = System.Text.Json.Nodes.JsonNode.Parse(JsonSerializer.Serialize(project.WithSchemaVersion()))!;
 
-        Assert.AreEqual("1.1", written["Version"]!.GetValue<string>(), "the newer format's stamp is kept, since what it added is");
+        Assert.AreEqual("1.2", written["Version"]!.GetValue<string>(), "the newer format's stamp is kept, since what it added is");
         Assert.AreEqual("""{"Accent":"teal"}""", written["Theme"]!.ToJsonString());
         var info = written["ProjectInfo"]!;
         Assert.AreEqual("Library", info["Kind"]!.GetValue<string>());
@@ -157,12 +159,75 @@ public sealed class ProtocolProjectFileTests
             "a file that is no module has no document: what it says of one is kept as any member this model does not know");
     }
 
+    // the build section, as files have it: what the project builds into, and the procedure its program starts at.
+    [TestMethod]
+    [DataRow("""{ "outputType": "Library" }""", ProjectOutputType.Library, null)]
+    [DataRow("""{ "outputType": "library" }""", ProjectOutputType.Library, null, DisplayName = "Library, whatever its case")]
+    [DataRow("""{ "outputType": "Application", "entryPoint": "Module1.Main" }""", ProjectOutputType.Application, "Module1.Main")]
+    [DataRow("""{ "entryPoint": "Start" }""", ProjectOutputType.Application, "Start", DisplayName = "a program unless it says Library")]
+    [DataRow("""{ "outputType": "Exe" }""", ProjectOutputType.Application, null, DisplayName = "an output type it does not know is a program")]
+    [DataRow("""{ "outputType": 1, "entryPoint": 2 }""", ProjectOutputType.Application, null, DisplayName = "what is no string says nothing")]
+    [DataRow("""{ "entryPoint": "  " }""", ProjectOutputType.Application, null, DisplayName = "a blank entry point is none")]
+    [DataRow("""{ }""", ProjectOutputType.Application, null)]
+    public async Task TheBuildSection_IsReadAsFilesHaveIt(string build, ProjectOutputType outputType, string? entryPoint)
+    {
+        var project = await ReadAsync($$"""{ "ProjectInfo": { "Name": "P", "build": {{build}} } }""");
+
+        Assert.IsNotNull(project.ProjectInfo.Build);
+        Assert.AreEqual(outputType, project.ProjectInfo.Build.OutputType);
+        Assert.AreEqual(outputType is ProjectOutputType.Library, project.ProjectInfo.Build.IsLibrary);
+        Assert.AreEqual(entryPoint, project.ProjectInfo.Build.EntryPoint);
+        Assert.IsFalse(project.ProjectInfo.ExtensionData?.ContainsKey("build") ?? false, "a member this model knows");
+    }
+
+    // a project file with no build section, or one that is no object, reads as a program that starts at its Sub Main, and is never refused for it.
+    [TestMethod]
+    [DataRow("""{ "ProjectInfo": { "Name": "P" } }""", DisplayName = "no section")]
+    [DataRow("""{ "ProjectInfo": { "Name": "P", "build": null } }""", DisplayName = "a null section")]
+    [DataRow("""{ "ProjectInfo": { "Name": "P", "build": "Library" } }""", DisplayName = "a section that is no object")]
+    [DataRow("""{ "ProjectInfo": { "Name": "P", "build": [ { "outputType": "Library" } ] } }""", DisplayName = "an array")]
+    public async Task AProjectWithNoBuildSection_HasNone(string json)
+    {
+        var project = await ReadAsync(json);
+
+        Assert.IsNull(project.ProjectInfo.Build);
+        Assert.AreEqual("P", project.ProjectInfo.Name);
+    }
+
+    // the section is written with the names files have it with, and only what it says: a project file without one is written without one, and what a newer
+    // format adds to it is kept.
+    [TestMethod]
+    public async Task TheBuildSection_IsWrittenAsFilesHaveIt_AndWhatItDoesNotKnowIsKept()
+    {
+        var project = await ReadAsync("""{ "ProjectInfo": { "Name": "P", "build": { "outputType": "Library", "icon": "duck.ico" } } }""");
+
+        var written = System.Text.Json.Nodes.JsonNode.Parse(JsonSerializer.Serialize(project.WithSchemaVersion()))!;
+
+        Assert.AreEqual("""{"outputType":"Library","icon":"duck.ico"}""", written["ProjectInfo"]!["build"]!.ToJsonString());
+        var program = new RDCoreProject { Name = "P", Build = new ProjectBuild { EntryPoint = "Module1.Main" } };
+        Assert.AreEqual("""{"entryPoint":"Module1.Main"}""", System.Text.Json.Nodes.JsonNode.Parse(JsonSerializer.Serialize(program))!["build"]!.ToJsonString(),
+            "a program's output type is left out, as files leave it out");
+        Assert.IsNull(System.Text.Json.Nodes.JsonNode.Parse(JsonSerializer.Serialize(new RDCoreProject { Name = "P" }))!["build"]);
+    }
+
+    // a file of the format 1.0 that has a build section - a member it did not know - reads it, and is stamped 1.1 when it is written.
+    [TestMethod]
+    public async Task AFileOfTheFormatBeforeTheBuildSection_ReadsItsSection_AndIsWrittenInThisFormat()
+    {
+        var project = await ReadAsync("""{ "Version": "1.0", "ProjectInfo": { "Name": "P", "build": { "entryPoint": "Two.Main" } } }""");
+
+        Assert.AreEqual(ProjectFileSchemaMatch.Older, ProjectFile.SchemaOf(project.Version));
+        Assert.AreEqual("Two.Main", project.ProjectInfo.Build?.EntryPoint);
+        Assert.AreEqual(ProjectFile.SchemaVersion, project.WithSchemaVersion().Version);
+    }
+
     // a file in an older format, or no format, is in this one once it is written: only a newer one keeps its stamp.
     [TestMethod]
-    [DataRow("1.0.0", "1.0")]
-    [DataRow("0.1.3", "1.0")]
-    [DataRow("v1", "1.0")]
-    [DataRow("", "1.0")]
+    [DataRow("1.0", "1.1")]
+    [DataRow("1.0.0", "1.1")]
+    [DataRow("0.1.3", "1.1")]
+    [DataRow("v1", "1.1")]
+    [DataRow("", "1.1")]
     [DataRow("1.4", "1.4")]
     [DataRow("3.0", "3.0")]
     public void AWrittenFile_IsStampedWithThisPlatformsFormat_UnlessItIsInANewerOne(string version, string stamped)
