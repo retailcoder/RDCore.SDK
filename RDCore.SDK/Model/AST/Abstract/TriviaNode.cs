@@ -62,7 +62,7 @@ public sealed record class ErasedPlusTriviaNode(SyntaxNodeId Identity, SourceLoc
 /// and the blanks that begin the next line.
 /// </param>
 /// <param name="Keyword">
-/// The keyword of two words the continuation is written inside of, its words separated by one space (<c>End If</c>, <c>Exit Sub</c>); <see langword="null"/>
+/// The keyword of two words the continuation is written inside, its words separated by one space (<c>End If</c>, <c>Exit Sub</c>); <see langword="null"/>
 /// for a continuation between two tokens.
 /// </param>
 public sealed record class LineContinuationTriviaNode(SyntaxNodeId Identity, SourceLocation SourceLocation, string? Keyword = null)
