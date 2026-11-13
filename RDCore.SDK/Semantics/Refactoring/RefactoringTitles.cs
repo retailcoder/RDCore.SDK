@@ -145,7 +145,7 @@ public static class RefactoringTitles
     public static string RenameOutsideCallersRename(CultureInfo? culture = null) => Say("Rename_OutsideCallers_Rename", culture);
 
     /// <summary>
-    /// The answer to <see cref="RenameOutsideCallersQuestion"/> that renames nothing: the whole rename is cancelled.
+    /// The answer to <see cref="RenameOutsideCallersQuestion"/> that renames nothing: the whole rename is canceled.
     /// </summary>
     /// <param name="culture">The language of the reader; the current UI culture by default.</param>
     public static string RenameOutsideCallersCancel(CultureInfo? culture = null) => Say("Rename_OutsideCallers_Cancel", culture);

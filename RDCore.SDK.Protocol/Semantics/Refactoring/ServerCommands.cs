@@ -1,8 +1,9 @@
 namespace RDCore.SDK.Semantics.Refactoring;
 
 /// <summary>
-/// The commands of the platform's code actions that the language server runs (<strong>LSP 3.17</strong> <c>workspace/executeCommand</c>): a client that
-/// takes such an action sends its command back as it is, with its arguments. The commands a client runs itself are <see cref="RefactoringCommands"/>.
+/// The commands the language server runs (<strong>LSP 3.17</strong> <c>workspace/executeCommand</c>): a client that takes a code action of such a
+/// command sends the command back as it is, with its arguments, and one that offers its user a command asks for it by its name. The commands a client
+/// runs itself are <see cref="RefactoringCommands"/>.
 /// </summary>
 public static class ServerCommands
 {
@@ -18,4 +19,11 @@ public static class ServerCommands
     /// diagnostic's <c>data</c> writes it. It is the command of the quick fix of such a diagnostic.
     /// </summary>
     public const string ChangeProject = "rdcore.changeProject";
+
+    /// <summary>
+    /// Imports the indenter settings the user had in Rubberduck: the language server asks the client what it found
+    /// (<c>rdcore/formatting/indenterSettings</c>), and asks it to take the <c>Formatting</c> settings they map to as its own
+    /// (<c>rdcore/formatting/indenterSettings/apply</c>). It takes no argument, and is refused by a client that did not say it reads those settings.
+    /// </summary>
+    public const string ImportIndenterSettings = "rdcore.importIndenterSettings";
 }
