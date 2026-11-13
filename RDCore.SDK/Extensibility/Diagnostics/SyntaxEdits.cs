@@ -1,6 +1,6 @@
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
 using RDCore.SDK.Model.Source;
-using Range = OmniSharp.Extensions.LanguageServer.Protocol.Models.Range;
+using RDCore.SDK.Server.ProtocolExtensions;
 
 namespace RDCore.SDK.Extensibility.Diagnostics;
 
@@ -20,14 +20,14 @@ public static class SyntaxEdits
     /// </summary>
     /// <param name="at">The position the text is written at.</param>
     /// <param name="text">The text.</param>
-    public static TextEdit Insert(SourcePosition at, string text) => new() { Range = RangeOf(new SourceRange(at, at)), NewText = text };
+    public static TextEdit Insert(SourcePosition at, string text) => new() { Range = new SourceRange(at, at).ToLsp(), NewText = text };
 
     /// <summary>
     /// Text written in place of what a range holds.
     /// </summary>
     /// <param name="range">The range whose text is replaced, which may span lines.</param>
     /// <param name="text">The text written in its place.</param>
-    public static TextEdit Replace(SourceRange range, string text) => new() { Range = RangeOf(range), NewText = text };
+    public static TextEdit Replace(SourceRange range, string text) => new() { Range = range.ToLsp(), NewText = text };
 
     /// <summary>
     /// What a range holds, removed.
@@ -85,10 +85,4 @@ public static class SyntaxEdits
     /// <param name="title">The title of the code action, which says what the fix writes.</param>
     /// <param name="edits">The edits, in any order.</param>
     public static EditFix Fix(string title, params TextEdit[] edits) => new() { Title = title, Edits = edits };
-
-    /// <summary>
-    /// The protocol range of a range of the source, which an edit or a diagnostic of the language server is placed at.
-    /// </summary>
-    /// <param name="range">The range of the source.</param>
-    public static Range RangeOf(SourceRange range) => new(range.Start.Line, range.Start.Character, range.End.Line, range.End.Character);
 }
