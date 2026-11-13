@@ -49,9 +49,9 @@ public readonly record struct IndentationEdit(int Line, int Character, int EndLi
 /// and the body after the <c>#End If</c> is indented once.
 /// </para>
 /// <para>
-/// A line the syntax tree has no statement of - code the parser could not build as you type - is indented by its keywords instead, from the level of where it
-/// is: a block's opener indents the lines after it, and its closer ends that. A block the parser could not find the closer of is open to its last line. The
-/// indenter never refuses to indent.
+/// A line the syntax tree has no statement of is indented by its keywords instead: code the parser could not build as you type, or kept only as its text
+/// (<see cref="UnbuiltStatementTriviaNode"/>). It is indented from the level of where it is: a block's opener indents the lines after it, and its closer ends that. A block the parser
+/// could not find the closer of is open to its last line. The indenter never refuses to indent.
 /// </para>
 /// <para>
 /// A line number stays at the start of its line, and so does a line label, as the VBE has it: the code after either is where the line's level has it, a space
@@ -761,10 +761,12 @@ public static partial class ModuleIndenter
     }
 
     // the lines the statements and declarations of the tree start on: the others are indented by their keywords. A block covers the line of its opener, and
-    // what is in it covers its own lines: a body the parser built nothing of is indented by its keywords.
+    // what is in it covers its own lines: a body the parser built nothing of is indented by its keywords. So is a statement it kept only as its text, which says
+    // nothing of the blocks its keywords open or close (For i = 1 To 2 written outside a procedure).
     private static void Cover(bool[] covered, SyntaxNode node, ModuleLines module)
     {
         if (node is not (StatementNode or MemberDeclarationNode or VariableDeclarationNode or ConstantDeclarationNode or DirectiveNode)
+            || node is UnbuiltStatementTriviaNode
             || (node is LineLabelNode label && !IsLabel(label, module)))
         {
             return;
