@@ -195,7 +195,7 @@ public static partial class DeclarationEdits
     }
 
     /// <summary>
-    /// The blanks a line of a text starts with: what a line written in its place, or next to it at the same level, is indented with.
+    /// The spaces and tabs a line of a text starts with: what a line written in its place, or next to it at the same level, is indented with.
     /// </summary>
     /// <param name="text">The text, its lines ended by a carriage return and a line feed, a line feed, or a carriage return.</param>
     /// <param name="line">The line, from 0.</param>
@@ -211,8 +211,8 @@ public static partial class DeclarationEdits
 
     /// <summary>
     /// The range of whole lines of a text, from the start of the first to the start of the line after the last, so that an edit that removes it leaves
-    /// no blank line. On the last line of a text that does not end it, the range starts where the line before the first ends instead, and so removes
-    /// that line end; it is all of the text when the lines are all of it.
+    /// no blank line. When the last line is the last of a text that has no line end after it, the range starts where the line before the first ends
+    /// instead, and so removes that line end; it is all of the text when the lines are all of it.
     /// </summary>
     /// <param name="text">The text, its lines ended by a carriage return and a line feed, a line feed, or a carriage return.</param>
     /// <param name="first">The first line, from 0.</param>
