@@ -30,7 +30,7 @@ public sealed record class MemberExtent(MemberDeclarationNode Member, SourceRang
 /// The edits are of the text as it is, none of them overlapping another, as <strong>LSP 3.17</strong> <c>TextEdit</c>s of one document are. What they write ends
 /// its lines as the text does: with what ends the text's first line, and with a carriage return and a line feed when the text has a single line.
 /// </remarks>
-public static partial class MemberEdits
+public static class MemberEdits
 {
     /// <summary>
     /// The whole text of a member of a module.
@@ -44,7 +44,7 @@ public static partial class MemberEdits
         ArgumentNullException.ThrowIfNull(text);
         ArgumentNullException.ThrowIfNull(member);
 
-        var lines = Lines.Of(text);
+        var lines = TextLines.Of(text);
         var range = member.SourceLocation.Range;
 
         // a comment directly above is the member's when it is all its lines hold: a comment after code on its line is that code's.
@@ -69,7 +69,7 @@ public static partial class MemberEdits
     {
         ArgumentNullException.ThrowIfNull(text);
         ArgumentNullException.ThrowIfNull(extent);
-        var lines = Lines.Of(text);
+        var lines = TextLines.Of(text);
         var next = extent.Range.End.Character == 0 ? extent.Range.End.Line : lines.Count;
         while (next < lines.Count && lines.IsBlank(next))
         {
@@ -104,7 +104,7 @@ public static partial class MemberEdits
         ArgumentNullException.ThrowIfNull(text);
         ArgumentNullException.ThrowIfNull(after);
         ArgumentNullException.ThrowIfNull(member);
-        var lines = Lines.Of(text);
+        var lines = TextLines.Of(text);
         var at = after.Range.End;
 
         // a member on the last line of a text that ends no line is ended before the one written after it, which ends none either.
@@ -124,7 +124,7 @@ public static partial class MemberEdits
         ArgumentNullException.ThrowIfNull(text);
         ArgumentNullException.ThrowIfNull(before);
         ArgumentNullException.ThrowIfNull(member);
-        var newLine = Lines.Of(text).NewLine;
+        var newLine = TextLines.Of(text).NewLine;
         var at = before.Range.Start;
         return new RefactorTextEdit { Range = new SourceRange(at, at), NewText = Unended(member) + newLine + newLine };
     }
@@ -152,7 +152,7 @@ public static partial class MemberEdits
         }
 
         // nothing but blank lines between the two: the member is where it would go already.
-        var lines = Lines.Of(text);
+        var lines = TextLines.Of(text);
         var (from, to) = after ? (target.Range.End, moved.Range.Start) : (moved.Range.End, target.Range.Start);
         if (from <= to && Enumerable.Range(from.Line, to.Line - from.Line).All(lines.IsBlank))
         {
@@ -191,7 +191,7 @@ public static partial class MemberEdits
             }
         }
 
-        var lines = Lines.Of(text);
+        var lines = TextLines.Of(text);
         var edits = new List<RefactorTextEdit>();
         var run = new List<MemberExtent>();
         foreach (var member in members)
@@ -210,12 +210,12 @@ public static partial class MemberEdits
     }
 
     // whether nothing but blank lines is written between a member and the next: a member that ends the text ends no line, and nothing follows it.
-    private static bool IsBlankBetween(Lines lines, MemberExtent member, MemberExtent next)
+    private static bool IsBlankBetween(TextLines lines, MemberExtent member, MemberExtent next)
         => member.Range.End.Character == 0 && next.Range.Start.Character == 0
             && Enumerable.Range(member.Range.End.Line, next.Range.Start.Line - member.Range.End.Line).All(lines.IsBlank);
 
     // the edit that writes a run of members in their order, when it is not the order they are written in; the run ends as its last member did.
-    private static void AddReordered(Lines lines, List<MemberExtent> run, IComparer<MemberExtent> comparer, List<RefactorTextEdit> edits)
+    private static void AddReordered(TextLines lines, List<MemberExtent> run, IComparer<MemberExtent> comparer, List<RefactorTextEdit> edits)
     {
         var ordered = run.OrderBy(member => member, comparer).ToList();
         if (ordered.SequenceEqual(run))
@@ -229,59 +229,5 @@ public static partial class MemberEdits
     }
 
     // the text of a member without what ends its last line.
-    private static string Unended(string member) => TrailingLineEnd().Replace(member, string.Empty);
-
-    [GeneratedRegex(@"(\r\n|\r|\n)\z")]
-    private static partial Regex TrailingLineEnd();
-
-    // the lines of a text: where each starts, how long it is without what ends it, and what ends the first one that is ended.
-    private sealed partial class Lines
-    {
-        private readonly string _text;
-        private readonly List<int> _starts = [0];
-        private readonly List<int> _lengths = [];
-
-        private Lines(string text)
-        {
-            _text = text;
-            string? newLine = null;
-            foreach (Match end in Ends().Matches(text))
-            {
-                newLine ??= end.Value;
-                _lengths.Add(end.Index - _starts[^1]);
-                _starts.Add(end.Index + end.Length);
-            }
-
-            _lengths.Add(text.Length - _starts[^1]);
-            NewLine = newLine ?? "\r\n";
-        }
-
-        public static Lines Of(string text) => new(text);
-
-        public string NewLine { get; }
-
-        // the lines, the last one included, which is empty when the text ends its last line.
-        public int Count => _starts.Count;
-
-        public bool EndsWithNewLine => _lengths[^1] == 0 && Count > 1;
-
-        public SourcePosition End => new(Count - 1, _lengths[^1]);
-
-        public bool IsBlank(int line) => _text.AsSpan(_starts[line], _lengths[line]).IsWhiteSpace();
-
-        // whether nothing but blanks is written before a position on its line.
-        public bool IsBlankBefore(SourcePosition position) => _text.AsSpan(_starts[position.Line], position.Character).IsWhiteSpace();
-
-        // the position of what ends a line: past its last character.
-        public SourcePosition EndOf(int line) => new(line, _lengths[line]);
-
-        // the first character of the line after a line; the end of the text, on its last line.
-        public SourcePosition StartOfLineAfter(int line) => line + 1 < Count ? new SourcePosition(line + 1, 0) : EndOf(line);
-
-        public string Of(SourceRange range)
-            => _text[(_starts[range.Start.Line] + range.Start.Character)..(_starts[range.End.Line] + range.End.Character)];
-
-        [GeneratedRegex(@"\r\n|\r|\n")]
-        private static partial Regex Ends();
-    }
+    private static string Unended(string member) => TextLines.Unended(member);
 }
