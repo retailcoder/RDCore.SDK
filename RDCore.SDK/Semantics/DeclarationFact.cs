@@ -76,7 +76,16 @@ public enum DeclarationRole
     InterfaceImplementation,
 
     /// <summary>
-    /// It handles an event of a <c>WithEvents</c> variable of the class module, by being named <c>VariableName_EventName</c> (<strong>MS-VBAL §5.3.1.8</strong>).
+    /// It handles an event, which calls it by its name:
+    /// <list type="bullet">
+    /// <item>an event of a <c>WithEvents</c> variable of the class module, or of a form's control, named <c>VariableName_EventName</c>
+    /// (<strong>MS-VBAL §5.3.1.8</strong>);</item>
+    /// <item>an event of a form itself, named for the class its designer hosts (<c>UserForm_Initialize</c>, <c>Form_Load</c>);</item>
+    /// <item>the class's own <c>Initialize</c> or <c>Terminate</c>: a <c>Class_Initialize</c> or <c>Class_Terminate</c> subroutine with no parameters, of a
+    /// class module that is not a form (<strong>MS-VBAL §5.3.1.10</strong>);</item>
+    /// <item>an event of a document module's host class, named for that class (<c>Workbook_Open</c>, <c>Worksheet_Change</c>), which the host application
+    /// raises.</item>
+    /// </list>
     /// </summary>
     EventHandler,
 
