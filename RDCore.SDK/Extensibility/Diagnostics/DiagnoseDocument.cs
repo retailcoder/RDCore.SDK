@@ -51,7 +51,16 @@ public record class DiagnoseDocumentParams : IRequest, IRequest<DiagnoseDocument
 /// puts the phases together. Every phase, when not said.
 /// </param>
 public record class DiagnoseDocumentPayload(
-    Uri DocumentUri, int SourceVersion, ModuleParseResult ParseResult, ModuleSemanticsDto? Semantics = null, AnalysisPhase Phase = AnalysisPhase.All);
+    Uri DocumentUri, int SourceVersion, ModuleParseResult ParseResult, ModuleSemanticsDto? Semantics = null, AnalysisPhase Phase = AnalysisPhase.All)
+{
+    /// <summary>
+    /// The codes whose diagnostics are disabled for the document: those of the platform's settings and of the workspace's together
+    /// (<c>Analysis.DisabledDiagnostics</c>), which only the language server knows. The provider runs its analyzers with them
+    /// (<see cref="ModuleAnalyzerHost.Run(IEnumerable{IModuleAnalyzer}, DiagnoseDocumentPayload, Microsoft.Extensions.Logging.ILogger)"/>). None, unless said
+    /// otherwise.
+    /// </summary>
+    public IReadOnlyList<RDCoreDiagnosticCode> DisabledCodes { get; init; } = [];
+}
 
 /// <summary>
 /// Response to <c>rdcore/diagnostics/document</c>: the diagnostics a provider found, already projected

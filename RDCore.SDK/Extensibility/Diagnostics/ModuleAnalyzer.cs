@@ -17,7 +17,25 @@ namespace RDCore.SDK.Extensibility.Diagnostics;
 /// <param name="Semantics">
 /// What the environment host found out about the module, or <see langword="null"/> when it has not: it is not part of the platform, or has not loaded the module.
 /// </param>
-public sealed record class ModuleAnalysisContext(Uri Document, ModuleParseResult ParseResult, ModuleSemanticsDto? Semantics);
+public sealed record class ModuleAnalysisContext(Uri Document, ModuleParseResult ParseResult, ModuleSemanticsDto? Semantics)
+{
+    /// <summary>
+    /// The codes whose diagnostics are disabled for the document, in the platform's settings or the workspace's (<c>Analysis.DisabledDiagnostics</c>): an
+    /// analyzer does not report them, and skips the work of finding them (<see cref="IsEnabled"/>). None, unless said otherwise.
+    /// </summary>
+    public IReadOnlySet<RDCoreDiagnosticCode> DisabledCodes { get; init; } = new HashSet<RDCoreDiagnosticCode>();
+
+    /// <summary>
+    /// Whether the diagnostics of a code are reported for the document: an analyzer that reports several codes asks of each before it does the work of finding
+    /// its diagnostics. A code of the language's own errors is always reported (<see cref="RDCoreDiagnosticCode.CanBeDisabled"/>).
+    /// </summary>
+    /// <remarks>
+    /// An analyzer whose every code is disabled is not run (<see cref="ModuleAnalyzerHost"/>); a finding of a disabled code that an analyzer reports anyway is
+    /// dropped.
+    /// </remarks>
+    /// <param name="code">The code.</param>
+    public bool IsEnabled(RDCoreDiagnosticCode code) => !code.CanBeDisabled || !DisabledCodes.Contains(code);
+}
 
 /// <summary>
 /// One thing an analyzer has to say about a module.
@@ -61,9 +79,19 @@ public sealed record class RelatedFinding(Uri Document, SourceRange Range, strin
 /// <remarks>
 /// Implement this in an extension to add a diagnostic: the platform calls every analyzer it knows of for each document it diagnoses. An analyzer is a pure function
 /// of the <see cref="ModuleAnalysisContext"/>: it does not evaluate code, and it does not resolve names - what resolving found out is among the facts it is given.
+/// The analyzers of an extension are run with <see cref="ModuleAnalyzerHost"/>.
 /// </remarks>
 public interface IModuleAnalyzer
 {
+    /// <summary>
+    /// The codes of every diagnostic the analyzer reports: an analyzer whose every code is disabled for a document is not run for it.
+    /// </summary>
+    /// <remarks>
+    /// An analyzer that reports several codes is run while any of them is enabled, and asks of each before it does the work of finding it
+    /// (<see cref="ModuleAnalysisContext.IsEnabled"/>). Whether the codes of a diagnostic go together in one analyzer, or each in its own, is the author's choice.
+    /// </remarks>
+    IReadOnlyList<RDCoreDiagnosticCode> Codes { get; }
+
     /// <summary>
     /// The phase in which the analyzer is asked: the earliest that has everything it reads (<see cref="AnalysisPhase"/>).
     /// </summary>

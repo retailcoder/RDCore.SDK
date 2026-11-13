@@ -87,6 +87,13 @@ public readonly record struct RDCoreDiagnosticCode
     public bool IsFirstParty => Prefix is not null && IsFirstPartyPrefix(Prefix);
 
     /// <summary>
+    /// Whether the diagnostics of the code can be disabled (<c>Analysis.DisabledDiagnostics</c>): those of the analyzers of the platform and of its extensions
+    /// can. The language's own errors (<see cref="CompilePrefix"/>, <see cref="RuntimePrefix"/>, <see cref="ApplicationPrefix"/>) cannot: code that has one does
+    /// not compile, or stops when it runs, whatever the settings say.
+    /// </summary>
+    public bool CanBeDisabled => Prefix is not (null or CompilePrefix or RuntimePrefix or ApplicationPrefix);
+
+    /// <summary>
     /// Whether a text is a prefix of a diagnostic code: three letters <c>A</c> to <c>Z</c>.
     /// </summary>
     /// <param name="prefix">The text to check.</param>
