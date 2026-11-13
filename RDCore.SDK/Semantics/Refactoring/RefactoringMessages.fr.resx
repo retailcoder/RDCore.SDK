@@ -105,6 +105,22 @@
   <data name="Rename_LateBound_Leave" xml:space="preserve">
     <value>Laisser les accès en liaison tardive</value>
   </data>
+  <!-- A rename of a Public procedure of a standard module (RefactoringTitles.RenameOutsideCallers*): {0} is its name. -->
+  <data name="Rename_OutsideCallers_Label" xml:space="preserve">
+    <value>Peut être appelée par son nom de l'extérieur du code</value>
+  </data>
+  <data name="Rename_OutsideCallers_Description" xml:space="preserve">
+    <value>« {0} » est une procédure Public d'un module standard : quelque chose à l'extérieur du code, comme une liste de macros, un bouton ou un autre projet, peut l'appeler par son nom et ne la trouvera plus. Refuser ces modifications annule le renommage.</value>
+  </data>
+  <data name="Rename_OutsideCallers_Question" xml:space="preserve">
+    <value>« {0} » est une procédure Public d'un module standard : quelque chose à l'extérieur du code, comme une liste de macros, un bouton ou un autre projet, peut l'appeler par son nom et ne la trouvera plus. La renommer quand même?</value>
+  </data>
+  <data name="Rename_OutsideCallers_Rename" xml:space="preserve">
+    <value>La renommer</value>
+  </data>
+  <data name="Rename_OutsideCallers_Cancel" xml:space="preserve">
+    <value>Annuler le renommage</value>
+  </data>
   <!-- What a client is told of the references of a symbol (SymbolNavigationTarget.Unresolved): {0} is its name, {1} where the first such name is written. -->
   <data name="References_Incomplete" xml:space="preserve">
     <value>Les références de « {0} » peuvent être incomplètes : ce que « {0} » désigne à {1} n'est pas connu.</value>

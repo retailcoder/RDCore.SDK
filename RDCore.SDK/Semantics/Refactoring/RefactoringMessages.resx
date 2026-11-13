@@ -105,6 +105,22 @@
   <data name="Rename_LateBound_Leave" xml:space="preserve">
     <value>Leave the late-bound accesses</value>
   </data>
+  <!-- A rename of a Public procedure of a standard module (RefactoringTitles.RenameOutsideCallers*): {0} is its name. -->
+  <data name="Rename_OutsideCallers_Label" xml:space="preserve">
+    <value>May be called by its name from outside the code</value>
+  </data>
+  <data name="Rename_OutsideCallers_Description" xml:space="preserve">
+    <value>'{0}' is a Public procedure of a standard module: something outside the code, such as a list of macros, a button or another project, may call it by its name, and will no longer find it. Declining these edits cancels the rename.</value>
+  </data>
+  <data name="Rename_OutsideCallers_Question" xml:space="preserve">
+    <value>'{0}' is a Public procedure of a standard module: something outside the code, such as a list of macros, a button or another project, may call it by its name, and will no longer find it. Rename it anyway?</value>
+  </data>
+  <data name="Rename_OutsideCallers_Rename" xml:space="preserve">
+    <value>Rename it</value>
+  </data>
+  <data name="Rename_OutsideCallers_Cancel" xml:space="preserve">
+    <value>Cancel the rename</value>
+  </data>
   <!-- What a client is told of the references of a symbol (SymbolNavigationTarget.Unresolved): {0} is its name, {1} where the first such name is written. -->
   <data name="References_Incomplete" xml:space="preserve">
     <value>The references of '{0}' may be incomplete: what '{0}' refers to at {1} is not known.</value>
