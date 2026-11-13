@@ -173,6 +173,7 @@ public static partial class DeclarationEdits
     /// <param name="text">The text of the module.</param>
     /// <param name="type">The type, a node of the module's syntax tree.</param>
     /// <param name="member">The text of the member, as <c>Name As Long</c>.</param>
+    /// <returns>The edit, an insertion at the start of the line of the <c>End Type</c>.</returns>
     /// <exception cref="ArgumentException"><paramref name="type"/> is not a user-defined type.</exception>
     public static RefactorTextEdit AddTypeMember(string text, MemberDeclarationNode type, string member)
     {
