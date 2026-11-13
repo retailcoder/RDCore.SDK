@@ -161,4 +161,11 @@ public enum ValueExpressionSemanticFlags
     /// returns is discarded.
     /// </summary>
     ResultDiscarded = 1 << 24,
+
+    /// <summary>
+    /// What it is bound to (<see cref="ExpressionFact.Binding"/>) is declared by a library that the project references (<strong>MS-VBAL §4.1</strong>): the
+    /// standard library, a type library or another project, and not a module of the project. The project's own code is all the static pass analyzes; a library's
+    /// members have no <see cref="DeclarationFact"/>.
+    /// </summary>
+    LibraryMember = 1 << 25,
 }
