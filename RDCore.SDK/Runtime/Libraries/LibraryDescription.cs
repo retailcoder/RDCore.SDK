@@ -217,6 +217,20 @@ public sealed record class MemberDescription
     /// <summary>Whether the library leaves it out of what it shows.</summary>
     public bool IsHidden { get; init; }
 
+    /// <summary>
+    /// Whether the member is a property that a form's designer sets and that a program can only read: assigned while the program runs, late-bound, it raises
+    /// error 382, "'<em>name</em>' property cannot be set at run time". Stated on the <see cref="MemberKind.PropertyGet"/> of a property the library declares
+    /// with no <see cref="MemberKind.PropertyLet"/> or <see cref="MemberKind.PropertySet"/>. Such a property that is not design-time only is read-only, and
+    /// the same assignment raises error 383, "'<em>name</em>' property is read-only".
+    /// </summary>
+    /// <remarks>
+    /// A type library does not say which of the two a property is: both are a property get alone, with the same flags. So the fact is measured and stated in
+    /// the library's file (<c>"isDesignTimeOnly": true</c>), and an export from the type library keeps what the file it replaces states. The Visual Basic 6.0
+    /// library's is measured with VB6, by assigning each such property of its controls and its form while a program runs, through an <c>Object</c>, a
+    /// <c>Control</c>, the form's <c>Controls</c> and a <c>Variant</c>: every one refuses the assignment, after the value is coerced to the property's type.
+    /// </remarks>
+    public bool IsDesignTimeOnly { get; init; }
+
     /// <summary>The parameters of the member, in declaration order.</summary>
     public ImmutableArray<ParameterDescription> Parameters { get; init; } = [];
 }
