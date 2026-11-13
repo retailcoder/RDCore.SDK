@@ -19,8 +19,15 @@ public abstract record class DirectiveNode(SyntaxNodeId Identity, SourceLocation
 /// <param name="Identity">A unique identifier for this specific syntax node.</param>
 /// <param name="SourceLocation">The document location (<c>Uri</c>+<c>Range</c>) of the bound expression.</param>
 /// <param name="Name">The label name.</param>
-public record class LineLabelNode(SyntaxNodeId Identity, SourceLocation SourceLocation, string Name) 
-    : DirectiveNode(Identity, SourceLocation, []);
+public record class LineLabelNode(SyntaxNodeId Identity, SourceLocation SourceLocation, string Name)
+    : DirectiveNode(Identity, SourceLocation, [])
+{
+    /// <summary>
+    /// Where the label's name is written, without the colon that ends the label: what a rename of the label replaces. <see langword="null"/> for a line
+    /// number (<see cref="LineNumberNode"/>), which is a number and not a name, and when it is not known.
+    /// </summary>
+    public SourceRange? NameRange { get; init; }
+}
 /// <summary>
 /// A <em>line label directive</em> that represents a line number, which is procedure metadata that defines a named symbol for various jump targets.
 /// </summary>
