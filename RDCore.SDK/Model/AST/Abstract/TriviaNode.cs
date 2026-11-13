@@ -44,6 +44,31 @@ public sealed record class ErasedPlusTriviaNode(SyntaxNodeId Identity, SourceLoc
     : SyntaxNode(Identity, SourceLocation, []);
 
 /// <summary>
+/// Preserves a <em>line continuation</em> (<strong>MS-VBAL §3.2.2</strong>): a blank, an underscore and the end of the line, which make the next line part of
+/// the same logical line.
+/// </summary>
+/// <remarks>
+/// A line continuation is no code: the logical line is what the parser reads, and no node of the syntax tree stands for where it was broken. It is still
+/// source, kept as the module's trivia is, so that a formatter or an exporter can write the module back out as it was read, and a diagnostic can say where
+/// it is.
+/// <para>
+/// Most continuations stand between two tokens. The one written inside a keyword of two words (<c>End _</c> then <c>If</c> on the next line) is a part of
+/// that one token, the keyword: <see cref="Keyword"/> says which.
+/// </para>
+/// </remarks>
+/// <param name="Identity">A unique identifier for this specific syntax node.</param>
+/// <param name="SourceLocation">
+/// The document location (<c>Uri</c>+<c>Range</c>) of the continuation: the blank before the underscore, the underscore, the blanks after it, the line break,
+/// and the blanks that begin the next line.
+/// </param>
+/// <param name="Keyword">
+/// The keyword of two words the continuation is written inside, its words separated by one space (<c>End If</c>, <c>Exit Sub</c>); <see langword="null"/>
+/// for a continuation between two tokens.
+/// </param>
+public sealed record class LineContinuationTriviaNode(SyntaxNodeId Identity, SourceLocation SourceLocation, string? Keyword = null)
+    : SyntaxNode(Identity, SourceLocation, []);
+
+/// <summary>
 /// Preserves the raw source text of an <c>expression</c> that the tree does not model: an alternative the grammar recognizes but that has no dedicated AST
 /// node yet (e.g. <c>New &lt;class&gt;</c>, <c>TypeOf &lt;expr&gt; Is &lt;type&gt;</c>), or an expression nested too deeply to be analyzed (<c>VBC00060</c>,
 /// <strong>RD-VBAL §2.6.1</strong>).
