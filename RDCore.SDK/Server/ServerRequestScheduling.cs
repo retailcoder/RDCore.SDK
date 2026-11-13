@@ -28,12 +28,53 @@ public static class ServerRequestScheduling
     /// The notification waits for the requests that run. A request that would make it wait long gives way to a change to its document instead, answered
     /// <c>ContentModified</c> as the change arrives (<see cref="IncomingDocumentChanges.WhileCurrentAsync{T}"/>).
     /// </para>
+    /// <para>
+    /// Nor is a request given up on because it runs long: it is answered whatever it takes (<see cref="WithNoRequestBudget{T}"/>).
+    /// </para>
     /// </remarks>
     /// <param name="options">The server's options.</param>
     /// <returns>The same options.</returns>
     public static LanguageServerOptions WithEveryRequestAnswered(this LanguageServerOptions options)
     {
         options.WithContentModifiedSupport(false);
+        return options.WithNoRequestBudget();
+    }
+
+    /// <summary>
+    /// How long OmniSharp lets a request or a notification that an RDCore server or client received run before it gives up on it: longer than anything
+    /// it receives runs.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// OmniSharp gives up on whatever it received that still runs once <see cref="IJsonRpcServerOptions.MaximumRequestTimeout"/> has passed, five minutes
+    /// by default. A request is then answered <c>RequestCancelled</c> (-32800), which says that its sender cancelled it, and a notification is dropped.
+    /// A loaded machine overruns five minutes: a diagnostics pull of a large workspace, or a program that runs or waits at a <c>MsgBox</c> that long. How
+    /// busy the machine is then decides the answer, and a client that was told its pull was cancelled does not pull again. A sender cancels what it no
+    /// longer wants itself (<c>$/cancelRequest</c>).
+    /// </para>
+    /// <para>
+    /// OmniSharp's timer cannot be turned off. An infinite timeout is taken for none at all, so every request is answered <c>RequestCancelled</c> at
+    /// once; and a delay longer than a timer accepts throws, so the request is never answered. This is the longest delay every timer accepts:
+    /// <see cref="int.MaxValue"/> milliseconds, about 24.8 days.
+    /// </para>
+    /// </remarks>
+    public static readonly TimeSpan NoRequestBudget = TimeSpan.FromMilliseconds(int.MaxValue);
+
+    /// <summary>
+    /// Has OmniSharp let a request or a notification that a server or a client received run to its end, however long it runs (<see cref="NoRequestBudget"/>).
+    /// </summary>
+    /// <remarks>
+    /// Every server built on <see cref="RDCoreServerApp"/> and every client built on <see cref="Client.RDCoreClientApp"/> is configured with this. A server or a client
+    /// that builds its OmniSharp options itself - a debug adapter, a client of its own - calls it so that what it receives is not answered
+    /// <c>RequestCancelled</c> after five minutes.
+    /// </remarks>
+    /// <typeparam name="T">The options: a language server's, a language client's or a debug adapter's.</typeparam>
+    /// <param name="options">The options.</param>
+    /// <returns>The same options.</returns>
+    public static T WithNoRequestBudget<T>(this T options) where T : IJsonRpcServerOptions
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        options.MaximumRequestTimeout = NoRequestBudget;
         return options;
     }
 
