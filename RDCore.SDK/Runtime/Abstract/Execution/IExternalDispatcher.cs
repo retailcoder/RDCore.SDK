@@ -2,6 +2,8 @@ using RDCore.SDK.Model.Source;
 using RDCore.SDK.Model.Symbols;
 using RDCore.SDK.Model.Symbols.Abstract;
 using RDCore.SDK.Model.Symbols.VBProject;
+using RDCore.SDK.Model.Values.Abstract;
+using RDCore.SDK.Model.Values.Intrinsic;
 using RDCore.SDK.Model.Values.Runtime;
 using RDCore.SDK.Runtime.Shared;
 using RDCore.SDK.Runtime.StdLib;
@@ -126,14 +128,30 @@ public sealed record class ExternalCallRequest(
     }
 
     // an argument as a reader of a log needs to see it: a string quoted so an empty one is visible, anything
-    // else in the invariant culture so the record does not depend on where it was written.
-    private static string Format(IRuntimeValue argument) => argument.BoxedValue switch
+    // else in the invariant culture so the record does not depend on where it was written. An array is its element type and bounds, as it is declared: its
+    // elements are not what tells the call apart, and an array no variable holds yet - the copy an assignment gives a property - has no storage to read.
+    private static string Format(IRuntimeValue argument) => argument switch
     {
-        null => "Nothing",
-        string text => $"\"{text}\"",
-        IFormattable formattable => formattable.ToString(null, System.Globalization.CultureInfo.InvariantCulture),
-        var other => other.ToString() ?? string.Empty,
+        VBRuntimeVariantValue { WrappedValue: var wrapped } => Format(wrapped),
+        _ => argument.BoxedValue switch
+        {
+            null => "Nothing",
+            string text => $"\"{text}\"",
+            VBRuntimeArrayValue stored => Shape(stored.Array),
+            IFormattable formattable => formattable.ToString(null, System.Globalization.CultureInfo.InvariantCulture),
+            var other => other.ToString() ?? string.Empty,
+        },
     };
+
+    private static string Format(VBTypedValue value) => value switch
+    {
+        VBVariantValue variant => Format(variant.TypedValue),
+        VBArrayValue array => Shape(array),
+        _ => Format(value.RuntimeValue),
+    };
+
+    private static string Shape(VBArrayValue array)
+        => $"{array.ItemType.Name}({string.Join(", ", array.Dimensions.Select(dimension => $"{dimension.LowerBound} To {dimension.UpperBound}"))})";
 }
 
 /// <summary>
