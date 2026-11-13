@@ -78,6 +78,12 @@ public static class RDCorePlatformProtocol
     public const string SessionDebugExecute = "rdcore/session/debug/execute";
 
     /// <summary>
+    /// Tells a client that the handler of an event stopped while no program runs, and waits there: sent to a client that expects the <c>SessionStops</c>
+    /// capability. See <see cref="Platform.Protocol.SessionDebugStoppedParams"/>.
+    /// </summary>
+    public const string SessionDebugStopped = "rdcore/session/debug/stopped";
+
+    /// <summary>
     /// Asks the language server to analyze a module the client supplies.
     /// </summary>
     public const string SessionAnalyze = "rdcore/session/analyze";

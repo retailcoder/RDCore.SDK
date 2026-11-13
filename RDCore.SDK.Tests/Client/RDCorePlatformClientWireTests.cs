@@ -160,6 +160,29 @@ public sealed class RDCorePlatformClientWireTests
         Assert.AreEqual("Rick!", answer.Value);
     }
 
+    [TestMethod]
+    [Timeout(60_000, CooperativeCancellation = true)]
+    public async Task TheServersStop_ReachesTheClientsHandler_AsTheServerWroteIt()
+    {
+        using var connected = await ConnectAsync();
+        var told = new TaskCompletionSource<SessionDebugStoppedParams>(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var registration = connected.Platform.OnDebugStopped((stop, _) =>
+        {
+            told.TrySetResult(stop);
+            return Task.CompletedTask;
+        });
+
+        connected.Server.SendNotification(new SessionDebugStoppedNotification
+        {
+            Stop = new ExecuteResult { Outcome = ExecutionOutcome.Suspended, Output = ["clicked"], StackTrace = [new ExecuteStackFrame("Command1_Click", 4, 4) { Module = "Form1" }] },
+        });
+        var stop = (await told.Task.WaitAsync(TimeSpan.FromSeconds(30))).Stop;
+
+        Assert.AreEqual(ExecutionOutcome.Suspended, stop.Outcome);
+        CollectionAssert.AreEqual(new[] { "clicked" }, stop.Output.ToArray());
+        Assert.AreEqual(("Command1_Click", "Form1", 4), (stop.StackTrace.Single().Procedure, stop.StackTrace.Single().Module, stop.StackTrace.Single().Line));
+    }
+
     // what C:\Dev\Claude\ticket-omnisharp-input-dates.md is for: the strings are written as they are, and read otherwise.
     private const string InputDates = "OmniSharp's InputHandler parses ISO date-times with its own JsonTextReader, before any serializer";
 

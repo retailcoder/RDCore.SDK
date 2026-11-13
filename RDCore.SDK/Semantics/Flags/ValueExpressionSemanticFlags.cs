@@ -103,10 +103,11 @@ public enum ValueExpressionSemanticFlags
     EmptyLetToArray = 1 << 15,
 
     /// <summary>
-    /// A call of <c>IsMissing</c> (<strong>MS-VBAL §6.1.2.7.1.6</strong>) of a parameter that can never be missing, so that the call is always <c>False</c>:
-    /// a parameter that is not a <c>Variant</c>, which an omitted argument does not leave missing, or an <c>Optional</c> <c>Variant</c> with a default
-    /// value, which an omitted argument gives that value. A <c>Variant</c> parameter with no default can be missing, required or not (an omitted argument
-    /// passed on to it), and so can a <c>ParamArray</c> with no elements, as <strong>MS-VBA</strong> has it.
+    /// A call of <c>IsMissing</c> (<strong>MS-VBAL §6.1.2.7.1.6</strong>) of a name that can never hold the Missing value, so that the call is always
+    /// <c>False</c>: a parameter that is not a <c>Variant</c>, which an omitted argument does not leave missing, or an <c>Optional</c> <c>Variant</c> with
+    /// a default value, which an omitted argument gives that value; a variable that is not a <c>Variant</c>; a constant. A <c>Variant</c> parameter with no
+    /// default can be missing, required or not (an omitted argument passed on to it), and so can a <c>ParamArray</c> with no elements, as
+    /// <strong>MS-VBA</strong> has it. A <c>Variant</c> variable can hold the Missing value that is assigned to it.
     /// </summary>
     IsMissingAlwaysFalse = 1 << 16,
 
@@ -163,4 +164,36 @@ public enum ValueExpressionSemanticFlags
     /// ends (observed in Excel). <strong>MS-VBAL §5.4.2.4</strong> leaves the enumeration implementation-defined.
     /// </summary>
     CollectionSetToNothingInItsOwnLoop = 1 << 23,
+
+    /// <summary>
+    /// It is the callee of a call statement (<strong>MS-VBAL §5.4.2.1</strong>) that calls a <c>Function</c>: the value the function
+    /// returns is discarded.
+    /// </summary>
+    ResultDiscarded = 1 << 24,
+
+    /// <summary>
+    /// What it is bound to (<see cref="ExpressionFact.Binding"/>) is declared by a library that the project references (<strong>MS-VBAL §4.1</strong>): the
+    /// standard library, a type library or another project, and not a module of the project. The project's own code is all the static pass analyzes; a library's
+    /// members have no <see cref="DeclarationFact"/>.
+    /// </summary>
+    BoundToLibrary = 1 << 25,
+
+    /// <summary>
+    /// What it is bound to (<see cref="ExpressionFact.Binding"/>) is a control of a form: a member of the form's class that the form's designer declares, and
+    /// the form's code does not (<see cref="Model.Symbols.Abstract.SymbolProperties.DesignerControl"/>). The form's own code names it directly
+    /// (<c>TextBox1</c>); code in another module reaches it through the form (<c>UserForm1.TextBox1</c>). A control has no <see cref="DeclarationFact"/>.
+    /// </summary>
+    BoundToDesignerControl = 1 << 26,
+
+    /// <summary>
+    /// It is the target of a <c>Let</c> assignment, a property whose value parameter is a <c>Variant</c> (a <c>Property Let</c> of the project, or a property of
+    /// a library object), assigned a value whose declared type is a class or <c>Object</c>: <strong>MS-VBAL §5.4.3.8</strong> evaluates the value as a simple data
+    /// value, its default member's value; <strong>MS-VBA</strong> passes the property the object itself, early bound and late bound (observed in Excel). What
+    /// happens to the object is up to the property.
+    /// </summary>
+    /// <remarks>
+    /// Stated only where the property is known (<see cref="ExpressionFact.Binding"/>): a property called late is known only when it runs. A value whose
+    /// declared type is a <c>Variant</c> is not flagged: whether it holds an object is known only when it runs.
+    /// </remarks>
+    ObjectGivenToVariantProperty = 1 << 27,
 }

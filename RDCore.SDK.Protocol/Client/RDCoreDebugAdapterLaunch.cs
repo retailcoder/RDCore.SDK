@@ -47,6 +47,12 @@ public sealed record class RDCoreDebugAdapterLaunchOptions
 /// <see cref="ModuleArgument"/> and <see cref="EntryPointArgument"/>. Each is there only when the client said it, and the adapter decides what is not: a launch
 /// that names no module runs the one standard module that declares the entry point, and is refused, with the reason, when none does or more than one does.
 /// </para>
+/// <para>
+/// A DAP <c>attach</c> request runs no program, and takes no argument beyond what every <c>attach</c> request says. The adapter brings the platform up for the
+/// workspace as a launch does, and the session stays until the client disconnects: a statement of the debug console runs in it as at a prompt, and a stop in
+/// the handler of an event that runs while no program runs (a click on a form that such a statement showed) is a DAP <c>stopped</c> event, which the client
+/// resumes, steps or ends as a program's stop (<see cref="SessionStops"/>).
+/// </para>
 /// </remarks>
 public sealed class RDCoreDebugAdapterLaunch
 {
