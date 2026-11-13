@@ -18,10 +18,19 @@ public abstract record class DirectiveNode(SyntaxNodeId Identity, SourceLocation
 /// </summary>
 /// <param name="Identity">A unique identifier for this specific syntax node.</param>
 /// <param name="SourceLocation">The document location (<c>Uri</c>+<c>Range</c>) of the bound expression.</param>
-/// <param name="Name">The label name.</param>
+/// <param name="Name">
+/// The label name, without the square brackets of a bracketed name (<see cref="IsBracketed"/>): <c>Try Again</c> for <c>[Try Again]:</c>, the name a
+/// <c>GoTo [Try Again]</c> names (<see cref="Expressions.SimpleNameExpressionNode.IdentifierName"/>).
+/// </param>
 public record class LineLabelNode(SyntaxNodeId Identity, SourceLocation SourceLocation, string Name)
     : DirectiveNode(Identity, SourceLocation, [])
 {
+    /// <summary>
+    /// Whether the name is written in square brackets (<c>[Try Again]:</c>), as <see cref="Expressions.SimpleNameExpressionNode.IsBracketed"/> says of a name
+    /// in an expression.
+    /// </summary>
+    public bool IsBracketed { get; init; }
+
     /// <summary>
     /// Where the label's name is written, without the colon that ends the label and with the square brackets of a bracketed name (<c>[Try Again]:</c>):
     /// what a rename of the label replaces. <see langword="null"/> for a line number (<see cref="LineNumberNode"/>), which is a number and not a name, and
