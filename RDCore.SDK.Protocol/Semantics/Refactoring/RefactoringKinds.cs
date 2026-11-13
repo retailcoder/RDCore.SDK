@@ -12,7 +12,7 @@ namespace RDCore.SDK.Semantics.Refactoring;
 /// </para>
 /// <para>
 /// A client that asks for no kind is offered every action. A client that can show only some of them asks for those, by these names and LSP's own
-/// <c>quickfix</c>: it is offered no kind it did not ask for, and none added later.
+/// <c>quickfix</c>: it is offered only those kinds and their refinements, so a kind it does not know is never offered to it.
 /// </para>
 /// </remarks>
 public static class RefactoringKinds
@@ -26,8 +26,8 @@ public static class RefactoringKinds
 
     /// <summary>
     /// Import Project: a source action of the whole workspace, offered in every document of a workspace whose folder has a VB6 project (<c>.vbp</c>) and no
-    /// project file of its own. Its command is <c>rdcore.importProject</c>, which the language server runs: it makes the project file in the folder of the
-    /// <c>.vbp</c>.
+    /// project file of its own. Its command is <c>rdcore.importProject</c>, which the language server runs: it writes a <c>.rdproj</c> project file
+    /// (<see cref="RDCore.SDK.Workspace.ProjectFile"/>) of the VB6 project in the folder of the <c>.vbp</c>.
     /// </summary>
     public const string ImportProject = "source.rdcore.importProject";
 
