@@ -26,6 +26,12 @@ public enum UserSettingProblem
 
     /// <summary>The file of the user's settings is there, and is not one that can be read: it is not written over (<see cref="UserSettingsStore.Reset"/>).</summary>
     Unreadable = 4,
+
+    /// <summary>
+    /// An item was to be added to the setting, or removed from it (<see cref="UserSettingsStore.Add"/>, <see cref="UserSettingsStore.Remove"/>), and its value is
+    /// not a list.
+    /// </summary>
+    NotAList = 5,
 }
 
 /// <summary>
@@ -139,6 +145,97 @@ public sealed class UserSettingsStore(IFileSystem fileSystem, string path, Setti
         }
 
         root ??= new JsonObject(NodeOptions);
+        Write(root, setting, parsed switch
+        {
+            bool flag => JsonValue.Create(flag),
+            long number => JsonValue.Create(number),
+            string[] items => ArrayOf(items),
+            _ => JsonValue.Create((string)parsed),
+        });
+
+        Save(root);
+        return new(UserSettingProblem.None, setting);
+    }
+
+    /// <summary>
+    /// Adds items to the list the user set for a setting whose value is a list (<see cref="SettingValueKind.TextList"/>,
+    /// <see cref="SettingValueKind.DiagnosticCodeList"/>): each that the list does not hold already, without regard to case, after the items it holds.
+    /// </summary>
+    /// <remarks>
+    /// The list is the one the user set: a list the user did not set is an empty one, and what the deployed configuration says of the setting is not part of
+    /// it.
+    /// </remarks>
+    /// <param name="key">The key of the setting, without regard to case: <c>analysis.disabledDiagnostics</c>.</param>
+    /// <param name="value">The item, or items, as they are written (<see cref="SettingsSchema.TryParse"/>): <c>RDC01001</c>.</param>
+    /// <returns>What became of the value: it is set when the list holds the items, and the file is written only when it did not already.</returns>
+    public UserSettingChange Add(string key, string value) => ChangeList(key, value, remove: false);
+
+    /// <summary>
+    /// Removes items from the list the user set for a setting whose value is a list (<see cref="SettingValueKind.TextList"/>,
+    /// <see cref="SettingValueKind.DiagnosticCodeList"/>), without regard to case. The last item removed leaves an empty list, which the user set.
+    /// </summary>
+    /// <param name="key">The key of the setting, without regard to case: <c>analysis.disabledDiagnostics</c>.</param>
+    /// <param name="value">The item, or items, as they are written (<see cref="SettingsSchema.TryParse"/>): <c>RDC01001</c>.</param>
+    /// <returns>What became of the value: it is set when the list does not hold the items, and the file is written only when it did.</returns>
+    public UserSettingChange Remove(string key, string value) => ChangeList(key, value, remove: true);
+
+    private UserSettingChange ChangeList(string key, string value, bool remove)
+    {
+        if (!schema.TryFind(key.Trim(), out var setting))
+        {
+            return new(UserSettingProblem.UnknownSetting);
+        }
+
+        if (!setting.IsSettable)
+        {
+            return new(UserSettingProblem.NotSettable, setting);
+        }
+
+        if (setting.Kind is not (SettingValueKind.TextList or SettingValueKind.DiagnosticCodeList))
+        {
+            return new(UserSettingProblem.NotAList, setting);
+        }
+
+        if (!SettingsSchema.TryParse(setting, value, out var parsed))
+        {
+            return new(UserSettingProblem.InvalidValue, setting);
+        }
+
+        if (!TryLoad(out var root))
+        {
+            return new(UserSettingProblem.Unreadable, setting);
+        }
+
+        root ??= new JsonObject(NodeOptions);
+        var items = (string[])parsed;
+        var list = Find(root, setting) is JsonArray held ? held.Select(item => item is null ? string.Empty : TextOf(item)).ToList() : [];
+        var count = list.Count;
+        if (remove)
+        {
+            list.RemoveAll(item => items.Contains(item, StringComparer.OrdinalIgnoreCase));
+        }
+        else
+        {
+            foreach (var item in items.Where(item => !list.Contains(item, StringComparer.OrdinalIgnoreCase)))
+            {
+                list.Add(item);
+            }
+        }
+
+        if (list.Count != count)
+        {
+            Write(root, setting, ArrayOf([.. list]));
+            Save(root);
+        }
+
+        return new(UserSettingProblem.None, setting);
+    }
+
+    private static JsonArray ArrayOf(string[] items) => new(items.Select(item => (JsonNode?)JsonValue.Create(item)).ToArray());
+
+    // the value of a setting, written in the sections of its path, which are made where there are none.
+    private static void Write(JsonObject root, SettingDescriptor setting, JsonNode value)
+    {
         var parts = SettingsSchema.ConfigurationPathOf(setting).Split(':');
         var section = root;
         foreach (var part in parts[..^1])
@@ -154,16 +251,7 @@ public sealed class UserSettingsStore(IFileSystem fileSystem, string path, Setti
         }
 
         section.Remove(parts[^1]);
-        section[parts[^1]] = parsed switch
-        {
-            bool flag => JsonValue.Create(flag),
-            long number => JsonValue.Create(number),
-            string[] items => new JsonArray(items.Select(item => (JsonNode?)JsonValue.Create(item)).ToArray()),
-            _ => JsonValue.Create((string)parsed),
-        };
-
-        Save(root);
-        return new(UserSettingProblem.None, setting);
+        section[parts[^1]] = value;
     }
 
     /// <summary>
@@ -359,16 +447,26 @@ public static class UserSettingsConfiguration
         public override void Load(Stream stream)
         {
             base.Load(stream);
-            foreach (var (key, value) in Data.ToList())
+            foreach (var (key, read) in Data.ToList())
             {
                 if (schema.Governing(key) is not { } setting)
                 {
                     continue;
                 }
 
-                // an item of a list is any text; any other value is one of the setting's, or nothing.
+                // an item of a list is any text, or a code of a diagnostic that can be disabled; any other value is one of the setting's, or nothing.
                 var isItem = !string.Equals(SettingsSchema.ConfigurationPathOf(setting), key, StringComparison.OrdinalIgnoreCase);
-                if (!setting.IsSettable || !isItem && (value is null || !SettingsSchema.TryParse(setting, value, out _)))
+
+                // an empty list the user set, which JSON gives as no value, is a list of none: a running component told nothing of it would take the list it
+                // started with back.
+                var value = read;
+                if (!isItem && value is null && setting.Kind is SettingValueKind.TextList or SettingValueKind.DiagnosticCodeList)
+                {
+                    Data[key] = value = string.Empty;
+                }
+
+                if (!setting.IsSettable || !isItem && (value is null || !SettingsSchema.TryParse(setting, value, out _))
+                    || isItem && setting.Kind == SettingValueKind.DiagnosticCodeList && SdkAnalysisOptions.DisablableCodeOf(value) is null)
                 {
                     Data.Remove(key);
                 }

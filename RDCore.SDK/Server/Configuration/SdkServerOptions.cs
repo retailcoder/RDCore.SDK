@@ -202,6 +202,13 @@ public record class SdkAppOptions
     /// and change nothing in a document.
     /// </remarks>
     public SdkFormattingOptions Formatting { get; set; } = new();
+    /// <summary>
+    /// Code analysis options: what the analyzers of the platform and of its extensions report.
+    /// </summary>
+    /// <remarks>
+    /// A change takes effect with the next analysis of a document, while the platform runs.
+    /// </remarks>
+    public SdkAnalysisOptions Analysis { get; set; } = new();
 }
 
 /// <summary>

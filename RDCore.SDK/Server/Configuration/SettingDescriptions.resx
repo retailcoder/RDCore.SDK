@@ -208,4 +208,7 @@
   <data name="Formatting_PrettyList" xml:space="preserve">
     <value>Whether a finished line is listed back from what it compiled to, as the VBA editor does, instead of formatted by rules of spacing and casing.</value>
   </data>
+  <data name="Analysis_DisabledDiagnostics" xml:space="preserve">
+    <value>The codes of the diagnostics that are not reported, separated by commas: RDC01001, XYZ00042. A compile or run-time error (VBC, VBR, VBA) cannot be disabled.</value>
+  </data>
 </root>
