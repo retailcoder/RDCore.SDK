@@ -30,9 +30,10 @@ public enum FixedAssignmentSemanticFlags
     /// The <em>source</em> of a <see cref="UserDefinedTypeCopy"/> is a user-defined type that has a variable-length <c>String</c> member, at any depth.
     /// </summary>
     /// <remarks>
-    /// 👉 MS-VBA copies the member's <em>pointer</em>, and leaves two records owning one allocation: which is why the statement is a known way to corrupt a
-    /// VBA process. RD-VBA copies the value instead and corrupts nothing, but a program written against MS-VBA's behaviour is relying on something that it
-    /// should be told about either way.
+    /// 👉 <strong>MS-VBAL §5.4.3.6</strong> allows <c>LSet</c> between any two user-defined types, and RD-VBA runs it, carrying the member's value across
+    /// where the other record has a variable-length <c>String</c> at the same offset. MS-VBA refuses the statement at compile time, with "Type mismatch",
+    /// when either record has a variable-length <c>String</c> member (observed in Excel, for a member at the top level of the record): a program that
+    /// relies on it does not compile in MS-VBA.
     /// </remarks>
     SourceHoldsVariableLengthString = 1 << 3,
     /// <summary>
@@ -42,4 +43,41 @@ public enum FixedAssignmentSemanticFlags
     /// 👉 See <see cref="SourceHoldsVariableLengthString"/>.
     /// </remarks>
     DestinationHoldsVariableLengthString = 1 << 4,
+    /// <summary>
+    /// The <em>source</em> of a <see cref="UserDefinedTypeCopy"/> is a user-defined type that has a member of an object type (<c>Object</c>, a class or
+    /// an interface), at the top level of the type.
+    /// </summary>
+    /// <remarks>
+    /// 👉 <strong>MS-VBAL §5.4.3.6</strong> allows <c>LSet</c> between any two user-defined types, and RD-VBA runs it, copying the object, or its
+    /// address, where the other record has a member at the same offset. MS-VBA refuses the statement at compile time, with "Type mismatch", when either
+    /// record has a member of an object type at its top level (observed in Excel): a program that relies on it does not compile in MS-VBA. A member of a
+    /// nested record, or an array of objects, is not looked at.
+    /// </remarks>
+    SourceHoldsObject = 1 << 5,
+    /// <summary>
+    /// The <em>destination</em> of a <see cref="UserDefinedTypeCopy"/> is a user-defined type that has a member of an object type (<c>Object</c>, a
+    /// class or an interface), at the top level of the type.
+    /// </summary>
+    /// <remarks>
+    /// 👉 See <see cref="SourceHoldsObject"/>.
+    /// </remarks>
+    DestinationHoldsObject = 1 << 6,
+    /// <summary>
+    /// The <em>source</em> of a <see cref="UserDefinedTypeCopy"/> is a user-defined type that has a <c>Variant</c> member, at the top level of the type.
+    /// </summary>
+    /// <remarks>
+    /// 👉 <strong>MS-VBAL §5.4.3.6</strong> allows <c>LSet</c> between any two user-defined types, and RD-VBA runs it, carrying the member's value
+    /// across where the other record has a <c>Variant</c> at the same offset. MS-VBA refuses the statement at compile time, with "Type mismatch", when
+    /// either record has a <c>Variant</c> member at its top level (observed in Excel): a program that relies on it does not compile in MS-VBA. A member of
+    /// a nested record, or an array of <c>Variant</c>, is not looked at.
+    /// </remarks>
+    SourceHoldsVariant = 1 << 7,
+    /// <summary>
+    /// The <em>destination</em> of a <see cref="UserDefinedTypeCopy"/> is a user-defined type that has a <c>Variant</c> member, at the top level of the
+    /// type.
+    /// </summary>
+    /// <remarks>
+    /// 👉 See <see cref="SourceHoldsVariant"/>.
+    /// </remarks>
+    DestinationHoldsVariant = 1 << 8,
 }
