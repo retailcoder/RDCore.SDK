@@ -29,12 +29,18 @@ public sealed record class DiagnosticFixes
     public EditFix? Edit { get; init; }
 
     /// <summary>
+    /// The fix is to add an item to the list of a setting - a name the analyzer is to allow; <see langword="null"/> when it is not.
+    /// </summary>
+    [JsonProperty("setting", NullValueHandling = NullValueHandling.Ignore)]
+    public SettingFix? Setting { get; init; }
+
+    /// <summary>
     /// The fixes a diagnostic carries, when it carries any: a diagnostic whose <c>data</c> is something else - the metadata of an error - has none.
     /// </summary>
     /// <param name="diagnostic">The diagnostic, as a client sent it back with a code action request.</param>
     public static DiagnosticFixes? Of(Diagnostic diagnostic)
     {
-        if (diagnostic.Data is not JObject data || (data["rename"] is not JObject && data["edit"] is not JObject))
+        if (diagnostic.Data is not JObject data || (data["rename"] is not JObject && data["edit"] is not JObject && data["setting"] is not JObject))
         {
             return null;
         }
@@ -78,4 +84,24 @@ public sealed record class EditFix
     /// <summary>The edits, none of them overlapping another, as <strong>LSP 3.17</strong> <c>TextEdit</c>s of the document.</summary>
     [JsonProperty("edits")]
     public IReadOnlyList<TextEdit> Edits { get; init; } = [];
+}
+
+/// <summary>
+/// An item added to the list of a setting, which fixes a finding: the name the finding is about, added to the names the analyzer allows
+/// (<c>Diagnostics.MeaningfulNames.AllowedNames</c>). The client keeps the list (<c>rdcore/settings/listValue</c>); the platform offers the fix only to a client
+/// that expects to be asked to.
+/// </summary>
+public sealed record class SettingFix
+{
+    /// <summary>What the code action that adds the item is called, in the language of the analyzer's messages: <c>Allow the name 'i'</c>.</summary>
+    [JsonProperty("title")]
+    public string Title { get; init; } = string.Empty;
+
+    /// <summary>The key of the setting, under <c>Configuration</c>: <c>Diagnostics.MeaningfulNames.AllowedNames</c>.</summary>
+    [JsonProperty("key")]
+    public string Key { get; init; } = string.Empty;
+
+    /// <summary>The item, as it is written: <c>i</c>.</summary>
+    [JsonProperty("value")]
+    public string Value { get; init; } = string.Empty;
 }
