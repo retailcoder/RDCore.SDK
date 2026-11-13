@@ -90,8 +90,8 @@ public enum ProjectChangeKind
     RemoveModule,
 
     /// <summary>
-    /// The module the finding is in is the code of a host's document, of a class (<see cref="ProjectChange.DocumentClass"/>): its
-    /// <see cref="RDCoreModule.Super"/>.
+    /// The module the finding is in is the code of a host document of a class (<see cref="ProjectChange.DocumentClass"/>), which the project file states as
+    /// its <see cref="RDCoreModule.Super"/>.
     /// </summary>
     SetDocumentClass,
 }
@@ -148,7 +148,7 @@ public sealed record class ProjectChange
     /// A library is referenced after every library the project references already: a reference that occurs earlier in the list has the higher precedence
     /// (<strong>MS-VBAL §4.1</strong>), so a name that one of them declares too keeps meaning theirs. The reference is to the type library the library's
     /// description was made from, by its identifier and version (<see cref="LibraryIdentity.Of"/>). A project that references a library of the name already is
-    /// not changed; one whose libraries do not describe it is not either, and the change cannot be made.
+    /// not changed. When no library description has the name, the change cannot be made.
     /// </para>
     /// <para>
     /// The module is the one the project lists at the path of the document, relative to the project's folder (<see cref="ProjectFile.Uri"/>), whichever

@@ -13,8 +13,8 @@ namespace RDCore.SDK.Extensibility.Diagnostics;
 /// An analyzer says what the fix is, and the platform makes it: a rename, or another refactoring, is worked out by the language server against the whole
 /// workspace when it is asked for, and is offered only when it can be made. An extension states such a fix without knowing how the workspace is changed, and
 /// gets the code actions of the platform for it. A fix that changes only the document the finding is in (the edits of one procedure) is the analyzer's to
-/// make, from the syntax tree it was given: it states the edits themselves (<see cref="Edits"/>). A fix that changes what the project file says - a library
-/// the project references, or what it says of the module - is a change the analyzer states, and the language server makes (<see cref="Project"/>).
+/// make, from the syntax tree it was given: it states the edits themselves (<see cref="Edits"/>). A fix that changes what the project file says (a library
+/// the project references, or what it says of the module) is a change the analyzer states, and the language server makes (<see cref="Project"/>).
 /// </remarks>
 public sealed record class DiagnosticFixes
 {
