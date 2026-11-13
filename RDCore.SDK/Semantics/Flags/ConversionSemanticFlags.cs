@@ -26,7 +26,9 @@ public enum ConversionSemanticFlags
     /// </summary>
     Failed = 1 << 2,
     /// <summary>
-    /// This conversion operation is recursive.
+    /// This conversion operation reads its operand through more than one default member: the operand is an object whose default member returns an object,
+    /// and the value is that object's default member's, or further down the chain (<strong>MS-VBAL §5.6.2.2</strong>, <strong>§5.6.2.3</strong>). It is
+    /// stated with <see cref="ObjectOperand"/>.
     /// </summary>
     Recursive = 1 << 3,
     /// <summary>

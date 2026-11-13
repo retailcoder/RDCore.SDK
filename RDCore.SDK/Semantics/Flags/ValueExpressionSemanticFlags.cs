@@ -163,4 +163,25 @@ public enum ValueExpressionSemanticFlags
     /// ends (observed in Excel). <strong>MS-VBAL §5.4.2.4</strong> leaves the enumeration implementation-defined.
     /// </summary>
     CollectionSetToNothingInItsOwnLoop = 1 << 23,
+
+    /// <summary>
+    /// It is the target of a <c>Let</c> statement, written without an argument list, whose declared type is a specific class whose default member has no
+    /// <c>Property Let</c>: a <c>Property Get</c> or a function (<c>os = 5</c>, <c>Me = 5</c>). <strong>MS-VBAL §5.4.3.8</strong> makes the statement
+    /// valid: the default member is invoked, and the value is let-assigned to the default member of the object it returns. <strong>MS-VBA</strong> refuses
+    /// it at compile time: "Invalid use of property" for a <c>Property Get</c>, "Type mismatch" for a function (observed in Excel).
+    /// </summary>
+    /// <remarks>
+    /// <strong>MS-VBA</strong> compiles the same assignment written with the member's name (<c>os.Value = 5</c>), with an empty argument list
+    /// (<c>os() = 5</c>), or through a variable declared <c>Object</c> or <c>Variant</c>; none of these is stated.
+    /// </remarks>
+    LetToADefaultMemberWithNoPropertyLet = 1 << 29,
+
+    /// <summary>
+    /// It is the target of a <c>Let</c> statement that names a <c>Property Get</c> with no <c>Property Let</c>, or a function, declared <c>Variant</c>
+    /// (<c>o.Value = 5</c>, <c>Left("ab", 1) = "x"</c>), outside its own body. <strong>MS-VBAL §5.4.3.8</strong> raises run-time error 451 (Property let
+    /// procedure not defined and property get procedure did not return an object) for the property, and 450 (Wrong number of arguments or invalid property
+    /// assignment) for the function, whatever it returns. <strong>MS-VBA</strong> calls it, and let-assigns the default member of the object it returns, or
+    /// raises 424 (Object required) when it returns no object (observed in Excel). RD-VBA does what MS-VBA does.
+    /// </summary>
+    LetThroughAVariantGetOrFunction = 1 << 30,
 }

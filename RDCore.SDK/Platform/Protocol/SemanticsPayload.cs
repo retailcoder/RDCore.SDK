@@ -305,9 +305,13 @@ public record class ProcedureSemanticsDto(
 /// <param name="DeclaredBy">How a local variable came to be declared; <see langword="null"/> for any other declaration.</param>
 /// <param name="Hides">What a local or a parameter hides; <see langword="null"/> when it hides nothing, and for any other declaration.</param>
 /// <param name="AutoInstantiationAlwaysFails">Whether it is a variable declared <c>As New</c> of a class whose objects are never created.</param>
+/// <param name="TypeKind">The kind of type it is declared as, or of its elements' type for an array; <see langword="null"/> when it has no type, or one that did
+/// not resolve.</param>
+/// <param name="IsArray">Whether it is declared as an array.</param>
 public record class DeclarationFactDto(
     Uri Symbol, string Name, DeclarationKind Kind, AccessModifier Access, bool IsImplicit, SourceLocation Location, DeclarationReferences? References,
-    DeclarationRole Role = DeclarationRole.None, LocalDeclarationKind? DeclaredBy = null, HiddenDeclaration? Hides = null, bool AutoInstantiationAlwaysFails = false);
+    DeclarationRole Role = DeclarationRole.None, LocalDeclarationKind? DeclaredBy = null, HiddenDeclaration? Hides = null, bool AutoInstantiationAlwaysFails = false,
+    DeclaredTypeKind? TypeKind = null, bool IsArray = false);
 
 /// <summary>
 /// A <see cref="ModuleSemanticModel"/>, as it travels.
@@ -349,7 +353,7 @@ public record class ModuleSemanticsDto(
             procedure.EmptiedControlReads.IsDefaultOrEmpty ? null : procedure.EmptiedControlReads))],
         [.. model.Declarations.Select(declaration => new DeclarationFactDto(
             declaration.Symbol.Uri, declaration.Name, declaration.Kind, declaration.Access, declaration.IsImplicit, declaration.Location, declaration.References, declaration.Role,
-            declaration.DeclaredBy, declaration.Hides, declaration.AutoInstantiationAlwaysFails))],
+            declaration.DeclaredBy, declaration.Hides, declaration.AutoInstantiationAlwaysFails, declaration.TypeKind, declaration.IsArray))],
         model.Language,
         model.Class,
         model.Document);
