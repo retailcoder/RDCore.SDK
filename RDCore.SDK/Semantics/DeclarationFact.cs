@@ -181,9 +181,9 @@ public sealed record class DeclarationFact(
 
     /// <summary>
     /// The kind of type it is declared as, or for an array the kind of its elements' type (<see cref="IsArray"/>): the type its <c>As</c> clause names, the
-    /// type a type-declaration character or a <c>Def</c><em>Type</em> directive gives it, or <c>Variant</c> (<strong>MS-VBAL §5.2.3.1.4</strong>, <strong>§5.2.3.1.5</strong>). For a
-    /// function or a property, the type it returns. <see langword="null"/> for a declaration that has no type (a <c>Sub</c>, an <c>Event</c>), and for one
-    /// whose type did not resolve.
+    /// type a type-declaration character or a <c>Def</c><em>Type</em> directive gives it, or <c>Variant</c> (<strong>MS-VBAL §5.2.3.1.4</strong>,
+    /// <strong>§5.2.3.1.5</strong>). For a function or a property, the type it returns. <see langword="null"/> for a declaration that has no type (a
+    /// <c>Sub</c>, an <c>Event</c>), and for one whose type did not resolve.
     /// </summary>
     public DeclaredTypeKind? TypeKind { get; init; }
 

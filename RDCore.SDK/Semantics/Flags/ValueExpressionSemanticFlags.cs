@@ -167,7 +167,8 @@ public enum ValueExpressionSemanticFlags
     /// <summary>
     /// It is the target of a <c>Let</c> statement, written without an argument list, whose declared type is a specific class whose default member has no
     /// <c>Property Let</c>: a <c>Property Get</c> or a function (<c>os = 5</c>, <c>Me = 5</c>). <strong>MS-VBAL §5.4.3.8</strong> makes the statement
-    /// valid: the default member is invoked, and the value is let-assigned to the default member of the object it returns. <strong>MS-VBA</strong> refuses
+    /// valid, and RD-VBA runs it: the default member is invoked, and the value is let-assigned to the default member of the object it returns; a
+    /// <c>Property Get</c> declared a type other than a class, <c>Object</c> or <c>Variant</c> raises run-time error 451. <strong>MS-VBA</strong> refuses
     /// it at compile time: "Invalid use of property" for a <c>Property Get</c>, "Type mismatch" for a function (observed in Excel).
     /// </summary>
     /// <remarks>
