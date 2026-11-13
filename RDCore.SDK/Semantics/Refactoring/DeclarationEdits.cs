@@ -228,6 +228,52 @@ public static partial class DeclarationEdits
         return lines.WholeLines(first, last);
     }
 
+    /// <summary>
+    /// Where a range of a text is after edits of that text: the edits written before it move it by the lines and characters they add or remove, and the
+    /// edits written after it leave it where it is. A refactoring finds there what it left of the text, such as a name it did not edit.
+    /// </summary>
+    /// <param name="range">The range, in the text before the edits.</param>
+    /// <param name="edits">
+    /// The edits, in the text before them, in any order; they do not overlap (<strong>LSP 3.17</strong> §TextEdit). Text inserted where the range starts
+    /// is written before it, and text inserted where it ends is written after it.
+    /// </param>
+    /// <returns>
+    /// The range in the text after the edits, or <see langword="null"/> when an edit replaces any of it, or inserts text inside it: what is written there is
+    /// the edit's.
+    /// </returns>
+    /// <exception cref="ArgumentException">Two of the edits overlap.</exception>
+    public static SourceRange? RangeAfter(SourceRange range, IReadOnlyList<RefactorTextEdit> edits)
+    {
+        ArgumentNullException.ThrowIfNull(edits);
+        var ordered = edits.OrderBy(edit => edit.Range.Start).ToList();
+        for (var index = 1; index < ordered.Count; index++)
+        {
+            if (ordered[index].Range.Start < ordered[index - 1].Range.End)
+            {
+                throw new ArgumentException("Two of the edits overlap.", nameof(edits));
+            }
+        }
+
+        if (ordered.Any(edit => (edit.Range.Start < range.End && range.Start < edit.Range.End)
+            || (edit.Range.Start == edit.Range.End && range.Start < edit.Range.Start && edit.Range.Start < range.End)))
+        {
+            return null;
+        }
+
+        var (start, end) = (range.Start, range.End);
+        foreach (var edit in ordered.Where(edit => edit.Range.End <= range.Start).Reverse())
+        {
+            var written = Advance(edit.Range.Start, edit.NewText);
+            (start, end) = (RelativeTo(edit.Range.End, start).AnchoredAt(written), RelativeTo(edit.Range.End, end).AnchoredAt(written));
+        }
+
+        return new SourceRange(start, end);
+    }
+
+    // a position after another, relative to that one: its characters count from that one only on that one's line.
+    private static SourcePosition RelativeTo(SourcePosition from, SourcePosition position)
+        => new(position.Line - from.Line, position.Line == from.Line ? position.Character - from.Character : position.Character);
+
     private static bool IsProcedure(MemberDeclarationNode member)
         => member.MemberKind is MemberKind.Procedure or MemberKind.Function or MemberKind.PropertyGet or MemberKind.PropertyLet or MemberKind.PropertySet;
 
