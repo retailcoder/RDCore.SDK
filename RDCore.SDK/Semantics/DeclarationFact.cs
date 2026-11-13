@@ -147,11 +147,11 @@ public enum DeclarationRole
 /// A fact is stated only when it is true. The code the pass analyzed is every module of the project, so a declaration that another module can refer to is
 /// counted over all of them.
 /// <para>
-/// The references of some declarations are not all in that code, or are not all names of them:
+/// Some declarations are referred to by code the pass did not analyze, or by code that does not name them:
 /// </para>
 /// <list type="bullet">
-/// <item>a declaration that code outside what the pass analyzed can refer to: a <c>Public</c> member of a standard module that is not
-/// <c>Option Private Module</c>, or of a class that another project can use, is accessible from the projects that reference this one;</item>
+/// <item>a declaration that the projects referencing this one can refer to: a <c>Public</c> member of a standard module without
+/// <c>Option Private Module</c>, or of a class that another project can use;</item>
 /// <item>a declaration called by convention or through the object it is a member of: an event handler, a member that implements an interface;</item>
 /// <item>a declaration named in a string, or reached by a member access that is bound only when the code runs.</item>
 /// </list>
