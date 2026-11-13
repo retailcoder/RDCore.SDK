@@ -23,8 +23,9 @@ public record class LineLabelNode(SyntaxNodeId Identity, SourceLocation SourceLo
     : DirectiveNode(Identity, SourceLocation, [])
 {
     /// <summary>
-    /// Where the label's name is written, without the colon that ends the label: what a rename of the label replaces. <see langword="null"/> for a line
-    /// number (<see cref="LineNumberNode"/>), which is a number and not a name, and when it is not known.
+    /// Where the label's name is written, without the colon that ends the label and with the square brackets of a bracketed name (<c>[Try Again]:</c>):
+    /// what a rename of the label replaces. <see langword="null"/> for a line number (<see cref="LineNumberNode"/>), which is a number and not a name, and
+    /// when it is not known.
     /// </summary>
     public SourceRange? NameRange { get; init; }
 }
