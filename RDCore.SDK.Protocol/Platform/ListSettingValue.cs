@@ -25,7 +25,7 @@ public enum SettingScope
 /// </summary>
 /// <remarks>
 /// <para>
-/// A client owns its configuration, and the language server writes none of it: this asks the client to make the change as one of its own - the code action that
+/// A client owns its configuration, and the language server writes none of it: this asks the client to make the change as one of its own. The code action that
 /// disables a diagnostic, and the one that allows a name a diagnostic is about, send it. The client announces the change as it does any other
 /// (<c>workspace/didChangeConfiguration</c>), and the language server sees the setting in the section it pulls.
 /// </para>
@@ -56,7 +56,7 @@ public record class ListSettingValueParams
     public bool Remove { get; init; }
 
     /// <summary>
-    /// The document the change was asked for from - the one a diagnostic is in - whose workspace a <see cref="SettingScope.Workspace"/> list is of;
+    /// The document the change was asked for from (the one a diagnostic is in), whose workspace a <see cref="SettingScope.Workspace"/> list is of;
     /// <see langword="null"/> for the client's workspace.
     /// </summary>
     public Uri? Document { get; init; }

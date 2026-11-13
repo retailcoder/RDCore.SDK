@@ -342,12 +342,12 @@ public record class Unattended(bool IsSupported = false) : CorePlatformClientCap
 public record class RubberduckIndenterSettings(bool IsSupported = false) : CorePlatformClientCapability(IsSupported);
 
 /// <summary>
-/// Advertises that the language server asks the client to add an item to the list of a setting, or to remove one from it - <c>rdcore/settings/listValue</c>; a
-/// client that expects it answers, and keeps the list in the user's settings of the platform or in the workspace's.
+/// Advertises that the language server asks the client to add an item to the list of a setting, or to remove one from it (<c>rdcore/settings/listValue</c>);
+/// a client that expects it answers, and keeps the list in the user's settings of the platform or in the workspace's.
 /// </summary>
 /// <remarks>
-/// A client owns its configuration and the platform writes none of it: only a client that expects this is offered the code actions that change a list - disabling
-/// a diagnostic, allowing a name - and it stores what it applies as a change of its own.
+/// A client owns its configuration and the platform writes none of it: only a client that expects this is offered the code actions that change a list
+/// (disabling a diagnostic, allowing a name), and it stores what it applies as a change of its own.
 /// </remarks>
 /// <param name="IsSupported">Whether the capability is expected, or provided.</param>
 public record class ListSettingValue(bool IsSupported = false) : CorePlatformClientCapability(IsSupported);

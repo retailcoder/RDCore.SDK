@@ -29,7 +29,7 @@ public sealed record class DiagnosticFixes
     public EditFix? Edit { get; init; }
 
     /// <summary>
-    /// The fix is to add an item to the list of a setting - a name the analyzer is to allow; <see langword="null"/> when it is not.
+    /// The fix is to add an item to the list of a setting, such as a name the analyzer is to allow; <see langword="null"/> when it is not.
     /// </summary>
     [JsonProperty("setting", NullValueHandling = NullValueHandling.Ignore)]
     public SettingFix? Setting { get; init; }
