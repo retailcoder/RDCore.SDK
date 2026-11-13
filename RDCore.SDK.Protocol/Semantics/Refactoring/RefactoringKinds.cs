@@ -9,7 +9,8 @@ namespace RDCore.SDK.Semantics.Refactoring;
 /// <para>
 /// Each kind is a refinement of one of LSP's own (<c>refactor</c>, <c>refactor.extract</c>, <c>refactor.inline</c>, <c>refactor.rewrite</c>, <c>source</c>),
 /// so a client that asks for <c>refactor.extract</c> is offered every extraction. The kinds that move code refine <c>refactor.move</c>, which is a kind of
-/// <strong>LSP 3.18</strong> and not of 3.17: a client of 3.17 asks for them as <c>refactor</c>, or by their own names.
+/// <strong>LSP 3.18</strong> and not of 3.17: a client of 3.17 asks for them as <c>refactor</c>, or by their own names. A refactoring of a whole
+/// module is a source action, a refinement of LSP's <c>source</c>.
 /// </para>
 /// <para>
 /// A client that asks for no kind is offered every action. A client that can show only some of them asks for those, by these names and LSP's own
@@ -61,4 +62,13 @@ public static class RefactoringKinds
     /// (<strong>MS-VBAL §3.4</strong>). It asks nothing: the action has its edit.
     /// </summary>
     public const string MoveMemberDown = "refactor.move.member.down";
+
+    /// <summary>
+    /// Sort Members: the procedures of a module, each with the comments directly above it and its <c>Attribute</c> lines, are written by kind (the
+    /// <c>Sub</c>s, then the <c>Function</c>s, then the properties), then by name. The <c>Property Get</c>, <c>Let</c> and <c>Set</c> of one name, written one
+    /// after another, stay together, in the order they are written. Procedures are sorted among those written one after another with nothing but blank lines
+    /// between them: none is moved past a comment on lines of its own or an <c>#If</c> directive, so none goes into a branch of an <c>#If</c> block or out of
+    /// one (<strong>MS-VBAL §3.4</strong>). It asks nothing: the action has its edit.
+    /// </summary>
+    public const string SortMembers = "source.sortMembers";
 }
