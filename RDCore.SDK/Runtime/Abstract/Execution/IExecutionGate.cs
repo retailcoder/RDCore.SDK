@@ -24,7 +24,7 @@ public enum SuspensionDecision
 /// thread it runs on is held by <see cref="Suspend"/> until the answer comes.
 /// <para>
 /// Whoever runs the program on a thread of its own installs a gate in <see cref="ISessionHalt.Gate"/>; nothing else needs to know that there is one. A program
-/// that is run without one is stopped by a <c>Stop</c> the way it always was. While no program runs, the gate is the session's: it takes the stops of the handlers
+/// that is run without one cannot be resumed, and a <c>Stop</c> unwinds it. While no program runs, the gate is the session's: it takes the stops of the handlers
 /// of the session's events (<see cref="ISessionTurn.RunsAnEventOfTheSession"/>).
 /// </para>
 /// <para>
@@ -48,8 +48,8 @@ public interface IExecutionGate
     /// <para>
     /// A form can be shown when no program runs: by a statement typed at the prompt, or by a macro that left it shown when it ended. A click on it is an event of the
     /// session, handled on the thread of the form's window, and a <c>Stop</c> or a breakpoint in its handler enters break mode as it does in MS-VBA. No request runs
-    /// that handler, so the stop is told to a client apart (<c>rdcore/host/debug/stopped</c>), which resumes or ends it. A client that does not take it is answered
-    /// <see cref="SuspensionDecision.Abandon"/> at once: the handler is unwound, and nothing waits.
+    /// that handler, so the host asks the language server whether a client takes the stop (<c>rdcore/host/debug/stopped</c>); a client that takes it resumes
+    /// or ends it. When no client takes it, the answer is <see cref="SuspensionDecision.Abandon"/>, at once: the handler is unwound, and nothing waits.
     /// </para>
     /// <para>
     /// Any other thread (code that runs beside the program that waits, such as an expression a debugger evaluates, or the handlers of an event that code's calls
