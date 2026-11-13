@@ -793,6 +793,73 @@ public static partial class ModuleIndenter
         return end < lastCode && BodyEnd(node, module, start, end) == end;
     }
 
+    // the statement blocks of a module that have no closer yet, each with the closer it needs, in the order of the tree. A block is closed by a closer on the
+    // line it ends on that no block in it closes with: the inner blocks are looked at first, and a line has as many closers as it has statements that start
+    // with one (Next j, i: one for each of its names).
+    internal static List<(StatementNode Block, string Closer)> UnclosedBlocks(ModuleParseResult parse, string[] lines)
+    {
+        var unclosed = new List<(StatementNode Block, string Closer)>();
+        if (parse.SyntaxTree is not { } tree || lines.Length == 0)
+        {
+            return unclosed;
+        }
+
+        var module = new ModuleLines(lines);
+        var blocks = tree.Descendants().OfType<StatementNode>().Where(node => BlockCloser(node) is not null).ToList();
+        var taken = new Dictionary<(int Line, string Closer), int>();
+        for (var index = blocks.Count - 1; index >= 0; index--)
+        {
+            var block = blocks[index];
+            var closer = BlockCloser(block)!;
+            var range = block.SourceLocation.Range;
+            var start = range.Start.Line;
+            var last = Math.Min(module.LastLineOf(range), lines.Length - 1);
+            while (last > start && (string.IsNullOrWhiteSpace(lines[last]) || module.IsContinuation(last)))
+            {
+                last--;
+            }
+
+            taken.TryGetValue((last, closer), out var closed);
+            if (closed < ClosersOn(Keyworded(lines[last]), closer))
+            {
+                taken[(last, closer)] = closed + 1;
+            }
+            else
+            {
+                unclosed.Add((block, closer));
+            }
+        }
+
+        unclosed.Reverse();
+        return unclosed;
+    }
+
+    // how many blocks the code of a line closes with a closer: one for each statement that starts with it, and for a Next, one for each name it lists.
+    private static int ClosersOn(string code, string closer)
+    {
+        var (isCode, comment) = Lex(code);
+        var end = comment ?? code.Length;
+        var count = 0;
+        for (var index = 0; index < end; index++)
+        {
+            if (!isCode[index] || !(index == 0 || code[index - 1] == ':') || !StartsWithWords(code, index, closer))
+            {
+                continue;
+            }
+
+            count++;
+            if (closer == "Next")
+            {
+                for (var at = index; at < end && !(isCode[at] && code[at] == ':'); at++)
+                {
+                    count += isCode[at] && code[at] == ',' ? 1 : 0;
+                }
+            }
+        }
+
+        return count;
+    }
+
     private static void IndentBodiesOf(SyntaxNode node, ModuleLines module, CodeFormattingOptions options, IReadOnlyDictionary<int, DirectiveBlock> splitHeaders,
         Action<int, int> indent)
     {
