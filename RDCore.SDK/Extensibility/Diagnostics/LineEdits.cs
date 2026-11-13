@@ -18,8 +18,7 @@ namespace RDCore.SDK.Extensibility.Diagnostics;
 /// is written on the lines of a node is a question the parse answers, without the text.
 /// </para>
 /// <para>
-/// A line this writes ends with the module's own line ending (<see cref="ModuleParseResult.LineEnding"/>) and is written without indentation: the host
-/// indents the lines a fix inserts, the way the user indents the code, before it offers the fix.
+/// A line this writes ends with the module's own line ending (<see cref="ModuleParseResult.LineEnding"/>) and is written without indentation.
 /// </para>
 /// </remarks>
 public static class LineEdits
