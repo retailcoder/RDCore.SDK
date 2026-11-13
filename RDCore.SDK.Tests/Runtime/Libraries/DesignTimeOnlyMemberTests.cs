@@ -52,6 +52,61 @@ public sealed class DesignTimeOnlyMemberTests
         Assert.IsFalse(Member(read, "ListCount").IsDesignTimeOnly);
     }
 
+    // a type library's export: what it declares, with no fact it cannot state.
+    private static LibraryDescription Exported(params string[] members)
+    {
+        var library = LibraryJson.Read(Library);
+        var listBox = library.Classes.Single();
+        return library with
+        {
+            Classes = [listBox with { Members = [.. listBox.Members.Where(member => members.Contains(member.Name)).Select(member => member with { IsDesignTimeOnly = false })] }],
+        };
+    }
+
+    [TestMethod]
+    public void AnExport_KeepsTheFact_FromTheDescriptionItReplaces()
+    {
+        var kept = Exported("Sorted", "ListCount").KeepingDesignTimeOnly(LibraryJson.Read(Library), out var lost);
+
+        Assert.IsTrue(Member(kept, "Sorted").IsDesignTimeOnly);
+        Assert.IsFalse(Member(kept, "ListCount").IsDesignTimeOnly);
+        Assert.IsEmpty(lost);
+    }
+
+    [TestMethod]
+    public void AnExport_NamesTheMembers_ItNoLongerDeclares()
+    {
+        var kept = Exported("ListCount").KeepingDesignTimeOnly(LibraryJson.Read(Library), out var lost);
+
+        Assert.IsFalse(Member(kept, "ListCount").IsDesignTimeOnly);
+        CollectionAssert.AreEqual(new[] { "ListBox.Sorted" }, lost.ToArray());
+    }
+
+    [TestMethod]
+    public void AMemberNewToTheExport_IsNotDesignTimeOnly()
+    {
+        var exported = Exported("Sorted", "ListCount");
+        var listBox = exported.Classes.Single();
+        exported = exported with
+        {
+            Classes = [listBox with { Members = [.. listBox.Members, new MemberDescription { Name = "Columns", Kind = MemberKind.PropertyGet, Type = "Integer" }] }],
+        };
+
+        var kept = exported.KeepingDesignTimeOnly(LibraryJson.Read(Library), out _);
+
+        Assert.IsTrue(Member(kept, "Sorted").IsDesignTimeOnly);
+        Assert.IsFalse(Member(kept, "Columns").IsDesignTimeOnly);
+    }
+
+    [TestMethod]
+    public void AnExport_ThatReplacesNothing_IsLeftAsItIs()
+    {
+        var exported = Exported("Sorted", "ListCount");
+
+        Assert.AreSame(exported, exported.KeepingDesignTimeOnly(null, out var lost));
+        Assert.IsEmpty(lost);
+    }
+
     [TestMethod]
     public void ThePropertysSymbol_CarriesIt()
     {

@@ -60,6 +60,45 @@ public sealed record class LibraryDescription
     /// The classes the library declares.
     /// </summary>
     public ImmutableArray<ClassDescription> Classes { get; init; } = [];
+
+    /// <summary>
+    /// This description, with what <paramref name="replaced"/> states that a type library cannot: each member that is design-time only there
+    /// (<see cref="MemberDescription.IsDesignTimeOnly"/>) is design-time only here, matched by its class's name, its name and its kind, ignoring case.
+    /// </summary>
+    /// <remarks>
+    /// A description exported from a type library again, to replace the file it was exported to before, keeps what that file states this way: the type library
+    /// declares a design-time only property the same as a read-only one.
+    /// </remarks>
+    /// <param name="replaced">The description this one replaces; <see langword="null"/> for none, which leaves this one as it is.</param>
+    /// <param name="lost">
+    /// The members that are design-time only in <paramref name="replaced"/> and that this description does not declare, as <c>Class.Member</c>, sorted; empty
+    /// when none.
+    /// </param>
+    /// <returns>The description, with the members that are design-time only in <paramref name="replaced"/> stated as such.</returns>
+    public LibraryDescription KeepingDesignTimeOnly(LibraryDescription? replaced, out IReadOnlyList<string> lost)
+    {
+        if (replaced is null)
+        {
+            lost = [];
+            return this;
+        }
+
+        var stated = replaced.Classes
+            .SelectMany(owner => owner.Members.Where(member => member.IsDesignTimeOnly).Select(member => (Key: KeyOf(owner, member), Shown: $"{owner.Name}.{member.Name}")))
+            .ToDictionary(entry => entry.Key, entry => entry.Shown, StringComparer.OrdinalIgnoreCase);
+        var kept = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        ImmutableArray<ClassDescription> classes = [.. Classes.Select(owner => owner with
+        {
+            Members = [.. owner.Members.Select(member => stated.ContainsKey(KeyOf(owner, member)) && kept.Add(KeyOf(owner, member)) ? member with { IsDesignTimeOnly = true } : member)],
+        })];
+
+        lost = [.. stated.Where(entry => !kept.Contains(entry.Key)).Select(entry => entry.Value).Order(StringComparer.OrdinalIgnoreCase)];
+        return this with { Classes = classes };
+    }
+
+    // the accessors of a property share its name: the kind tells them apart.
+    private static string KeyOf(ClassDescription owner, MemberDescription member) => $"{owner.Name}.{member.Name}/{member.Kind}";
 }
 
 /// <summary>
@@ -225,7 +264,8 @@ public sealed record class MemberDescription
     /// </summary>
     /// <remarks>
     /// A type library does not say which of the two a property is: both are a property get alone, with the same flags. So the fact is measured and stated in
-    /// the library's file (<c>"isDesignTimeOnly": true</c>). The Visual Basic 6.0 library's is measured with VB6, by assigning each such property of its controls and its form while a program runs, through an <c>Object</c>, a
+    /// the library's file (<c>"isDesignTimeOnly": true</c>), which a description exported again keeps through
+    /// <see cref="LibraryDescription.KeepingDesignTimeOnly"/>. The Visual Basic 6.0 library's is measured with VB6, by assigning each such property of its controls and its form while a program runs, through an <c>Object</c>, a
     /// <c>Control</c>, the form's <c>Controls</c> and a <c>Variant</c>: every one refuses the assignment, after the value is coerced to the property's type.
     /// </remarks>
     public bool IsDesignTimeOnly { get; init; }
