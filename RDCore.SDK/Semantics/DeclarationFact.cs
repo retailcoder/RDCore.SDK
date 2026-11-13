@@ -42,7 +42,7 @@ public enum DeclarationKind
     Event,
 
     /// <summary>
-    /// A member of a user-defined type (<strong>MS-VBAL §5.2.3.3</strong>): <c>Name</c> of <c>Type Person: Name As String: End Type</c>. It is referred to as
+    /// A member of a user-defined type (<strong>MS-VBAL §5.2.3.3</strong>): <c>Name</c>, declared <c>Name As String</c> in a <c>Type Person</c> block. It is referred to as
     /// the member of a variable of the type (<c>p.Name</c>).
     /// </summary>
     TypeMember,
@@ -138,11 +138,13 @@ public enum DeclarationRole
 /// What the static pass found out about a declaration.
 /// </summary>
 /// <remarks>
-/// A fact is stated only when it is true. The code the pass analyzed is every module of the workspace: a declaration that another module can refer to is
-/// counted over all of them. What refers to a declaration that is called by convention or through the object it is a member of rather than by an expression
-/// that names it (an event handler, a member that implements an interface), by a name written in a string, or by a member access that is bound only when the
-/// code runs, is not all in that code, and its references are not counted: <see cref="References"/> is then <see langword="null"/>, which says the references
-/// are not known and not that there are none.
+/// A fact is stated only when it is true. The code the pass analyzed is every module of the workspace, so a declaration that another module can refer to is
+/// counted over all of them.
+/// <para>
+/// Some declarations are referred to by code that does not name them: a declaration called by convention or through the object it is a member of (an event
+/// handler, a member that implements an interface), by a name written in a string, or by a member access that is bound only when the code runs. Their
+/// references are not counted: <see cref="References"/> is then <see langword="null"/>, which says the references are not known and not that there are none.
+/// </para>
 /// </remarks>
 /// <param name="Symbol">The identity of the declared symbol.</param>
 /// <param name="Name">The name it is declared with.</param>
