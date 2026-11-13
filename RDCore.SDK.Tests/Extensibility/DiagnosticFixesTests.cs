@@ -49,6 +49,17 @@ public sealed class DiagnosticFixesTests
     }
 
     [TestMethod]
+    public void TheVersionOfTheDocument_IsStampedOnTheEditFixesThatDoNotStateOne()
+    {
+        var fixes = new DiagnosticFixes { Edits = [new EditFix { Title = "Unstated" }, new EditFix { Title = "Stated", Version = 3 }] };
+
+        var stamped = fixes.AtVersion(9);
+
+        CollectionAssert.AreEqual(new int?[] { 9, 3 }, stamped.Edits.Select(fix => fix.Version).ToArray());
+        Assert.AreSame(fixes, fixes.AtVersion(null), "a version that is not known stamps nothing");
+    }
+
+    [TestMethod]
     public void ARefactoringFix_IsReadBack_ByItsKind()
     {
         var data = new DiagnosticFixes { Refactoring = new RefactoringFix { Kind = RefactoringKinds.ExtractMethod } }.ToData();

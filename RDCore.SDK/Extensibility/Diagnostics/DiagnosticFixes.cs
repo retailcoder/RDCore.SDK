@@ -60,6 +60,17 @@ public sealed record class DiagnosticFixes
     }
 
     /// <summary>
+    /// The fixes, with the version of the document they were made of on each edit fix that does not state one (<see cref="EditFix.Version"/>). An
+    /// analyzer is not told the version of the document it reads: what answers <see cref="RDCoreExtensionProtocol.DiagnoseDocument"/> stamps its
+    /// findings' fixes with <see cref="DiagnoseDocumentPayload.SourceVersion"/>.
+    /// </summary>
+    /// <param name="sourceVersion">The version of the document the findings were made of; <see langword="null"/> when it is not known.</param>
+    public DiagnosticFixes AtVersion(int? sourceVersion)
+        => sourceVersion is null || Edits.All(fix => fix.Version is not null)
+            ? this
+            : this with { Edits = [.. Edits.Select(fix => fix.Version is null ? fix with { Version = sourceVersion } : fix)] };
+
+    /// <summary>
     /// The fixes, as a diagnostic's <c>data</c>.
     /// </summary>
     public JToken ToData() => JObject.FromObject(this);
