@@ -164,6 +164,70 @@ public static partial class MemberEdits
         return insertion.Range.Start < removal.Range.Start ? [insertion, removal] : [removal, insertion];
     }
 
+    /// <summary>
+    /// The edits that write members in another order: for each run of members written one after another, with nothing but blank lines between them, one
+    /// edit that writes them in the order <paramref name="comparer"/> gives, with one blank line between two of them. A run whose order does not change has
+    /// no edit.
+    /// </summary>
+    /// <param name="text">The text of the module.</param>
+    /// <param name="members">
+    /// The whole texts of the members (<see cref="Extent"/>), in the order they are written. Anything but blank lines between a member and the next, such as a
+    /// comment on lines of its own or an <c>#If</c> directive, ends a run: no member is written past it.
+    /// </param>
+    /// <param name="comparer">The order the members of a run are written in. Members it orders alike keep the order they are written in.</param>
+    /// <exception cref="ArgumentException">
+    /// <paramref name="members"/> are not in the order they are written, or two of them overlap.
+    /// </exception>
+    public static IReadOnlyList<RefactorTextEdit> Reorder(string text, IReadOnlyList<MemberExtent> members, IComparer<MemberExtent> comparer)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        ArgumentNullException.ThrowIfNull(members);
+        ArgumentNullException.ThrowIfNull(comparer);
+        for (var index = 1; index < members.Count; index++)
+        {
+            if (members[index].Range.Start < members[index - 1].Range.End)
+            {
+                throw new ArgumentException("The members are not in the order they are written, or two of them overlap.", nameof(members));
+            }
+        }
+
+        var lines = Lines.Of(text);
+        var edits = new List<RefactorTextEdit>();
+        var run = new List<MemberExtent>();
+        foreach (var member in members)
+        {
+            if (run is [.., var last] && !IsBlankBetween(lines, last, member))
+            {
+                AddReordered(lines, run, comparer, edits);
+                run.Clear();
+            }
+
+            run.Add(member);
+        }
+
+        AddReordered(lines, run, comparer, edits);
+        return edits;
+    }
+
+    // whether nothing but blank lines is written between a member and the next: a member that ends the text ends no line, and nothing follows it.
+    private static bool IsBlankBetween(Lines lines, MemberExtent member, MemberExtent next)
+        => member.Range.End.Character == 0 && next.Range.Start.Character == 0
+            && Enumerable.Range(member.Range.End.Line, next.Range.Start.Line - member.Range.End.Line).All(lines.IsBlank);
+
+    // the edit that writes a run of members in their order, when it is not the order they are written in; the run ends as its last member did.
+    private static void AddReordered(Lines lines, List<MemberExtent> run, IComparer<MemberExtent> comparer, List<RefactorTextEdit> edits)
+    {
+        var ordered = run.OrderBy(member => member, comparer).ToList();
+        if (ordered.SequenceEqual(run))
+        {
+            return;
+        }
+
+        var newText = string.Join(lines.NewLine + lines.NewLine, ordered.Select(member => Unended(lines.Of(member.Range))))
+            + (run[^1].Range.End.Character == 0 ? lines.NewLine : string.Empty);
+        edits.Add(new RefactorTextEdit { Range = new SourceRange(run[0].Range.Start, run[^1].Range.End), NewText = newText });
+    }
+
     // the text of a member without what ends its last line.
     private static string Unended(string member) => TrailingLineEnd().Replace(member, string.Empty);
 
