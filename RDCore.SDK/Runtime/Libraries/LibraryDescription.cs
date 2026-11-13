@@ -66,8 +66,8 @@ public sealed record class LibraryDescription
     /// (<see cref="MemberDescription.IsDesignTimeOnly"/>) is design-time only here, matched by its class's name, its name and its kind, ignoring case.
     /// </summary>
     /// <remarks>
-    /// A description exported from a type library again, to replace the file it was exported to before, keeps what that file states this way: the type library
-    /// declares a design-time only property the same as a read-only one.
+    /// Call it on a description exported from a type library that replaces the file of an earlier export. The type library declares a property that is
+    /// design-time only the same way as a read-only one, so the earlier file is the only place the fact is stated.
     /// </remarks>
     /// <param name="replaced">The description this one replaces; <see langword="null"/> for none, which leaves this one as it is.</param>
     /// <param name="lost">
