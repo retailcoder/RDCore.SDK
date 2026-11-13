@@ -10,7 +10,7 @@ namespace RDCore.SDK.Extensibility.Diagnostics;
 /// in its <c>data</c> (<strong>LSP 3.17</strong> <c>Diagnostic.data</c>) for the language server to offer as code actions.
 /// </summary>
 /// <remarks>
-/// An analyzer says what the fix is, and the platform makes it: a rename, or another refactoring, is planned by the language server against the whole
+/// An analyzer says what the fix is, and the platform makes it: a rename, or another refactoring, is worked out by the language server against the whole
 /// workspace when it is asked for, and is offered only when it can be made. An extension states such a fix without knowing how the workspace is changed, and
 /// gets the code actions of the platform for it. A fix that changes only the document the finding is in - the edits of one procedure - is the analyzer's to
 /// make, from the syntax tree it was given: it states the edits themselves (<see cref="Edits"/>).
