@@ -155,4 +155,16 @@ public enum ValueExpressionSemanticFlags
     /// <c>True</c>. <c>Not 1</c> is <c>-2</c>, which is <c>True</c>.
     /// </summary>
     TrueValueIsNotMinusOne = 1 << 22,
+
+    /// <summary>
+    /// It is the target of a <c>Let</c> assignment, a property whose value parameter is a <c>Variant</c> (a <c>Property Let</c>, or a property of a library
+    /// object), assigned a value whose declared type is a class or <c>Object</c>: <strong>MS-VBAL §5.4.3.8</strong> evaluates the value as a simple data
+    /// value, its default member's value; <strong>MS-VBA</strong> passes the property the object itself, early bound and late bound (observed in Excel). What
+    /// happens to the object is up to the property.
+    /// </summary>
+    /// <remarks>
+    /// Stated where the property is known (<see cref="ExpressionFact.Binding"/>): a property called late is known only when it runs. A value whose declared
+    /// type is a <c>Variant</c> is not flagged either: whether it holds an object is known only when it runs.
+    /// </remarks>
+    ObjectGivenToVariantProperty = 1 << 27,
 }
