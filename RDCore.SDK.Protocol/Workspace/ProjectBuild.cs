@@ -61,7 +61,9 @@ public sealed record class ProjectBuild
     [JsonExtensionData]
     public Dictionary<string, JsonElement>? ExtensionData { get; init; }
 
-    /// <summary>Whether the project builds into a library, which has no entry point (<see cref="ProjectOutputType.Library"/>).</summary>
+    /// <summary>
+    /// Whether the project builds into a library, which has no entry point (<see cref="ProjectOutputType.Library"/>).
+    /// </summary>
     [JsonIgnore]
     public bool IsLibrary => OutputType is ProjectOutputType.Library;
 }

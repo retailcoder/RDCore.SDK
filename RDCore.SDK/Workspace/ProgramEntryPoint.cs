@@ -110,13 +110,19 @@ public static class ProgramEntryPoint
 /// </summary>
 public enum ProgramEntryPointRefusal
 {
-    /// <summary>The project is a library (<see cref="ProjectOutputType.Library"/>), which is not run.</summary>
+    /// <summary>
+    /// The project is a library (<see cref="ProjectOutputType.Library"/>), which is not run.
+    /// </summary>
     Library,
 
-    /// <summary>No standard module declares the procedure the project names, or a <c>Sub Main</c> when it names none.</summary>
+    /// <summary>
+    /// No standard module declares the procedure the project names, or a <c>Sub Main</c> when it names none.
+    /// </summary>
     NotFound,
 
-    /// <summary>More than one standard module declares it (<see cref="ProgramEntryPointResolution.Candidates"/>).</summary>
+    /// <summary>
+    /// More than one standard module declares it (<see cref="ProgramEntryPointResolution.Candidates"/>).
+    /// </summary>
     Ambiguous,
 }
 
@@ -125,13 +131,19 @@ public enum ProgramEntryPointRefusal
 /// </summary>
 public sealed record class ProgramEntryPointResolution
 {
-    /// <summary>The standard module the entry point is in; <see langword="null"/> when the project has none.</summary>
+    /// <summary>
+    /// The standard module the entry point is in; <see langword="null"/> when the project has none.
+    /// </summary>
     public VBModuleSymbol? Module { get; init; }
 
-    /// <summary>The procedure the program starts at; <see langword="null"/> when the project has none.</summary>
+    /// <summary>
+    /// The procedure the program starts at; <see langword="null"/> when the project has none.
+    /// </summary>
     public VBTypeMemberSymbol? Procedure { get; init; }
 
-    /// <summary>Why the project has no entry point; <see langword="null"/> when it has one.</summary>
+    /// <summary>
+    /// Why the project has no entry point; <see langword="null"/> when it has one.
+    /// </summary>
     public ProgramEntryPointRefusal? Refusal { get; init; }
 
     /// <summary>
@@ -140,7 +152,9 @@ public sealed record class ProgramEntryPointResolution
     /// </summary>
     public IReadOnlyList<VBModuleSymbol> Candidates { get; init; } = [];
 
-    /// <summary>Whether the project has an entry point: <see cref="Module"/> and <see cref="Procedure"/> are not <see langword="null"/>.</summary>
+    /// <summary>
+    /// Whether the project has an entry point: <see cref="Module"/> and <see cref="Procedure"/> are not <see langword="null"/>.
+    /// </summary>
     [System.Diagnostics.CodeAnalysis.MemberNotNullWhen(true, nameof(Module), nameof(Procedure))]
     public bool IsFound => Module is not null && Procedure is not null;
 }
