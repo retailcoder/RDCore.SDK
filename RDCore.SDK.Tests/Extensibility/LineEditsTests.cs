@@ -76,6 +76,10 @@ public sealed class LineEditsTests
         => Assert.AreEqual(new SourceRange(4, 0, 6, 0), LineEdits.WholeLinesOf(EndsWithALineEnd, new SourceRange(4, 4, 5, 8)));
 
     [TestMethod]
+    public void AModuleNodeOfNoRange_EndsNoEarlierThanWhatIsWrittenInIt()
+        => Assert.AreEqual(new SourceRange(1, 0, 2, 0), LineEdits.WholeLinesOf(Parse(SourcePosition.Zero), Alone));
+
+    [TestMethod]
     public void AStatementBeforeAnotherOnItsLine_IsNotWholeLines()
         => Assert.IsNull(LineEdits.WholeLinesOf(EndsWithALineEnd, BeforeAColon));
 

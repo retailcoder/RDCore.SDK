@@ -225,7 +225,8 @@ public static class LineEdits
             .Concat(parse.Trivia)
             .Concat(parse.PrecompilerTrivia.SelectMany(root => root.Descendants()));
 
+    // the end of the module node, which spans the whole text; never before the end of anything written in it, for a parse whose module node has no range.
     private static SourcePosition EndOfText(ModuleParseResult parse)
-        => parse.Trivia.Concat(parse.PrecompilerTrivia).Select(node => node.SourceLocation.Range.End)
+        => WrittenNodes(parse).Select(node => node.SourceLocation.Range.End)
             .Aggregate(parse.SyntaxTree?.SourceLocation.Range.End ?? SourcePosition.Zero, (end, each) => each > end ? each : end);
 }
