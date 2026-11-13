@@ -107,7 +107,8 @@ public sealed record class DeclarationReference(SourceLocation Location, Uri? Pr
 /// <param name="Writes">How many expressions write to it (<see cref="Flags.ValueExpressionSemanticFlags.AssignmentTarget"/>).</param>
 /// <param name="PassedAsArguments">
 /// How many expressions pass it by reference to a call that may assign it: a procedure that assigns the parameter, or passes it on by reference to one that
-/// does, or one whose parameter the host does not follow (<see cref="Flags.ValueExpressionSemanticFlags.PassedAsArgument"/>).
+/// does, or a procedure the host does not follow, such as one of a library or one called through an object
+/// (<see cref="Flags.ValueExpressionSemanticFlags.PassedAsArgument"/>).
 /// </param>
 public readonly record struct DeclarationReferences(int Reads, int Writes, int PassedAsArguments)
 {
