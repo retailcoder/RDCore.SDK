@@ -16,7 +16,7 @@ namespace RDCore.SDK.Extensibility.Diagnostics;
 /// (<see cref="Semantics.Refactoring.ServerCommands.ChangeProject"/>), which is offered only when every change can be made (<see cref="ApplyTo"/>).
 /// </para>
 /// <para>
-/// No change edits the text of a module: a module the project no longer lists keeps its file where it is, and the project only stops loading it.
+/// No change edits the text of a module: a module that is removed from the project keeps its file where it is, and is not loaded.
 /// </para>
 /// </remarks>
 public sealed record class ProjectFix
@@ -35,7 +35,7 @@ public sealed record class ProjectFix
     public IReadOnlyList<ProjectChange> Changes { get; init; } = [];
 
     /// <summary>
-    /// Whether the changes change what the code does, as no longer listing a module whose code runs does. Such a fix is never one a client may apply without
+    /// Whether the changes change what the code does, as removing a module whose code runs does. Such a fix is never one a client may apply without
     /// showing it (<strong>LSP 3.17</strong> <c>CodeAction.isPreferred</c>).
     /// </summary>
     [JsonProperty("changesBehavior", DefaultValueHandling = DefaultValueHandling.Ignore)]
@@ -85,7 +85,7 @@ public enum ProjectChangeKind
     AddReference,
 
     /// <summary>
-    /// The project no longer lists the module the finding is in. Its file is kept.
+    /// The module the finding is in is removed from the project: the project file does not list it. Its file is kept.
     /// </summary>
     RemoveModule,
 
@@ -130,7 +130,7 @@ public sealed record class ProjectChange
     public static ProjectChange AddReference(string library) => new() { Kind = ProjectChangeKind.AddReference, Library = library };
 
     /// <summary>
-    /// The project is no longer to list the module the finding is in.
+    /// The module the finding is in is to be removed from the project.
     /// </summary>
     public static ProjectChange RemoveModule() => new() { Kind = ProjectChangeKind.RemoveModule };
 
