@@ -49,8 +49,8 @@ public readonly record struct IndentationEdit(int Line, int Character, int EndLi
 /// and the body after the <c>#End If</c> is indented once.
 /// </para>
 /// <para>
-/// A line the syntax tree has no statement of - code the parser could not build as you type, or kept only as its text (<see cref="UnbuiltStatementTriviaNode"/>) -
-/// is indented by its keywords instead, from the level of where it is: a block's opener indents the lines after it, and its closer ends that. A block the parser
+/// A line the syntax tree has no statement of is indented by its keywords instead: code the parser could not build as you type, or kept only as its text
+/// (<see cref="UnbuiltStatementTriviaNode"/>). It is indented from the level of where it is: a block's opener indents the lines after it, and its closer ends that. A block the parser
 /// could not find the closer of is open to its last line. The indenter never refuses to indent.
 /// </para>
 /// <para>
