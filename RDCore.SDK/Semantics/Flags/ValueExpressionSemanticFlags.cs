@@ -163,4 +163,17 @@ public enum ValueExpressionSemanticFlags
     /// ends (observed in Excel). <strong>MS-VBAL §5.4.2.4</strong> leaves the enumeration implementation-defined.
     /// </summary>
     CollectionSetToNothingInItsOwnLoop = 1 << 23,
+
+    /// <summary>
+    /// It is the callee of a call statement (<strong>MS-VBAL §5.4.2.1</strong>) that calls a <c>Function</c>: the value the function
+    /// returns is discarded.
+    /// </summary>
+    ResultDiscarded = 1 << 24,
+
+    /// <summary>
+    /// What it is bound to (<see cref="ExpressionFact.Binding"/>) is declared by a library that the project references (<strong>MS-VBAL §4.1</strong>): the
+    /// standard library, a type library or another project, and not a module of the project. The project's own code is all the static pass analyzes; a library's
+    /// members have no <see cref="DeclarationFact"/>.
+    /// </summary>
+    BoundToLibrary = 1 << 25,
 }
