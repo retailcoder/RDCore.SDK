@@ -6,7 +6,7 @@ using RDCore.SDK.Model.Symbols.VBProject;
 namespace RDCore.SDK.Workspace;
 
 /// <summary>
-/// Where a program of a project starts: the procedure a run of the project runs, when nothing names the module it is in.
+/// Where a program of a project starts: the procedure a run of the project runs (<see cref="Of"/>).
 /// </summary>
 /// <remarks>
 /// <para>
@@ -49,4 +49,112 @@ public static class ProgramEntryPoint
         => member is VBProcedureMemberSymbol { Parameters: [] or [ParamArrayParameterSymbol] } and not VBExternalSubMemberSymbol
            && member.AccessModifier is AccessModifier.Implicit or AccessModifier.Public or AccessModifier.Global
            && string.Equals(member.Name, name, StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// The entry point of a project: the procedure its <c>build</c> section names (<see cref="ProjectBuild.EntryPoint"/>), or else the <see cref="Name"/>
+    /// procedure of the one standard module that declares one.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// An entry point named <c>Module.Procedure</c> is looked for in that module only, and one named <c>Procedure</c> in every standard module. Either way, a
+    /// procedure is one only when <see cref="IsEntryPoint"/> says so, in a standard module (<see cref="IsDeclaredBy"/>); names are compared without regard to
+    /// case. A module that is not a standard module is passed over.
+    /// </para>
+    /// <para>
+    /// A library has no entry point (<see cref="ProjectOutputType.Library"/>): it is refused whatever its modules declare.
+    /// </para>
+    /// </remarks>
+    /// <param name="build">The project's <c>build</c> section (<see cref="RDCoreProject.Build"/>); <see langword="null"/> for a project file that has none.</param>
+    /// <param name="modules">The project's modules, in the order a refusal names them, each with the members the runtime session defined for it.</param>
+    /// <returns>The module and procedure the program starts at, or why the project has none (<see cref="ProgramEntryPointResolution.Refusal"/>).</returns>
+    public static ProgramEntryPointResolution Of(ProjectBuild? build, IEnumerable<(VBModuleSymbol Module, IEnumerable<VBTypeMemberSymbol> Members)> modules)
+    {
+        ArgumentNullException.ThrowIfNull(modules);
+        if (build is { IsLibrary: true })
+        {
+            return new ProgramEntryPointResolution { Refusal = ProgramEntryPointRefusal.Library };
+        }
+
+        var (named, inModule) = build?.EntryPoint?.Split('.', 2) switch
+        {
+            [var module, var procedure] => (procedure, module),
+            [var procedure] => (procedure, (string?)null),
+            _ => (Name, null),
+        };
+
+        var found = new List<(VBModuleSymbol Module, VBTypeMemberSymbol Procedure)>();
+        foreach (var (module, members) in modules)
+        {
+            if (module is not VBStandardModuleSymbol || (inModule is not null && !string.Equals(module.Name, inModule, StringComparison.OrdinalIgnoreCase)))
+            {
+                continue;
+            }
+
+            if (members.FirstOrDefault(member => IsEntryPoint(member, named)) is { } procedure)
+            {
+                found.Add((module, procedure));
+            }
+        }
+
+        return found switch
+        {
+            [var (module, procedure)] => new ProgramEntryPointResolution { Module = module, Procedure = procedure },
+            [] => new ProgramEntryPointResolution { Refusal = ProgramEntryPointRefusal.NotFound },
+            _ => new ProgramEntryPointResolution { Refusal = ProgramEntryPointRefusal.Ambiguous, Candidates = [.. found.Select(entry => entry.Module)] },
+        };
+    }
+}
+
+/// <summary>
+/// Why a project has no entry point (<see cref="ProgramEntryPoint.Of"/>).
+/// </summary>
+public enum ProgramEntryPointRefusal
+{
+    /// <summary>
+    /// The project is a library (<see cref="ProjectOutputType.Library"/>), which is not run.
+    /// </summary>
+    Library,
+
+    /// <summary>
+    /// No standard module declares the procedure the project names, or a <c>Sub Main</c> when it names none.
+    /// </summary>
+    NotFound,
+
+    /// <summary>
+    /// More than one standard module declares it (<see cref="ProgramEntryPointResolution.Candidates"/>).
+    /// </summary>
+    Ambiguous,
+}
+
+/// <summary>
+/// The entry point of a project (<see cref="ProgramEntryPoint.Of"/>): the module and procedure its program starts at, or why it has none.
+/// </summary>
+public sealed record class ProgramEntryPointResolution
+{
+    /// <summary>
+    /// The standard module the entry point is in; <see langword="null"/> when the project has none.
+    /// </summary>
+    public VBModuleSymbol? Module { get; init; }
+
+    /// <summary>
+    /// The procedure the program starts at; <see langword="null"/> when the project has none.
+    /// </summary>
+    public VBTypeMemberSymbol? Procedure { get; init; }
+
+    /// <summary>
+    /// Why the project has no entry point; <see langword="null"/> when it has one.
+    /// </summary>
+    public ProgramEntryPointRefusal? Refusal { get; init; }
+
+    /// <summary>
+    /// The standard modules that each declare the entry point, in the order they were given, when more than one does
+    /// (<see cref="ProgramEntryPointRefusal.Ambiguous"/>); empty otherwise.
+    /// </summary>
+    public IReadOnlyList<VBModuleSymbol> Candidates { get; init; } = [];
+
+    /// <summary>
+    /// Whether the project has an entry point: <see cref="Module"/> and <see cref="Procedure"/> are not <see langword="null"/>.
+    /// </summary>
+    [System.Diagnostics.CodeAnalysis.MemberNotNullWhen(true, nameof(Module), nameof(Procedure))]
+    public bool IsFound => Module is not null && Procedure is not null;
 }

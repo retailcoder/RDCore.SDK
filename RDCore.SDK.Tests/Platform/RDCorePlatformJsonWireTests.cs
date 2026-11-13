@@ -98,6 +98,10 @@ public sealed class RDCorePlatformJsonWireTests
         yield return Same(new SessionDebugVariablesParams { FrameId = 1, Scope = DebugVariableScope.Module, Reference = 9 });
         yield return Same(new SessionDebugEvaluateParams { FrameId = 1, Expression = "i + 1" });
         yield return Same(new SessionDebugExecuteParams { FrameId = 1, Statement = "i = 2" });
+        yield return Same(new SessionDebugStoppedParams
+        {
+            Stop = new ExecuteResult { Outcome = ExecutionOutcome.Suspended, Output = ["clicked"], StackTrace = [new ExecuteStackFrame("Command1_Click", 4, 4) { Module = "Form1" }] },
+        });
 
         yield return Same(new DebugAck { Acted = true });
         yield return Same(new DebugGotoResult { Moved = true, Reason = "moved", Line = 4, Character = 0 });
@@ -123,7 +127,8 @@ public sealed class RDCorePlatformJsonWireTests
                 EnvironmentHost = new EnvironmentHostCapabilities { DefineSymbols = new DefineSymbols(true) },
                 LanguageServer = new LanguageServerCapabilities
                 {
-                    SessionExecute = new SessionExecute(true), SessionInteraction = new SessionInteraction(true), Unattended = new Unattended(true),
+                    SessionExecute = new SessionExecute(true), SessionInteraction = new SessionInteraction(true), SessionStops = new SessionStops(true),
+                    Unattended = new Unattended(true),
                 },
             },
         });
@@ -255,6 +260,7 @@ public sealed class RDCorePlatformJsonWireTests
         ("SessionDebugVariablesParams", """{"frameId":1,"scope":1,"reference":9}"""),
         ("SessionDebugEvaluateParams", """{"frameId":1,"expression":"i + 1"}"""),
         ("SessionDebugExecuteParams", """{"frameId":1,"statement":"i = 2"}"""),
+        ("SessionDebugStoppedParams", """{"stop":{"outcome":7,"output":["clicked"],"streamedLines":0,"diagnostics":[],"errorNumber":0,"errorMessage":"","errorCode":"","errorTitle":"","errorSource":"","errorLine":-1,"errorCharacter":-1,"errorModule":"","errorLineNumber":0,"conditionError":"","stackTrace":[{"procedure":"Command1_Click","line":4,"character":4,"returnLines":[],"module":"Form1"}],"errorDetails":null}}"""),
         ("DebugAck", """{"acted":true,"stopping":false}"""),
         ("DebugGotoResult", """{"moved":true,"reason":"moved","line":4,"character":0}"""),
         ("DebugGotoResult", """{"moved":false,"reason":null,"line":-1,"character":-1}"""),
@@ -263,8 +269,8 @@ public sealed class RDCorePlatformJsonWireTests
         ("DebugStackResult", """{"frames":[{"id":1,"procedure":"Main","module":"Module1","line":2,"character":3,"handler":"ErrHandler","returnLines":[4],"beginsAnEvent":true},{"id":2,"procedure":"Other","module":"Module1","line":5,"character":6,"handler":null,"returnLines":[],"beginsAnEvent":false}]}"""),
         ("DebugVariablesResult", """{"variables":[{"name":"i","value":"1","type":"Integer","reference":0},{"name":"o","value":"Object","type":"Class1","reference":3}],"notListed":2}"""),
         ("DebugEvaluateResult", """{"success":true,"value":"2","type":"Integer","reference":1,"error":"none","output":["x"],"endedTheProgram":true}"""),
-        ("PlatformInitializeParams", """{"expectedComponent":1,"expected":{"parsing":{"parseFullDocument":{"isSupported":true},"parseTokens":{"isSupported":false}},"environmentHost":{"defineSymbols":{"isSupported":true},"sessionStatus":{"isSupported":false},"sessionExecute":{"isSupported":false},"sessionDiscard":{"isSupported":false},"projectReload":{"isSupported":false},"programDebugging":{"isSupported":false},"semanticAnalysis":{"isSupported":false},"sessionMemoryAccess":{"isSupported":false}},"languageServer":{"sessionStatus":{"isSupported":false},"sessionExecute":{"isSupported":true},"programDebugging":{"isSupported":false},"sessionDiscard":{"isSupported":false},"sessionAnalyze":{"isSupported":false},"sessionCompletion":{"isSupported":false},"sessionSignatureHelp":{"isSupported":false},"sessionSemanticTokens":{"isSupported":false},"sessionMemoryAccess":{"isSupported":false},"sessionInteraction":{"isSupported":true},"unattended":{"isSupported":true},"rubberduckIndenterSettings":{"isSupported":false},"refactoring":{"isSupported":false}}}}"""),
-        ("PlatformInitializeParams", """{"expectedComponent":1,"expected":{"languageServer":{"sessionStatus":{"isSupported":false},"sessionExecute":{"isSupported":false},"programDebugging":{"isSupported":false},"sessionDiscard":{"isSupported":false},"sessionAnalyze":{"isSupported":false},"sessionCompletion":{"isSupported":false},"sessionSignatureHelp":{"isSupported":false},"sessionSemanticTokens":{"isSupported":false},"sessionMemoryAccess":{"isSupported":false},"sessionInteraction":{"isSupported":false},"unattended":{"isSupported":false},"rubberduckIndenterSettings":{"isSupported":false},"refactoring":{"isSupported":false}}}}"""),
+        ("PlatformInitializeParams", """{"expectedComponent":1,"expected":{"parsing":{"parseFullDocument":{"isSupported":true},"parseTokens":{"isSupported":false}},"environmentHost":{"defineSymbols":{"isSupported":true},"sessionStatus":{"isSupported":false},"sessionExecute":{"isSupported":false},"sessionDiscard":{"isSupported":false},"projectReload":{"isSupported":false},"programDebugging":{"isSupported":false},"semanticAnalysis":{"isSupported":false},"sessionMemoryAccess":{"isSupported":false}},"languageServer":{"sessionStatus":{"isSupported":false},"sessionExecute":{"isSupported":true},"programDebugging":{"isSupported":false},"sessionDiscard":{"isSupported":false},"sessionAnalyze":{"isSupported":false},"sessionCompletion":{"isSupported":false},"sessionSignatureHelp":{"isSupported":false},"sessionSemanticTokens":{"isSupported":false},"sessionMemoryAccess":{"isSupported":false},"sessionInteraction":{"isSupported":true},"sessionStops":{"isSupported":true},"unattended":{"isSupported":true},"rubberduckIndenterSettings":{"isSupported":false},"refactoring":{"isSupported":false}}}}"""),
+        ("PlatformInitializeParams", """{"expectedComponent":1,"expected":{"languageServer":{"sessionStatus":{"isSupported":false},"sessionExecute":{"isSupported":false},"programDebugging":{"isSupported":false},"sessionDiscard":{"isSupported":false},"sessionAnalyze":{"isSupported":false},"sessionCompletion":{"isSupported":false},"sessionSignatureHelp":{"isSupported":false},"sessionSemanticTokens":{"isSupported":false},"sessionMemoryAccess":{"isSupported":false},"sessionInteraction":{"isSupported":false},"sessionStops":{"isSupported":false},"unattended":{"isSupported":false},"rubberduckIndenterSettings":{"isSupported":false},"refactoring":{"isSupported":false}}}}"""),
         ("PlatformInitializeResult", """{"component":1,"provided":["SessionExecute","SessionStatus"]}"""),
         ("DiagnoseDocument", """{"isSupported":true}"""),
         ("CliCommand", """{"isSupported":true}"""),
@@ -371,6 +377,7 @@ public sealed class RDCorePlatformJsonWireTests
         ("SessionDebugVariables", "rdcore/session/debug/variables"),
         ("SessionDebugEvaluate", "rdcore/session/debug/evaluate"),
         ("SessionDebugExecute", "rdcore/session/debug/execute"),
+        ("SessionDebugStopped", "rdcore/session/debug/stopped"),
         ("SessionAnalyze", "rdcore/session/analyze"),
         ("SessionCompletion", "rdcore/session/completion"),
         ("RubberduckIndenterSettings", "rdcore/formatting/indenterSettings"),
