@@ -12,7 +12,7 @@ namespace RDCore.Tests.Server;
 /// <summary>
 /// A request an RDCore server or client received is answered however long it runs (<see cref="ServerRequestScheduling.WithNoRequestBudget{T}"/>).
 /// OmniSharp gives up on a request that still runs after its timeout, five minutes by default, and answers it <c>RequestCancelled</c>: a diagnostics pull
-/// of a large workspace on a loaded machine was told it was cancelled, and its client never pulled again.
+/// of a large workspace on a loaded machine is told it was cancelled, and its client does not pull again.
 /// </summary>
 [TestClass]
 public sealed class NoRequestBudgetTests
@@ -66,8 +66,8 @@ public sealed class NoRequestBudgetTests
         return new Connected(await serving, await connecting);
     }
 
-    // what the timeout does, in OmniSharp: a request that outlives it is answered RequestCancelled, though nobody cancelled it. A JSON-RPC server, which
-    // a language server is built on, and which has no initialize request for so short a timeout to answer RequestCancelled too.
+    // what the timeout does, in OmniSharp: a request that outlives it is answered RequestCancelled, though nobody cancelled it. The row uses a JSON-RPC
+    // server, which a language server is built on: a language server's initialize request would be answered RequestCancelled too, with so short a timeout.
     [TestMethod]
     [Timeout(600_000, CooperativeCancellation = true)]
     public async Task ARequestThatOutlivesOmniSharpsTimeout_IsAnsweredRequestCancelled()
@@ -110,7 +110,7 @@ public sealed class NoRequestBudgetTests
         Assert.AreEqual(42, await answer.WaitAsync(SafetyCap));
     }
 
-    // what its sender no longer wants it cancels itself ($/cancelRequest), and the handler is told: no budget is what lets a request be cancelled.
+    // a sender cancels a request it no longer wants ($/cancelRequest), and the handler is told: with no budget, that is how a request is cancelled.
     [TestMethod]
     [Timeout(600_000, CooperativeCancellation = true)]
     public async Task ARequestOfAServerWithEveryRequestAnswered_ThatItsSenderCancels_IsCancelled()

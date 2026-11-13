@@ -48,9 +48,9 @@ public static class ServerRequestScheduling
     /// <para>
     /// OmniSharp gives up on whatever it received that still runs once <see cref="IJsonRpcServerOptions.MaximumRequestTimeout"/> has passed, five minutes
     /// by default. A request is then answered <c>RequestCancelled</c> (-32800), which says that its sender cancelled it, and a notification is dropped.
-    /// A loaded machine overruns five minutes: a diagnostics pull of a large workspace, or a program that runs or waits at a <c>MsgBox</c> that long. How
-    /// busy the machine is then decides the answer, and a client that was told its pull was cancelled does not pull again. A sender cancels what it no
-    /// longer wants itself (<c>$/cancelRequest</c>).
+    /// Five minutes is not long enough for some requests: a diagnostics pull of a large workspace on a loaded machine, or a program that runs, or waits at a
+    /// <c>MsgBox</c>, that long. How busy the machine is then decides the answer, and a client that is told its pull was cancelled does not pull again. A
+    /// request is cancelled by its sender, which sends <c>$/cancelRequest</c> for it.
     /// </para>
     /// <para>
     /// OmniSharp's timer cannot be turned off. An infinite timeout is taken for none at all, so every request is answered <c>RequestCancelled</c> at
@@ -61,11 +61,12 @@ public static class ServerRequestScheduling
     public static readonly TimeSpan NoRequestBudget = TimeSpan.FromMilliseconds(int.MaxValue);
 
     /// <summary>
-    /// Has OmniSharp let a request or a notification that a server or a client received run to its end, however long it runs (<see cref="NoRequestBudget"/>).
+    /// Sets the options so that OmniSharp lets a request or a notification that a server or a client received run to its end, however long it runs
+    /// (<see cref="NoRequestBudget"/>).
     /// </summary>
     /// <remarks>
     /// Every server built on <see cref="RDCoreServerApp"/> and every client built on <see cref="Client.RDCoreClientApp"/> is configured with this. A server or a client
-    /// that builds its OmniSharp options itself - a debug adapter, a client of its own - calls it so that what it receives is not answered
+    /// that builds its OmniSharp options itself (a debug adapter, a client of its own) calls it so that what it receives is not answered
     /// <c>RequestCancelled</c> after five minutes.
     /// </remarks>
     /// <typeparam name="T">The options: a language server's, a language client's or a debug adapter's.</typeparam>
