@@ -155,4 +155,11 @@ public enum ValueExpressionSemanticFlags
     /// <c>True</c>. <c>Not 1</c> is <c>-2</c>, which is <c>True</c>.
     /// </summary>
     TrueValueIsNotMinusOne = 1 << 22,
+
+    /// <summary>
+    /// What it is bound to (<see cref="ExpressionFact.Binding"/>) is a control of a form: a member of the form's class that the form's designer declares, and
+    /// the form's code does not (<see cref="Model.Symbols.Abstract.SymbolProperties.DesignerControl"/>). The form's own code names it directly
+    /// (<c>TextBox1</c>); code in another module reaches it through the form (<c>UserForm1.TextBox1</c>). A control has no <see cref="DeclarationFact"/>.
+    /// </summary>
+    BoundToDesignerControl = 1 << 26,
 }
