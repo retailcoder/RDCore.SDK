@@ -129,7 +129,7 @@ public sealed record class ExternalCallRequest(
 
     // an argument as a reader of a log needs to see it: a string quoted so an empty one is visible, anything
     // else in the invariant culture so the record does not depend on where it was written. An array is its element type and bounds, as it is declared: its
-    // elements are not what tells the call apart, and an array no variable holds yet - the copy an assignment gives a property - has no storage to read.
+    // elements are not what tells the call apart, and an array no variable holds yet (the copy an assignment gives a property) has no storage to read.
     private static string Format(IRuntimeValue argument) => argument switch
     {
         VBRuntimeVariantValue { WrappedValue: var wrapped } => Format(wrapped),

@@ -395,7 +395,7 @@ public abstract class RDCoreClientApp : IRDCoreClientApp
         // then answers the server nothing.
         options.WithContentModifiedSupport(false);
 
-        // nor is a request of the server given up on because it runs long - a MsgBox the program waits at, which waits for the user - and answered
+        // nor is a request of the server given up on because it runs long (a MsgBox the program waits at, which waits for the user) and answered
         // RequestCancelled after five minutes (ServerRequestScheduling.NoRequestBudget).
         options.WithNoRequestBudget();
 
