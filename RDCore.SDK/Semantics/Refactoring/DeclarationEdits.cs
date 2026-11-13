@@ -194,6 +194,40 @@ public static partial class DeclarationEdits
         return new RefactorTextEdit { Range = new SourceRange(at, at), NewText = indent + TextLines.Unended(member) + lines.NewLine };
     }
 
+    /// <summary>
+    /// The blanks a line of a text starts with: what a line written in its place, or next to it at the same level, is indented with.
+    /// </summary>
+    /// <param name="text">The text, its lines ended by a carriage return and a line feed, a line feed, or a carriage return.</param>
+    /// <param name="line">The line, from 0.</param>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="line"/> is not a line of the text.</exception>
+    public static string IndentOf(string text, int line)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        var lines = TextLines.Of(text);
+        ArgumentOutOfRangeException.ThrowIfNegative(line);
+        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(line, lines.Count);
+        return lines.IndentOf(line);
+    }
+
+    /// <summary>
+    /// The range of whole lines of a text, from the start of the first to the start of the line after the last, so that an edit that removes it leaves
+    /// no blank line. On the last line of a text that does not end it, the range starts where the line before the first ends instead, and so removes
+    /// that line end; it is all of the text when the lines are all of it.
+    /// </summary>
+    /// <param name="text">The text, its lines ended by a carriage return and a line feed, a line feed, or a carriage return.</param>
+    /// <param name="first">The first line, from 0.</param>
+    /// <param name="last">The last line, from <paramref name="first"/>.</param>
+    /// <exception cref="ArgumentOutOfRangeException">The lines are not lines of the text, or <paramref name="last"/> is before <paramref name="first"/>.</exception>
+    public static SourceRange WholeLines(string text, int first, int last)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        var lines = TextLines.Of(text);
+        ArgumentOutOfRangeException.ThrowIfNegative(first);
+        ArgumentOutOfRangeException.ThrowIfLessThan(last, first);
+        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(last, lines.Count);
+        return lines.WholeLines(first, last);
+    }
+
     private static bool IsProcedure(MemberDeclarationNode member)
         => member.MemberKind is MemberKind.Procedure or MemberKind.Function or MemberKind.PropertyGet or MemberKind.PropertyLet or MemberKind.PropertySet;
 
