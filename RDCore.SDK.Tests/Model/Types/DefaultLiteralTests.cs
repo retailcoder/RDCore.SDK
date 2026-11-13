@@ -28,7 +28,7 @@ public sealed class DefaultLiteralTests
         [VBDoubleType.TypeInfo, "0"],
         [VBCurrencyType.TypeInfo, "0"],
         [VBDecimalType.TypeInfo, "0"],
-        [VBStringType.TypeInfo, "\"\""],
+        [VBStringType.TypeInfo, "vbNullString"],
         [new VBFixedStringType(4), null],
         [VBBooleanType.TypeInfo, "False"],
         [VBDateType.TypeInfo, "#12:00:00 AM#"],
