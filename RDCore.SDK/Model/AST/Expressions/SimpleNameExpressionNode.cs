@@ -27,7 +27,8 @@ public sealed record class SimpleNameExpressionNode(SyntaxNodeId Identity, Sourc
     : ExpressionNode(Identity, Location, [])
 {
     /// <summary>
-    /// The name as it was written: the identifier name followed by its type-declaration character, if it has one.
+    /// The name as it was written: the identifier name followed by its type-declaration character, if it has one. The brackets of a foreign name
+    /// (<see cref="IsBracketed"/>) are not part of it.
     /// </summary>
     public string WrittenName => IdentifierName + TypeHint;
 }
