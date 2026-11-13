@@ -71,4 +71,12 @@ public static class RefactoringKinds
     /// one (<strong>MS-VBAL §3.4</strong>). It asks nothing: the action has its edit.
     /// </summary>
     public const string SortMembers = "source.sortMembers";
+
+    /// <summary>
+    /// Encapsulate Field: a <c>Public</c> variable of a module becomes private state, and the module gets <c>Public</c> properties of the variable's name
+    /// (<strong>MS-VBAL §5.3.1.7</strong>): a <c>Property Get</c>, with a <c>Property Let</c> for a value, a <c>Property Set</c> for an object, and both for a
+    /// <c>Variant</c>. The code of other modules is unchanged, and calls the properties. A caller that passed the variable <c>ByRef</c> passes a copy of the
+    /// property's value instead, so a change it makes to it is lost: the user accepts that change for each such caller.
+    /// </summary>
+    public const string EncapsulateField = "refactor.rewrite.encapsulateField";
 }
