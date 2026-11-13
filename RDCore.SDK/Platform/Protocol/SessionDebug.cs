@@ -57,3 +57,9 @@ public sealed record class SessionDebugEvaluateRequest : SessionDebugEvaluatePar
 /// <summary><see cref="SessionDebugExecuteParams"/> as a request of <c>rdcore/session/debug/execute</c>.</summary>
 [Method(RDCorePlatformProtocol.SessionDebugExecute, Direction.ClientToServer)]
 public sealed record class SessionDebugExecuteRequest : SessionDebugExecuteParams, IRequest, IRequest<DebugEvaluateResult>;
+
+/// <summary>
+/// <see cref="SessionDebugStoppedParams"/> as a notification of <c>rdcore/session/debug/stopped</c>, which the language server sends a client.
+/// </summary>
+[Method(RDCorePlatformProtocol.SessionDebugStopped, Direction.ServerToClient)]
+public sealed record class SessionDebugStoppedNotification : SessionDebugStoppedParams, IRequest;

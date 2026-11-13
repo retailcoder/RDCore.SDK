@@ -166,6 +166,13 @@ public class LanguageServerCapabilities
     public SessionInteraction SessionInteraction { get; set; } = new();
 
     /// <summary>
+    /// If supported, the language server tells the client of a stop in the handler of an event that runs while no program runs, over
+    /// <c>rdcore/session/debug/stopped</c>, and the client resumes or ends it over <c>rdcore/session/debug/*</c>. A client that does not expect it is never told,
+    /// and such a handler does not wait at its stop: it is unwound.
+    /// </summary>
+    public SessionStops SessionStops { get; set; } = new();
+
+    /// <summary>
     /// If expected, the client runs programs unattended - a CI run, a script - and nobody is there to answer a dialog: the language server runs every program
     /// the client asks it to so that a dialog it opens fails the run (<c>VBR50001</c>). It wins over <see cref="SessionInteraction"/>.
     /// </summary>
@@ -207,6 +214,7 @@ public class LanguageServerCapabilities
 [JsonDerivedType(typeof(SemanticAnalysis))]
 [JsonDerivedType(typeof(SessionMemoryAccess))]
 [JsonDerivedType(typeof(SessionInteraction))]
+[JsonDerivedType(typeof(SessionStops))]
 [JsonDerivedType(typeof(Unattended))]
 [JsonDerivedType(typeof(Refactoring))]
 [JsonDerivedType(typeof(RubberduckIndenterSettings))]
@@ -311,6 +319,19 @@ public record class SessionMemoryAccess(bool IsSupported = false) : CorePlatform
 /// asked, and the language server answers that nobody was, so that the host shows the dialog of the platform it runs on.
 /// </remarks>
 public record class SessionInteraction(bool IsSupported = false) : CorePlatformClientCapability(IsSupported);
+
+/// <summary>
+/// Advertises that a stop in the handler of an event that runs while no program runs reaches the client: a click on a form that the prompt showed, or on a form
+/// that a macro left shown when it ended, can stop at a <c>Stop</c>, a breakpoint, a failed <c>Debug.Assert</c> or an error a debugger waits at. The language
+/// server provides it by telling the client over <c>rdcore/session/debug/stopped</c>, and a client that expects it resumes or ends the stop over
+/// <c>rdcore/session/debug/*</c> (the interactive shell enters break mode at its prompt).
+/// </summary>
+/// <remarks>
+/// The environment host asks the language server whether a client takes the stop (<c>rdcore/host/debug/stopped</c>). A client that did not expect this
+/// capability is never told, and the language server answers that nobody takes it: the handler is unwound, and nothing waits for an answer that cannot come.
+/// </remarks>
+/// <param name="IsSupported">Whether the capability is expected, or provided.</param>
+public record class SessionStops(bool IsSupported = false) : CorePlatformClientCapability(IsSupported);
 
 /// <summary>
 /// Advertises that nobody is there to answer the dialogs a program opens: a client that expects it runs programs unattended (a CI run, <c>rdc --unattended</c>),

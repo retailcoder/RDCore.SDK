@@ -120,6 +120,17 @@ public interface ISessionTurn
     bool RunsAnEventOfTheProgram => false;
 
     /// <summary>
+    /// Whether the calling thread is running the handlers of an event that was handled while no program runs: the turn was free (no program, and no code beside
+    /// one at a stop), as it is for a click on a form that the prompt showed, or on a form that a macro left shown when it ended.
+    /// </summary>
+    /// <remarks>
+    /// Such a thread runs code of the session that no request runs, and may be held where its handler stops (<see cref="IExecutionGate.Suspend"/>), as MS-VBA's
+    /// break mode holds it. An event handled while a program runs, waits or pumps is the program's (<see cref="RunsAnEventOfTheProgram"/>), and one raised by a call
+    /// of code beside a program that waits (<see cref="Alongside"/>) is that code's. The default is <see langword="false"/>.
+    /// </remarks>
+    bool RunsAnEventOfTheSession => false;
+
+    /// <summary>
     /// What the calling thread does with time it waits, when it is running the handlers of an event that was raised with one
     /// (<see cref="RunEvent(Action, Action{TimeSpan})"/>): it waits up to the time given, making the calls asked of the thread meanwhile.
     /// </summary>

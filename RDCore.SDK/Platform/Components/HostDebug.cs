@@ -19,6 +19,10 @@ namespace RDCore.SDK.Platform.Components;
 /// run again, which picks the changes up, or the changes undone.
 /// </para>
 /// <para>
+/// The handler of an event that stopped while no program runs (<see cref="HostDebugStoppedParams"/>) is resumed as a program is: the answer comes when it next
+/// waits, or <see cref="ExecutionOutcome.Completed"/> when it returns.
+/// </para>
+/// <para>
 /// Part of the component protocol (<see cref="RDCoreComponentProtocol"/>), outside the SDK's compatibility promise.
 /// </para>
 /// </remarks>
@@ -52,6 +56,10 @@ public record class HostDebugPauseParams : IRequest, IRequest<DebugAck>;
 /// next instruction, and ended by the request that runs it, which this answers after. A program in a call outside it - a <c>Declare</c>, an object, a dialog -
 /// comes to its next instruction when the call returns: the answer waits for that a few seconds at most, and the end asked of the program stands.
 /// <para>
+/// The handler of an event that stopped while no program runs (<see cref="HostDebugStoppedParams"/>) is ended as an <c>End</c> typed at the prompt ends it: it
+/// is unwound, and the session is reset.
+/// </para>
+/// <para>
 /// Part of the component protocol (<see cref="RDCoreComponentProtocol"/>), outside the SDK's compatibility promise.
 /// </para>
 /// </remarks>
@@ -63,6 +71,51 @@ public record class HostDebugTerminateParams : IRequest, IRequest<DebugAck>
     /// Whether the session is wiped, as an <c>End</c> wipes it, once the program is ended: <c>NEW</c> and <c>LOAD</c> do, a restart does not.
     /// </summary>
     public bool Wipe { get; init; }
+}
+
+/// <summary>
+/// Request for <c>rdcore/host/debug/stopped</c>, from the environment host to the language server: the handler of an event stopped while no program runs, and
+/// waits there if a client takes the stop.
+/// </summary>
+/// <remarks>
+/// <para>
+/// An event can be handled when no program runs: a click on a form that the prompt showed, or on a form that a macro left shown when it ended. A stop in its
+/// handler (a <c>Stop</c>, a breakpoint, a failed <c>Debug.Assert</c>, an error a debugger waits at) has no request to answer
+/// <see cref="ExecutionOutcome.Suspended"/> to, since no request runs the handler. The host asks this instead, on the thread that stopped, and serves the calls
+/// asked of that thread while it waits for the answer.
+/// </para>
+/// <para>
+/// The language server answers <see cref="HostDebugStoppedResult.Taken"/> when its client expects the <c>SessionStops</c> capability, and tells it
+/// (<c>rdcore/session/debug/stopped</c>): the handler then waits as a program waits at a stop, and <c>rdcore/host/debug/*</c> act on it. Otherwise the handler
+/// does not wait: it is unwound, and the session goes on with no program running, as with no debugger.
+/// </para>
+/// <para>
+/// Part of the component protocol (<see cref="RDCoreComponentProtocol"/>), outside the SDK's compatibility promise.
+/// </para>
+/// </remarks>
+[Method(RDCoreComponentProtocol.HostDebugStopped, Direction.ServerToClient)]
+public record class HostDebugStoppedParams : IRequest, IRequest<HostDebugStoppedResult>
+{
+    /// <summary>
+    /// The stop, as the answer of a request that ran a program which waits there says it: <see cref="ExecuteResult.Outcome"/> is
+    /// <see cref="ExecutionOutcome.Suspended"/>, <see cref="ExecuteResult.StackTrace"/> begins with the activation that waits, and the error fields say the error
+    /// for one a debugger waits at. <see cref="ExecuteResult.Output"/> is what the handler printed before it stopped.
+    /// </summary>
+    public ExecuteResult Stop { get; init; } = new();
+}
+
+/// <summary>
+/// The answer to <c>rdcore/host/debug/stopped</c>: whether a client takes the stop.
+/// </summary>
+/// <remarks>
+/// Part of the component protocol (<see cref="RDCoreComponentProtocol"/>), outside the SDK's compatibility promise.
+/// </remarks>
+public record class HostDebugStoppedResult
+{
+    /// <summary>
+    /// Whether a client was told of the stop and will resume or end it: the handler waits. When <see langword="false"/>, it is unwound.
+    /// </summary>
+    public bool Taken { get; init; }
 }
 
 /// <summary>
