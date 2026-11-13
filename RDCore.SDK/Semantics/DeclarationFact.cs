@@ -2,6 +2,7 @@ using RDCore.SDK.Model;
 using RDCore.SDK.Model.Source;
 using RDCore.SDK.Model.Symbols;
 using RDCore.SDK.Model.Symbols.Abstract;
+using System.Collections.Immutable;
 
 namespace RDCore.SDK.Semantics;
 
@@ -39,6 +40,51 @@ public enum DeclarationKind
     /// An <c>Event</c>.
     /// </summary>
     Event,
+
+    /// <summary>
+    /// A member of a user-defined type (<strong>MS-VBAL §5.2.3.3</strong>): <c>Name</c> of <c>Type Person: Name As String: End Type</c>. It is referred to as
+    /// the member of a variable of the type (<c>p.Name</c>).
+    /// </summary>
+    TypeMember,
+}
+
+/// <summary>
+/// What one reference to a declaration does, counted the same way as <see cref="DeclarationReferences"/>.
+/// </summary>
+public enum DeclarationReferenceKind
+{
+    /// <summary>
+    /// It refers to the declaration for its value, or to call it (<see cref="DeclarationReferences.Reads"/>).
+    /// </summary>
+    Read,
+
+    /// <summary>
+    /// It writes to it (<see cref="DeclarationReferences.Writes"/>).
+    /// </summary>
+    Write,
+
+    /// <summary>
+    /// It passes it as an argument of a call that may take it by reference (<see cref="DeclarationReferences.PassedAsArguments"/>).
+    /// </summary>
+    PassedAsArgument,
+}
+
+/// <summary>
+/// One place the code of the workspace refers to a declaration (<see cref="DeclarationFact.ReferencedFrom"/>).
+/// </summary>
+/// <param name="Location">Where the reference is written: the module, and the range of the name.</param>
+/// <param name="Procedure">
+/// The procedure whose code the reference is in; <see langword="null"/> for a reference in the declarations of a module, such as the value of a constant or
+/// the bounds of an array of the module.
+/// </param>
+/// <param name="Kind">What the reference does.</param>
+public sealed record class DeclarationReference(SourceLocation Location, Uri? Procedure, DeclarationReferenceKind Kind)
+{
+    /// <summary>
+    /// Whether the reference calls a <c>Function</c> or a <c>Property Get</c> as a statement, so that nothing uses the value it returns
+    /// (<see cref="Flags.ValueExpressionSemanticFlags.ResultDiscarded"/>).
+    /// </summary>
+    public bool DiscardsResult { get; init; }
 }
 
 /// <summary>
@@ -92,10 +138,11 @@ public enum DeclarationRole
 /// What the static pass found out about a declaration.
 /// </summary>
 /// <remarks>
-/// A fact is stated only when it is true. What refers to a declaration that is accessible from outside the module, or that is called by convention or through
-/// the object it is a member of rather than by an expression that names it (an event handler, a member that implements an interface), is not all in the code
-/// the pass analyzed, and its references are not counted: <see cref="References"/> is then <see langword="null"/>, which says the references are not known
-/// and not that there are none.
+/// A fact is stated only when it is true. The code the pass analyzed is every module of the workspace: a declaration that another module can refer to is
+/// counted over all of them. What refers to a declaration that is called by convention or through the object it is a member of rather than by an expression
+/// that names it (an event handler, a member that implements an interface), by a name written in a string, or by a member access that is bound only when the
+/// code runs, is not all in that code, and its references are not counted: <see cref="References"/> is then <see langword="null"/>, which says the references
+/// are not known and not that there are none.
 /// </remarks>
 /// <param name="Symbol">The identity of the declared symbol.</param>
 /// <param name="Name">The name it is declared with.</param>
@@ -132,6 +179,12 @@ public sealed record class DeclarationFact(
     /// a name is first matched in the procedure). <see langword="null"/> when the name means nothing else there, and for any other declaration.
     /// </summary>
     public HiddenDeclaration? Hides { get; init; }
+
+    /// <summary>
+    /// Each reference to the declaration, in any module of the workspace: one for each that <see cref="References"/> counts.
+    /// <see langword="null"/> exactly when <see cref="References"/> is.
+    /// </summary>
+    public ImmutableArray<DeclarationReference>? ReferencedFrom { get; init; }
 
     /// <summary>
     /// Whether it is a variable declared <c>As New</c> of a class whose objects are never created (<c>Dim e As New ErrObject</c>): <strong>MS-VBA</strong>

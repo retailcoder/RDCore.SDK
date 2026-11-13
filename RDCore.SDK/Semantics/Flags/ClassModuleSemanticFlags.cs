@@ -28,4 +28,10 @@ public enum ClassModuleSemanticFlags
     /// to them. MS-VBA gives each object its own of a <c>Static</c> local as well, where MS-VBAL gives a static local module extent (recorded in Excel).
     /// </summary>
     Stateful = 1 << 1,
+
+    /// <summary>
+    /// Another module of the workspace implements the class as an interface: its <c>Implements</c> directive names the class (<strong>MS-VBAL §5.2.4.2</strong>).
+    /// The implementing module gives each member of the interface a body of its own, and does not run the code of the class's members.
+    /// </summary>
+    Implemented = 1 << 2,
 }
