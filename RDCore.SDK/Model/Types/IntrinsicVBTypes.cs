@@ -95,8 +95,8 @@ public static class IntrinsicVBTypes
     /// </summary>
     /// <remarks>
     /// A fix writes it where a value has to be stated that the code leaves to the default: the value of a <c>Const</c>, or the assignment that makes a
-    /// variable's first value explicit. A type whose default no literal writes has none: a fixed-length string (its characters are an implementation's own),
-    /// a user-defined type, an array.
+    /// variable's first value explicit. A type whose default no literal writes has none: a fixed-length string (filled with U+0000 characters,
+    /// <strong>MS-VBAL §3.1</strong>), a user-defined type, an array.
     /// </remarks>
     /// <param name="type">The declared type of the variable.</param>
     /// <returns>The literal, or <see langword="null"/> when no literal writes the default value of the type.</returns>
