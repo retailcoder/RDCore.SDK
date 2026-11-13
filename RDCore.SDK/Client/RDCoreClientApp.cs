@@ -395,6 +395,10 @@ public abstract class RDCoreClientApp : IRDCoreClientApp
         // then answers the server nothing.
         options.WithContentModifiedSupport(false);
 
+        // nor is a request of the server given up on because it runs long (a MsgBox the program waits at, which waits for the user) and answered
+        // RequestCancelled after five minutes (ServerRequestScheduling.NoRequestBudget).
+        options.WithNoRequestBudget();
+
         // the server asks for the live settings (workspace/configuration).
         OmniSharp.Extensions.LanguageServer.Protocol.Workspace.ConfigurationExtensions.OnConfiguration(options, (request, _) => Task.FromResult(AnswerConfiguration(request)));
 

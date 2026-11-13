@@ -60,6 +60,45 @@ public sealed record class LibraryDescription
     /// The classes the library declares.
     /// </summary>
     public ImmutableArray<ClassDescription> Classes { get; init; } = [];
+
+    /// <summary>
+    /// This description, with what <paramref name="replaced"/> states that a type library cannot: each member that is design-time only there
+    /// (<see cref="MemberDescription.IsDesignTimeOnly"/>) is design-time only here, matched by its class's name, its name and its kind, ignoring case.
+    /// </summary>
+    /// <remarks>
+    /// Call it on a description exported from a type library that replaces the file of an earlier export. The type library declares a property that is
+    /// design-time only the same way as a read-only one, so the earlier file is the only place the fact is stated.
+    /// </remarks>
+    /// <param name="replaced">The description this one replaces; <see langword="null"/> for none, which leaves this one as it is.</param>
+    /// <param name="lost">
+    /// The members that are design-time only in <paramref name="replaced"/> and that this description does not declare, as <c>Class.Member</c>, sorted; empty
+    /// when none.
+    /// </param>
+    /// <returns>The description, with the members that are design-time only in <paramref name="replaced"/> stated as such.</returns>
+    public LibraryDescription KeepingDesignTimeOnly(LibraryDescription? replaced, out IReadOnlyList<string> lost)
+    {
+        if (replaced is null)
+        {
+            lost = [];
+            return this;
+        }
+
+        var stated = replaced.Classes
+            .SelectMany(owner => owner.Members.Where(member => member.IsDesignTimeOnly).Select(member => (Key: KeyOf(owner, member), Shown: $"{owner.Name}.{member.Name}")))
+            .ToDictionary(entry => entry.Key, entry => entry.Shown, StringComparer.OrdinalIgnoreCase);
+        var kept = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        ImmutableArray<ClassDescription> classes = [.. Classes.Select(owner => owner with
+        {
+            Members = [.. owner.Members.Select(member => stated.ContainsKey(KeyOf(owner, member)) && kept.Add(KeyOf(owner, member)) ? member with { IsDesignTimeOnly = true } : member)],
+        })];
+
+        lost = [.. stated.Where(entry => !kept.Contains(entry.Key)).Select(entry => entry.Value).Order(StringComparer.OrdinalIgnoreCase)];
+        return this with { Classes = classes };
+    }
+
+    // the accessors of a property share its name: the kind tells them apart.
+    private static string KeyOf(ClassDescription owner, MemberDescription member) => $"{owner.Name}.{member.Name}/{member.Kind}";
 }
 
 /// <summary>
@@ -216,6 +255,20 @@ public sealed record class MemberDescription
 
     /// <summary>Whether the library leaves it out of what it shows.</summary>
     public bool IsHidden { get; init; }
+
+    /// <summary>
+    /// Whether the member is a property that a form's designer sets and that a program can only read: assigned while the program runs, late-bound, it raises
+    /// run-time error 382, "'<em>name</em>' property cannot be set at run time". Stated on the <see cref="MemberKind.PropertyGet"/> of a property the library declares
+    /// with no <see cref="MemberKind.PropertyLet"/> or <see cref="MemberKind.PropertySet"/>. Such a property that is not design-time only is read-only, and
+    /// the same assignment raises run-time error 383, "'<em>name</em>' property is read-only".
+    /// </summary>
+    /// <remarks>
+    /// A type library does not say which of the two a property is: both are a property get alone, with the same flags. So the fact is measured and stated in
+    /// the library's file (<c>"isDesignTimeOnly": true</c>), which a description exported again keeps through
+    /// <see cref="LibraryDescription.KeepingDesignTimeOnly"/>. The Visual Basic 6.0 library's is measured with VB6, by assigning each such property of its controls and its form while a program runs, through an <c>Object</c>, a
+    /// <c>Control</c>, the form's <c>Controls</c> and a <c>Variant</c>: every one refuses the assignment, after the value is coerced to the property's type.
+    /// </remarks>
+    public bool IsDesignTimeOnly { get; init; }
 
     /// <summary>The parameters of the member, in declaration order.</summary>
     public ImmutableArray<ParameterDescription> Parameters { get; init; } = [];
