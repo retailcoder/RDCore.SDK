@@ -261,7 +261,7 @@ public sealed class LibrarySymbolReader(Uri workspaceRoot, bool is64Bit = true)
             member = member.With(SymbolProperties.UserMemId, description.DispId.Value);
         }
 
-        // a property the designer sets and the program only reads, which an assignment at run time is refused for with 382 rather than 383.
+        // a property the designer sets and the program only reads: an assignment to it at run time raises 382, where a read-only property's raises 383.
         if (description.IsDesignTimeOnly)
         {
             member = member.With(SymbolProperties.DesignTimeOnly, true);
