@@ -266,7 +266,11 @@ public static partial class DeclarationEdits
     /// The text that edits of a text leave: each edit's range replaced by what it writes.
     /// </summary>
     /// <param name="text">The text, its lines ended by a carriage return and a line feed, a line feed, or a carriage return.</param>
-    /// <param name="edits">The edits, in the text before them, in any order; they do not overlap (<strong>LSP 3.17</strong> §TextEdit).</param>
+    /// <param name="edits">
+    /// The edits, in any order, their ranges positions of <paramref name="text"/> before any edit is made; they do not overlap (<strong>LSP 3.17</strong>
+    /// §TextEdit).
+    /// </param>
+    /// <returns>The text with every edit made.</returns>
     /// <exception cref="ArgumentException">Two of the edits overlap.</exception>
     /// <exception cref="ArgumentOutOfRangeException">An edit is of a line the text does not have.</exception>
     public static string ApplyTo(string text, IReadOnlyList<RefactorTextEdit> edits)
