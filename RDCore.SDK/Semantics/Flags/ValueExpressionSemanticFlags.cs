@@ -103,10 +103,11 @@ public enum ValueExpressionSemanticFlags
     EmptyLetToArray = 1 << 15,
 
     /// <summary>
-    /// A call of <c>IsMissing</c> (<strong>MS-VBAL §6.1.2.7.1.6</strong>) of a parameter that can never be missing, so that the call is always <c>False</c>:
-    /// a parameter that is not a <c>Variant</c>, which an omitted argument does not leave missing, or an <c>Optional</c> <c>Variant</c> with a default
-    /// value, which an omitted argument gives that value. A <c>Variant</c> parameter with no default can be missing, required or not (an omitted argument
-    /// passed on to it), and so can a <c>ParamArray</c> with no elements, as <strong>MS-VBA</strong> has it.
+    /// A call of <c>IsMissing</c> (<strong>MS-VBAL §6.1.2.7.1.6</strong>) of a name that can never hold the Missing value, so that the call is always
+    /// <c>False</c>: a parameter that is not a <c>Variant</c>, which an omitted argument does not leave missing, or an <c>Optional</c> <c>Variant</c> with
+    /// a default value, which an omitted argument gives that value; a variable that is not a <c>Variant</c>; a constant. A <c>Variant</c> parameter with no
+    /// default can be missing, required or not (an omitted argument passed on to it), and so can a <c>ParamArray</c> with no elements, as
+    /// <strong>MS-VBA</strong> has it. A <c>Variant</c> variable can hold the Missing value that is assigned to it.
     /// </summary>
     IsMissingAlwaysFalse = 1 << 16,
 
