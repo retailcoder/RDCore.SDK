@@ -26,7 +26,7 @@ public static class RefactoringKinds
 
     /// <summary>
     /// Import Project: a source action of the whole workspace, offered in every document of a workspace whose folder has a VB6 project (<c>.vbp</c>) and no
-    /// project file of its own. Its command is <c>rdcore.importProject</c>, which the language server runs: it writes a <c>.rdproj</c> project file
+    /// project file of its own. Its command is <see cref="ServerCommands.ImportProject"/>, which the language server runs: it writes a <c>.rdproj</c> project file
     /// (<see cref="RDCore.SDK.Workspace.ProjectFile"/>) of the VB6 project in the folder of the <c>.vbp</c>.
     /// </summary>
     public const string ImportProject = "source.rdcore.importProject";
