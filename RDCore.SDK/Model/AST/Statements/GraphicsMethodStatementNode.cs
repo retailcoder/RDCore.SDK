@@ -29,8 +29,8 @@ namespace RDCore.SDK.Model.AST.Statements;
 /// nothing before it (see <see cref="IsWithRelative"/>).</param>
 /// <param name="IsWithRelative">Whether the statement is written <c>.Line</c>, which is the <c>Line</c> member of the object of the enclosing <c>With</c> block.</param>
 /// <param name="From">The first point: the center of a <c>Circle</c>, the point of a <c>PSet</c>, the start of a <c>Line</c> (<see langword="null"/> when the line starts where the last one ended), or the
-/// first corner of a <c>Scale</c>.</param>
-/// <param name="To">The second point of a <c>Line</c> or a <c>Scale</c>, which have one; <see langword="null"/> for the others.</param>
+/// first corner of a <c>Scale</c> (<see langword="null"/> for a <c>Scale</c> written with no corners, which sets the scale back to twips).</param>
+/// <param name="To">The second point of a <c>Line</c> or a <c>Scale</c>: the end of the line, or the second corner; <see langword="null"/> for the others, and for a <c>Scale</c> written with no corners.</param>
 /// <param name="Arguments">The expressions that follow the points, in order, <see langword="null"/> where one is omitted: the radius, color, start, end and aspect of a <c>Circle</c>; the color
 /// of a <c>Line</c> or a <c>PSet</c>. Empty for a <c>Scale</c>.</param>
 /// <param name="LineOption">The <c>B</c> or <c>BF</c> that makes a <c>Line</c> a box, as it was written, or <see langword="null"/> when there is none.</param>

@@ -19,11 +19,16 @@ namespace RDCore.SDK.Model.AST.Expressions;
 /// <param name="Location">The document location (<c>Uri</c>+<c>Range</c>) of the bound expression.</param>
 /// <param name="IdentifierName">The parsed <em>identifier name</em>, without its type-declaration character.</param>
 /// <param name="TypeHint">The type-declaration character the name is written with (<c>%</c>, <c>&amp;</c>, <c>^</c>, <c>!</c>, <c>#</c>, <c>@</c> or <c>$</c>), or <see langword="null"/> when it is written with none.</param>
-public sealed record class SimpleNameExpressionNode(SyntaxNodeId Identity, SourceLocation Location, string IdentifierName, string? TypeHint = null)
+/// <param name="IsBracketed">
+/// <see langword="true"/> when the name is written in square brackets, a <em>foreign name</em> (<strong>MS-VBAL §3.3.5.3</strong>): <c>[A1]</c>, <c>[My Field]</c>,
+/// the member of <c>x.[My Field]</c>. <see cref="IdentifierName"/> is the name without the brackets, which are how it is written and not part of it.
+/// </param>
+public sealed record class SimpleNameExpressionNode(SyntaxNodeId Identity, SourceLocation Location, string IdentifierName, string? TypeHint = null, bool IsBracketed = false)
     : ExpressionNode(Identity, Location, [])
 {
     /// <summary>
-    /// The name as it was written: the identifier name followed by its type-declaration character, if it has one.
+    /// The name as it was written: the identifier name followed by its type-declaration character, if it has one. The brackets of a foreign name
+    /// (<see cref="IsBracketed"/>) are not part of it.
     /// </summary>
     public string WrittenName => IdentifierName + TypeHint;
 }

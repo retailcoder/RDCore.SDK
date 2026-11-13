@@ -21,6 +21,7 @@ namespace RDCore.SDK.Model.AST.Abstract;
 [JsonDerivedType(typeof(AnnotationTriviaNode), "AnnotationTrivia")]
 [JsonDerivedType(typeof(CommentTriviaNode), "CommentTrivia")]
 [JsonDerivedType(typeof(ErasedPlusTriviaNode), "ErasedPlusTrivia")]
+[JsonDerivedType(typeof(LineContinuationTriviaNode), "LineContinuationTrivia")]
 [JsonDerivedType(typeof(ModuleHeaderTriviaNode), "ModuleHeaderTrivia")]
 [JsonDerivedType(typeof(PrecompilerTriviaNode), "PrecompilerTrivia")]
 [JsonDerivedType(typeof(UnbuiltExpressionTriviaNode), "UnbuiltExpressionTrivia")]
