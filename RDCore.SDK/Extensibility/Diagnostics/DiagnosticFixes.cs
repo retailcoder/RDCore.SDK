@@ -12,7 +12,7 @@ namespace RDCore.SDK.Extensibility.Diagnostics;
 /// <remarks>
 /// An analyzer says what the fix is, and the platform makes it: a rename, or another refactoring, is worked out by the language server against the whole
 /// workspace when it is asked for, and is offered only when it can be made. An extension states such a fix without knowing how the workspace is changed, and
-/// gets the code actions of the platform for it. A fix that changes only the document the finding is in - the edits of one procedure - is the analyzer's to
+/// gets the code actions of the platform for it. A fix that changes only the document the finding is in (the edits of one procedure) is the analyzer's to
 /// make, from the syntax tree it was given: it states the edits themselves (<see cref="Edits"/>).
 /// </remarks>
 public sealed record class DiagnosticFixes
@@ -26,7 +26,7 @@ public sealed record class DiagnosticFixes
     /// <summary>
     /// The fixes that are edits of the document the diagnostic is in, which the analyzer made, best first; empty when there are none. Each is offered as a
     /// code action of its own. The first is the one a client may apply without showing it (<strong>LSP 3.17</strong> <c>CodeAction.isPreferred</c>), unless
-    /// it changes what the code does (<see cref="EditFix.ChangesBehaviour"/>); no other one is.
+    /// it changes what the code does (<see cref="EditFix.ChangesBehavior"/>); no other one is.
     /// </summary>
     [JsonProperty("edits")]
     public IReadOnlyList<EditFix> Edits { get; init; } = [];
@@ -106,8 +106,8 @@ public sealed record class EditFix
     /// is never one a client may apply without showing it (<strong>LSP 3.17</strong> <c>CodeAction.isPreferred</c>): not in a fix of a whole document, and
     /// not on save.
     /// </summary>
-    [JsonProperty("changesBehaviour", DefaultValueHandling = DefaultValueHandling.Ignore)]
-    public bool ChangesBehaviour { get; init; }
+    [JsonProperty("changesBehavior", DefaultValueHandling = DefaultValueHandling.Ignore)]
+    public bool ChangesBehavior { get; init; }
 
     /// <summary>
     /// The version of the document the edits are edits of (<strong>LSP 3.17</strong> <c>VersionedTextDocumentIdentifier.version</c>): the version the finding

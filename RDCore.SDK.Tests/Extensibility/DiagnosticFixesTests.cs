@@ -15,7 +15,7 @@ public sealed class DiagnosticFixesTests
     private static Diagnostic Carrying(JToken data) => new() { Range = new Range(0, 0, 0, 1), Message = "finding", Data = data };
 
     [TestMethod]
-    public void EditFixes_AreReadBack_InTheirOrder_WithWhetherTheyChangeBehaviour_AndTheirVersion()
+    public void EditFixes_AreReadBack_InTheirOrder_WithWhetherTheyChangeBehavior_AndTheirVersion()
     {
         var fixes = new DiagnosticFixes
         {
@@ -23,7 +23,7 @@ public sealed class DiagnosticFixesTests
             [
                 new EditFix { Title = "Make a local copy", Edits = [new TextEdit { Range = new Range(1, 0, 1, 0), NewText = "Dim n2 As Long\r\n" }], Version = 7 },
                 new EditFix { Title = "Pass it ByRef (the caller's variable changes)", Edits = [new TextEdit { Range = new Range(0, 8, 0, 13), NewText = "ByRef" }],
-                    ChangesBehaviour = true, Version = 7 },
+                    ChangesBehavior = true, Version = 7 },
             ],
         };
 
@@ -31,7 +31,7 @@ public sealed class DiagnosticFixesTests
 
         Assert.IsNotNull(read);
         CollectionAssert.AreEqual(new[] { "Make a local copy", "Pass it ByRef (the caller's variable changes)" }, read.Edits.Select(fix => fix.Title).ToArray());
-        CollectionAssert.AreEqual(new[] { false, true }, read.Edits.Select(fix => fix.ChangesBehaviour).ToArray());
+        CollectionAssert.AreEqual(new[] { false, true }, read.Edits.Select(fix => fix.ChangesBehavior).ToArray());
         CollectionAssert.AreEqual(new int?[] { 7, 7 }, read.Edits.Select(fix => fix.Version).ToArray());
         Assert.AreEqual("ByRef", read.Edits[1].Edits.Single().NewText);
     }
