@@ -131,6 +131,18 @@ public sealed class ProjectFixTests
     }
 
     [TestMethod]
+    [DataRow("en", "The project cannot reference 'Word': the platform has no description of that library.")]
+    [DataRow("fr", "Le projet ne peut pas référencer « Word » : la plateforme n'a pas de description de cette bibliothèque.")]
+    public void WhyAReferenceIsNotAdded_IsSaidInTheLanguageOfTheReader(string language, string expected)
+        => Assert.AreEqual(expected, ProjectFixText.Refused(ProjectChange.AddReference("Word"), "src/Sheet1.doccls", new System.Globalization.CultureInfo(language)));
+
+    [TestMethod]
+    [DataRow("en", "The project does not list 'src/Sheet1.doccls', so what it says of the module cannot be changed.")]
+    [DataRow("fr", "Le projet ne liste pas « src/Sheet1.doccls » : ce qu'il dit du module ne peut pas être modifié.")]
+    public void WhyAModuleIsNotChanged_NamesTheModule(string language, string expected)
+        => Assert.AreEqual(expected, ProjectFixText.Refused(ProjectChange.RemoveModule(), "src/Sheet1.doccls", new System.Globalization.CultureInfo(language)));
+
+    [TestMethod]
     [DataRow(ProjectChangeKind.RemoveModule)]
     [DataRow(ProjectChangeKind.SetDocumentClass)]
     public void AModuleTheProjectDoesNotList_CannotBeChanged(ProjectChangeKind kind)

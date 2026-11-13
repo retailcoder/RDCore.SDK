@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.Resources;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using RDCore.SDK.Runtime.Libraries;
@@ -227,5 +229,30 @@ public sealed record class ProjectChange
     {
         var normalized = path.Replace('\\', '/');
         return normalized.StartsWith("./", StringComparison.Ordinal) ? normalized[2..] : normalized;
+    }
+}
+
+/// <summary>
+/// Why a change of the project that fixes a finding (<see cref="ProjectChange"/>) is not made, in the language of the reader, the current UI culture by
+/// default: what a language server answers a client whose project changed since the fix was offered.
+/// </summary>
+public static class ProjectFixText
+{
+    private static readonly ResourceManager Messages = new("RDCore.SDK.Extensibility.Diagnostics.ProjectFixMessages", typeof(ProjectFixText).Assembly);
+
+    /// <summary>
+    /// Why a change cannot be made (<see cref="ProjectChange.ApplyTo"/>).
+    /// </summary>
+    /// <param name="change">The change.</param>
+    /// <param name="module">The module the finding is in, as the user knows it: the path of its file.</param>
+    /// <param name="culture">The language of the reader; the current UI culture by default.</param>
+    public static string Refused(ProjectChange change, string module, CultureInfo? culture = null)
+    {
+        ArgumentNullException.ThrowIfNull(change);
+        culture ??= CultureInfo.CurrentUICulture;
+        var (key, subject) = change.Kind is ProjectChangeKind.AddReference
+            ? ("ProjectFix_Refused_AddReference", change.Library ?? string.Empty)
+            : ("ProjectFix_Refused_Module", module);
+        return string.Format(culture, Messages.GetString(key, culture) ?? key, subject);
     }
 }
