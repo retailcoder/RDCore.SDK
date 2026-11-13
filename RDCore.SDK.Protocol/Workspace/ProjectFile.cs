@@ -25,9 +25,10 @@ public sealed record class ProjectFile : IEquatable<ProjectFile>
     /// </summary>
     /// <remarks>
     /// Before the format had a version of its own, a project file was stamped with the version of the platform that wrote it: <c>1.0.0</c> by the first builds,
-    /// <c>0.1.x</c> by the next. They read as the format 1.0 and an older one (<see cref="SchemaOf"/>), and are both the format 1.0.
+    /// <c>0.1.x</c> by the next. They read as the format 1.0 and an older one (<see cref="SchemaOf"/>), and are both the format 1.0. The format 1.1 adds the
+    /// project's <c>build</c> section (<see cref="RDCoreProject.Build"/>).
     /// </remarks>
-    public const string SchemaVersion = "1.0";
+    public const string SchemaVersion = "1.1";
 
     /// <summary>
     /// How the format a project file says it is (<see cref="Version"/>) compares with the one the platform reads and writes (<see cref="SchemaVersion"/>).
@@ -324,6 +325,19 @@ public record class RDCoreProject
     /// CLI <c>--define</c> arguments override these.
     /// </summary>
     public Dictionary<string, string> PrecompilerConstants { get; init; } = [];
+
+    /// <summary>
+    /// The project's <c>build</c> section: what it builds into, and where its program starts. <see langword="null"/> for a project file that has none,
+    /// which is a program that starts at the <c>Sub Main</c> of the one standard module that declares one.
+    /// </summary>
+    /// <remarks>
+    /// The section is optional, and written only when the project has one. A platform of the format 1.0 reads it as a member it does not know, and writes it
+    /// back as it was read (<see cref="ProjectFile.SchemaVersion"/>).
+    /// </remarks>
+    [JsonPropertyName("build")]
+    [JsonConverter(typeof(ProjectBuildJsonConverter))]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public ProjectBuild? Build { get; init; }
 
     /// <summary>
     /// The members of the project this model does not know, as they were read, which are written back (<see cref="ProjectFile.ExtensionData"/>).

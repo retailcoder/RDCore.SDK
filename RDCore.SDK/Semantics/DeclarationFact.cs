@@ -2,6 +2,7 @@ using RDCore.SDK.Model;
 using RDCore.SDK.Model.Source;
 using RDCore.SDK.Model.Symbols;
 using RDCore.SDK.Model.Symbols.Abstract;
+using System.Collections.Immutable;
 
 namespace RDCore.SDK.Semantics;
 
@@ -39,6 +40,64 @@ public enum DeclarationKind
     /// An <c>Event</c>.
     /// </summary>
     Event,
+
+    /// <summary>
+    /// A member of a user-defined type (<strong>MS-VBAL §5.2.3.3</strong>): <c>Name</c>, declared <c>Name As String</c> in a <c>Type Person</c> block. It is referred to as
+    /// the member of a variable of the type (<c>p.Name</c>).
+    /// </summary>
+    TypeMember,
+
+    /// <summary>
+    /// A control of a form, which the form's designer declares as a member of the form (<c>Text1</c> of <c>Form1</c>), and not a statement of its code. It is
+    /// referred to by its name in the form's code, and as a member of the form elsewhere (<c>Form1.Text1</c>).
+    /// </summary>
+    Control,
+}
+
+/// <summary>
+/// What one reference to a declaration does, counted the same way as <see cref="DeclarationReferences"/>.
+/// </summary>
+public enum DeclarationReferenceKind
+{
+    /// <summary>
+    /// It refers to the declaration for its value, or to call it (<see cref="DeclarationReferences.Reads"/>).
+    /// </summary>
+    Read,
+
+    /// <summary>
+    /// It writes to it (<see cref="DeclarationReferences.Writes"/>).
+    /// </summary>
+    Write,
+
+    /// <summary>
+    /// It passes it by reference to a call that may assign it (<see cref="DeclarationReferences.PassedAsArguments"/>).
+    /// </summary>
+    PassedAsArgument,
+}
+
+/// <summary>
+/// One place the code of the project refers to a declaration (<see cref="DeclarationFact.ReferencedFrom"/>).
+/// </summary>
+/// <param name="Location">Where the reference is written: the module, and the range of the name.</param>
+/// <param name="Procedure">
+/// The procedure whose code the reference is in; <see langword="null"/> for a reference in the declarations of a module, such as the value of a constant or
+/// the bounds of an array of the module.
+/// </param>
+/// <param name="Kind">What the reference does.</param>
+public sealed record class DeclarationReference(SourceLocation Location, Uri? Procedure, DeclarationReferenceKind Kind)
+{
+    /// <summary>
+    /// Whether the reference calls a <c>Function</c> as a statement, so that nothing uses the value it returns
+    /// (<see cref="Flags.ValueExpressionSemanticFlags.ResultDiscarded"/>).
+    /// </summary>
+    public bool DiscardsResult { get; init; }
+
+    /// <summary>
+    /// Whether the reference is an argument (<see cref="DeclarationReferenceKind.PassedAsArgument"/>) that the call is known to assign: the host followed the
+    /// procedure, and it assigns the <c>ByRef</c> parameter or passes it on by reference to a procedure that does (<strong>MS-VBAL §5.3.1.11</strong>).
+    /// <see langword="false"/> for an argument of a procedure the host does not follow, which may or may not assign it, and for any other reference.
+    /// </summary>
+    public bool AssignedThroughCall { get; init; }
 }
 
 /// <summary>
@@ -85,12 +144,18 @@ public enum DeclaredTypeKind
 /// </summary>
 /// <remarks>
 /// These are the references, all of them: a count is only ever stated for a declaration that nothing outside the code the pass analyzed can refer to
-/// (<see cref="DeclarationFact.References"/>). An expression that is passed as an argument is a reference of its own kind, because what it does is not
-/// what the expression says: the procedure it is passed to may read it, write to it, or both, when its parameter is <c>ByRef</c>.
+/// (<see cref="DeclarationFact.References"/>). An argument that a call may assign is a reference of its own kind, because what it does is not what the
+/// expression says (<strong>MS-VBAL §5.3.1.11</strong>): a procedure assigns it through a <c>ByRef</c> parameter that it writes to, or passes on by reference
+/// to a procedure that does. Where the host follows the procedure and finds that nothing assigns the parameter, or the parameter is <c>ByVal</c>, the
+/// argument is a read.
 /// </remarks>
 /// <param name="Reads">How many expressions refer to it for its value, or to call it.</param>
 /// <param name="Writes">How many expressions write to it (<see cref="Flags.ValueExpressionSemanticFlags.AssignmentTarget"/>).</param>
-/// <param name="PassedAsArguments">How many expressions pass it as an argument of a call (<see cref="Flags.ValueExpressionSemanticFlags.PassedAsArgument"/>).</param>
+/// <param name="PassedAsArguments">
+/// How many expressions pass it by reference to a call that may assign it: a procedure that assigns the parameter, or passes it on by reference to one that
+/// does, or a procedure the host does not follow, such as one of a library or one called through an object
+/// (<see cref="Flags.ValueExpressionSemanticFlags.PassedAsArgument"/>).
+/// </param>
 public readonly record struct DeclarationReferences(int Reads, int Writes, int PassedAsArguments)
 {
     /// <summary>
@@ -115,7 +180,16 @@ public enum DeclarationRole
     InterfaceImplementation,
 
     /// <summary>
-    /// It handles an event of a <c>WithEvents</c> variable of the class module, by being named <c>VariableName_EventName</c> (<strong>MS-VBAL §5.3.1.8</strong>).
+    /// It handles an event, which calls it by its name:
+    /// <list type="bullet">
+    /// <item>an event of a <c>WithEvents</c> variable of the class module, or of a form's control, named <c>VariableName_EventName</c>
+    /// (<strong>MS-VBAL §5.3.1.8</strong>);</item>
+    /// <item>an event of a form itself, named for the class its designer hosts (<c>UserForm_Initialize</c>, <c>Form_Load</c>);</item>
+    /// <item>the class's own <c>Initialize</c> or <c>Terminate</c>: a <c>Class_Initialize</c> or <c>Class_Terminate</c> subroutine with no parameters, of a
+    /// class module that is not a form (<strong>MS-VBAL §5.3.1.10</strong>);</item>
+    /// <item>an event of a document module's host class, named for that class (<c>Workbook_Open</c>, <c>Worksheet_Change</c>), which the host application
+    /// raises.</item>
+    /// </list>
     /// </summary>
     EventHandler,
 
@@ -125,16 +199,33 @@ public enum DeclarationRole
     /// calls it as the procedure it also is.
     /// </summary>
     UnmatchedEventHandler,
+
+    /// <summary>
+    /// It is the procedure a run of the project starts with (<see cref="Workspace.ProgramEntryPoint"/>): the procedure the project names, or the
+    /// <c>Sub Main</c> of the one standard module that declares one. A run calls it, and the project's code need not. A library project has none.
+    /// </summary>
+    EntryPoint,
 }
 
 /// <summary>
 /// What the static pass found out about a declaration.
 /// </summary>
 /// <remarks>
-/// A fact is stated only when it is true. What refers to a declaration that is accessible from outside the module, or that is called by convention or through
-/// the object it is a member of rather than by an expression that names it (an event handler, a member that implements an interface), is not all in the code
-/// the pass analyzed, and its references are not counted: <see cref="References"/> is then <see langword="null"/>, which says the references are not known
-/// and not that there are none.
+/// A fact is stated only when it is true. The code the pass analyzed is every module of the project, so a declaration that another module can refer to is
+/// counted over all of them.
+/// <para>
+/// Some declarations are referred to by code the pass did not analyze, or by code that does not name them:
+/// </para>
+/// <list type="bullet">
+/// <item>a declaration that the projects referencing this one can refer to: a <c>Public</c> member of a standard module without
+/// <c>Option Private Module</c>, or of a class that another project can use;</item>
+/// <item>a declaration called by convention or through the object it is a member of: an event handler, a member that implements an interface;</item>
+/// <item>a declaration named in a string, or reached by a member access that is bound only when the code runs.</item>
+/// </list>
+/// <para>
+/// Their references are not counted: <see cref="References"/> is then <see langword="null"/>, which says the references are not known and not that there are
+/// none.
+/// </para>
 /// </remarks>
 /// <param name="Symbol">The identity of the declared symbol.</param>
 /// <param name="Name">The name it is declared with.</param>
@@ -155,8 +246,9 @@ public sealed record class DeclarationFact(
     DeclarationReferences? References)
 {
     /// <summary>
-    /// What the declaration is there for, when it implements a member of an interface or handles an event. A role is stated only for a member of a class
-    /// module whose interfaces and event sources the pass resolved; <see cref="DeclarationRole.None"/> is not a statement that it has none otherwise.
+    /// What the declaration is there for, when it implements a member of an interface, handles an event, or is the project's entry point. A role is stated
+    /// only for a member of a class module whose interfaces and event sources the pass resolved, and for the entry point of a project that has one;
+    /// <see cref="DeclarationRole.None"/> is not a statement that it has none otherwise.
     /// </summary>
     public DeclarationRole Role { get; init; }
 
@@ -167,10 +259,18 @@ public sealed record class DeclarationFact(
     public LocalDeclarationKind? DeclaredBy { get; init; }
 
     /// <summary>
-    /// What a local or a parameter hides: what its name means in the rest of the module, which in its procedure it does not (<strong>MS-VBAL §5.6.10</strong>,
-    /// a name is first matched in the procedure). <see langword="null"/> when the name means nothing else there, and for any other declaration.
+    /// What the declaration hides: what its name would mean where the declaration is in scope, had it not been declared (<strong>MS-VBAL §5.6.10</strong>
+    /// matches a name in the procedure first, then in the module, then in the project and the libraries it references). A local or a parameter hides what
+    /// the name means in the rest of the module; a declaration of a module can hide one of another module or of a library (<c>Public Function Replace</c>
+    /// hides <c>VBA.Strings.Replace</c>). <see langword="null"/> when the name means nothing else, or when the host does not look for what the declaration hides.
     /// </summary>
     public HiddenDeclaration? Hides { get; init; }
+
+    /// <summary>
+    /// Each reference to the declaration, in any module of the project: one for each that <see cref="References"/> counts.
+    /// <see langword="null"/> exactly when <see cref="References"/> is.
+    /// </summary>
+    public ImmutableArray<DeclarationReference>? ReferencedFrom { get; init; }
 
     /// <summary>
     /// Whether it is a variable declared <c>As New</c> of a class whose objects are never created (<c>Dim e As New ErrObject</c>): <strong>MS-VBA</strong>
@@ -195,7 +295,7 @@ public sealed record class DeclarationFact(
 }
 
 /// <summary>
-/// A declaration a local or a parameter hides (<see cref="DeclarationFact.Hides"/>).
+/// A declaration that another declaration hides (<see cref="DeclarationFact.Hides"/>).
 /// </summary>
 /// <param name="Symbol">The identity of the declaration hidden.</param>
 /// <param name="QualifiedName">Its name, after the module or the library that declares it: <c>Module1.Count</c>, <c>VBA.Strings.Left</c>.</param>
