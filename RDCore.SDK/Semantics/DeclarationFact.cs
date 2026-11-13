@@ -46,6 +46,12 @@ public enum DeclarationKind
     /// the member of a variable of the type (<c>p.Name</c>).
     /// </summary>
     TypeMember,
+
+    /// <summary>
+    /// A control of a form, which the form's designer declares as a member of the form (<c>Text1</c> of <c>Form1</c>), and not a statement of its code. It is
+    /// referred to by its name in the form's code, and as a member of the form elsewhere (<c>Form1.Text1</c>).
+    /// </summary>
+    Control,
 }
 
 /// <summary>
@@ -70,7 +76,7 @@ public enum DeclarationReferenceKind
 }
 
 /// <summary>
-/// One place the code of the workspace refers to a declaration (<see cref="DeclarationFact.ReferencedFrom"/>).
+/// One place the code of the project refers to a declaration (<see cref="DeclarationFact.ReferencedFrom"/>).
 /// </summary>
 /// <param name="Location">Where the reference is written: the module, and the range of the name.</param>
 /// <param name="Procedure">
@@ -138,12 +144,20 @@ public enum DeclarationRole
 /// What the static pass found out about a declaration.
 /// </summary>
 /// <remarks>
-/// A fact is stated only when it is true. The code the pass analyzed is every module of the workspace, so a declaration that another module can refer to is
+/// A fact is stated only when it is true. The code the pass analyzed is every module of the project, so a declaration that another module can refer to is
 /// counted over all of them.
 /// <para>
-/// Some declarations are referred to by code that does not name them: a declaration called by convention or through the object it is a member of (an event
-/// handler, a member that implements an interface), by a name written in a string, or by a member access that is bound only when the code runs. Their
-/// references are not counted: <see cref="References"/> is then <see langword="null"/>, which says the references are not known and not that there are none.
+/// The references of some declarations are not all in that code, or are not all names of them:
+/// </para>
+/// <list type="bullet">
+/// <item>a declaration that code outside what the pass analyzed can refer to: a <c>Public</c> member of a standard module that is not
+/// <c>Option Private Module</c>, or of a class that another project can use, is accessible from the projects that reference this one;</item>
+/// <item>a declaration called by convention or through the object it is a member of: an event handler, a member that implements an interface;</item>
+/// <item>a declaration named in a string, or reached by a member access that is bound only when the code runs.</item>
+/// </list>
+/// <para>
+/// Their references are not counted: <see cref="References"/> is then <see langword="null"/>, which says the references are not known and not that there are
+/// none.
 /// </para>
 /// </remarks>
 /// <param name="Symbol">The identity of the declared symbol.</param>
@@ -183,7 +197,7 @@ public sealed record class DeclarationFact(
     public HiddenDeclaration? Hides { get; init; }
 
     /// <summary>
-    /// Each reference to the declaration, in any module of the workspace: one for each that <see cref="References"/> counts.
+    /// Each reference to the declaration, in any module of the project: one for each that <see cref="References"/> counts.
     /// <see langword="null"/> exactly when <see cref="References"/> is.
     /// </summary>
     public ImmutableArray<DeclarationReference>? ReferencedFrom { get; init; }

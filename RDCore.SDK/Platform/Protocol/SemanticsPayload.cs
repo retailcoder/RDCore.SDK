@@ -305,7 +305,7 @@ public record class ProcedureSemanticsDto(
 /// <param name="DeclaredBy">How a local variable came to be declared; <see langword="null"/> for any other declaration.</param>
 /// <param name="Hides">What a local or a parameter hides; <see langword="null"/> when it hides nothing, and for any other declaration.</param>
 /// <param name="AutoInstantiationAlwaysFails">Whether it is a variable declared <c>As New</c> of a class whose objects are never created.</param>
-/// <param name="ReferencedFrom">Each reference to it, in any module of the workspace; <see langword="null"/> exactly when <paramref name="References"/> is.</param>
+/// <param name="ReferencedFrom">Each reference to it, in any module of the project; <see langword="null"/> exactly when <paramref name="References"/> is.</param>
 public record class DeclarationFactDto(
     Uri Symbol, string Name, DeclarationKind Kind, AccessModifier Access, bool IsImplicit, SourceLocation Location, DeclarationReferences? References,
     DeclarationRole Role = DeclarationRole.None, LocalDeclarationKind? DeclaredBy = null, HiddenDeclaration? Hides = null, bool AutoInstantiationAlwaysFails = false,

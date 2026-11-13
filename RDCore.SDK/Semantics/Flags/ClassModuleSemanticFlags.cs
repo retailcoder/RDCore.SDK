@@ -30,7 +30,7 @@ public enum ClassModuleSemanticFlags
     Stateful = 1 << 1,
 
     /// <summary>
-    /// Another module of the workspace implements the class as an interface: its <c>Implements</c> directive names the class (<strong>MS-VBAL §5.2.4.2</strong>).
+    /// Another module of the project implements the class as an interface: its <c>Implements</c> directive names the class (<strong>MS-VBAL §5.2.4.2</strong>).
     /// The implementing module gives each member of the interface a body of its own, and does not run the code of the class's members.
     /// </summary>
     Implemented = 1 << 2,
