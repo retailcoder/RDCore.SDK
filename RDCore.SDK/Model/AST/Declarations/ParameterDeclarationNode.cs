@@ -25,5 +25,26 @@ namespace RDCore.SDK.Model.AST.Declarations;
 /// remembers that the keyword is there.
 /// </param>
 /// <param name="NameRange">Where the name is written, with its type-declaration character; <see langword="null"/> when it is not known.</param>
+/// <remarks>
+/// The keywords before the name are each at a range of their own (<see cref="OptionalRange"/>, <see cref="PassingRange"/>, <see cref="ParamArrayRange"/>),
+/// which is where a fix that removes or writes one of them places its edit, without counting the blanks between them.
+/// </remarks>
 public record class ParameterDeclarationNode(SyntaxNodeId Identity, SourceLocation Location, string Name, ParameterKind ParameterKind = ParameterKind.ImplicitByRef, bool IsOptional = false, bool IsParamArray = false, ImmutableArray<SyntaxNode> Children = default, bool IsArray = false, string? TypeHint = null, bool IsByRefIgnored = false, SourceRange? NameRange = null)
-    : SyntaxNode(Identity, Location, Children);
+    : SyntaxNode(Identity, Location, Children)
+{
+    /// <summary>
+    /// Where the <c>Optional</c> keyword is written; <see langword="null"/> when it is not, or when it is not known.
+    /// </summary>
+    public SourceRange? OptionalRange { get; init; }
+
+    /// <summary>
+    /// Where the <c>ByVal</c> or <c>ByRef</c> keyword is written, whichever <see cref="ParameterKind"/> says is; <see langword="null"/> when neither is,
+    /// or when it is not known.
+    /// </summary>
+    public SourceRange? PassingRange { get; init; }
+
+    /// <summary>
+    /// Where the <c>ParamArray</c> keyword is written; <see langword="null"/> when it is not, or when it is not known.
+    /// </summary>
+    public SourceRange? ParamArrayRange { get; init; }
+}

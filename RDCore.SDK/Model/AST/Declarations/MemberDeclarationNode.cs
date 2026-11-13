@@ -44,6 +44,26 @@ public record class MemberDeclarationNode(SyntaxNodeId Identity, SourceLocation 
     public ImmutableArray<MemberDeclarationNode> HeaderAlternatives { get; init; } = [];
 
     /// <summary>
+    /// Where the parameter list of the header is written, from its <c>(</c> through its <c>)</c>; <see langword="null"/> when the header has none
+    /// (<c>Sub Main</c>), or when it is not known.
+    /// </summary>
+    /// <remarks>
+    /// Its end is the end of the <c>)</c>, which is where an <c>As</c> clause written after the list begins to be written: a fix that declares what a function
+    /// returns writes it there.
+    /// </remarks>
+    public SourceRange? ParameterListRange { get; init; }
+
+    /// <summary>
+    /// Where the statement that closes the procedure is written: its <c>End Sub</c>, <c>End Function</c> or <c>End Property</c>; <see langword="null"/>
+    /// for a member that is no procedure, for a procedure written without one, or when it is not known.
+    /// </summary>
+    /// <remarks>
+    /// The range of the member runs through the <c>Attribute</c> lines written after this statement, which belong to the procedure: this is where its body
+    /// ends.
+    /// </remarks>
+    public SourceRange? EndRange { get; init; }
+
+    /// <summary>
     /// What the header declares, of <see cref="SyntaxNode.Children"/>: the parameters and the <c>As</c> clause, which come before the body.
     /// </summary>
     [System.Text.Json.Serialization.JsonIgnore]
@@ -63,7 +83,7 @@ public record class MemberDeclarationNode(SyntaxNodeId Identity, SourceLocation 
         var body = Children.SkipWhile(IsOfTheHeader).ToImmutableArray();
         foreach (var alternative in HeaderAlternatives)
         {
-            yield return alternative with { Children = [.. alternative.HeaderChildren, .. body], HeaderAlternatives = [] };
+            yield return alternative with { Children = [.. alternative.HeaderChildren, .. body], HeaderAlternatives = [], EndRange = EndRange };
         }
     }
 
