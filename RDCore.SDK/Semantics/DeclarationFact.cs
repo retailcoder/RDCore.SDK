@@ -87,7 +87,7 @@ public enum DeclarationReferenceKind
 public sealed record class DeclarationReference(SourceLocation Location, Uri? Procedure, DeclarationReferenceKind Kind)
 {
     /// <summary>
-    /// Whether the reference calls a <c>Function</c> or a <c>Property Get</c> as a statement, so that nothing uses the value it returns
+    /// Whether the reference calls a <c>Function</c> as a statement, so that nothing uses the value it returns
     /// (<see cref="Flags.ValueExpressionSemanticFlags.ResultDiscarded"/>).
     /// </summary>
     public bool DiscardsResult { get; init; }

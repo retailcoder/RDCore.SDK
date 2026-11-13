@@ -157,7 +157,7 @@ public enum ValueExpressionSemanticFlags
     TrueValueIsNotMinusOne = 1 << 22,
 
     /// <summary>
-    /// It is the callee of a call statement (<strong>MS-VBAL §5.4.2.1</strong>) that calls a <c>Function</c> or a <c>Property Get</c>: the value the procedure
+    /// It is the callee of a call statement (<strong>MS-VBAL §5.4.2.1</strong>) that calls a <c>Function</c>: the value the function
     /// returns is discarded.
     /// </summary>
     ResultDiscarded = 1 << 24,
