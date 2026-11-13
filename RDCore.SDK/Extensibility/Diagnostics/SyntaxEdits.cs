@@ -9,9 +9,9 @@ namespace RDCore.SDK.Extensibility.Diagnostics;
 /// </summary>
 /// <remarks>
 /// An analyzer is given the syntax tree of a module and not its text (<see cref="ModuleAnalysisContext"/>), so an edit is placed only where the tree says what
-/// is there: at the start or the end of a node, between two nodes, or over a keyword whose length the tree implies, such as the <c>Rem</c> a comment node
-/// starts with. Where the tree does not say what is between two positions, the width of the span is what tells: a span of one character between the name of
-/// a callee and its first argument can only be the <c>(</c>. Where nothing tells, the fix is not offered.
+/// is there: at the start or the end of a node, between two nodes, or over a keyword whose length the tree implies, such as the <c>Rem</c> of a comment the
+/// tree says is written with it. Where the tree does not say what is between two positions, the width of the span is what tells: in an index expression, a
+/// span of one character between the name of the callee and its first argument is the <c>(</c>. Where nothing tells, the fix is not offered.
 /// </remarks>
 public static class SyntaxEdits
 {
