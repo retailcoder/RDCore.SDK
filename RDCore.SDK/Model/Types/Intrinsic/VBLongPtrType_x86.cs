@@ -47,5 +47,6 @@ public record class VBLongPtrType_x86() : VBIntrinsicType<int>(VBTypeNames.VBLon
     /// </summary>
     public static VBLongPtrValue Zero => _zero.Value;
 
-    public override VBTypedValue CreateValue(RDCore.SDK.Model.Values.Bindings.IBindingHandle handle) => new VBLongPtrValue(handle);
+    // a cell read as a 32-bit LongPtr is a value of this type, 4 bytes wide.
+    public override VBTypedValue CreateValue(RDCore.SDK.Model.Values.Bindings.IBindingHandle handle) => new VBLongPtrValue(handle, is64Bit: false);
 }
