@@ -88,6 +88,30 @@ public static class IntrinsicVBTypes
     public static bool TryResolveTypeHint(string typeHint, [NotNullWhen(true)] out VBType? type)
         => _byTypeHint.TryGetValue(typeHint, out type);
 
+    /// <summary>
+    /// The literal that writes the value a variable of <paramref name="type"/> is initialized to (<strong>MS-VBAL §2.3</strong>), as code says it:
+    /// <c>0</c> for a number, an enum or a <c>LongPtr</c>, <c>""</c> for a <c>String</c>, <c>False</c>, the date literal of midnight for a <c>Date</c>,
+    /// <c>Empty</c> for a <c>Variant</c>, and <c>Nothing</c> for an object.
+    /// </summary>
+    /// <remarks>
+    /// A fix writes it where a value has to be stated that the code leaves to the default: the value of a <c>Const</c>, or the assignment that makes a
+    /// variable's first value explicit. A type whose default no literal writes has none: a fixed-length string (its characters are an implementation's own),
+    /// a user-defined type, an array.
+    /// </remarks>
+    /// <param name="type">The declared type of the variable.</param>
+    /// <returns>The literal, or <see langword="null"/> when no literal writes the default value of the type.</returns>
+    public static string? DefaultLiteralOf(VBType type) => type switch
+    {
+        INumericType or VBLongPtrType_x64 or VBLongPtrType_x86 or Complex.VBEnumType => "0",
+        VBFixedStringType => null,
+        VBStringType => "\"\"",
+        VBBooleanType => "False",
+        VBDateType => "#12:00:00 AM#",
+        VBVariantType => "Empty",
+        VBObjectType or Complex.VBClassType => "Nothing",
+        _ => null,
+    };
+
     private static readonly ImmutableDictionary<Type, VBType> _byValueType = new Dictionary<Type, VBType>
     {
         [typeof(VBBooleanValue)] = VBBooleanType.TypeInfo,
