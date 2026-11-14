@@ -350,14 +350,8 @@ public static class CompletionCandidates
         }
 
         // the rest of the word, then the `:=` that makes it a name.
-        var rest = after.AsSpan();
-        while (rest.Length > 0 && (char.IsLetterOrDigit(rest[0]) || rest[0] == '_'))
-        {
-            rest = rest[1..];
-        }
-
-        var isNamed = rest.TrimStart(" \t").StartsWith(":=", StringComparison.Ordinal);
-        var restOfWord = after.Length - rest.Length;
+        var restOfWord = RestOfWordIn(after);
+        var isNamed = after.AsSpan(restOfWord).TrimStart(" \t").StartsWith(":=", StringComparison.Ordinal);
         var given = namedBefore.Concat(site.NamesAfter(after)).ToHashSet(StringComparer.OrdinalIgnoreCase);
         return [.. signature.Parameters
             .Where((parameter, index) => index >= site.PositionalBefore && !parameter.IsParamArray && !given.Contains(parameter.Name))
@@ -399,7 +393,14 @@ public static class CompletionCandidates
     /// item of a word typed from the opening bracket of a name in brackets, which a client does not take as part of the word. <see langword="null"/> when no position is known; every item
     /// then replaces the word typed only.
     /// </param>
-    public static CompletionList ListOf(string word, IReadOnlyList<CompletionGroup> first, IReadOnlyList<CompletionCandidate> candidates, Position? cursor = null)
+    /// <param name="after">
+    /// What follows the cursor on its line, for a client that takes an item's edit as two ranges (<strong>LSP 3.17</strong> <c>InsertReplaceEdit</c>, which a
+    /// client says it does with <c>insertReplaceSupport</c>); <see langword="null"/> for one that does not. Every item of such a client, with
+    /// <paramref name="cursor"/> known, carries both: the one that inserts, over the word typed and what the candidate replaces after the cursor, and the one that
+    /// replaces, which also takes in the rest of the word the cursor is in (<see cref="RestOfWordIn"/>). The client chooses between them, as its user asks.
+    /// </param>
+    public static CompletionList ListOf(string word, IReadOnlyList<CompletionGroup> first, IReadOnlyList<CompletionCandidate> candidates, Position? cursor = null,
+        string? after = null)
     {
         ArgumentNullException.ThrowIfNull(word);
         ArgumentNullException.ThrowIfNull(first);
@@ -414,7 +415,7 @@ public static class CompletionCandidates
                 if (MatchOf(candidate.Label, word) is var match and not CompletionMatch.None && offered.Add(candidate.Label))
                 {
                     // a `!` sorts before the digit every other item's sort text starts with; the index is as wide as a group of every name in scope.
-                    items.Add((Placed(candidate.ToCompletionItem(match), candidate, word, cursor) with { SortText = $"!{rank}{CompletionCandidate.TierOf(match)}{index:D6}" },
+                    items.Add((Placed(candidate.ToCompletionItem(match), candidate, word, cursor, after) with { SortText = $"!{rank}{CompletionCandidate.TierOf(match)}{index:D6}" },
                         isSelectable));
                 }
             }
@@ -424,7 +425,7 @@ public static class CompletionCandidates
         {
             if (MatchOf(candidate.Label, word) is var match and not CompletionMatch.None && offered.Add(candidate.Label))
             {
-                items.Add((Placed(candidate.ToCompletionItem(match), candidate, word, cursor), true));
+                items.Add((Placed(candidate.ToCompletionItem(match), candidate, word, cursor, after), true));
             }
         }
 
@@ -445,19 +446,49 @@ public static class CompletionCandidates
 
     // an item that replaces more than the word typed says what it replaces, from the start of the word to the end of what it replaces after the cursor: a
     // client replaces the word typed otherwise, and keeps the rest. A client's word has no `[`, so the item of a word typed from one replaces it too, and the
-    // client narrows the list by the text it replaces: an item whose label has no bracket is narrowed by the label after one.
-    private static CompletionItem Placed(CompletionItem item, CompletionCandidate candidate, string word, Position? cursor)
-        => (candidate.ReplacedAfter > 0 || word is ['[', ..]) && cursor is { } at && at.Character >= word.Length
-            ? item with
-            {
-                TextEdit = new TextEdit
+    // client narrows the list by the text it replaces: an item whose label has no bracket is narrowed by the label after one. A client that takes two ranges is
+    // given both for every item: what it inserts over, and what it replaces, the rest of the word after the cursor with it.
+    private static CompletionItem Placed(CompletionItem item, CompletionCandidate candidate, string word, Position? cursor, string? after)
+    {
+        if (cursor is not { } at || at.Character < word.Length || (after is null && candidate.ReplacedAfter == 0 && word is not ['[', ..]))
+        {
+            return item;
+        }
+
+        var start = at.Character - word.Length;
+        var newText = candidate.InsertText ?? candidate.Label;
+        var inserted = new LspRange(at.Line, start, at.Line, at.Character + candidate.ReplacedAfter);
+        return item with
+        {
+            TextEdit = after is null
+                ? new TextEdit { Range = inserted, NewText = newText }
+                : new InsertReplaceEdit
                 {
-                    Range = new LspRange(at.Line, at.Character - word.Length, at.Line, at.Character + candidate.ReplacedAfter),
-                    NewText = candidate.InsertText ?? candidate.Label,
+                    Insert = inserted,
+                    Replace = new LspRange(at.Line, start, at.Line, at.Character + Math.Max(candidate.ReplacedAfter, RestOfWordIn(after))),
+                    NewText = newText,
                 },
-                FilterText = word is ['[', ..] && candidate.Label is not ['[', ..] ? $"[{candidate.Label}" : item.FilterText,
-            }
-            : item;
+            FilterText = word is ['[', ..] && candidate.Label is not ['[', ..] ? $"[{candidate.Label}" : item.FilterText,
+        };
+    }
+
+    /// <summary>
+    /// How long the rest of the word the cursor is in is: the letters, digits and underscores right after it, as a name has them.
+    /// </summary>
+    /// <param name="after">What follows the cursor on its line.</param>
+    /// <returns>The number of characters of <paramref name="after"/> the word goes on for; 0 when the cursor is at its end.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="after"/> is <see langword="null"/>.</exception>
+    public static int RestOfWordIn(string after)
+    {
+        ArgumentNullException.ThrowIfNull(after);
+        var length = 0;
+        while (length < after.Length && (char.IsLetterOrDigit(after[length]) || after[length] == '_'))
+        {
+            length++;
+        }
+
+        return length;
+    }
 
     /// <summary>
     /// Where a name written at <paramref name="position"/> of a module is looked up from: the procedure the position is in, or the module itself when it is in
