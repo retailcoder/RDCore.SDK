@@ -46,7 +46,44 @@ public sealed record class VBDecimalType() : VBNumericType<decimal>(VBTypeNames.
     public static VBDecimalValue Zero => _zero.Value;
 
 
-    public override VBNumericTypedValue CreateValue(double value) => new VBDecimalValue(Convert.ToDecimal(value));
+    /// <summary>
+    /// Converts a <c>Double</c> to a <c>Decimal</c> as MS-VBA does: the value rounded to 15 significant digits, a tie to the even digit
+    /// (<strong>MS-VBAL §5.5.1.2.1</strong>).
+    /// </summary>
+    /// <param name="value">The <c>Double</c> to convert.</param>
+    /// <returns>
+    /// The <c>Decimal</c>: <c>0.1</c> is 0.1, and <c>1 / 3</c> is 0.333333333333333. A value too small for the 28 decimal places of a <c>Decimal</c> is 0.
+    /// </returns>
+    /// <exception cref="OverflowException"><paramref name="value"/> is an infinity, a NaN, or past the range of a <c>Decimal</c>.</exception>
+    /// <remarks>
+    /// MS-VBAL §5.5.1.2.1 rounds the value to the nearest <c>Decimal</c>. MS-VBA first rounds it to the 15 significant digits a <c>Double</c> holds, so that
+    /// no digit of its binary representation past them reaches the <c>Decimal</c> (observed in Excel). The result does not depend on the .NET version.
+    /// </remarks>
+    public static decimal FromDouble(double value) => FloatingPointToDecimal.FromDouble(value);
+
+    /// <summary>
+    /// Converts a <c>Single</c> to a <c>Decimal</c> as MS-VBA does: the value rounded to 7 significant digits, a tie to the even digit
+    /// (<strong>MS-VBAL §5.5.1.2.1</strong>).
+    /// </summary>
+    /// <param name="value">The <c>Single</c> to convert.</param>
+    /// <returns>
+    /// The <c>Decimal</c>: <c>0.1</c> is 0.1, and 16777217, which is the <c>Single</c> 16777216, is 16777220. A value too small for the 28 decimal places
+    /// of a <c>Decimal</c> is 0.
+    /// </returns>
+    /// <exception cref="OverflowException"><paramref name="value"/> is an infinity, a NaN, or past the range of a <c>Decimal</c>.</exception>
+    /// <remarks>
+    /// MS-VBAL §5.5.1.2.1 rounds the value to the nearest <c>Decimal</c>. MS-VBA first rounds it to the 7 significant digits a <c>Single</c> holds
+    /// (observed in Excel). A <c>Single</c> converted to a <c>Double</c> first keeps 15 digits instead: <c>CDec(CDbl(CSng(0.1)))</c> is 0.100000001490116.
+    /// The result does not depend on the .NET version.
+    /// </remarks>
+    public static decimal FromSingle(float value) => FloatingPointToDecimal.FromSingle(value);
+
+    /// <summary>
+    /// Creates a <c>Decimal</c> value of a <c>Double</c>, rounded to 15 significant digits as <see cref="FromDouble(double)"/> rounds it.
+    /// </summary>
+    /// <param name="value">The <c>Double</c> to convert.</param>
+    /// <exception cref="OverflowException"><paramref name="value"/> is an infinity, a NaN, or past the range of a <c>Decimal</c>.</exception>
+    public override VBNumericTypedValue CreateValue(double value) => new VBDecimalValue(FromDouble(value));
     public override VBTypedValue CreateValue(RDCore.SDK.Model.Values.Bindings.IBindingHandle handle) => new VBDecimalValue(handle);
 
     // neither bound is a Double: the Double nearest each is ±2^96, which is past it, and is left out.
