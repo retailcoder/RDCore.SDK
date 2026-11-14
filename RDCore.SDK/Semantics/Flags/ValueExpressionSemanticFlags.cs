@@ -76,19 +76,6 @@ public enum ValueExpressionSemanticFlags
     SetHasNoDefaultMemberToSet = 1 << 11,
 
     /// <summary>
-    /// It is an addition, a subtraction or a multiplication of <c>Byte</c>, <c>Integer</c> or <c>Long</c> values, one of which is <c>Abs</c>, <c>Int</c> or
-    /// <c>Fix</c> of a number: MS-VBA types that call as the number's type, and the operation overflows (error 6) where MS-VBAL, which declares the call
-    /// <c>As Variant</c>, has a <c>Variant</c> operation widen to a larger type (<c>ArgumentTypedFunctions</c>).
-    /// </summary>
-    OverflowsWhereVariantWidens = 1 << 12,
-
-    /// <summary>
-    /// It is a name of a reserved function of the library written with a type character that does not match the function's declared type (<c>Len$</c>,
-    /// <c>CVar$</c>, <c>Abs%</c>): <strong>MS-VBAL §5.6.10</strong> makes the name invalid, and <strong>MS-VBA</strong> ignores the character.
-    /// </summary>
-    IgnoredTypeCharacter = 1 << 13,
-
-    /// <summary>
     /// It is an object of a class that has no default member, where a value is expected: the value of a <c>Let</c> assignment, an operand of an operator other
     /// than <c>Is</c>, an argument of a parameter declared with a value type. <strong>MS-VBAL §5.5.1.1</strong> makes it statically invalid; <strong>MS-VBA</strong>
     /// compiles it, and raises run-time error 438 (Object doesn't support this property or method) whenever it runs, or 91 when the object is <c>Nothing</c>.
@@ -103,27 +90,12 @@ public enum ValueExpressionSemanticFlags
     EmptyLetToArray = 1 << 15,
 
     /// <summary>
-    /// A call of <c>IsMissing</c> (<strong>MS-VBAL §6.1.2.7.1.6</strong>) of a name that can never hold the Missing value, so that the call is always
-    /// <c>False</c>: a parameter that is not a <c>Variant</c>, which an omitted argument does not leave missing, or an <c>Optional</c> <c>Variant</c> with
-    /// a default value, which an omitted argument gives that value; a variable that is not a <c>Variant</c>; a constant. A <c>Variant</c> parameter with no
-    /// default can be missing, required or not (an omitted argument passed on to it), and so can a <c>ParamArray</c> with no elements, as
-    /// <strong>MS-VBA</strong> has it. A <c>Variant</c> variable can hold the Missing value that is assigned to it.
-    /// </summary>
-    IsMissingAlwaysFalse = 1 << 16,
-
-    /// <summary>
     /// A name of a document module, written where <strong>MS-VBA</strong>'s host makes it the document (<c>Sheet1.Range</c>, <c>ThisWorkbook.Save</c>, in
     /// another module): RD-VBA hosts no document, and the name stands for nothing - a variable that is not declared, or one that is declared by being named
     /// (<strong>MS-VBAL §5.6.10</strong>). Code that works with the document holds it in a variable of the host's class, from an application the program
     /// automates (<see cref="DocumentModuleFact"/>).
     /// </summary>
     HostedDocumentName = 1 << 17,
-
-    /// <summary>
-    /// It is an array given a second empty argument list, <c>f()()</c>: <strong>MS-VBAL §5.6.13.1</strong> makes it invalid, an empty argument list having
-    /// already been specified for the array; <strong>MS-VBA</strong> compiles it as the array, and raises run-time error 9 (Subscript out of range) when it runs.
-    /// </summary>
-    ArrayGivenASecondEmptyArgumentList = 1 << 18,
 
     /// <summary>
     /// It is a public variable of an object named as a member of it (<c>b.Count</c>, <c>Me.Count</c>, <c>.Count</c> in a <c>With</c> block), or an element
@@ -156,14 +128,6 @@ public enum ValueExpressionSemanticFlags
     /// <c>True</c>. <c>Not 1</c> is <c>-2</c>, which is <c>True</c>.
     /// </summary>
     TrueValueIsNotMinusOne = 1 << 22,
-
-    /// <summary>
-    /// It is the variable a <c>For Each</c> walks, named as the target of a <c>Set</c> to <c>Nothing</c> inside that loop (<c>Set C = Nothing</c> in
-    /// <c>For Each V In C</c>). While the loop runs, RD-VBA leaves the variable as it is: the loop still holds the object, which an iteration does not
-    /// destroy. <strong>MS-VBA</strong> lets go of a <c>Collection</c> there, which is destroyed with the members the loop has not reached, and the loop
-    /// ends (observed in Excel). <strong>MS-VBAL §5.4.2.4</strong> leaves the enumeration implementation-defined.
-    /// </summary>
-    CollectionSetToNothingInItsOwnLoop = 1 << 23,
 
     /// <summary>
     /// It is the callee of a call statement (<strong>MS-VBAL §5.4.2.1</strong>) that calls a <c>Function</c>: the value the function

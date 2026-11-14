@@ -23,8 +23,24 @@ public sealed class SemanticFlagsEnumTests
     // an enum member that is a named combination of others (All, or a documented alias) is not a fact of its own.
     private static bool IsCombination(long value) => value != 0 && (value & (value - 1)) != 0;
 
+    // the bits of each member, as wide as the enum's underlying type: an int member 1 << 31 is the bit 31, not a negative long that reads as a combination.
     private static IEnumerable<(string Name, long Value)> Members(Type type)
-        => Enum.GetNames(type).Select(name => (name, Convert.ToInt64(Enum.Parse(type, name))));
+    {
+        var width = System.Runtime.InteropServices.Marshal.SizeOf(Enum.GetUnderlyingType(type)) * 8;
+        var mask = width < 64 ? (1L << width) - 1 : -1L;
+        return Enum.GetNames(type).Select(name => (name, Convert.ToInt64(Enum.Parse(type, name)) & mask));
+    }
+
+    [Flags]
+    private enum WithTheHighBit
+    {
+        Low = 1 << 0,
+        High = 1 << 31,
+    }
+
+    [TestMethod]
+    public void TheHighBitOfAnIntEnum_IsABitOfItsOwn()
+        => Assert.IsFalse(Members(typeof(WithTheHighBit)).Any(member => IsCombination(member.Value)), "1 << 31 read as a combination");
 
     [TestMethod]
     public void TheFlagsEnums_AreFound()
