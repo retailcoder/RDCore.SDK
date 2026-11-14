@@ -96,8 +96,9 @@ public interface IFileChannel
     long Origin { get; }
 
     /// <summary>
-    /// Whether the last record read (<see cref="TryReadRecord"/>, <see cref="TryReadRecordInto"/>) could not be read entirely: what <c>EOF</c> is for a channel
-    /// opened <see cref="VBFileMode.Random"/> or <see cref="VBFileMode.Binary"/> (<strong>MS-VBAL §6.1.2.5.1.3</strong>), <c>False</c> until a read fails.
+    /// Whether the last record read (<see cref="TryReadRecord"/>, <see cref="TryReadRecordInto(Model.Values.Intrinsic.VBUserDefinedTypeValue)"/>,
+    /// <see cref="TryReadRecordInto(Model.Values.Intrinsic.VBArrayValue)"/>) ran past the end of the file: what <c>EOF</c> is for a channel
+    /// opened <see cref="VBFileMode.Random"/> or <see cref="VBFileMode.Binary"/> (<strong>MS-VBAL §6.1.2.5.1.3</strong>), <c>False</c> until a read does.
     /// </summary>
     bool IsPastEndOfRecords { get; }
 
@@ -166,20 +167,27 @@ public interface IFileChannel
     /// <param name="value">The value to write.</param>
     /// <param name="isVariant">Whether the <c>data</c> expression's declared type is <c>Variant</c>, which the
     /// format precedes with a two-byte type descriptor.</param>
-    /// <param name="written">How many bytes reached the file, which <c>Put</c> checks against a record length.</param>
-    /// <returns><c>false</c> for a value the format has no row for: an object, or a UDT.</returns>
+    /// <param name="written">How many bytes the record is, which <c>Put</c> checks against a record length. A channel opened
+    /// <see cref="VBFileMode.Random"/> writes nothing of a record longer than its <see cref="RecordLength"/>, as MS-VBA does.</param>
+    /// <returns><c>false</c> for a value the format has no row for: an object, or a <c>Variant</c> that holds one.</returns>
     bool TryWriteRecord(Model.Values.Abstract.VBTypedValue value, bool isVariant, out int written);
 
     /// <summary>
     /// Reads one record at the current <em>file-pointer-position</em>: what a <c>Get</c> statement does
     /// (<strong>MS-VBAL §5.4.5.12</strong>).
     /// </summary>
+    /// <remarks>
+    /// A record that runs past the end of the file reads a zero for each byte the file does not have, and moves the
+    /// <em>file-pointer-position</em> past the whole record, as MS-VBA does: no error is raised, and <see cref="IsPastEndOfRecords"/> is then
+    /// <c>True</c>.
+    /// </remarks>
     /// <param name="declaredType">The declared type of the variable being read into, which decides how many
-    /// bytes the record occupies, except for a <c>Variant</c>, where the record's own descriptor decides.</param>
+    /// bytes the record occupies, except for a <c>Variant</c>, where the record's own descriptor decides, and for a resizable array read from a
+    /// <see cref="VBFileMode.Random"/> channel, which takes the bounds the record gives.</param>
     /// <param name="currentLength">The length of the variable's current value, which is how many bytes a
     /// <c>String</c> read from a <see cref="VBFileMode.Binary"/> channel takes.</param>
     /// <param name="value">The value read.</param>
-    /// <returns><c>false</c> at end of file, or for a declared type the format has no row for.</returns>
+    /// <returns><c>false</c> for a declared type the format has no row for.</returns>
     bool TryReadRecord(Model.Types.Abstract.VBType declaredType, int currentLength, out Model.Values.Abstract.VBTypedValue? value);
 
     /// <summary>
@@ -193,8 +201,21 @@ public interface IFileChannel
     /// record written by a <c>Put</c> of the same type reads straight back.
     /// </remarks>
     /// <param name="userDefinedType">The UDT value whose fields are filled.</param>
-    /// <returns><c>false</c> at end of file, or for a field whose type the format has no row for.</returns>
+    /// <returns><c>false</c> for a field whose type the format has no row for.</returns>
     bool TryReadRecordInto(Model.Values.Intrinsic.VBUserDefinedTypeValue userDefinedType);
+
+    /// <summary>
+    /// Reads one record into the elements of <paramref name="array"/>, the first subscript varying fastest: what a <c>Get</c> whose variable is a
+    /// fixed-size array, or a resizable array read from a <see cref="VBFileMode.Binary"/> channel, does (<strong>MS-VBAL §5.4.5.12</strong>).
+    /// </summary>
+    /// <remarks>
+    /// The array keeps its bounds, which are what say how many elements the record holds; the record has none of its own. Each element is read
+    /// as an element of an array field of a UDT is: a <c>String</c> with its two-byte length, a <c>Variant</c> with its type descriptor. An array
+    /// with no elements reads nothing, and a resizable array that was never sized has none (MS-VBA, recorded in Excel).
+    /// </remarks>
+    /// <param name="array">The array whose elements are replaced.</param>
+    /// <returns><c>false</c> for an element type the format has no row for.</returns>
+    bool TryReadRecordInto(Model.Values.Intrinsic.VBArrayValue array);
 }
 
 /// <summary>
