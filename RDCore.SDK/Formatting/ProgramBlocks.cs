@@ -7,25 +7,25 @@ namespace RDCore.SDK.Formatting;
 
 /// <summary>
 /// A block of a program of the platform's BASIC (<see cref="BasicProgramText"/>) that is open at one of its lines: its opener is at or before the line, and
-/// the program has no closer for it yet.
+/// the program has no closer for it.
 /// </summary>
 /// <param name="Opener">The index of the block's opener in the program's statements: its <c>If</c>, <c>Select Case</c>, <c>For</c>, <c>Do</c>, <c>While</c>
 /// or <c>With</c> line.</param>
-/// <param name="Branch">The index of the line the block's last branch at or before the line starts on: an <c>ElseIf</c>, an <c>Else</c>, a <c>Case</c> or a
-/// <c>Case Else</c> line; the opener's when the block has no branch there.</param>
+/// <param name="Branch">The index of the line that starts the block's last branch at or before the line: an <c>ElseIf</c>, an <c>Else</c>, a <c>Case</c>
+/// or a <c>Case Else</c> line; <paramref name="Opener"/> when the block has no branch there.</param>
 /// <param name="Closer">The keywords that close the block: <c>End If</c>, <c>End Select</c>, <c>Next</c>, <c>Loop</c>, <c>Wend</c> or <c>End With</c>.</param>
-/// <param name="HasBody">Whether the block's last branch has a statement at or before the line: the line is not <paramref name="Branch"/>.</param>
+/// <param name="HasBody">Whether the line comes after <paramref name="Branch"/>, so that the block's last branch has a statement at or before the line.</param>
 public readonly record struct ProgramBlock(int Opener, int Branch, string Closer, bool HasBody);
 
 /// <summary>
-/// The blocks of a program of the platform's BASIC (<see cref="BasicProgramText"/>) that a line is in and that are not closed yet, as a shell offers to close
+/// The blocks of a program of the platform's BASIC (<see cref="BasicProgramText"/>) that a line is in and that the program does not close, as a shell offers to close
 /// them while the program is typed one numbered line at a time.
 /// </summary>
 /// <remarks>
 /// <para>
-/// What is a block, and which closer ends it, is what the program's syntax tree says, as <see cref="ProgramIndenter"/> has it: an <c>If</c> block (MS-VBAL
-/// 5.4.2.8), a <c>Select Case</c> (5.4.2.10), a <c>For</c> or <c>For Each</c> loop (5.4.2.3, 5.4.2.4), a <c>Do</c> loop (5.4.2.6), a <c>While</c> loop
-/// (5.4.2.2) and a <c>With</c> block (5.4.2.21). A one-line <c>If</c> (5.4.2.9) is no block.
+/// What is a block, and which closer ends it, is what the program's syntax tree says, as <see cref="ProgramIndenter"/> has it: an <c>If</c> block
+/// (MS-VBAL §5.4.2.8), a <c>Select Case</c> (§5.4.2.10), a <c>For</c> or <c>For Each</c> loop (§5.4.2.3, §5.4.2.4), a <c>Do</c> loop (§5.4.2.6), a
+/// <c>While</c> loop (§5.4.2.2) and a <c>With</c> block (§5.4.2.21). A single-line <c>If</c> (§5.4.2.9) is not a block.
 /// </para>
 /// <para>
 /// A block is closed by a statement that starts with its closer on the line it ends on, the last statement of its lines or one after a colon

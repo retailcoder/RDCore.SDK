@@ -793,7 +793,7 @@ public static partial class ModuleIndenter
         return end < lastCode && BodyEnd(node, module, start, end) == end;
     }
 
-    // the statement blocks of a module that have no closer yet, each with the closer it needs, in the order of the tree. A block is closed by a closer on the
+    // the statement blocks of a module that have no closer, each with the closer it needs, in the order of the tree. A block is closed by a closer on the
     // line it ends on that no block in it closes with: the inner blocks are looked at first, and a line has as many closers as it has statements that start
     // with one (Next j, i: one for each of its names).
     internal static List<(StatementNode Block, string Closer)> UnclosedBlocks(ModuleParseResult parse, string[] lines)
