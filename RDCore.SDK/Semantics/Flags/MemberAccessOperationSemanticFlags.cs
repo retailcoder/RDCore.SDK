@@ -46,7 +46,7 @@ public enum MemberAccessOperationSemanticFlags
     NewEnumMember = 1 << 7,
     /// <summary>
     /// The member access operation gives the member the argument list the code writes for it, empty or not: <c>b(1)</c> and <c>b()</c>, read or assigned,
-    /// give theirs to the default member of <c>b</c> (<strong>MS-VBAL §5.6.13</strong>), and <c>b.Item(1)</c> gives its to <c>Item</c>.
+    /// give their lists to the default member of <c>b</c> (<strong>MS-VBAL §5.6.13</strong>), and <c>b.Item(1)</c> gives its list to <c>Item</c>.
     /// </summary>
     /// <remarks>
     /// Arguments given to a member that declares no parameters are not its: they index the array that a public variable holds, or what a
@@ -54,8 +54,8 @@ public enum MemberAccessOperationSemanticFlags
     /// (<c>a(1) = 5</c>, <strong>MS-VBAL §5.4.3.8</strong>) gives that default member no argument: the subscripts select the element. A dictionary access is
     /// stated with <see cref="DictionaryAccess"/> instead.
     /// <para>
-    /// A member the code names and assigns (<c>b.Item(1) = 5</c>) is stated with it when it is given arguments and the host knows the members of the object's
-    /// class; a member of an object called late through automation, assigned, is not.
+    /// A member the code names and assigns (<c>b.Item(1) = 5</c>) has this flag where it is given arguments and the host knows the members of the object's
+    /// class. An assigned member of an object called late through automation does not have it.
     /// </para>
     /// </remarks>
     ArgumentList = 1 << 9,
