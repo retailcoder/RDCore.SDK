@@ -44,7 +44,19 @@ public enum MemberAccessOperationSemanticFlags
     /// If this operation is also <c>Implicit</c>, the parent node is probably a <c>For...Next</c> loop.
     /// </remarks>
     NewEnumMember = 1 << 7,
+    /// <summary>
+    /// The member access operation gives the member the argument list the code writes for it: <c>b(1)</c>, read or assigned, gives <c>1</c> to the
+    /// default member of <c>b</c> (<strong>MS-VBAL §5.6.13</strong>), and <c>b.Item(1)</c> gives it to <c>Item</c>.
+    /// </summary>
+    /// <remarks>
+    /// An element of an array that is assigned a value through the default member of the object it holds (<c>a(1) = 5</c>, <strong>MS-VBAL §5.4.3.8</strong>)
+    /// gives that default member no argument: the subscripts select the element. A dictionary access is stated with <see cref="DictionaryAccess"/> instead.
+    /// </remarks>
+    ArgumentList = 1 << 9,
 
-    All = Explicit | Implicit | WithBlockVariable | DictionaryAccess | CallByNameAccess | LateBound 
-        | DefaultMember | NewEnumMember
+    /// <summary>
+    /// Every flag.
+    /// </summary>
+    All = Explicit | Implicit | WithBlockVariable | DictionaryAccess | CallByNameAccess | LateBound
+        | DefaultMember | NewEnumMember | ArgumentList
 }
