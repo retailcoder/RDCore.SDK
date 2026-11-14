@@ -7,7 +7,7 @@ Ce fichier accompagne le code source de RDCore.SDK et chaque paquet publié à p
 
 ## Licence
 
-Le contenu de ce référentiel est distribué sous la licence **MIT** : voir [LICENSE](LICENSE). Le fichier de licence reproduit le texte officiel de la licence, en anglais. Une version française est disponible sur demande.
+Le contenu de ce dépôt est distribué sous la licence **MIT** : voir [LICENSE](LICENSE). Le fichier de licence reproduit le texte officiel de la licence, en anglais. Une version française est disponible sur demande.
 
 ## Code tiers
 
