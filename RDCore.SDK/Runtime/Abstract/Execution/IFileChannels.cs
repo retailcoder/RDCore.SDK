@@ -480,6 +480,28 @@ public interface IFileChannels
     Extensibility.Diagnostics.RDCoreDiagnosticCode? TryGetLength(string path, out long length);
 
     /// <summary>
+    /// Reads every byte of a file, opening no channel and taking no file number: what <c>LoadPicture</c> reads a picture from.
+    /// </summary>
+    /// <param name="path">The path of the file.</param>
+    /// <param name="bytes">Its bytes; empty when an error stopped it.</param>
+    /// <returns>
+    /// The error that stopped it, or <c>null</c>: <c>52</c> for a pattern, <c>53</c> for a file that does not exist or no path, <c>76</c> for a folder that does not,
+    /// <c>75</c> for a directory or a file the file system cannot read, <c>70</c> for one the program may not read.
+    /// </returns>
+    Extensibility.Diagnostics.RDCoreDiagnosticCode? TryReadAll(string path, out byte[] bytes);
+
+    /// <summary>
+    /// Writes a file whole, replacing what it held, opening no channel and taking no file number: what <c>SavePicture</c> writes a picture to.
+    /// </summary>
+    /// <param name="path">The path of the file.</param>
+    /// <param name="bytes">What the file is to hold.</param>
+    /// <returns>
+    /// The error that stopped it, or <c>null</c>: <c>52</c> for a pattern, <c>55</c> for a file a channel has open, <c>76</c> for a folder that does not exist,
+    /// <c>75</c> for no path, a directory, or a file the file system cannot write, <c>70</c> for one the program may not write.
+    /// </returns>
+    Extensibility.Diagnostics.RDCoreDiagnosticCode? TryWriteAll(string path, byte[] bytes);
+
+    /// <summary>
     /// When a file or a directory was last modified (<c>FileDateTime</c>, <strong>MS-VBAL §6.1.2.5.1.5</strong>), local time.
     /// </summary>
     /// <param name="path">The path of the file or the directory.</param>
