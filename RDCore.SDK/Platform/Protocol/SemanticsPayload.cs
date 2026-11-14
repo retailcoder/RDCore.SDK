@@ -362,7 +362,6 @@ public record class ProcedureSemanticsDto(
 /// <param name="Role">What it is there for, when it implements an interface member or handles an event.</param>
 /// <param name="DeclaredBy">How a local variable came to be declared; <see langword="null"/> for any other declaration.</param>
 /// <param name="Hides">What a local or a parameter hides; <see langword="null"/> when it hides nothing, and for any other declaration.</param>
-/// <param name="AutoInstantiationAlwaysFails">Whether it is a variable declared <c>As New</c> of a class whose objects are never created.</param>
 /// <param name="ReferencedFrom">Each reference to it, in any module of the project; <see langword="null"/> exactly when <paramref name="References"/> is.</param>
 /// <param name="TypeKind">The kind of type it is declared as, or of its elements' type for an array; <see langword="null"/> when it has no type, or one that did
 /// not resolve.</param>
@@ -373,7 +372,7 @@ public record class ProcedureSemanticsDto(
 /// </param>
 public record class DeclarationFactDto(
     Uri Symbol, string Name, DeclarationKind Kind, AccessModifier Access, bool IsImplicit, SourceLocation Location, DeclarationReferences? References,
-    DeclarationRole Role = DeclarationRole.None, LocalDeclarationKind? DeclaredBy = null, HiddenDeclaration? Hides = null, bool AutoInstantiationAlwaysFails = false,
+    DeclarationRole Role = DeclarationRole.None, LocalDeclarationKind? DeclaredBy = null, HiddenDeclaration? Hides = null,
     ImmutableArray<DeclarationReference>? ReferencedFrom = null, DeclaredTypeKind? TypeKind = null, bool IsArray = false, Uri? AutoInstantiates = null);
 
 /// <summary>
@@ -425,7 +424,7 @@ public record class ModuleSemanticsDto(
             procedure.Arguments.IsDefaultOrEmpty ? null : procedure.Arguments))],
         [.. model.Declarations.Select(declaration => new DeclarationFactDto(
             declaration.Symbol.Uri, declaration.Name, declaration.Kind, declaration.Access, declaration.IsImplicit, declaration.Location, declaration.References, declaration.Role,
-            declaration.DeclaredBy, declaration.Hides, declaration.AutoInstantiationAlwaysFails, declaration.ReferencedFrom, declaration.TypeKind, declaration.IsArray,
+            declaration.DeclaredBy, declaration.Hides, declaration.ReferencedFrom, declaration.TypeKind, declaration.IsArray,
             declaration.AutoInstantiates?.Uri))],
         model.Language,
         model.Class,

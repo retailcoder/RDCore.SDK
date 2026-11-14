@@ -273,13 +273,6 @@ public sealed record class DeclarationFact(
     public ImmutableArray<DeclarationReference>? ReferencedFrom { get; init; }
 
     /// <summary>
-    /// Whether it is a variable declared <c>As New</c> of a class whose objects are never created (<c>Dim e As New ErrObject</c>): <strong>MS-VBA</strong>
-    /// compiles the declaration, and every reference to the variable that creates its object raises run-time error -2147221164 <em>Class not
-    /// registered</em> (recorded in Excel: <c>oracle\s62</c> X06, X07, X09). Assigning it <c>Nothing</c> creates nothing.
-    /// </summary>
-    public bool AutoInstantiationAlwaysFails { get; init; }
-
-    /// <summary>
     /// The class whose object the variable is given where code first uses it, for a variable declared <c>As New</c>, or an array whose elements are
     /// (<strong>MS-VBAL §5.2.3.1.4</strong>): <see cref="ModuleSemanticModel.Classes"/> says what is known of creating its objects. <see langword="null"/>
     /// for any other declaration.
