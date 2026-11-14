@@ -62,6 +62,15 @@ public sealed record class LibraryDescription
     public ImmutableArray<ClassDescription> Classes { get; init; } = [];
 
     /// <summary>
+    /// The modules the library declares: standard modules, whose members are procedures called on no object, and names of a project that references the
+    /// library, as the standard library's are (<c>LoadPicture</c> of the OLE Automation library's <c>StdFunctions</c>). A module is not a type.
+    /// </summary>
+    /// <remarks>
+    /// Stated from format version 3 of the file (<see cref="LibraryJson.CurrentFormatVersion"/>).
+    /// </remarks>
+    public ImmutableArray<ModuleDescription> Modules { get; init; } = [];
+
+    /// <summary>
     /// This description, with what <paramref name="replaced"/> states that a type library cannot: each member that is design-time only there
     /// (<see cref="MemberDescription.IsDesignTimeOnly"/>) is design-time only here, matched by its class's name, its name and its kind, ignoring case.
     /// </summary>
@@ -209,6 +218,34 @@ public sealed record class ClassDescription
 
     /// <summary>The events the class raises, in declaration order.</summary>
     public ImmutableArray<EventDescription> Events { get; init; } = [];
+}
+
+/// <summary>
+/// A module a library declares: a type library's module, whose functions a project that references the library calls by name, or qualified by the library and
+/// the module (<c>stdole.StdFunctions.LoadPicture</c>).
+/// </summary>
+public sealed record class ModuleDescription
+{
+    /// <summary>
+    /// The name of the module.
+    /// </summary>
+    public string Name { get; init; } = string.Empty;
+
+    /// <summary>
+    /// What the library says the module is.
+    /// </summary>
+    public string? Description { get; init; }
+
+    /// <summary>
+    /// Whether the library leaves it out of what it shows.
+    /// </summary>
+    public bool IsHidden { get; init; }
+
+    /// <summary>
+    /// The procedures of the module, in declaration order: each is a <see cref="MemberKind.Method"/>, a <c>Function</c> when it has a
+    /// <see cref="MemberDescription.Type"/>.
+    /// </summary>
+    public ImmutableArray<MemberDescription> Members { get; init; } = [];
 }
 
 /// <summary>

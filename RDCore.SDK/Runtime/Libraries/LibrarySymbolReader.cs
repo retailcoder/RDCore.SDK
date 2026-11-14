@@ -108,7 +108,7 @@ public sealed class LibrarySymbolReader(Uri workspaceRoot, bool is64Bit = true)
                     var module = new VBStandardModuleSymbol(workspaceRoot, new VBProjectSymbol(workspaceRoot, library.Name).Uri, description.Name)
                         .With(SymbolProperties.Library, library.Name);
                     symbols.Add(module);
-                    symbols.AddRange(description.Members.Select(member => ReadMember(library, description, member, module.Uri, types, ScopeKind.Module)));
+                    symbols.AddRange(description.Members.Select(member => ReadMember(library, description.Name, member, module.Uri, types, ScopeKind.Module)));
                     return;
                 }
 
@@ -132,10 +132,20 @@ public sealed class LibrarySymbolReader(Uri workspaceRoot, bool is64Bit = true)
             {
                 ReadAfterDependencies(description);
             }
+
+            // a module of the library is a standard module of its project, read after the classes its procedures are declared as: the procedures are names of
+            // the project at the library's rank, with no Me.
+            foreach (var description in library.Modules)
+            {
+                var module = new VBStandardModuleSymbol(workspaceRoot, new VBProjectSymbol(workspaceRoot, library.Name).Uri, description.Name)
+                    .With(SymbolProperties.Library, library.Name);
+                symbols.Add(module);
+                symbols.AddRange(description.Members.Select(member => ReadMember(library, description.Name, member, module.Uri, types, ScopeKind.Module)));
+            }
         }
 
         // what shadows what is read off the symbols that are names of the project - the library's project, its module of enumerations, the enumerations and their
-        // constants, the classes, and the Visual Basic 6.0 library's Global module and its members. The members of a class are reached through an object, and no
+        // constants, the classes, the library's modules and their procedures, and the Visual Basic 6.0 library's Global module and its members. The members of a class are reached through an object, and no
         // name of the project is one of them.
         var rankOf = priorities ?? libraries.Select((library, index) => (library.Name, Rank: index + 1)).ToDictionary(entry => entry.Name, entry => entry.Rank, StringComparer.OrdinalIgnoreCase);
         return [.. symbols.Select(symbol => symbol.GetProperty(SymbolProperties.Library) is { } library && rankOf.TryGetValue(library, out var rank)
@@ -190,7 +200,7 @@ public sealed class LibrarySymbolReader(Uri workspaceRoot, bool is64Bit = true)
 
         ImmutableArray<VBTypeMemberSymbol> members =
         [
-            .. description.Members.Select(member => ReadMember(library, description, member, symbol.Uri, types)),
+            .. description.Members.Select(member => ReadMember(library, description.Name, member, symbol.Uri, types)),
             .. description.Events.Select(declaredEvent => ReadEvent(library, declaredEvent, symbol.Uri, types)),
         ];
 
@@ -215,7 +225,7 @@ public sealed class LibrarySymbolReader(Uri workspaceRoot, bool is64Bit = true)
     }
 
     private VBTypeMemberSymbol ReadMember(
-        LibraryDescription library, ClassDescription owner, MemberDescription description, Uri ownerUri, TypeNames types,
+        LibraryDescription library, string owner, MemberDescription description, Uri ownerUri, TypeNames types,
         ScopeKind scope = ScopeKind.Instance)
     {
         var returnType = description.Type is { Length: > 0 } type ? types.Resolve(type, library) : VBVoidType.TypeInfo;
@@ -247,7 +257,7 @@ public sealed class LibrarySymbolReader(Uri workspaceRoot, bool is64Bit = true)
         };
 
         member = member.With(SymbolProperties.Library, library.Name)
-            .With(SymbolProperties.ExternalTarget, ExternalTargetOf(library, owner, description));
+            .With(SymbolProperties.ExternalTarget, ExternalTargetOf(library.Name, owner, description));
 
         // what the library says the member does: what a completion list and a signature help show of it.
         if (description.Description is { Length: > 0 } docString)
@@ -293,7 +303,20 @@ public sealed class LibrarySymbolReader(Uri workspaceRoot, bool is64Bit = true)
     /// <param name="owner">The class.</param>
     /// <param name="member">The member.</param>
     public static string ExternalTargetOf(LibraryDescription library, ClassDescription owner, MemberDescription member)
-        => $"{library.Name}.{owner.Name}.{member.Name}/{member.Kind switch
+        => ExternalTargetOf(library.Name, owner.Name, member);
+
+    /// <summary>
+    /// The key a procedure of a library module carries as <see cref="SymbolProperties.ExternalTarget"/>: <c>Library.Module.Procedure/method</c>, in the format
+    /// of a class member's (<see cref="ExternalTargetOf(LibraryDescription, ClassDescription, MemberDescription)"/>).
+    /// </summary>
+    /// <param name="library">The library.</param>
+    /// <param name="owner">The module.</param>
+    /// <param name="member">The procedure.</param>
+    public static string ExternalTargetOf(LibraryDescription library, ModuleDescription owner, MemberDescription member)
+        => ExternalTargetOf(library.Name, owner.Name, member);
+
+    private static string ExternalTargetOf(string library, string owner, MemberDescription member)
+        => $"{library}.{owner}.{member.Name}/{member.Kind switch
         {
             MemberKind.PropertyGet => "get",
             MemberKind.PropertyLet => "let",
