@@ -133,14 +133,15 @@ public sealed class LibrarySymbolReader(Uri workspaceRoot, bool is64Bit = true)
                 ReadAfterDependencies(description);
             }
 
-            // a module of the library is a standard module of its project, read after the classes its procedures are declared as: the procedures are names of
-            // the project at the library's rank, with no Me.
+            // a module of the library is a standard module of its project, read after the classes its procedures are declared as: the procedures and the
+            // constants are names of the project at the library's rank, and a procedure has no Me.
             foreach (var description in library.Modules)
             {
                 var module = new VBStandardModuleSymbol(workspaceRoot, new VBProjectSymbol(workspaceRoot, library.Name).Uri, description.Name)
                     .With(SymbolProperties.Library, library.Name);
                 symbols.Add(module);
                 symbols.AddRange(description.Members.Select(member => ReadMember(library, description.Name, member, module.Uri, types, ScopeKind.Module)));
+                symbols.AddRange(description.Constants.Select(constant => ReadConstant(library, constant, module.Uri, types)).OfType<Symbol>());
             }
         }
 
@@ -280,6 +281,57 @@ public sealed class LibrarySymbolReader(Uri workspaceRoot, bool is64Bit = true)
         return (VBTypeMemberSymbol)(description.IsHidden
             ? member.With(SymbolProperties.MemberFlags, member.GetProperty(SymbolProperties.MemberFlags) | SymbolProperties.HiddenMemberFlag)
             : member);
+    }
+
+    // a constant of a library module is a Public Const of the module (MS-VBAL §5.2.3.1), whose expression is a literal of its declared type: `Const x As
+    // Integer = 3` is an Integer wherever it is used. One whose value is not a literal of that type is not one a program can use, and is not read.
+    private VBConstantMemberSymbol? ReadConstant(LibraryDescription library, ConstantDescription description, Uri moduleUri, TypeNames types)
+    {
+        var type = types.Resolve(description.Type, library);
+        if (description.Value is not { Length: > 0 } text || ConstantOf(text, type) is not { } value)
+        {
+            return null;
+        }
+
+        Symbol constant = new VBConstantMemberSymbol(
+            workspaceRoot, moduleUri, description.Name, ScopeKind.Module, value.TypeInfo, SourceRange.Empty, SourceRange.Empty, AccessModifier.Public,
+            new LiteralExpressionNode(new SyntaxNodeId(moduleUri.AbsolutePath, []), new SourceLocation(moduleUri, SourceRange.Empty), value))
+            .With(SymbolProperties.Library, library.Name);
+
+        if (description.Description is { Length: > 0 } docString)
+        {
+            constant = constant.With(SymbolProperties.DocString, docString);
+        }
+
+        return (VBConstantMemberSymbol)(description.IsHidden
+            ? constant.With(SymbolProperties.MemberFlags, constant.GetProperty(SymbolProperties.MemberFlags) | SymbolProperties.HiddenMemberFlag)
+            : constant);
+    }
+
+    // the literal as a value of the constant's declared type; an enumeration's constant is a Long, as an enumeration's members are (MS-VBAL §5.2.3.4).
+    private static VBTypedValue? ConstantOf(string text, VBType type)
+    {
+        var literal = LiteralOf(text);
+        var number = literal switch
+        {
+            VBLongValue whole => (double?)whole.Value,
+            VBDoubleValue real => real.Value,
+            _ => null,
+        };
+
+        return (type, literal, number) switch
+        {
+            (VBStringType, VBStringValue, _) or (VBBooleanType, VBBooleanValue, _) => literal,
+            (VBVariantType, not null, _) => literal,
+            (VBByteType, _, >= byte.MinValue and <= byte.MaxValue) when number % 1 == 0 => new VBByteValue((byte)number.Value),
+            (VBIntegerType, _, >= short.MinValue and <= short.MaxValue) when number % 1 == 0 => new VBIntegerValue((short)number.Value),
+            (VBLongType or VBEnumType, _, >= int.MinValue and <= int.MaxValue) when number % 1 == 0 => new VBLongValue((int)number.Value),
+            (VBLongLongType, _, not null) when long.TryParse(text, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var big) => new VBLongLongValue(big),
+            (VBSingleType, _, not null) => new VBSingleValue((float)number.Value),
+            (VBDoubleType, _, not null) => new VBDoubleValue(number.Value),
+            (VBCurrencyType, _, not null) when decimal.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var money) => new VBCurrencyValue(money),
+            _ => null,
+        };
     }
 
     private VBTypeMemberSymbol ReadEvent(LibraryDescription library, EventDescription description, Uri ownerUri, TypeNames types)

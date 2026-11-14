@@ -1,6 +1,9 @@
+using RDCore.SDK.Model;
+using RDCore.SDK.Model.AST.Expressions;
 using RDCore.SDK.Model.Symbols;
 using RDCore.SDK.Model.Symbols.Abstract;
 using RDCore.SDK.Model.Symbols.VBProject;
+using RDCore.SDK.Model.Values.Abstract;
 using RDCore.SDK.Runtime.Libraries;
 
 namespace RDCore.Tests.Runtime.Libraries;
@@ -96,6 +99,69 @@ public sealed class LibraryModuleTests
 
         var save = symbols.OfType<VBProcedureMemberSymbol>().Single(symbol => symbol.Name == "SavePicture");
         Assert.AreEqual("stdole.StdFunctions.SavePicture/method", save.GetProperty(SymbolProperties.ExternalTarget));
+    }
+
+    // DAO's LanguageConstants, and constants of other types, one of them of a value its type cannot hold.
+    private const string Constants = """
+        {
+          "formatVersion": 3,
+          "name": "DAO",
+          "enums": [ { "name": "RecordsetTypeEnum", "members": [ { "name": "dbOpenTable", "value": 1 } ] } ],
+          "modules": [
+            {
+              "name": "LanguageConstants",
+              "constants": [
+                { "name": "dbLangGeneral", "type": "String", "value": "\";LANGID=0x0409;CP=1252;COUNTRY=0\"" },
+                { "name": "dbSmall", "type": "Integer", "value": "-3" },
+                { "name": "dbLarge", "type": "Long", "value": "70000" },
+                { "name": "dbOn", "type": "Boolean", "value": "True", "isHidden": true },
+                { "name": "dbKind", "type": "RecordsetTypeEnum", "value": "2" },
+                { "name": "dbTooLarge", "type": "Integer", "value": "70000" },
+                { "name": "dbNoValue", "type": "Long" }
+              ]
+            }
+          ]
+        }
+        """;
+
+    [TestMethod]
+    [DataRow("dbLangGeneral", "String", ";LANGID=0x0409;CP=1252;COUNTRY=0")]
+    [DataRow("dbSmall", "Integer", "-3")]
+    [DataRow("dbLarge", "Long", "70000")]
+    [DataRow("dbOn", "Boolean", "True")]
+    [DataRow("dbKind", "Long", "2", DisplayName = "an enumeration's constant is a Long")]
+    public void AModuleConstant_IsAPublicConstOfTheModule_OfItsDeclaredType(string name, string type, string value)
+    {
+        var symbols = new LibrarySymbolReader(Root).Read([LibraryJson.Read(Constants)]);
+        var module = symbols.OfType<VBStandardModuleSymbol>().Single(symbol => symbol.Name == "LanguageConstants");
+
+        var constant = symbols.OfType<VBConstantMemberSymbol>().Single(symbol => symbol.Name == name);
+        Assert.AreEqual(module.Uri, constant.ParentUri);
+        Assert.AreEqual(AccessModifier.Public, constant.AccessModifier);
+        Assert.AreEqual("DAO", constant.GetProperty(SymbolProperties.Library));
+        Assert.AreEqual(type, constant.ResolvedType.Name);
+        var literal = (LiteralExpressionNode)constant.Value!;
+        Assert.AreEqual(type, literal.StaticValue.TypeInfo.Name);
+        Assert.AreEqual(value, literal.StaticValue switch
+        {
+            VBNumericTypedValue number => number.AsDouble.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            var other => other.ToString(),
+        });
+    }
+
+    [TestMethod]
+    [DataRow("dbTooLarge", DisplayName = "a value its type cannot hold")]
+    [DataRow("dbNoValue", DisplayName = "no value")]
+    public void AModuleConstant_WithNoValueOfItsType_IsNotRead(string name)
+        => Assert.IsFalse(new LibrarySymbolReader(Root).Read([LibraryJson.Read(Constants)]).Any(symbol => symbol.Name == name));
+
+    [TestMethod]
+    public void AHiddenModuleConstant_IsHidden()
+    {
+        var symbols = new LibrarySymbolReader(Root).Read([LibraryJson.Read(Constants)]);
+
+        Assert.AreNotEqual(0, symbols.Single(symbol => symbol.Name == "dbOn").GetProperty(SymbolProperties.MemberFlags) & SymbolProperties.HiddenMemberFlag);
+        Assert.AreEqual(0, symbols.Single(symbol => symbol.Name == "dbSmall").GetProperty(SymbolProperties.MemberFlags) & SymbolProperties.HiddenMemberFlag);
     }
 
     [TestMethod]

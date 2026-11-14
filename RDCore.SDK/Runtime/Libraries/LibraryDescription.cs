@@ -246,6 +246,44 @@ public sealed record class ModuleDescription
     /// <see cref="MemberDescription.Type"/>.
     /// </summary>
     public ImmutableArray<MemberDescription> Members { get; init; } = [];
+
+    /// <summary>
+    /// The constants of the module, in declaration order: names of a project that references the library, as a standard module's <c>Public Const</c> are
+    /// (<c>dbLangGeneral</c> of DAO's <c>LanguageConstants</c>).
+    /// </summary>
+    public ImmutableArray<ConstantDescription> Constants { get; init; } = [];
+}
+
+/// <summary>
+/// A constant of a module a library declares (<strong>MS-VBAL §5.2.3.1</strong>).
+/// </summary>
+public sealed record class ConstantDescription
+{
+    /// <summary>
+    /// The name of the constant.
+    /// </summary>
+    public string Name { get; init; } = string.Empty;
+
+    /// <summary>
+    /// The declared type of the constant, written as VBA source writes it (<see cref="ParameterDescription.Type"/>): an intrinsic type other than an object.
+    /// </summary>
+    public string Type { get; init; } = "Variant";
+
+    /// <summary>
+    /// The value of the constant, written as a VBA literal: <c>True</c>, a number, or a string in double quotes. A constant whose value is not one of these is
+    /// not read as a symbol.
+    /// </summary>
+    public string? Value { get; init; }
+
+    /// <summary>
+    /// What the library says the constant is.
+    /// </summary>
+    public string? Description { get; init; }
+
+    /// <summary>
+    /// Whether the library leaves it out of what it shows.
+    /// </summary>
+    public bool IsHidden { get; init; }
 }
 
 /// <summary>
