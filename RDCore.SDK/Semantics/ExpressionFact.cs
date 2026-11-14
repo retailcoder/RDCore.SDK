@@ -104,8 +104,8 @@ public sealed record class ExpressionFact(
     public VBTypedValue? ConstantValue { get; init; }
 
     /// <summary>
-    /// The accessors of the property the expression names (<strong>MS-VBAL §5.3.1.7</strong>): those its module declares of the name, or its class, for a
-    /// member of an object. <see cref="PropertyAccessors.None"/> for an expression that names no property.
+    /// The accessors of the property the expression names (<strong>MS-VBAL §5.3.1.7</strong>): those its module declares under the name, or, for a member
+    /// of an object, those its class declares. <see cref="PropertyAccessors.None"/> for an expression that names no property.
     /// </summary>
     public PropertyAccessors Accessors { get; init; }
 

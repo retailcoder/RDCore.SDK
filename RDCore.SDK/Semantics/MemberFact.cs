@@ -32,9 +32,12 @@ public enum PropertyAccessors
 /// (<strong>MS-VBAL §5.6.2.3</strong>, <strong>§5.4.3.8</strong>).
 /// </summary>
 /// <param name="Name">The name of the member.</param>
-/// <param name="Classification">What the member is: a <see cref="ExpressionClassification.Function"/>, a <see cref="ExpressionClassification.Property"/>, or a <see cref="ExpressionClassification.Subroutine"/>.</param>
+/// <param name="Classification">
+/// What the member is: a <see cref="ExpressionClassification.Function"/>, a <see cref="ExpressionClassification.Property"/>, or a
+/// <see cref="ExpressionClassification.Subroutine"/>.
+/// </param>
 /// <param name="Accessors">The accessors of the member, for a property; <see cref="PropertyAccessors.None"/> for any other member.</param>
 /// <param name="RequiredParameters">
-/// How many parameters of the member are neither <c>Optional</c> nor a <c>ParamArray</c>: the arguments a call of it is to be given.
+/// How many parameters of the member are neither <c>Optional</c> nor a <c>ParamArray</c>: the fewest arguments a call of it can be given.
 /// </param>
 public sealed record class DefaultMemberFact(string Name, ExpressionClassification Classification, PropertyAccessors Accessors, int RequiredParameters);
