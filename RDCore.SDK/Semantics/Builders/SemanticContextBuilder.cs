@@ -3,6 +3,7 @@ using RDCore.SDK.Semantics.Context;
 using RDCore.SDK.Semantics.Context.Abstract;
 using RDCore.SDK.Semantics.Flags;
 using System.Collections.Concurrent;
+using System.Globalization;
 
 namespace RDCore.SDK.Semantics.Builders;
 
@@ -128,8 +129,10 @@ public record class SemanticContextFlagsBuilder<TContext, TFlags> : ISemanticCon
     /// </remarks>
     public TFlags Flags => BuildFlags();
 
-    // seeded: a builder nothing was added to has no flags, rather than no aggregate to compute.
-    private TFlags BuildFlags() => (TFlags)(object)_flags.Cast<object>().Cast<int>().Aggregate(0, (current, value) => current | value);
+    // seeded: a builder nothing was added to has no flags, rather than no aggregate to compute. Combined 64 bits wide, so that a flags enum of either width keeps
+    // every bit it has.
+    private TFlags BuildFlags()
+        => (TFlags)Enum.ToObject(typeof(TFlags), _flags.Aggregate(0L, (current, value) => current | Convert.ToInt64(value, CultureInfo.InvariantCulture)));
 
     public ISemanticFlagsAccumulator<TFlags> AddFlags(TFlags flags) => WithFlags((TFlags)(object)flags);
 

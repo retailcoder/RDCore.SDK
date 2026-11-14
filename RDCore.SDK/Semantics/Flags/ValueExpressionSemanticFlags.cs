@@ -3,8 +3,11 @@ namespace RDCore.SDK.Semantics.Flags;
 /// <summary>
 /// The semantic flags of an expression that yields a value: the facts of how it is bound and what it is written as.
 /// </summary>
+/// <remarks>
+/// The flags are 64 bits wide: a flag from bit 31 up is written <c>1L &lt;&lt; n</c>. They cross the wire as one JSON number.
+/// </remarks>
 [Flags]
-public enum ValueExpressionSemanticFlags
+public enum ValueExpressionSemanticFlags : long
 {
     /// <summary>
     /// The expression is a literal: its value is what is written.

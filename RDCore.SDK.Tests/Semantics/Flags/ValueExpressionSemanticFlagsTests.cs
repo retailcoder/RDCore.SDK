@@ -2,6 +2,8 @@
 using RDCore.SDK.Model.Source;
 using RDCore.SDK.Platform.Protocol;
 using RDCore.SDK.Semantics;
+using RDCore.SDK.Semantics.Builders;
+using RDCore.SDK.Semantics.Context;
 using RDCore.SDK.Semantics.Flags;
 
 namespace RDCore.Tests.Semantics.Flags;
@@ -27,5 +29,24 @@ public sealed class ValueExpressionSemanticFlagsTests
         var read = PlatformJson.Deserialize<ExpressionFactDto>(PlatformJson.Serialize(Fact(flags)));
 
         Assert.AreEqual(flags, read.Flags);
+    }
+
+    // the flags are 64 bits wide: a bit above the 32 of an int, alone or with the low ones, is kept on the wire and by a builder that combines them.
+    [TestMethod]
+    [DataRow(31)]
+    [DataRow(32)]
+    [DataRow(52)]
+    [DataRow(62)]
+    public void AFlagAboveBit31_CrossesTheWire_AndIsCombined(int bit)
+    {
+        var high = (ValueExpressionSemanticFlags)(1L << bit);
+        var flags = high | ValueExpressionSemanticFlags.AssignmentTarget | ValueExpressionSemanticFlags.Literal;
+
+        Assert.AreEqual(flags, PlatformJson.Deserialize<ExpressionFactDto>(PlatformJson.Serialize(Fact(flags))).Flags);
+
+        var builder = new SemanticContextFlagsBuilder<ValueExpressionSemanticContext, ValueExpressionSemanticFlags>();
+        _ = builder.AddFlags(high);
+        _ = builder.AddFlags(ValueExpressionSemanticFlags.AssignmentTarget | ValueExpressionSemanticFlags.Literal);
+        Assert.AreEqual(flags, builder.Flags);
     }
 }
