@@ -8,6 +8,7 @@ using RDCore.SDK.Model.Errors;
 using RDCore.SDK.Model.Errors.Abstract;
 using RDCore.SDK.Model.Source;
 using RDCore.SDK.Model.Symbols;
+using RDCore.SDK.Model.Values.Abstract;
 using RDCore.SDK.Platform.Components;
 using RDCore.SDK.Semantics;
 using RDCore.SDK.Semantics.Facts;
@@ -70,6 +71,9 @@ public record class CompileErrorDto(RDCoreDiagnosticCode Code, SourceLocation Lo
 /// value can have, or one that did not resolve.
 /// </param>
 /// <param name="IsArray">Whether its declared type is an array.</param>
+/// <param name="ConstantValue">
+/// The constant binding of the constant it names, when that is known (<see cref="ExpressionFact.ConstantValue"/>); <see langword="null"/> otherwise.
+/// </param>
 public record class ExpressionFactDto(
     SyntaxNodeId Node,
     SourceLocation Location,
@@ -80,7 +84,8 @@ public record class ExpressionFactDto(
     CompileErrorDto? Error,
     ObjectCreationFact? Creates = null,
     DeclaredTypeKind? TypeKind = null,
-    bool IsArray = false)
+    bool IsArray = false,
+    VBTypedValue? ConstantValue = null)
 {
     /// <summary>
     /// Describes a fact for the wire.
@@ -90,7 +95,7 @@ public record class ExpressionFactDto(
     {
         var (kind, isArray) = DeclaredTypeKinds.Of(fact.DeclaredType);
         return new(fact.Node, fact.Location, fact.DeclaredType?.Name, fact.Classification, fact.Binding?.Uri, fact.Flags,
-            fact.Error is null ? null : CompileErrorDto.From(fact.Error), fact.Creates, kind, isArray);
+            fact.Error is null ? null : CompileErrorDto.From(fact.Error), fact.Creates, kind, isArray, fact.ConstantValue);
     }
 }
 

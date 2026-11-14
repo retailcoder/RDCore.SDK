@@ -3,6 +3,7 @@ using RDCore.SDK.Model.Errors;
 using RDCore.SDK.Model.Source;
 using RDCore.SDK.Model.Symbols.Abstract;
 using RDCore.SDK.Model.Types.Abstract;
+using RDCore.SDK.Model.Values.Abstract;
 using RDCore.SDK.Semantics.Flags;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
@@ -93,6 +94,14 @@ public sealed record class ExpressionFact(
     /// described: a fact for tooling only, never a declaration (<see cref="ObjectCreationFact"/>). <see langword="null"/> otherwise.
     /// </summary>
     public ObjectCreationFact? Creates { get; init; }
+
+    /// <summary>
+    /// The constant binding of the constant the expression names (<strong>MS-VBAL §5.2.3.2</strong>): the value of its constant expression, Let-coerced to
+    /// its declared type. <c>DEV</c> is <c>1</c> with <c>Const DEV = 1</c>, and <c>True</c> with <c>Const DEV As Boolean = 1</c>. It is known where the
+    /// constant expression is a literal, a negated literal, or the name of another constant whose binding is known. <see langword="null"/> for an expression
+    /// that names no constant, and for a constant whose binding is not known.
+    /// </summary>
+    public VBTypedValue? ConstantValue { get; init; }
 }
 
 /// <summary>
