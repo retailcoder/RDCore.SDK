@@ -4,7 +4,8 @@ namespace RDCore.SDK.Semantics.Flags;
 /// The semantic flags of an expression that yields a value: the facts of how it is bound and what it is written as.
 /// </summary>
 /// <remarks>
-/// The flags are 64 bits wide: a flag from bit 31 up is written <c>1L &lt;&lt; n</c>. They cross the wire as one JSON number.
+/// The flags are 64 bits wide: a flag from bit 31 up is written <c>1L &lt;&lt; n</c>. They cross the wire as one JSON number. A client that reads
+/// JSON numbers as doubles, as JavaScript does, may not read a value of 2<sup>53</sup> or more exactly.
 /// </remarks>
 [Flags]
 public enum ValueExpressionSemanticFlags : long
