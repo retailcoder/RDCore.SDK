@@ -19,8 +19,8 @@ namespace RDCore.SDK.Semantics;
 /// <param name="Parameter">The address of the parameter.</param>
 /// <param name="Mechanism">
 /// How the parameter is declared to take its argument (<strong>MS-VBAL §5.3.1.5</strong>): <c>ByVal</c>, <c>ByRef</c>, or neither, which is
-/// <c>ByRef</c>, or <c>ByVal</c> for the value parameter of a <c>Property Let</c> or <c>Property Set</c>. A parameter a type library declares by reference is
-/// <see cref="ParameterKind.ExplicitByRef"/>.
+/// <c>ByRef</c>, or <c>ByVal</c> for the value parameter of a <c>Property Let</c> or <c>Property Set</c>. A parameter of a library's procedure is
+/// <see cref="ParameterKind.ExplicitByRef"/> where the type library declares it by reference, and <see cref="ParameterKind.ExplicitByVal"/> otherwise.
 /// </param>
 /// <param name="ParameterType">
 /// The name of the parameter's declared type, as <see cref="Platform.Protocol.ExpressionFactDto.DeclaredType"/> names a type; the name of the unknown type for a parameter declared
