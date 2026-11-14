@@ -1,5 +1,6 @@
 using RDCore.SDK.Model.AST.Abstract;
 using RDCore.SDK.Model.Source;
+using RDCore.SDK.Model.Types.Abstract;
 using RDCore.SDK.Semantics.Flags;
 
 namespace RDCore.SDK.Semantics.Facts;
@@ -35,8 +36,8 @@ public sealed record class FixedAssignmentStatementFact(
     : StatementFact(Node, Location, Statement);
 
 /// <summary>
-/// A range clause of a <c>Case</c> (<strong>MS-VBAL 5.4.2.10</strong>), stated when its value is compared with the selector in the selector's declared type,
-/// where the comparison of the two as an expression has another effective type (<see cref="CaseClauseSemanticFlags.ComparedInSelectorType"/>).
+/// A range clause of a <c>Case</c> (<strong>MS-VBAL 5.4.2.10</strong>), stated when its value is compared with the selector in the selector's declared type:
+/// that type (<see cref="ComparedIn"/>), and the effective type of the comparison of the two as an expression (<see cref="SpecifiedEffectiveType"/>).
 /// </summary>
 /// <param name="Node">The <c>Identity</c> of the statement.</param>
 /// <param name="Location">Where in the document the statement is.</param>
@@ -49,7 +50,19 @@ public sealed record class CaseClauseStatementFact(
     string Statement,
     CaseClauseSemanticFlags Flags,
     bool IsValueKnown)
-    : StatementFact(Node, Location, Statement);
+    : StatementFact(Node, Location, Statement)
+{
+    /// <summary>
+    /// The type the value of the clause is compared with the selector in: the selector's declared type.
+    /// </summary>
+    public VBType? ComparedIn { get; init; }
+
+    /// <summary>
+    /// The effective type that the table of <strong>MS-VBAL 5.6.9.5</strong> gives the comparison of the selector with the value of the clause as an
+    /// expression; <see langword="null"/> when the table gives none.
+    /// </summary>
+    public VBType? SpecifiedEffectiveType { get; init; }
+}
 
 /// <summary>
 /// A <c>With</c> statement (<strong>MS-VBAL 5.4.2.21</strong>).

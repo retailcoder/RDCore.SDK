@@ -24,13 +24,4 @@ public enum CaseClauseSemanticFlags
     /// <c>((select-expression) &gt;= (1)) And ((select-expression) &lt;= (10))</c> is evaluated.
     /// </summary>
     RangeForm = 1 << 2,
-    /// <summary>
-    /// The value of the clause is converted to the declared type of the selector, and compared with the selector in that type, where the comparison of the two
-    /// as an expression has another <em>effective type</em> (<strong>MS-VBAL 5.6.9.5</strong>): the result can differ from the expression's.
-    /// </summary>
-    /// <remarks>
-    /// 👉 What MS-VBA does, and RD-VBA with it (<strong>RD-VBAL 5.4.2.10</strong>): with <c>n</c> a <c>Long</c> of <c>2</c>, <c>Case 1.7</c> matches,
-    /// because <c>1.7</c> is the <c>Long</c> <c>2</c>; the expression <c>n = 1.7</c> compares two <c>Double</c> values, and is <c>False</c>.
-    /// </remarks>
-    ComparedInSelectorType = 1 << 3,
 }

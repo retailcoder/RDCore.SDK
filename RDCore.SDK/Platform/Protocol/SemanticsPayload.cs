@@ -8,6 +8,7 @@ using RDCore.SDK.Model.Errors;
 using RDCore.SDK.Model.Errors.Abstract;
 using RDCore.SDK.Model.Source;
 using RDCore.SDK.Model.Symbols;
+using RDCore.SDK.Model.Values.Abstract;
 using RDCore.SDK.Platform.Components;
 using RDCore.SDK.Semantics;
 using RDCore.SDK.Semantics.Facts;
@@ -65,6 +66,27 @@ public record class CompileErrorDto(RDCoreDiagnosticCode Code, SourceLocation Lo
 /// <param name="Flags">What else is the case of it.</param>
 /// <param name="Error">Its compile error, when it has one.</param>
 /// <param name="Creates">The class of the object it creates by name, when that is known (<see cref="ExpressionFact.Creates"/>): for tooling only.</param>
+/// <param name="TypeKind">
+/// The kind of its declared type, or of its elements' type for an array (<see cref="DeclaredTypeKinds.Of"/>); <see langword="null"/> when it has no type a
+/// value can have, or one that did not resolve.
+/// </param>
+/// <param name="IsArray">Whether its declared type is an array.</param>
+/// <param name="ConstantValue">
+/// The constant binding of the constant it names, when that is known (<see cref="ExpressionFact.ConstantValue"/>); <see langword="null"/> otherwise.
+/// </param>
+/// <param name="Accessors">The accessors of the property it names (<see cref="ExpressionFact.Accessors"/>); <see cref="PropertyAccessors.None"/> otherwise.</param>
+/// <param name="LetValueType">
+/// The name of the declared type of the value parameter of the <c>Property Let</c> of the property it names (<see cref="ExpressionFact.LetValueType"/>);
+/// <see langword="null"/> when it names no property with one.
+/// </param>
+/// <param name="DefaultMember">
+/// The default member of the class its declared type is (<see cref="ExpressionFact.DefaultMember"/>); <see langword="null"/> otherwise.
+/// </param>
+/// <param name="IsLetCoerced">Whether its value is taken and Let-coerced to a declared type (<see cref="ExpressionFact.IsLetCoerced"/>).</param>
+/// <param name="LetValueTypeKind">
+/// The kind of the declared type of the value parameter of the <c>Property Let</c> of the property it names (<see cref="DeclaredTypeKinds.Of"/>), which
+/// <paramref name="LetValueType"/> names; <see langword="null"/> when it names no property with one, or one whose type did not resolve.
+/// </param>
 public record class ExpressionFactDto(
     SyntaxNodeId Node,
     SourceLocation Location,
@@ -73,7 +95,28 @@ public record class ExpressionFactDto(
     Uri? Binding,
     ValueExpressionSemanticFlags Flags,
     CompileErrorDto? Error,
-    ObjectCreationFact? Creates = null);
+    ObjectCreationFact? Creates = null,
+    DeclaredTypeKind? TypeKind = null,
+    bool IsArray = false,
+    VBTypedValue? ConstantValue = null,
+    PropertyAccessors Accessors = PropertyAccessors.None,
+    string? LetValueType = null,
+    DefaultMemberFact? DefaultMember = null,
+    bool IsLetCoerced = false,
+    DeclaredTypeKind? LetValueTypeKind = null)
+{
+    /// <summary>
+    /// Describes a fact for the wire.
+    /// </summary>
+    /// <param name="fact">The fact of an expression.</param>
+    public static ExpressionFactDto From(ExpressionFact fact)
+    {
+        var (kind, isArray) = DeclaredTypeKinds.Of(fact.DeclaredType);
+        return new(fact.Node, fact.Location, fact.DeclaredType?.Name, fact.Classification, fact.Binding?.Uri, fact.Flags,
+            fact.Error is null ? null : CompileErrorDto.From(fact.Error), fact.Creates, kind, isArray, fact.ConstantValue,
+            fact.Accessors, fact.LetValueType?.Name, fact.DefaultMember, fact.IsLetCoerced, DeclaredTypeKinds.Of(fact.LetValueType).Kind);
+    }
+}
 
 /// <summary>
 /// A run-time error that code is guaranteed to raise, as it travels.
@@ -165,6 +208,10 @@ public record class ConversionFactDto(
 /// <param name="OperatorLocation">Where the operator token is (<see cref="OperatorFact.OperatorLocation"/>), at which a diagnostic about the operator is
 /// located; <see langword="null"/> when the operation has no token of its own, or a host does not state it, and a diagnostic is then located at
 /// <paramref name="Location"/>.</param>
+/// <param name="StringOperand">
+/// The <c>String</c> operand of a comparison of a <c>String</c> with a number, Let-coerced both ways (<see cref="ComparisonOperatorFact.StringOperand"/>);
+/// <see langword="null"/> for any other operation.
+/// </param>
 public record class OperatorFactDto(
     SyntaxNodeId Node,
     SourceLocation Location,
@@ -180,7 +227,8 @@ public record class OperatorFactDto(
     OptionCompare? Comparison = null,
     string? ComparisonCulture = null,
     string? Member = null,
-    SourceLocation? OperatorLocation = null)
+    SourceLocation? OperatorLocation = null,
+    StringOperandFact? StringOperand = null)
 {
     /// <summary>
     /// Describes an operation for the wire.
@@ -201,7 +249,8 @@ public record class OperatorFactDto(
         Comparison: (fact as ComparisonOperatorFact)?.Comparison.Mode,
         ComparisonCulture: (fact as ComparisonOperatorFact)?.Comparison.Culture is { Name.Length: > 0 } culture ? culture.Name : null,
         Member: (fact as MemberAccessFact)?.Member,
-        OperatorLocation: fact.OperatorLocation);
+        OperatorLocation: fact.OperatorLocation,
+        StringOperand: (fact as ComparisonOperatorFact)?.StringOperand);
 }
 
 /// <summary>
@@ -220,6 +269,15 @@ public record class OperatorFactDto(
 /// depend on it.
 /// </param>
 /// <param name="CaseClauseFlags">What is known about a range clause of a <c>Case</c> (<see cref="CaseClauseStatementFact"/>).</param>
+/// <param name="ComparedIn">
+/// The name of the type the value of a range clause of a <c>Case</c> is compared with the selector in (<see cref="CaseClauseStatementFact.ComparedIn"/>);
+/// <see langword="null"/> for any other statement.
+/// </param>
+/// <param name="SpecifiedEffectiveType">
+/// The name of the effective type of the comparison of the selector with the value of a range clause as an expression
+/// (<see cref="CaseClauseStatementFact.SpecifiedEffectiveType"/>); <see langword="null"/> when the table of <strong>MS-VBAL 5.6.9.5</strong> gives none,
+/// and for any other statement.
+/// </param>
 public record class StatementFactDto(
     SyntaxNodeId Node,
     SourceLocation Location,
@@ -227,7 +285,9 @@ public record class StatementFactDto(
     FixedAssignmentSemanticFlags? FixedAssignmentFlags,
     WithStatementSemanticFlags? WithStatementFlags,
     bool IsValueKnown = true,
-    CaseClauseSemanticFlags? CaseClauseFlags = null)
+    CaseClauseSemanticFlags? CaseClauseFlags = null,
+    string? ComparedIn = null,
+    string? SpecifiedEffectiveType = null)
 {
     /// <summary>
     /// Describes a statement for the wire.
@@ -245,7 +305,9 @@ public record class StatementFactDto(
             CaseClauseStatementFact clause => clause.IsValueKnown,
             _ => true,
         },
-        (fact as CaseClauseStatementFact)?.Flags);
+        (fact as CaseClauseStatementFact)?.Flags,
+        (fact as CaseClauseStatementFact)?.ComparedIn?.Name,
+        (fact as CaseClauseStatementFact)?.SpecifiedEffectiveType?.Name);
 }
 
 /// <summary>
@@ -287,9 +349,12 @@ public record class RuntimeFactsDto(
 /// <param name="EmptiedControlReads">
 /// The reads of its own <c>For Each</c> control variables that see them emptied by the end of the loop; <see langword="null"/> when there are none the pass could tell.
 /// </param>
+/// <param name="Arguments">
+/// The arguments of its calls that the pass mapped to a parameter, with what the procedure called declares of it; <see langword="null"/> when there are none.
+/// </param>
 public record class ProcedureSemanticsDto(
     Uri Procedure, bool IsFullyAnalyzed, ImmutableArray<CompileErrorDto> CompileErrors, ImmutableArray<ExpressionFactDto> Expressions, ReturnValueFact? ReturnValue = null,
-    RuntimeFactsDto? Runtime = null, ImmutableArray<EmptiedControlReadFact>? EmptiedControlReads = null);
+    RuntimeFactsDto? Runtime = null, ImmutableArray<EmptiedControlReadFact>? EmptiedControlReads = null, ImmutableArray<ArgumentFact>? Arguments = null);
 
 /// <summary>
 /// A <see cref="DeclarationFact"/>, as it travels.
@@ -304,12 +369,18 @@ public record class ProcedureSemanticsDto(
 /// <param name="Role">What it is there for, when it implements an interface member or handles an event.</param>
 /// <param name="DeclaredBy">How a local variable came to be declared; <see langword="null"/> for any other declaration.</param>
 /// <param name="Hides">What a local or a parameter hides; <see langword="null"/> when it hides nothing, and for any other declaration.</param>
-/// <param name="AutoInstantiationAlwaysFails">Whether it is a variable declared <c>As New</c> of a class whose objects are never created.</param>
 /// <param name="ReferencedFrom">Each reference to it, in any module of the project; <see langword="null"/> exactly when <paramref name="References"/> is.</param>
+/// <param name="TypeKind">The kind of type it is declared as, or of its elements' type for an array; <see langword="null"/> when it has no type, or one that did
+/// not resolve.</param>
+/// <param name="IsArray">Whether it is declared as an array.</param>
+/// <param name="AutoInstantiates">
+/// The address of the class whose object it is given where code first uses it, for a variable declared <c>As New</c>
+/// (<see cref="DeclarationFact.AutoInstantiates"/>); <see langword="null"/> for any other declaration.
+/// </param>
 public record class DeclarationFactDto(
     Uri Symbol, string Name, DeclarationKind Kind, AccessModifier Access, bool IsImplicit, SourceLocation Location, DeclarationReferences? References,
-    DeclarationRole Role = DeclarationRole.None, LocalDeclarationKind? DeclaredBy = null, HiddenDeclaration? Hides = null, bool AutoInstantiationAlwaysFails = false,
-    ImmutableArray<DeclarationReference>? ReferencedFrom = null);
+    DeclarationRole Role = DeclarationRole.None, LocalDeclarationKind? DeclaredBy = null, HiddenDeclaration? Hides = null,
+    ImmutableArray<DeclarationReference>? ReferencedFrom = null, DeclaredTypeKind? TypeKind = null, bool IsArray = false, Uri? AutoInstantiates = null);
 
 /// <summary>
 /// A <see cref="ModuleSemanticModel"/>, as it travels.
@@ -322,6 +393,13 @@ public record class DeclarationFactDto(
 /// <param name="Language">The identifier of the language the module is loaded as, when the host says.</param>
 /// <param name="Class">What the objects of the class are, for a class module (<see cref="ClassModuleSemanticFlags"/>); <see langword="null"/> for any other module.</param>
 /// <param name="Document">What the module is the code of, for a document module (<see cref="DocumentModuleFact"/>); <see langword="null"/> for any other module.</param>
+/// <param name="Classes">
+/// Each class whose objects the module's code creates (<see cref="ModuleSemanticModel.Classes"/>); <see langword="null"/> when it creates none.
+/// </param>
+/// <param name="DocumentModules">
+/// The names of the document modules a name written in the module can refer to (<see cref="ModuleSemanticModel.DocumentModules"/>); <see langword="null"/>
+/// when there are none.
+/// </param>
 public record class ModuleSemanticsDto(
     Uri Module,
     bool? OptionExplicit,
@@ -330,7 +408,9 @@ public record class ModuleSemanticsDto(
     ImmutableArray<DeclarationFactDto> Declarations,
     string? Language = null,
     ClassModuleSemanticFlags? Class = null,
-    DocumentModuleFact? Document = null)
+    DocumentModuleFact? Document = null,
+    ImmutableArray<ClassFact>? Classes = null,
+    ImmutableArray<string>? DocumentModules = null)
 {
     /// <summary>
     /// Describes a model for the wire.
@@ -344,17 +424,20 @@ public record class ModuleSemanticsDto(
             procedure.Procedure.Uri,
             procedure.IsFullyAnalyzed,
             [.. procedure.CompileErrors.Select(ErrorOf)],
-            [.. procedure.Expressions.Values.Select(fact => new ExpressionFactDto(
-                fact.Node, fact.Location, fact.DeclaredType?.Name, fact.Classification, fact.Binding?.Uri, fact.Flags, fact.Error is null ? null : ErrorOf(fact.Error), fact.Creates))],
+            [.. procedure.Expressions.Values.Select(ExpressionFactDto.From)],
             procedure.ReturnValue,
             procedure.Runtime is null ? null : RuntimeFactsDto.From(procedure.Runtime),
-            procedure.EmptiedControlReads.IsDefaultOrEmpty ? null : procedure.EmptiedControlReads))],
+            procedure.EmptiedControlReads.IsDefaultOrEmpty ? null : procedure.EmptiedControlReads,
+            procedure.Arguments.IsDefaultOrEmpty ? null : procedure.Arguments))],
         [.. model.Declarations.Select(declaration => new DeclarationFactDto(
             declaration.Symbol.Uri, declaration.Name, declaration.Kind, declaration.Access, declaration.IsImplicit, declaration.Location, declaration.References, declaration.Role,
-            declaration.DeclaredBy, declaration.Hides, declaration.AutoInstantiationAlwaysFails, declaration.ReferencedFrom))],
+            declaration.DeclaredBy, declaration.Hides, declaration.ReferencedFrom, declaration.TypeKind, declaration.IsArray,
+            declaration.AutoInstantiates?.Uri))],
         model.Language,
         model.Class,
-        model.Document);
+        model.Document,
+        model.Classes.IsDefaultOrEmpty ? null : model.Classes,
+        model.DocumentModules.IsDefaultOrEmpty ? null : model.DocumentModules);
 
     private static CompileErrorDto ErrorOf(VBCompileErrorInfo error) => CompileErrorDto.From(error);
 }

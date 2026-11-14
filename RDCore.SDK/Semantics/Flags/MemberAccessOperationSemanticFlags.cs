@@ -45,6 +45,18 @@ public enum MemberAccessOperationSemanticFlags
     /// </remarks>
     NewEnumMember = 1 << 7,
     /// <summary>
+    /// The member access operation refers to the default member of an object that the default member of its parent object returned: that default member
+    /// takes no argument and returns an object, so the arguments given to it, the name of a dictionary access, or the value expected of it go on to the
+    /// default member of that object (<strong>MS-VBAL §5.6.2.3</strong>, <strong>§5.6.13</strong>, <strong>§5.6.14</strong>). <c>rs("Name")</c> and
+    /// <c>rs!Name</c> of an ADO <c>Recordset</c>, whose default member <c>Fields</c> returns its <c>Fields</c> collection, are such accesses.
+    /// </summary>
+    /// <remarks>
+    /// It is stated with <see cref="DefaultMember"/> and <see cref="Implicit"/>, and with <see cref="DictionaryAccess"/> for a dictionary access. A value
+    /// expected of an object, and read through more than one default member, is also a conversion stated <see cref="ConversionSemanticFlags.Recursive"/>.
+    /// </remarks>
+    Recursive = 1 << 8,
+
+    /// <summary>
     /// The member access operation gives the member the argument list the code writes for it, empty or not: <c>b(1)</c> and <c>b()</c>, read or assigned,
     /// give their lists to the default member of <c>b</c> (<strong>MS-VBAL §5.6.13</strong>), and <c>b.Item(1)</c> gives its list to <c>Item</c>.
     /// </summary>
@@ -64,5 +76,5 @@ public enum MemberAccessOperationSemanticFlags
     /// Every flag.
     /// </summary>
     All = Explicit | Implicit | WithBlockVariable | DictionaryAccess | CallByNameAccess | LateBound
-        | DefaultMember | NewEnumMember | ArgumentList
+        | DefaultMember | NewEnumMember | Recursive | ArgumentList
 }
