@@ -34,6 +34,16 @@ public sealed class FloatingPointFromFixedPointTests
     public void ADecimal_IsADoubleRoundedTwice(string value, string expected)
         => Assert.AreEqual(expected, Bits(VBDecimalType.ToDouble(Number(value))));
 
+    // the top bit of each one's low 64 bits is set: the unsigned integer they are, made a Double at once, is the Double next to the expected one.
+    [TestMethod]
+    [DataRow("12344876406387946869", "43E56A39F5F0DB56")]
+    [DataRow("12833707318608192.874", "4346CC182AF040A0")]
+    [DataRow("1143404557.3905806672", "41D109BE0358FF45")]
+    [DataRow("107141267.298703713533", "41998B624D31DF62")]
+    [DataRow("0.0000000012391952850093053136", "3E154A09DB1FA829")]
+    public void ADecimalWhoseLow64BitsHaveTheTopBitSet_IsADoubleOfThemAsASignedInteger(string value, string expected)
+        => Assert.AreEqual(expected, Bits(VBDecimalType.ToDouble(Number(value))));
+
     // not observed: a negative value is the negated Double, and the bounds of a Decimal are -2^96 and 2^96.
     [TestMethod]
     [DataRow("-0.000708160857053799161669089", "BF47347BDC554EE4")]

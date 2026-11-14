@@ -8,7 +8,7 @@
 namespace RDCore.SDK.Model.Types;
 
 // a Decimal made a Double or a Single as OLEAUT32 makes one: the 96-bit integer made a Double, then divided by the Double power of ten of its scale, so that
-// the value is rounded twice. The framework's own conversion is not relied on: it rounds the exact value once on .NET 11.
+// the value is rounded more than once. The framework's own conversion is not relied on: it rounds the exact value once on .NET 11.
 internal static class DecimalToFloatingPoint
 {
     // the Double that is 2^64.
@@ -29,7 +29,11 @@ internal static class DecimalToFloatingPoint
         var high = (uint)bits[2];
         var scale = (bits[3] >> 16) & 0xFF;
 
-        var result = ((double)low64 + (double)high * TwoToThe64) / DoublePowersOf10[scale];
+        // the low 64 bits are made a Double as a signed integer, with 2^64 added when the top bit is set, which rounds them twice too (observed in Excel):
+        // DecCalc makes the unsigned integer a Double at once.
+        var signed = (long)low64;
+        var low = signed < 0 ? (double)signed + TwoToThe64 : signed;
+        var result = (low + (double)high * TwoToThe64) / DoublePowersOf10[scale];
         return bits[3] < 0 ? -result : result;
     }
 
