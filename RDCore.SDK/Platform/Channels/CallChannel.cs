@@ -48,6 +48,7 @@ public sealed class CallChannel : IDisposable
     private readonly object _writing = new();
     private readonly ConcurrentDictionary<long, Waiter> _pending = new();
     private readonly Dictionary<string, Func<byte[], byte[]>> _handlers = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, Action<long, byte[]>> _later = new(StringComparer.Ordinal);
     private readonly TaskCompletionSource _closed = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private readonly SemaphoreSlim _followers = new(0);
     private int _idle;
@@ -89,6 +90,47 @@ public sealed class CallChannel : IDisposable
 
         _handlers[method] = payload => JsonSerializer.SerializeToUtf8Bytes(handler(JsonSerializer.Deserialize<TCall>(payload, Json)!), Json);
     }
+
+    /// <summary>
+    /// Says how the calls of a method are answered by a handler that answers them later, from whichever thread it pleases. Every method is registered before
+    /// the channel is <see cref="Start">started</see>.
+    /// </summary>
+    /// <remarks>
+    /// The handler is called on the thread that reads the channel, which goes on reading once it returns: it must not wait. It hands the call to the thread that
+    /// makes it (a single-threaded apartment, by and large), and that thread answers it (<see cref="CallReply{TAnswer}"/>). The thread that reads is neither held
+    /// while the call is made nor woken to write the answer, which a handler that returns its answer (<see cref="Handle{TCall, TAnswer}(string, Func{TCall, TAnswer})"/>)
+    /// costs when the call is made on another thread.
+    /// </remarks>
+    /// <typeparam name="TCall">What the method is called with.</typeparam>
+    /// <typeparam name="TAnswer">What it answers.</typeparam>
+    /// <param name="method">The name of the method.</param>
+    /// <param name="handler">Takes a call, and what answers it; what it throws is the caller's failure.</param>
+    /// <exception cref="InvalidOperationException">The channel has started.</exception>
+    public void Handle<TCall, TAnswer>(string method, Action<TCall, CallReply<TAnswer>> handler)
+    {
+        if (_started)
+        {
+            throw new InvalidOperationException("The methods of a channel are registered before it starts.");
+        }
+
+        _later[method] = (number, payload) => handler(JsonSerializer.Deserialize<TCall>(payload, Json)!, new CallReply<TAnswer>(this, number));
+    }
+
+    // the answer to a call, written by whichever thread has it.
+    internal void Reply(long number, bool answered, byte[] payload)
+    {
+        try
+        {
+            Write(answered ? AnswerFrame : FailureFrame, number, string.Empty, payload);
+        }
+        catch (Exception exception) when (exception is IOException or ObjectDisposedException)
+        {
+            // a caller that is gone has nobody to answer.
+            Close();
+        }
+    }
+
+    internal static byte[] Serialized<T>(T value) => JsonSerializer.SerializeToUtf8Bytes(value, Json);
 
     /// <summary>
     /// Starts reading what the other end sends.
@@ -248,8 +290,17 @@ public sealed class CallChannel : IDisposable
                 switch (kind)
                 {
                     case CallFrame:
+                        var method = Encoding.UTF8.GetString(frame, 11, name);
+
+                        // a call answered later is handed over here, and the thread goes on reading: it is not this thread's to answer.
+                        if (_later.TryGetValue(method, out var later))
+                        {
+                            HandOver(number, later, payload);
+                            break;
+                        }
+
                         Read();
-                        return (number, Encoding.UTF8.GetString(frame, 11, name), payload);
+                        return (number, method, payload);
                     case AnswerFrame when _pending.TryRemove(number, out var answered):
                         answered.Complete(payload);
                         break;
@@ -295,6 +346,18 @@ public sealed class CallChannel : IDisposable
         {
             // a caller that is gone has nobody to answer.
             Close();
+        }
+    }
+
+    private void HandOver(long number, Action<long, byte[]> later, byte[] payload)
+    {
+        try
+        {
+            later(number, payload);
+        }
+        catch (Exception exception)
+        {
+            Reply(number, answered: false, Encoding.UTF8.GetBytes(exception.Message));
         }
     }
 

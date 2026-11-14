@@ -137,6 +137,111 @@ public sealed class CallChannelTests
         CollectionAssert.AreEqual(Enumerable.Range(1, 20).Select(value => value * value).ToArray(), answers);
     }
 
+    // ---- a call answered later, from the thread that makes it ----
+
+    // the thread a server's calls are made on, as an apartment is: it makes the calls handed to it, one after the other.
+    private sealed class MakingThread : IDisposable
+    {
+        private readonly System.Collections.Concurrent.BlockingCollection<Action> _calls = [];
+        private readonly Thread _thread;
+
+        public MakingThread()
+        {
+            _thread = new Thread(() =>
+            {
+                foreach (var call in _calls.GetConsumingEnumerable())
+                {
+                    call();
+                }
+            }) { IsBackground = true };
+            _thread.Start();
+        }
+
+        public int ManagedThreadId => _thread.ManagedThreadId;
+
+        public void Post(Action call) => _calls.Add(call);
+
+        public void Dispose() => _calls.CompleteAdding();
+    }
+
+    [TestMethod]
+    public async Task ACallAnsweredLater_IsAnsweredByTheThreadThatMakesIt()
+    {
+        using var ends = await Ends.ConnectAsync();
+        using var making = new MakingThread();
+        var answeredOn = -1;
+        ends.Serving.Handle<int, int>("square", (value, reply) => making.Post(() =>
+        {
+            answeredOn = Environment.CurrentManagedThreadId;
+            reply.Answer(value * value);
+        }));
+        ends.Start();
+
+        Assert.AreEqual(49, await OnAThreadOfItsOwn(() => ends.Calling.Call<int, int>("square", 7)).WaitAsync(Patience));
+        Assert.AreEqual(144, await ends.Calling.CallAsync<int, int>("square", 12).WaitAsync(Patience));
+        Assert.AreEqual(making.ManagedThreadId, answeredOn);
+    }
+
+    // the thread that reads does not wait for a call that is answered later: the calls after it are read, and answered, meanwhile.
+    [TestMethod]
+    public async Task ACallAnsweredLater_DoesNotHoldTheChannel_WhileItWaits()
+    {
+        using var ends = await Ends.ConnectAsync();
+        var held = new TaskCompletionSource<CallReply<string>>(TaskCreationOptions.RunContinuationsAsynchronously);
+        ends.Serving.Handle<string, string>("hold", (_, reply) => held.TrySetResult(reply));
+        ends.Serving.Handle<int, int>("double", value => value * 2);
+        ends.Start();
+
+        var holding = ends.Calling.CallAsync<string, string>("hold", "wait");
+        var reply = await held.Task.WaitAsync(Patience);
+
+        Assert.AreEqual(42, await ends.Calling.CallAsync<int, int>("double", 21).WaitAsync(Patience));
+        Assert.IsFalse(holding.IsCompleted);
+        reply.Answer("released");
+        Assert.AreEqual("released", await holding.WaitAsync(Patience));
+    }
+
+    [TestMethod]
+    public async Task ACallAnsweredLater_ThatFails_OrWhoseHandlerThrows_IsTheCallersFailure()
+    {
+        using var ends = await Ends.ConnectAsync();
+        using var making = new MakingThread();
+        ends.Serving.Handle<int, int>("divide", (divisor, reply) => making.Post(() =>
+        {
+            try
+            {
+                reply.Answer(42 / divisor);
+            }
+            catch (DivideByZeroException exception)
+            {
+                reply.Fail(exception);
+            }
+        }));
+        ends.Serving.Handle<int, int>("refuse", (_, _) => throw new InvalidOperationException("refused"));
+        ends.Start();
+
+        Assert.AreEqual(new DivideByZeroException().Message, (await Assert.ThrowsExactlyAsync<CallChannelException>(() => ends.Calling.CallAsync<int, int>("divide", 0).WaitAsync(Patience))).Message);
+        Assert.AreEqual("refused", (await Assert.ThrowsExactlyAsync<CallChannelException>(() => ends.Calling.CallAsync<int, int>("refuse", 0).WaitAsync(Patience))).Message);
+        Assert.AreEqual(21, await ends.Calling.CallAsync<int, int>("divide", 2).WaitAsync(Patience), "a failure is the one call's, and the channel goes on");
+    }
+
+    // a call is answered once: the answers after the first are not written, and the next call gets its own.
+    [TestMethod]
+    public async Task ACallAnsweredLater_IsAnsweredOnce()
+    {
+        using var ends = await Ends.ConnectAsync();
+        ends.Serving.Handle<int, int>("twice", (value, reply) =>
+        {
+            reply.Answer(value);
+            reply.Answer(value + 1);
+            reply.Fail(new InvalidOperationException("too late"));
+        });
+        ends.Start();
+
+        Assert.AreEqual(1, await ends.Calling.CallAsync<int, int>("twice", 1).WaitAsync(Patience));
+        Assert.AreEqual(5, await ends.Calling.CallAsync<int, int>("twice", 5).WaitAsync(Patience));
+    }
+
     [TestMethod]
     public async Task WhenTheOtherEndGoesAway_ACallThatWaitsFails_AndTheChannelIsClosed()
     {
