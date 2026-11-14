@@ -26,9 +26,9 @@ public sealed class ArgumentFactWireTests
     public void TheArgumentsOfAProcedure_AreReadBackAsTheyWereWritten()
     {
         var written = new ArgumentFact(new SyntaxNodeId("/Module1.bas", [3, 0, 1]), Parameter, ParameterKind.ExplicitByVal, "Long",
-            IsOptional: true, HasDefaultValue: true, IsParamArray: false, IsExternal: true);
+            IsOptional: true, HasDefaultValue: true, IsParamArray: false, IsExternal: true, IsLibrary: false);
         var array = written with { Argument = new SyntaxNodeId("/Module1.bas", [3, 0, 2]), Mechanism = ParameterKind.ImplicitByRef, ParameterType = "Variant",
-            IsOptional = false, HasDefaultValue = false, IsParamArray = true, IsExternal = false };
+            IsOptional = false, HasDefaultValue = false, IsParamArray = true, IsExternal = false, IsLibrary = true };
 
         var read = RoundTrip(written, array).Procedures.Single().Arguments;
 

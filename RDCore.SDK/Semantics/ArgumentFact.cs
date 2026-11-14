@@ -32,6 +32,10 @@ namespace RDCore.SDK.Semantics;
 /// <param name="HasDefaultValue">Whether the parameter is declared with a default value (<c>Optional n As Long = 1</c>).</param>
 /// <param name="IsParamArray">Whether the parameter is a <c>ParamArray</c>, which takes this argument and every one after it.</param>
 /// <param name="IsExternal">Whether the procedure called is declared by a <c>Declare</c> statement (<strong>MS-VBAL §5.2.3.5</strong>).</param>
+/// <param name="IsLibrary">
+/// Whether the procedure called is a member of a library: the standard library, or a library the project references. A <c>Declare</c>d procedure is
+/// declared in the project, and is not one.
+/// </param>
 public sealed record class ArgumentFact(
     SyntaxNodeId Argument,
     Uri Parameter,
@@ -40,4 +44,5 @@ public sealed record class ArgumentFact(
     bool IsOptional,
     bool HasDefaultValue,
     bool IsParamArray,
-    bool IsExternal);
+    bool IsExternal,
+    bool IsLibrary);
