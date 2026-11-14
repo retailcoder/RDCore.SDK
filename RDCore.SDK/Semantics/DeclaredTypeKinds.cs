@@ -15,8 +15,8 @@ public static class DeclaredTypeKinds
     /// <param name="type">The declared type of a declaration or of an expression.</param>
     /// <returns>
     /// The kind, and whether the type is an array. The kind is <see langword="null"/> for no type, the unknown type, and a type no value has: that of a
-    /// module or a project named as a qualifier, or of a call of a <c>Sub</c>. The <c>Empty</c> and <c>Null</c> literals are <see cref="DeclaredTypeKind.Variant"/>, their declared type
-    /// (<strong>MS-VBAL §3.3.5.2</strong>).
+    /// module or a project named as a qualifier, or of a call of a <c>Sub</c>. The <c>Empty</c> and <c>Null</c> literals are
+    /// <see cref="DeclaredTypeKind.Variant"/>, their declared type (<strong>MS-VBAL §3.3.5.2</strong>).
     /// </returns>
     public static (DeclaredTypeKind? Kind, bool IsArray) Of(VBType? type) => type switch
     {

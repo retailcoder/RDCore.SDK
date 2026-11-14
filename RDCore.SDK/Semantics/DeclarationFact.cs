@@ -101,8 +101,8 @@ public sealed record class DeclarationReference(SourceLocation Location, Uri? Pr
 }
 
 /// <summary>
-/// What kind of type a declaration or an expression is declared as (<strong>MS-VBAL §2.1</strong>, <strong>§5.2.3.1.4</strong>): what a value of it is,
-/// which decides how it is assigned and what it holds before it is (<see cref="DeclaredTypeKinds.Of"/>).
+/// The kind of the declared type of a declaration or of an expression (<strong>MS-VBAL §2.1</strong>, <strong>§5.2.3.1.4</strong>): what a value of it
+/// is, which decides how it is assigned and what it holds before it is (<see cref="DeclaredTypeKinds.Of"/>).
 /// </summary>
 public enum DeclaredTypeKind
 {
