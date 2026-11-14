@@ -45,14 +45,18 @@ public enum MemberAccessOperationSemanticFlags
     /// </remarks>
     NewEnumMember = 1 << 7,
     /// <summary>
-    /// The member access operation gives the member the argument list the code writes for it: <c>b(1)</c>, read or assigned, gives <c>1</c> to the
-    /// default member of <c>b</c> (<strong>MS-VBAL §5.6.13</strong>), and <c>b.Item(1)</c> gives it to <c>Item</c>.
+    /// The member access operation gives the member the argument list the code writes for it, empty or not: <c>b(1)</c> and <c>b()</c>, read or assigned,
+    /// give theirs to the default member of <c>b</c> (<strong>MS-VBAL §5.6.13</strong>), and <c>b.Item(1)</c> gives its to <c>Item</c>.
     /// </summary>
     /// <remarks>
-    /// An empty argument list (<c>f()</c>) is not one. A member that declares no parameters is given none: the arguments index the array that a public variable
-    /// holds, or what a <c>Property Get</c> or a <c>Function</c> returns.
-    /// An element of an array that is assigned a value through the default member of the object it holds (<c>a(1) = 5</c>, <strong>MS-VBAL §5.4.3.8</strong>)
-    /// gives that default member no argument: the subscripts select the element. A dictionary access is stated with <see cref="DictionaryAccess"/> instead.
+    /// Arguments given to a member that declares no parameters are not its: they index the array that a public variable holds, or what a
+    /// <c>Property Get</c> or a <c>Function</c> returns. An element of an array that is assigned a value through the default member of the object it holds
+    /// (<c>a(1) = 5</c>, <strong>MS-VBAL §5.4.3.8</strong>) gives that default member no argument: the subscripts select the element. A dictionary access is
+    /// stated with <see cref="DictionaryAccess"/> instead.
+    /// <para>
+    /// A member the code names and assigns (<c>b.Item(1) = 5</c>) is stated with it when it is given arguments and the host knows the members of the object's
+    /// class; a member of an object called late through automation, assigned, is not.
+    /// </para>
     /// </remarks>
     ArgumentList = 1 << 9,
 
