@@ -32,6 +32,7 @@ public sealed class MemberFactTests
 
         Assert.AreEqual(PropertyAccessors.Get | PropertyAccessors.Let, read.Accessors);
         Assert.AreEqual("Object", read.LetValueType);
+        Assert.AreEqual(DeclaredTypeKind.Object, read.LetValueTypeKind);
     }
 
     [TestMethod]
@@ -49,6 +50,7 @@ public sealed class MemberFactTests
 
         Assert.AreEqual(PropertyAccessors.None, read.Accessors);
         Assert.IsNull(read.LetValueType);
+        Assert.IsNull(read.LetValueTypeKind);
         Assert.IsNull(read.DefaultMember);
     }
 }

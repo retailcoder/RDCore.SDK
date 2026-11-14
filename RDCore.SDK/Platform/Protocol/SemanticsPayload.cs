@@ -83,6 +83,10 @@ public record class CompileErrorDto(RDCoreDiagnosticCode Code, SourceLocation Lo
 /// The default member of the class its declared type is (<see cref="ExpressionFact.DefaultMember"/>); <see langword="null"/> otherwise.
 /// </param>
 /// <param name="IsLetCoerced">Whether its value is taken and Let-coerced to a declared type (<see cref="ExpressionFact.IsLetCoerced"/>).</param>
+/// <param name="LetValueTypeKind">
+/// The kind of the declared type of the value parameter of the <c>Property Let</c> of the property it names (<see cref="DeclaredTypeKinds.Of"/>), which
+/// <paramref name="LetValueType"/> names; <see langword="null"/> when it names no property with one.
+/// </param>
 public record class ExpressionFactDto(
     SyntaxNodeId Node,
     SourceLocation Location,
@@ -98,7 +102,8 @@ public record class ExpressionFactDto(
     PropertyAccessors Accessors = PropertyAccessors.None,
     string? LetValueType = null,
     DefaultMemberFact? DefaultMember = null,
-    bool IsLetCoerced = false)
+    bool IsLetCoerced = false,
+    DeclaredTypeKind? LetValueTypeKind = null)
 {
     /// <summary>
     /// Describes a fact for the wire.
@@ -109,7 +114,7 @@ public record class ExpressionFactDto(
         var (kind, isArray) = DeclaredTypeKinds.Of(fact.DeclaredType);
         return new(fact.Node, fact.Location, fact.DeclaredType?.Name, fact.Classification, fact.Binding?.Uri, fact.Flags,
             fact.Error is null ? null : CompileErrorDto.From(fact.Error), fact.Creates, kind, isArray, fact.ConstantValue,
-            fact.Accessors, fact.LetValueType?.Name, fact.DefaultMember, fact.IsLetCoerced);
+            fact.Accessors, fact.LetValueType?.Name, fact.DefaultMember, fact.IsLetCoerced, DeclaredTypeKinds.Of(fact.LetValueType).Kind);
     }
 }
 
