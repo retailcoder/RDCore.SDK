@@ -189,6 +189,10 @@ public record class ConversionFactDto(
 /// <param name="OperatorLocation">Where the operator token is (<see cref="OperatorFact.OperatorLocation"/>), at which a diagnostic about the operator is
 /// located; <see langword="null"/> when the operation has no token of its own, or a host does not state it, and a diagnostic is then located at
 /// <paramref name="Location"/>.</param>
+/// <param name="StringOperand">
+/// The <c>String</c> operand of a comparison of a <c>String</c> with a number, Let-coerced both ways (<see cref="ComparisonOperatorFact.StringOperand"/>);
+/// <see langword="null"/> for any other operation.
+/// </param>
 public record class OperatorFactDto(
     SyntaxNodeId Node,
     SourceLocation Location,
@@ -204,7 +208,8 @@ public record class OperatorFactDto(
     OptionCompare? Comparison = null,
     string? ComparisonCulture = null,
     string? Member = null,
-    SourceLocation? OperatorLocation = null)
+    SourceLocation? OperatorLocation = null,
+    StringOperandFact? StringOperand = null)
 {
     /// <summary>
     /// Describes an operation for the wire.
@@ -225,7 +230,8 @@ public record class OperatorFactDto(
         Comparison: (fact as ComparisonOperatorFact)?.Comparison.Mode,
         ComparisonCulture: (fact as ComparisonOperatorFact)?.Comparison.Culture is { Name.Length: > 0 } culture ? culture.Name : null,
         Member: (fact as MemberAccessFact)?.Member,
-        OperatorLocation: fact.OperatorLocation);
+        OperatorLocation: fact.OperatorLocation,
+        StringOperand: (fact as ComparisonOperatorFact)?.StringOperand);
 }
 
 /// <summary>
@@ -244,6 +250,15 @@ public record class OperatorFactDto(
 /// depend on it.
 /// </param>
 /// <param name="CaseClauseFlags">What is known about a range clause of a <c>Case</c> (<see cref="CaseClauseStatementFact"/>).</param>
+/// <param name="ComparedIn">
+/// The name of the type the value of a range clause of a <c>Case</c> is compared with the selector in (<see cref="CaseClauseStatementFact.ComparedIn"/>);
+/// <see langword="null"/> for any other statement.
+/// </param>
+/// <param name="SpecifiedEffectiveType">
+/// The name of the effective type of the comparison of the selector with the value of a range clause as an expression
+/// (<see cref="CaseClauseStatementFact.SpecifiedEffectiveType"/>); <see langword="null"/> when the table of <strong>MS-VBAL 5.6.9.5</strong> gives none,
+/// and for any other statement.
+/// </param>
 public record class StatementFactDto(
     SyntaxNodeId Node,
     SourceLocation Location,
@@ -251,7 +266,9 @@ public record class StatementFactDto(
     FixedAssignmentSemanticFlags? FixedAssignmentFlags,
     WithStatementSemanticFlags? WithStatementFlags,
     bool IsValueKnown = true,
-    CaseClauseSemanticFlags? CaseClauseFlags = null)
+    CaseClauseSemanticFlags? CaseClauseFlags = null,
+    string? ComparedIn = null,
+    string? SpecifiedEffectiveType = null)
 {
     /// <summary>
     /// Describes a statement for the wire.
@@ -269,7 +286,9 @@ public record class StatementFactDto(
             CaseClauseStatementFact clause => clause.IsValueKnown,
             _ => true,
         },
-        (fact as CaseClauseStatementFact)?.Flags);
+        (fact as CaseClauseStatementFact)?.Flags,
+        (fact as CaseClauseStatementFact)?.ComparedIn?.Name,
+        (fact as CaseClauseStatementFact)?.SpecifiedEffectiveType?.Name);
 }
 
 /// <summary>
