@@ -27,6 +27,13 @@ public readonly record struct SourceRange(SourcePosition Start, SourcePosition E
     public bool IsEmpty => Start == End;
 
     /// <summary>
+    /// Whether a position is in the range: at its <c>Start</c>, or after it and before its <c>End</c>, which is not in it.
+    /// </summary>
+    /// <param name="position">The position.</param>
+    /// <returns><see langword="true"/> when the position is in the range; always <see langword="false"/> for an empty range.</returns>
+    public bool Contains(SourcePosition position) => Start <= position && position < End;
+
+    /// <summary>
     /// Compares two ranges by where they start, in document order.
     /// </summary>
     /// <param name="other">The range to compare with.</param>

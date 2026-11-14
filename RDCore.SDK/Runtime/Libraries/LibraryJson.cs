@@ -40,13 +40,17 @@ public static class LibraryJson
     }
 
     /// <summary>
-    /// The version of the format this writes. It reads it, and the version before it.
+    /// The version of the format this writes. It reads it, and every version before it.
     /// </summary>
     /// <remarks>
-    /// Version 2 states a dependency as the library it was built against, <c>{ "name": "DAO", "guid": "{00025E04-...}", "version": "3.5" }</c>, as well as by
-    /// its name alone (<c>"stdole"</c>); version 1 states it by its name alone.
+    /// <list type="bullet">
+    /// <item>Version 3 states the modules a library declares (<see cref="LibraryDescription.Modules"/>).</item>
+    /// <item>Version 2 states a dependency as the library it was built against, <c>{ "name": "DAO", "guid": "{00025E04-...}", "version": "3.5" }</c>, as
+    /// well as by its name alone (<c>"stdole"</c>).</item>
+    /// <item>Version 1 states a dependency by its name alone.</item>
+    /// </list>
     /// </remarks>
-    public const int CurrentFormatVersion = 2;
+    public const int CurrentFormatVersion = 3;
 
     /// <summary>
     /// The oldest version of the format this reads.
@@ -87,9 +91,16 @@ public static class LibraryJson
                 $"The library description of '{description.Name}' is of format version {description.FormatVersion}, which states a dependency by its name alone, and states '{identified}'.");
         }
 
-        // a name is one type of the library, whatever its case: VBA names are not case sensitive, and a library that declares one twice is not one a project can be
-        // checked against.
+        if (description.FormatVersion < 3 && !description.Modules.IsDefaultOrEmpty)
+        {
+            throw new InvalidDataException(
+                $"The library description of '{description.Name}' is of format version {description.FormatVersion}, which states no modules, and states '{description.Modules[0].Name}'.");
+        }
+
+        // a name is one type or module of the library, whatever its case: VBA names are not case sensitive, and a library that declares one twice is not one a
+        // project can be checked against.
         var twice = description.Classes.Select(declared => declared.Name).Concat(description.Enums.Select(declared => declared.Name))
+            .Concat(description.Modules.Select(declared => declared.Name))
             .GroupBy(name => name, StringComparer.OrdinalIgnoreCase)
             .FirstOrDefault(group => group.Count() > 1);
         return twice is null

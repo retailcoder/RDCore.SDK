@@ -101,6 +101,45 @@ public sealed record class DeclarationReference(SourceLocation Location, Uri? Pr
 }
 
 /// <summary>
+/// The kind of the declared type of a declaration or of an expression (<strong>MS-VBAL §2.1</strong>, <strong>§5.2.3.1.4</strong>): what a value of it
+/// is, which decides how it is assigned and what it holds before it is (<see cref="DeclaredTypeKinds.Of"/>).
+/// </summary>
+public enum DeclaredTypeKind
+{
+    /// <summary>
+    /// A type of the language other than <c>Variant</c> and <c>Object</c>: a number, <c>Boolean</c>, <c>Date</c>, a <c>String</c> of either length, or a
+    /// pointer-sized integer (<c>LongPtr</c>). It is let-assigned, and holds its type's default value until it is (<strong>MS-VBAL §2.3</strong>).
+    /// </summary>
+    Intrinsic,
+
+    /// <summary>
+    /// <c>Variant</c>, which can hold a value of any type, an object, or none (<c>Empty</c>).
+    /// </summary>
+    Variant,
+
+    /// <summary>
+    /// <c>Object</c>: a reference to an object of any class, bound late, assigned with <c>Set</c>, and <c>Nothing</c> until it is.
+    /// </summary>
+    Object,
+
+    /// <summary>
+    /// A specific class, of the workspace or of a library, or an interface: a reference to an object of it, assigned with <c>Set</c>, and <c>Nothing</c>
+    /// until it is, unless it is declared <c>As New</c> (<strong>MS-VBAL §2.5.1</strong>).
+    /// </summary>
+    Class,
+
+    /// <summary>
+    /// A user-defined type (<c>Type</c>, <strong>MS-VBAL §5.2.3.3</strong>): a record that holds its fields, each assigned on its own or the record whole.
+    /// </summary>
+    UserDefinedType,
+
+    /// <summary>
+    /// An <c>Enum</c> (<strong>MS-VBAL §5.2.3.4</strong>), whose values are <c>Long</c>: let-assigned, and <c>0</c> until it is.
+    /// </summary>
+    Enum,
+}
+
+/// <summary>
 /// Every reference to a declaration there is, counted by what the reference does.
 /// </summary>
 /// <remarks>
@@ -234,11 +273,25 @@ public sealed record class DeclarationFact(
     public ImmutableArray<DeclarationReference>? ReferencedFrom { get; init; }
 
     /// <summary>
-    /// Whether it is a variable declared <c>As New</c> of a class whose objects are never created (<c>Dim e As New ErrObject</c>): <strong>MS-VBA</strong>
-    /// compiles the declaration, and every reference to the variable that creates its object raises run-time error -2147221164 <em>Class not
-    /// registered</em> (recorded in Excel: <c>oracle\s62</c> X06, X07, X09). Assigning it <c>Nothing</c> creates nothing.
+    /// The class whose object the variable is given where code first uses it, for a variable declared <c>As New</c>, or an array whose elements are
+    /// (<strong>MS-VBAL §5.2.3.1.4</strong>): <see cref="ModuleSemanticModel.Classes"/> says what is known of creating its objects. <see langword="null"/>
+    /// for any other declaration.
     /// </summary>
-    public bool AutoInstantiationAlwaysFails { get; init; }
+    public SemanticId? AutoInstantiates { get; init; }
+
+    /// <summary>
+    /// The kind of type it is declared as, or for an array the kind of its elements' type (<see cref="IsArray"/>): the type its <c>As</c> clause names, the
+    /// type a type-declaration character or a <c>Def</c><em>Type</em> directive gives it, or <c>Variant</c> (<strong>MS-VBAL §5.2.3.1.4</strong>,
+    /// <strong>§5.2.3.1.5</strong>). For a function or a property, the type it returns. <see langword="null"/> for a declaration that has no type (a
+    /// <c>Sub</c>, an <c>Event</c>), and for one whose type did not resolve.
+    /// </summary>
+    public DeclaredTypeKind? TypeKind { get; init; }
+
+    /// <summary>
+    /// Whether it is declared as an array: with bounds, with an empty list of them (<c>Dim a() As Long</c>), or by a <c>ReDim</c> statement
+    /// (<strong>MS-VBAL §5.4.3.3</strong>). <see cref="TypeKind"/> is then the kind of its elements' type. A <c>Variant</c> that holds an array is not one.
+    /// </summary>
+    public bool IsArray { get; init; }
 }
 
 /// <summary>

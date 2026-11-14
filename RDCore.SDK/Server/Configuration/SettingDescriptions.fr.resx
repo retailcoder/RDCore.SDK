@@ -208,4 +208,7 @@
   <data name="Formatting_PrettyList" xml:space="preserve">
     <value>Si une ligne terminée est relistée d'après ce qu'elle a compilé, comme le fait l'éditeur VBA, plutôt que formatée par des règles d'espacement et de casse.</value>
   </data>
+  <data name="Analysis_DisabledDiagnostics" xml:space="preserve">
+    <value>Les codes des diagnostics qui ne sont pas signalés, séparés par des virgules : RDC01001, XYZ00042. Une erreur de compilation ou d'exécution (VBC, VBR, VBA) ne peut pas être désactivée.</value>
+  </data>
 </root>

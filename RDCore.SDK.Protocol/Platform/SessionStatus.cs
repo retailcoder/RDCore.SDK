@@ -48,6 +48,11 @@ public record class SessionStatusResult
     public int ReferenceCount { get; init; }
 
     /// <summary>
+    /// The number of forms the session has loaded and not unloaded, shown or hidden.
+    /// </summary>
+    public int FormsLoaded { get; init; }
+
+    /// <summary>
     /// The session memory space's allocation and fragmentation statistics, as the session's own
     /// allocator reports them.
     /// </summary>

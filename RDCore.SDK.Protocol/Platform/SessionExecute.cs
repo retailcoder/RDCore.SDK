@@ -171,6 +171,13 @@ public record class ExecuteResult
     /// <see cref="VBErrorDetails.MaxFrames"/> of them, the innermost ones, with <see cref="VBErrorDetails.FramesTruncated"/> set when there were more.
     /// </remarks>
     public VBErrorDetails? ErrorDetails { get; init; }
+
+    /// <summary>
+    /// Whether the program completed with a form of the session still shown. The form stays loaded, and the handlers of its events run in the session as the
+    /// person uses it, until it is unloaded. A debugger can stay attached to the session meanwhile, until no form is loaded
+    /// (<see cref="SessionStatusResult.FormsLoaded"/>). Always <see langword="false"/> for a run that is not under a debugger, and for one that runs unattended.
+    /// </summary>
+    public bool FormsShown { get; init; }
 }
 
 /// <summary>

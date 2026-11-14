@@ -527,6 +527,19 @@ public abstract class RDCoreServerApp(
     protected internal static bool ClientRunsUnattended(InitializeParams request) => ReadInitializationOptions(request.InitializationOptions)?.Unattended == true;
 
     /// <summary>
+    /// The language the client of an <c>initialize</c> request says the workspace is written in
+    /// (<see cref="Platform.Protocol.RDCoreInitializationOptions.Language"/>), when it names one the platform serves.
+    /// </summary>
+    /// <remarks>
+    /// What the client names is already the server's setting when the server's own handler runs. A server that can tell the language from the workspace
+    /// itself, such as from its project file (<see cref="Workspace.SupportedLanguages.OfProject"/>), asks this first: what the client names wins.
+    /// </remarks>
+    /// <param name="request">The request.</param>
+    /// <returns>The language, or <see langword="null"/> when the client names none, or one the platform does not serve.</returns>
+    protected internal static Workspace.SupportedLanguage? ClientLanguage(InitializeParams request)
+        => Workspace.SupportedLanguages.TryGet(ReadInitializationOptions(request.InitializationOptions)?.Language, out var language) ? language : null;
+
+    /// <summary>
     /// Whether the client of an <c>initialize</c> request answers what the server asks its user before the request is answered
     /// (<see cref="Platform.Protocol.RDCoreInitializationOptions.AnswersDuringInitialize"/>): it says it does, and does not run unattended.
     /// </summary>

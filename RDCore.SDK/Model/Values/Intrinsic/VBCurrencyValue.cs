@@ -16,6 +16,7 @@ public sealed record class VBCurrencyValue()
 
     public VBRuntimeCurrencyValue Value => ((VBRuntimeValue<VBRuntimeCurrencyValue>)RuntimeValue).Value;
     public override int Size => sizeof(long);
+    public override double AsDouble => VBCurrencyType.ToDouble(Value);
 
     public bool Equals(IVBTypedValue<VBCurrencyValue, VBRuntimeCurrencyValue>? other) => Value.StoredValue == other?.Value.StoredValue;
 }

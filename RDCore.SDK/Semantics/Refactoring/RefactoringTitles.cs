@@ -21,6 +21,23 @@ public static class RefactoringTitles
     /// <param name="culture">The language of the reader; the current UI culture by default.</param>
     public static string RenameTo(string name, string newName, CultureInfo? culture = null) => Say("CodeAction_RenameTo", culture, name, newName);
 
+    /// <summary>
+    /// The title of the code action that disables the diagnostics of a code (<c>Analysis.DisabledDiagnostics</c>): <c>Disable RDC01001 in every workspace</c>,
+    /// or <c>Disable RDC01001 in this workspace</c>.
+    /// </summary>
+    /// <param name="code">The code.</param>
+    /// <param name="scope">Where the code is disabled: the user's settings of the platform, or the workspace's.</param>
+    /// <param name="culture">The language of the reader; the current UI culture by default.</param>
+    public static string DisableDiagnostic(Extensibility.Diagnostics.RDCoreDiagnosticCode code, Platform.Protocol.SettingScope scope, CultureInfo? culture = null)
+        => Say(scope == Platform.Protocol.SettingScope.Workspace ? "CodeAction_DisableDiagnostic_Workspace" : "CodeAction_DisableDiagnostic_Platform", culture, code);
+
+    /// <summary>
+    /// Why the language server does not change a list of the client's settings: the client does not accept such changes from it
+    /// (<see cref="Client.ListSettingValue"/>).
+    /// </summary>
+    /// <param name="culture">The language of the reader; the current UI culture by default.</param>
+    public static string SettingListNotTaken(CultureInfo? culture = null) => Say("SettingList_NotTaken", culture);
+
     /// <summary>The title of the code lens that counts the references of a member: <c>3 references</c>.</summary>
     /// <param name="count">The number of references.</param>
     /// <param name="culture">The language of the reader; the current UI culture by default.</param>
@@ -113,6 +130,42 @@ public static class RefactoringTitles
     /// </summary>
     /// <param name="culture">The language of the reader; the current UI culture by default.</param>
     public static string RenameLateBoundLeave(CultureInfo? culture = null) => Say("Rename_LateBound_Leave", culture);
+
+    /// <summary>
+    /// The label of the edits of a rename of a <c>Public</c> procedure of a standard module, which something outside the code may call by its name (a
+    /// list of macros, a button, another project): <c>May be called by its name from outside the code</c>. A client that takes change annotations shows it
+    /// with the edits it asks its user to confirm (<strong>LSP 3.17</strong> <c>ChangeAnnotation.label</c>); declining them cancels the rename.
+    /// </summary>
+    /// <param name="culture">The language of the reader; the current UI culture by default.</param>
+    public static string RenameOutsideCallersLabel(CultureInfo? culture = null) => Say("Rename_OutsideCallers_Label", culture);
+
+    /// <summary>
+    /// What the edits of <see cref="RenameOutsideCallersLabel"/> are, less prominently than the label (<strong>LSP 3.17</strong>
+    /// <c>ChangeAnnotation.description</c>): why the user is asked, and that declining them cancels the rename.
+    /// </summary>
+    /// <param name="name">The name the procedure is declared with.</param>
+    /// <param name="culture">The language of the reader; the current UI culture by default.</param>
+    public static string RenameOutsideCallersDescription(string name, CultureInfo? culture = null) => Say("Rename_OutsideCallers_Description", culture, name);
+
+    /// <summary>
+    /// What the user of a client that does not take change annotations is asked, before the edits of a rename of a <c>Public</c> procedure of a standard
+    /// module are sent to it: <c>'Foo' is a Public procedure of a standard module: […] Rename it anyway?</c>
+    /// </summary>
+    /// <param name="name">The name the procedure is declared with.</param>
+    /// <param name="culture">The language of the reader; the current UI culture by default.</param>
+    public static string RenameOutsideCallersQuestion(string name, CultureInfo? culture = null) => Say("Rename_OutsideCallers_Question", culture, name);
+
+    /// <summary>
+    /// The answer to <see cref="RenameOutsideCallersQuestion"/> that renames the procedure.
+    /// </summary>
+    /// <param name="culture">The language of the reader; the current UI culture by default.</param>
+    public static string RenameOutsideCallersRename(CultureInfo? culture = null) => Say("Rename_OutsideCallers_Rename", culture);
+
+    /// <summary>
+    /// The answer to <see cref="RenameOutsideCallersQuestion"/> that renames nothing: the whole rename is canceled.
+    /// </summary>
+    /// <param name="culture">The language of the reader; the current UI culture by default.</param>
+    public static string RenameOutsideCallersCancel(CultureInfo? culture = null) => Say("Rename_OutsideCallers_Cancel", culture);
 
     private static string Say(string key, CultureInfo? culture, params object[] arguments)
     {

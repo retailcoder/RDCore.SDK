@@ -70,7 +70,14 @@ internal sealed class ClientConfigurationFollower : IDisposable
     /// <summary>
     /// Starts following: the client's answers set the settings from now on.
     /// </summary>
-    public void Start() => _subscription ??= ChangeToken.OnChange(_server.Configuration.GetReloadToken, () => _ = FollowAsync());
+    /// <remarks>
+    /// Each change is followed as it comes in, while an earlier one may still wait for the client's answer: the newer change has the last word
+    /// (<see cref="FollowAsync"/>), and an answer the client holds back keeps no change from being followed.
+    /// </remarks>
+    public void Start()
+        // the consumer is an Action, which starts a follow and returns: the overload that takes a Func<Task> waits for each follow before it listens again,
+        // so a change that came in while the client held an answer back would be followed only after that answer.
+        => _subscription ??= ChangeToken.OnChange(_server.Configuration.GetReloadToken, () => { _ = FollowAsync(); });
 
     /// <summary>
     /// Sets the live settings the client said, with the editor's tab size for an indentation the user never set.

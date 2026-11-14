@@ -338,7 +338,7 @@ public sealed class LiveSettings(IEnumerable<LiveSettingsTarget> targets, Settin
     {
         var path = setting.Key.Replace('.', ':');
         object? parsed = null;
-        if (setting.Kind == SettingValueKind.TextList)
+        if (setting.Kind is SettingValueKind.TextList or SettingValueKind.DiagnosticCodeList)
         {
             var items = settings
                 .Where(pair => pair.Key.StartsWith(path + ":", StringComparison.OrdinalIgnoreCase) && int.TryParse(pair.Key[(path.Length + 1)..], out _))
