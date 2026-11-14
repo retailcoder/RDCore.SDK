@@ -2,6 +2,7 @@
 // Copyright (c) 2024 Bartosz Korczyński. Copyright (c) 2026 The HexIDE Authors. MIT License; see NOTICE.md.
 
 using System.Buffers.Binary;
+using System.Collections.Immutable;
 
 namespace RDCore.SDK.Workspace.Pictures;
 
@@ -63,7 +64,46 @@ public readonly record struct PictureInfo(PictureFormat Format, int Width, int H
     /// Whether the picture has a size in pixels: every format but the metafiles, which are drawn by records and have none.
     /// </summary>
     public bool HasPixelSize => Format is not (PictureFormat.Metafile or PictureFormat.EnhancedMetafile);
+
+    /// <summary>
+    /// The picture's width in HIMETRIC units (0.01 mm), which is what a <c>StdPicture</c>'s <c>Width</c> reads.
+    /// </summary>
+    /// <remarks>
+    /// A picture with a size in pixels is measured at 96 pixels per inch, rounded to the nearest unit, whatever resolution its file states. A placeable
+    /// metafile's size is its bounding box at the units per inch its header states; an enhanced metafile's is its frame. A metafile that is not placeable
+    /// states no size, and its size is 0.
+    /// </remarks>
+    public int HimetricWidth { get; init; }
+
+    /// <summary>
+    /// The picture's height in HIMETRIC units (0.01 mm), measured as <see cref="HimetricWidth"/> is.
+    /// </summary>
+    public int HimetricHeight { get; init; }
+
+    /// <summary>
+    /// A length in pixels, in HIMETRIC units (0.01 mm) at 96 pixels per inch, rounded to the nearest unit.
+    /// </summary>
+    /// <param name="pixels">The length in pixels.</param>
+    /// <returns>The length in HIMETRIC units.</returns>
+    public static int PixelsToHimetric(int pixels) => Scale(pixels, PictureHeader.HimetricPerInch, PictureHeader.PixelsPerInch);
+
+    // a * b / c, rounded to the nearest, half away from zero.
+    internal static int Scale(long a, long b, long c)
+    {
+        var product = a * b;
+        return (int)((product + (product < 0 ? -c / 2 : c / 2)) / c);
+    }
 }
+
+/// <summary>
+/// One of the images of an icon or a cursor, as its directory entry and its own header state it.
+/// </summary>
+/// <param name="Width">The image's width in pixels, as its own header states it.</param>
+/// <param name="Height">The image's height in pixels, without the mask a DIB image holds under it.</param>
+/// <param name="BitCount">The image's bits per pixel: its DIB header's, or 32 for an image stored as a PNG.</param>
+/// <param name="Offset">Where the image starts in the file.</param>
+/// <param name="Length">How many bytes the image has.</param>
+public readonly record struct IconImage(int Width, int Height, int BitCount, int Offset, int Length);
 
 /// <summary>
 /// Reads what a picture's header says about it before anything decodes it, and refuses a picture too large or too malformed to decode safely.
@@ -101,6 +141,16 @@ public static class PictureHeader
     /// </summary>
     public const int MaxPixels = 16 * 1024 * 1024;
 
+    /// <summary>
+    /// The HIMETRIC units in an inch: 2540, since a unit is 0.01 mm.
+    /// </summary>
+    public const int HimetricPerInch = 2540;
+
+    /// <summary>
+    /// The pixels per inch a picture with a size in pixels is measured at: 96.
+    /// </summary>
+    public const int PixelsPerInch = 96;
+
     // the bytes' length already bounds how many directory entries an icon can hold; this bounds the walk as well.
     private const int MaxIconImages = 1024;
 
@@ -126,8 +176,57 @@ public static class PictureHeader
             return false;
         }
 
-        info = found;
+        var (width, height) = HimetricSizeOf(found, bytes);
+        info = found with { HimetricWidth = width, HimetricHeight = height };
         return true;
+    }
+
+    /// <summary>
+    /// Reads the images of an icon or a cursor, in the order its directory lists them.
+    /// </summary>
+    /// <param name="bytes">The icon or the cursor, as its file holds it.</param>
+    /// <param name="images">The images when <see cref="TryRead"/> accepts the picture and it is an icon or a cursor; empty otherwise.</param>
+    /// <returns>
+    /// <see langword="true"/> for an icon or a cursor that <see cref="TryRead"/> accepts; <see langword="false"/> for anything else.
+    /// </returns>
+    public static bool TryReadIconImages(ReadOnlySpan<byte> bytes, out ImmutableArray<IconImage> images)
+    {
+        images = [];
+        if (!TryRead(bytes, out var info) || info.Format is not (PictureFormat.Icon or PictureFormat.Cursor) || IconImages(bytes) is not { } found)
+        {
+            return false;
+        }
+
+        images = found;
+        return true;
+    }
+
+    private static (int Width, int Height) HimetricSizeOf(PictureInfo info, ReadOnlySpan<byte> b)
+    {
+        if (info.HasPixelSize)
+        {
+            return (PictureInfo.PixelsToHimetric(info.Width), PictureInfo.PixelsToHimetric(info.Height));
+        }
+
+        // a placeable metafile's header: its key, a handle, its bounding box (left, top, right, bottom) and its units per inch, as 16-bit numbers.
+        if (info.Format is PictureFormat.Metafile)
+        {
+            if (b.Length < 16 || !b.StartsWith((ReadOnlySpan<byte>)[0xD7, 0xCD, 0xC6, 0x9A]) || U16(b, 14) is not (> 0 and var inch))
+            {
+                return (0, 0);
+            }
+
+            var across = Math.Abs(I16(b, 10) - I16(b, 6));
+            var down = Math.Abs(I16(b, 12) - I16(b, 8));
+            return (PictureInfo.Scale(across, HimetricPerInch, inch), PictureInfo.Scale(down, HimetricPerInch, inch));
+        }
+
+        // an enhanced metafile's header: its bounds in device units, then its frame (left, top, right, bottom) in HIMETRIC units.
+        var left = BinaryPrimitives.ReadInt32LittleEndian(b[24..]);
+        var top = BinaryPrimitives.ReadInt32LittleEndian(b[28..]);
+        var right = BinaryPrimitives.ReadInt32LittleEndian(b[32..]);
+        var bottom = BinaryPrimitives.ReadInt32LittleEndian(b[36..]);
+        return ((int)Math.Min(int.MaxValue, Math.Abs((long)right - left)), (int)Math.Min(int.MaxValue, Math.Abs((long)bottom - top)));
     }
 
     private static bool WithinBounds(int width, int height) =>
@@ -224,6 +323,25 @@ public static class PictureHeader
     // image is a PNG or a DIB. The size is the largest image's; every image must be within the bounds.
     private static PictureInfo? Icon(ReadOnlySpan<byte> b, PictureFormat format)
     {
+        if (IconImages(b) is not { } images)
+        {
+            return null;
+        }
+
+        int width = 0, height = 0;
+        foreach (var image in images)
+        {
+            if ((long)image.Width * image.Height > (long)width * height)
+            {
+                (width, height) = (image.Width, image.Height);
+            }
+        }
+
+        return new PictureInfo(format, width, height);
+    }
+
+    private static ImmutableArray<IconImage>? IconImages(ReadOnlySpan<byte> b)
+    {
         if (b.Length < 6)
         {
             return null;
@@ -235,7 +353,7 @@ public static class PictureHeader
             return null;
         }
 
-        int width = 0, height = 0;
+        var images = ImmutableArray.CreateBuilder<IconImage>(count);
         for (var i = 0; i < count; i++)
         {
             var entry = b.Slice(6 + 16 * i, 16);
@@ -247,19 +365,19 @@ public static class PictureHeader
             }
 
             var image = b.Slice((int)offset, (int)length);
-            (int Width, int Height)? size = Png(image) is { } png ? (png.Width, png.Height) : Dib(image, icon: true);
+            var png = Png(image);
+            (int Width, int Height)? size = png is { } stored ? (stored.Width, stored.Height) : Dib(image, icon: true);
             if (size is not { } found || !WithinBounds(found.Width, found.Height))
             {
                 return null;
             }
 
-            if ((long)found.Width * found.Height > (long)width * height)
-            {
-                (width, height) = found;
-            }
+            // a DIB's bits per pixel: a BITMAPCOREHEADER's at 10, a later header's at 14.
+            var bits = png is not null ? 32 : U32(image, 0) == 12 ? U16(image, 10) : U16(image, 14);
+            images.Add(new IconImage(found.Width, found.Height, bits, (int)offset, (int)length));
         }
 
-        return new PictureInfo(format, width, height);
+        return images.MoveToImmutable();
     }
 
     // the signature, then the IHDR chunk: its length, "IHDR", and the width and height as big-endian 32-bit numbers.
@@ -329,6 +447,8 @@ public static class PictureHeader
     }
 
     private static ushort U16(ReadOnlySpan<byte> b, int at) => BinaryPrimitives.ReadUInt16LittleEndian(b[at..]);
+
+    private static short I16(ReadOnlySpan<byte> b, int at) => BinaryPrimitives.ReadInt16LittleEndian(b[at..]);
 
     private static uint U32(ReadOnlySpan<byte> b, int at) => BinaryPrimitives.ReadUInt32LittleEndian(b[at..]);
 }
