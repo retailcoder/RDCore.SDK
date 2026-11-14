@@ -49,6 +49,8 @@ public enum MemberAccessOperationSemanticFlags
     /// default member of <c>b</c> (<strong>MS-VBAL §5.6.13</strong>), and <c>b.Item(1)</c> gives it to <c>Item</c>.
     /// </summary>
     /// <remarks>
+    /// An empty argument list (<c>f()</c>) is not one. A member that declares no parameters is given none: the arguments index the array that a public variable
+    /// holds, or what a <c>Property Get</c> or a <c>Function</c> returns.
     /// An element of an array that is assigned a value through the default member of the object it holds (<c>a(1) = 5</c>, <strong>MS-VBAL §5.4.3.8</strong>)
     /// gives that default member no argument: the subscripts select the element. A dictionary access is stated with <see cref="DictionaryAccess"/> instead.
     /// </remarks>
