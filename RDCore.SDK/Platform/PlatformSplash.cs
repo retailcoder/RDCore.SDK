@@ -78,12 +78,20 @@ public static class PlatformSplash
         var logoIndent = new string(' ', title?.LogoIndent ?? 0);
         string[] titleLines = title is null ? [] : [.. title.Lines.Select(line => line.TrimEnd()).Reverse().SkipWhile(line => line.Length == 0).Reverse()];
 
-        var width = Math.Max(logoIndent.Length + logo.Max(line => line.Length), titleLines.Select(line => line.Length).DefaultIfEmpty(0).Max());
-        var sloganIndent = new string(' ', Math.Max(0, (width - Slogan.Length) / 2));
-        return
+        SplashLine[] art =
         [
             .. logo.Select(line => new SplashLine(SplashPart.Logo, line.Length == 0 ? line : logoIndent + line)),
             .. titleLines.Select(line => new SplashLine(SplashPart.Title, line)),
+        ];
+
+        // the slogan is centred under the art itself: from its leftmost character to its rightmost, whatever space is before them.
+        var drawn = art.Select(line => line.Text).Where(text => text.Length > 0).ToArray();
+        var left = drawn.Min(text => text.Length - text.TrimStart().Length);
+        var right = drawn.Max(text => text.Length);
+        var sloganIndent = new string(' ', left + Math.Max(0, (right - left - Slogan.Length) / 2));
+        return
+        [
+            .. art,
             new SplashLine(SplashPart.Space, string.Empty),
             new SplashLine(SplashPart.Slogan, sloganIndent + Slogan),
             new SplashLine(SplashPart.Space, string.Empty),

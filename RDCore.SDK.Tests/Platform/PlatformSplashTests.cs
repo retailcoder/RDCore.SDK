@@ -59,9 +59,11 @@ public sealed class PlatformSplashTests
         Assert.AreEqual(19, logo.Length);
         CollectionAssert.AreEqual(PlatformSplash.Logo.Split('\n').Select(line => line.TrimEnd()).ToArray(), logo, "the logo is not indented");
 
-        var sloganIndent = (logo.Max(line => line.Length) - PlatformSplash.Slogan.Length) / 2;
+        var drawn = logo.Where(line => line.Length > 0).ToArray();
+        var left = drawn.Min(line => line.Length - line.TrimStart().Length);
+        var sloganIndent = left + (drawn.Max(line => line.Length) - left - PlatformSplash.Slogan.Length) / 2;
         Assert.AreEqual(new string(' ', sloganIndent) + PlatformSplash.Slogan, lines.Single(line => line.Part == SplashPart.Slogan).Text,
-            "the slogan is centred under the logo");
+            "the slogan is centred under the logo: under its leftmost character to its rightmost");
         Assert.AreEqual(PlatformSplash.CopyrightNotice(English), lines[^1].Text, "the notice is the last line, and it is not indented");
         AssertEachIsOneLine(lines);
     }
