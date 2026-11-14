@@ -1,6 +1,4 @@
 using RDCore.SDK.Model.AST;
-using RDCore.SDK.Model.AST.Abstract;
-using RDCore.SDK.Model.AST.Statements;
 using RDCore.SDK.Workspace;
 
 namespace RDCore.SDK.Formatting;
@@ -58,37 +56,11 @@ public static class ProgramBlocks
             return [];
         }
 
+        // the program is the body of its module's procedure, which is no block of the program.
         var text = BasicProgramText.ToModuleSource(string.Join(NewLine, statements.Select(statement => statement.TrimStart())) + NewLine);
-        var lines = text.Split(NewLine);
         var first = BasicProgramText.HeaderLines;
-        var line = index + first;
-        var open = new List<ProgramBlock>();
-        foreach (var (block, closer) in ModuleIndenter.UnclosedBlocks(parse(text), lines))
-        {
-            var range = block.SourceLocation.Range;
-            var last = range.End.Character == 0 && range.End.Line > range.Start.Line ? range.End.Line - 1 : range.End.Line;
-            if (range.Start.Line > line || last < line)
-            {
-                continue;
-            }
-
-            var branch = Branches(block).Where(start => start <= line).DefaultIfEmpty(range.Start.Line).Max();
-            open.Add(new ProgramBlock(range.Start.Line - first, branch - first, closer, line > branch));
-        }
-
-        // the tree's order has a block before the blocks in it: the innermost is the last.
-        open.Reverse();
-        return open;
+        return [.. ModuleBlocks.OpenAt(parse(text), text, index + first)
+            .Where(block => block.Opener >= first)
+            .Select(block => new ProgramBlock(block.Opener - first, block.Branch - first, block.Closer, block.HasBody))];
     }
-
-    // the lines a block's branches start on.
-    private static IEnumerable<int> Branches(StatementNode block)
-        => block switch
-        {
-            IfBlockStatementNode ifBlock => ifBlock.ElseIfBlocks.Select(StartOf).Concat(ifBlock.ElseBlock is { } elseBlock ? [StartOf(elseBlock)] : []),
-            SelectCaseStatementNode select => select.CaseExpressionBlocks.Select(StartOf).Concat(select.CaseElseBlock is { } caseElse ? [StartOf(caseElse)] : []),
-            _ => [],
-        };
-
-    private static int StartOf(StatementNode node) => node.SourceLocation.Range.Start.Line;
 }

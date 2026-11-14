@@ -330,6 +330,11 @@ public static partial class ModuleIndenter
     // the lines of the text, without what ends them.
     private static string[] LinesOf(string text) => [.. LineEnd().Split(text).Where((_, index) => index % 2 == 0)];
 
+    internal static string[] LinesIn(string text) => LinesOf(text);
+
+    // what ends each line of the text but the last, which nothing ends.
+    internal static string[] LineEndsIn(string text) => [.. LineEnd().Split(text).Where((_, index) => index % 2 == 1)];
+
     // a comment alone on its line: an apostrophe, or Rem.
     private static bool IsComment(string line) => CommentLine().IsMatch(line);
 
@@ -793,19 +798,19 @@ public static partial class ModuleIndenter
         return end < lastCode && BodyEnd(node, module, start, end) == end;
     }
 
-    // the statement blocks of a module that have no closer, each with the closer it needs, in the order of the tree. A block is closed by a closer on the
-    // line it ends on that no block in it closes with: the inner blocks are looked at first, and a line has as many closers as it has statements that start
-    // with one (Next j, i: one for each of its names).
-    internal static List<(StatementNode Block, string Closer)> UnclosedBlocks(ModuleParseResult parse, string[] lines)
+    // the blocks of a module that have no closer - its procedures, Enums and Types, and the blocks of their statements - each with the closer it needs, in the
+    // order of the tree. A block is closed by a closer on the line it ends on that no block in it closes with: the inner blocks are looked at first, and a line
+    // has as many closers as it has statements that start with one (Next j, i: one for each of its names).
+    internal static List<(SyntaxNode Block, string Closer)> UnclosedBlocks(ModuleParseResult parse, string[] lines)
     {
-        var unclosed = new List<(StatementNode Block, string Closer)>();
+        var unclosed = new List<(SyntaxNode Block, string Closer)>();
         if (parse.SyntaxTree is not { } tree || lines.Length == 0)
         {
             return unclosed;
         }
 
         var module = new ModuleLines(lines);
-        var blocks = tree.Descendants().OfType<StatementNode>().Where(node => BlockCloser(node) is not null).ToList();
+        var blocks = tree.Descendants().Where(node => node is StatementNode or MemberDeclarationNode && BlockCloser(node) is not null).ToList();
         var taken = new Dictionary<(int Line, string Closer), int>();
         for (var index = blocks.Count - 1; index >= 0; index--)
         {
