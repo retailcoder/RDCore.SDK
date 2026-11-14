@@ -108,4 +108,19 @@ public sealed class ServerInitializationOptionsTests
     [TestMethod]
     public void TheLanguageIsReadWhateverTheCaseOfItsName()
         => Assert.AreEqual("vb6", RDCoreServerApp.ReadInitializationOptions(JObject.Parse("{ \"Language\": \"vb6\" }"))!.Language);
+
+    [TestMethod]
+    [DataRow("{ \"Language\": \"VB6\" }", "vb6", DisplayName = "a language the platform serves")]
+    [DataRow("{ \"Language\": \"cobol\" }", null, DisplayName = "one it does not serve")]
+    [DataRow("{ \"Unattended\": true }", null, DisplayName = "options that name none")]
+    public void TheLanguageTheClientNames_IsOneThePlatformServes(string options, string? expected)
+    {
+        var request = new OmniSharp.Extensions.LanguageServer.Protocol.Models.InitializeParams { InitializationOptions = JObject.Parse(options) };
+
+        Assert.AreEqual(expected, RDCoreServerApp.ClientLanguage(request)?.Id);
+    }
+
+    [TestMethod]
+    public void AClientThatSendsNoOptions_NamesNoLanguage()
+        => Assert.IsNull(RDCoreServerApp.ClientLanguage(new OmniSharp.Extensions.LanguageServer.Protocol.Models.InitializeParams()));
 }
