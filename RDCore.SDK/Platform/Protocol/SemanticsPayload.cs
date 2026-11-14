@@ -85,7 +85,7 @@ public record class CompileErrorDto(RDCoreDiagnosticCode Code, SourceLocation Lo
 /// <param name="IsLetCoerced">Whether its value is taken and Let-coerced to a declared type (<see cref="ExpressionFact.IsLetCoerced"/>).</param>
 /// <param name="LetValueTypeKind">
 /// The kind of the declared type of the value parameter of the <c>Property Let</c> of the property it names (<see cref="DeclaredTypeKinds.Of"/>), which
-/// <paramref name="LetValueType"/> names; <see langword="null"/> when it names no property with one.
+/// <paramref name="LetValueType"/> names; <see langword="null"/> when it names no property with one, or one whose type did not resolve.
 /// </param>
 public record class ExpressionFactDto(
     SyntaxNodeId Node,
