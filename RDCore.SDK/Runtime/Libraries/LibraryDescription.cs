@@ -255,7 +255,7 @@ public sealed record class ModuleDescription
 }
 
 /// <summary>
-/// A constant of a module a library declares (<strong>MS-VBAL §5.2.3.1</strong>).
+/// A constant of a module a library declares (<strong>MS-VBAL §5.2.3.2</strong>).
 /// </summary>
 public sealed record class ConstantDescription
 {
@@ -270,8 +270,8 @@ public sealed record class ConstantDescription
     public string Type { get; init; } = "Variant";
 
     /// <summary>
-    /// The value of the constant, written as a VBA literal: <c>True</c>, a number, or a string in double quotes. A constant whose value is not one of these is
-    /// not read as a symbol.
+    /// The value of the constant, written as a VBA literal: <c>True</c> or <c>False</c>, a number, or a string in double quotes. A constant whose value is not
+    /// one of these is not read as a symbol.
     /// </summary>
     public string? Value { get; init; }
 
