@@ -9,8 +9,8 @@ using RDCore.SDK.Semantics.Flags;
 namespace RDCore.Tests.Semantics.Flags;
 
 /// <summary>
-/// The target of a <c>Let</c> that gives an object to a <c>Variant</c> property (<strong>MS-VBAL §5.4.3.8</strong>) reaches a diagnostics extension as the
-/// host recorded it, with the other flags of the target.
+/// The target of a <c>Let</c> that gives an object to a <c>Variant</c>, class or <c>Object</c> property (<strong>MS-VBAL §5.4.3.8</strong>) reaches a
+/// diagnostics extension as the host recorded it, with the other flags of the target.
 /// </summary>
 [TestClass]
 public sealed class ValueExpressionSemanticFlagsTests
@@ -24,6 +24,8 @@ public sealed class ValueExpressionSemanticFlagsTests
     [DataRow(ValueExpressionSemanticFlags.ObjectGivenToVariantProperty | ValueExpressionSemanticFlags.AssignmentTarget)]
     [DataRow(ValueExpressionSemanticFlags.ObjectGivenToVariantProperty | ValueExpressionSemanticFlags.AssignmentTarget
         | ValueExpressionSemanticFlags.ProcedureCall | ValueExpressionSemanticFlags.TrueValueIsNotMinusOne)]
+    [DataRow(ValueExpressionSemanticFlags.ObjectGivenToObjectProperty)]
+    [DataRow(ValueExpressionSemanticFlags.ObjectGivenToObjectProperty | ValueExpressionSemanticFlags.AssignmentTarget)]
     public void TheTargetOfTheLet_CrossesTheWire_AsItWasRecorded(ValueExpressionSemanticFlags flags)
     {
         var read = PlatformJson.Deserialize<ExpressionFactDto>(PlatformJson.Serialize(Fact(flags)));
