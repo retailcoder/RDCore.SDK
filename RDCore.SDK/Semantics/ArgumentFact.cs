@@ -18,8 +18,9 @@ namespace RDCore.SDK.Semantics;
 /// </param>
 /// <param name="Parameter">The address of the parameter.</param>
 /// <param name="Mechanism">
-/// How the parameter is declared to take its argument (<strong>MS-VBAL §5.3.1.5</strong>): <c>ByVal</c>, <c>ByRef</c>, or neither, which is
-/// <c>ByRef</c>, or <c>ByVal</c> for the value parameter of a <c>Property Let</c> or <c>Property Set</c>. A parameter of a library's procedure is
+/// How the parameter is declared to take its argument (<strong>MS-VBAL §5.3.1.5</strong>): <c>ByVal</c>, <c>ByRef</c>, or neither. A parameter
+/// declared with neither is passed by reference, except the value parameter of a <c>Property Let</c> or <c>Property Set</c>, which is passed by value. A
+/// parameter of a library's procedure is
 /// <see cref="ParameterKind.ExplicitByRef"/> where the type library declares it by reference, and <see cref="ParameterKind.ExplicitByVal"/> otherwise.
 /// </param>
 /// <param name="ParameterType">
