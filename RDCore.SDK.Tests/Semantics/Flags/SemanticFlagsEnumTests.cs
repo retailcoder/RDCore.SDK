@@ -23,7 +23,7 @@ public sealed class SemanticFlagsEnumTests
     // an enum member that is a named combination of others (All, or a documented alias) is not a fact of its own.
     private static bool IsCombination(long value) => value != 0 && (value & (value - 1)) != 0;
 
-    // the bits of each member, as wide as the enum's underlying type: an int member 1 << 31 is the bit 31, not a negative long that reads as a combination.
+    // the bits of each member, as wide as the enum's underlying type: an int member 1 << 31 is bit 31, where a sign-extended long would read as a combination.
     private static IEnumerable<(string Name, long Value)> Members(Type type)
     {
         var width = System.Runtime.InteropServices.Marshal.SizeOf(Enum.GetUnderlyingType(type)) * 8;
