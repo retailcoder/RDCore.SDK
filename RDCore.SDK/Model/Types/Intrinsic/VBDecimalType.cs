@@ -30,14 +30,14 @@ public sealed record class VBDecimalType() : VBNumericType<decimal>(VBTypeNames.
     /// Gets the minimum representable value for this data type.
     /// </summary>
     public static VBDecimalValue MinValue => _minValue.Value;
-    public override double ManagedMinValue => (double)decimal.MinValue;
+    public override double ManagedMinValue => ToDouble(decimal.MinValue);
 
     private static readonly Lazy<VBDecimalValue> _maxValue = new(() => new VBDecimalValue(decimal.MaxValue), LazyThreadSafetyMode.PublicationOnly);
     /// <summary>
     /// Gets the maximum representable value for this data type.
     /// </summary>
     public static VBDecimalValue MaxValue => _maxValue.Value;
-    public override double ManagedMaxValue => (double)decimal.MaxValue;
+    public override double ManagedMaxValue => ToDouble(decimal.MaxValue);
 
     private static readonly Lazy<VBDecimalValue> _zero = new(() => new VBDecimalValue(0m), LazyThreadSafetyMode.PublicationOnly);
     /// <summary>
@@ -77,6 +77,37 @@ public sealed record class VBDecimalType() : VBNumericType<decimal>(VBTypeNames.
     /// The result does not depend on the .NET version.
     /// </remarks>
     public static decimal FromSingle(float value) => FloatingPointToDecimal.FromSingle(value);
+
+    /// <summary>
+    /// Converts a <c>Decimal</c> to a <c>Double</c> as MS-VBA does: the 96-bit integer of the <c>Decimal</c> made a <c>Double</c>, then divided by the
+    /// <c>Double</c> power of ten of its scale (<strong>MS-VBAL §5.5.1.2.1</strong>).
+    /// </summary>
+    /// <param name="value">The <c>Decimal</c> to convert.</param>
+    /// <returns>
+    /// The <c>Double</c>. It is the <c>Double</c> nearest the value, or the other <c>Double</c> next to the value when the value is close to halfway between
+    /// the two: <c>CDbl(CDec("0.000708160857053799161669089"))</c> is the <c>Double</c> above it, where the nearest is the one below.
+    /// </returns>
+    /// <remarks>
+    /// MS-VBAL §5.5.1.2.1 rounds the value to the nearest <c>Double</c>. MS-VBA rounds it twice, as the OLEAUT32 <c>VarR8FromDec</c> function does
+    /// (observed in Excel). <c>CDbl</c>, a <c>Let</c> to a <c>Double</c> and the <c>^</c> operator make this <c>Double</c>, and so does a conversion of a
+    /// <c>Decimal</c> to a whole number before it rounds: <c>CLng(CDec("2.50000000000000000000000001"))</c> is 2. The result does not depend on the .NET
+    /// version.
+    /// </remarks>
+    public static double ToDouble(decimal value) => DecimalToFloatingPoint.ToDouble(value);
+
+    /// <summary>
+    /// Converts a <c>Decimal</c> to a <c>Single</c> as MS-VBA does: the <c>Double</c> that <see cref="ToDouble(decimal)"/> makes, rounded to the nearest
+    /// <c>Single</c> (<strong>MS-VBAL §5.5.1.2.1</strong>).
+    /// </summary>
+    /// <param name="value">The <c>Decimal</c> to convert.</param>
+    /// <returns>
+    /// The <c>Single</c>: <c>CSng(CDec("1.000000059604644775390626"))</c> is 1, where the nearest <c>Single</c> is the one above 1.
+    /// </returns>
+    /// <remarks>
+    /// MS-VBAL §5.5.1.2.1 rounds the value to the nearest <c>Single</c>. MS-VBA rounds the <c>Double</c> it makes first, as the OLEAUT32
+    /// <c>VarR4FromDec</c> function does (observed in Excel). The result does not depend on the .NET version.
+    /// </remarks>
+    public static float ToSingle(decimal value) => DecimalToFloatingPoint.ToSingle(value);
 
     /// <summary>
     /// Creates a <c>Decimal</c> value of a <c>Double</c>, rounded to 15 significant digits as <see cref="FromDouble(double)"/> rounds it.

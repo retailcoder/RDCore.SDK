@@ -16,6 +16,7 @@ public sealed record class VBDecimalValue()
 
     public decimal Value => ((VBRuntimeValue<VBRuntimeDecimalValue>)RuntimeValue).Value.ManagedValue;
     public override int Size => sizeof(Decimal);
+    public override double AsDouble => VBDecimalType.ToDouble(Value);
 
     public bool Equals(IVBTypedValue<VBDecimalValue, decimal>? other) => Value == other?.Value;
 }
