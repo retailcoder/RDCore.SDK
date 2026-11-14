@@ -202,8 +202,8 @@ public enum ValueExpressionSemanticFlags : long
     ObjectGivenToVariantProperty = 1 << 27,
 
     /// <summary>
-    /// It is the target of a <c>Let</c> assignment, a property of the project whose value parameter is a class or <c>Object</c>, assigned a value whose declared
-    /// type is a class or <c>Object</c>: <strong>MS-VBAL §5.5.1.1</strong> makes the Let-coercion of the value invalid, and <strong>§5.4.3.8</strong> with
+    /// It is the target of a <c>Let</c> assignment, a property whose value parameter is a class or <c>Object</c> (a <c>Property Let</c> of the project, or a
+    /// property of a library object), assigned a value whose declared type is a class or <c>Object</c>: <strong>MS-VBAL §5.5.1.1</strong> makes the Let-coercion of the value invalid, and <strong>§5.4.3.8</strong> with
     /// <strong>§5.5.1.2.13</strong> evaluates it as its default member's value, an error 424 (91 for <c>Nothing</c>); <strong>MS-VBA</strong> passes the
     /// property the object itself, as a <c>Set</c> would (observed in Excel).
     /// </summary>
