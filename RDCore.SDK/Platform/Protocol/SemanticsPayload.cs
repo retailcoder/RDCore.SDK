@@ -356,6 +356,10 @@ public record class DeclarationFactDto(
 /// <param name="Classes">
 /// Each class whose objects the module's code creates (<see cref="ModuleSemanticModel.Classes"/>); <see langword="null"/> when it creates none.
 /// </param>
+/// <param name="DocumentModules">
+/// The names of the document modules a name written in the module can refer to (<see cref="ModuleSemanticModel.DocumentModules"/>); <see langword="null"/>
+/// when there are none.
+/// </param>
 public record class ModuleSemanticsDto(
     Uri Module,
     bool? OptionExplicit,
@@ -365,7 +369,8 @@ public record class ModuleSemanticsDto(
     string? Language = null,
     ClassModuleSemanticFlags? Class = null,
     DocumentModuleFact? Document = null,
-    ImmutableArray<ClassFact>? Classes = null)
+    ImmutableArray<ClassFact>? Classes = null,
+    ImmutableArray<string>? DocumentModules = null)
 {
     /// <summary>
     /// Describes a model for the wire.
@@ -390,7 +395,8 @@ public record class ModuleSemanticsDto(
         model.Language,
         model.Class,
         model.Document,
-        model.Classes.IsDefaultOrEmpty ? null : model.Classes);
+        model.Classes.IsDefaultOrEmpty ? null : model.Classes,
+        model.DocumentModules.IsDefaultOrEmpty ? null : model.DocumentModules);
 
     private static CompileErrorDto ErrorOf(VBCompileErrorInfo error) => CompileErrorDto.From(error);
 }
