@@ -102,6 +102,24 @@ public sealed record class ExpressionFact(
     /// that names no constant, and for a constant whose binding is not known.
     /// </summary>
     public VBTypedValue? ConstantValue { get; init; }
+
+    /// <summary>
+    /// The accessors of the property the expression names (<strong>MS-VBAL §5.3.1.7</strong>): those its module declares of the name, or its class, for a
+    /// member of an object. <see cref="PropertyAccessors.None"/> for an expression that names no property.
+    /// </summary>
+    public PropertyAccessors Accessors { get; init; }
+
+    /// <summary>
+    /// The declared type of the value parameter of the <c>Property Let</c> of the property the expression names: its last parameter, which a <c>Let</c> of the
+    /// property gives the value. <see langword="null"/> for an expression that names no property with a <c>Property Let</c>.
+    /// </summary>
+    public VBType? LetValueType { get; init; }
+
+    /// <summary>
+    /// The default member of the class the expression's declared type is (<see cref="DefaultMemberFact"/>); <see langword="null"/> for an expression of
+    /// any other type, and of a class that has no default member.
+    /// </summary>
+    public DefaultMemberFact? DefaultMember { get; init; }
 }
 
 /// <summary>

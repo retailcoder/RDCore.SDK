@@ -74,6 +74,14 @@ public record class CompileErrorDto(RDCoreDiagnosticCode Code, SourceLocation Lo
 /// <param name="ConstantValue">
 /// The constant binding of the constant it names, when that is known (<see cref="ExpressionFact.ConstantValue"/>); <see langword="null"/> otherwise.
 /// </param>
+/// <param name="Accessors">The accessors of the property it names (<see cref="ExpressionFact.Accessors"/>); <see cref="PropertyAccessors.None"/> otherwise.</param>
+/// <param name="LetValueType">
+/// The name of the declared type of the value parameter of the <c>Property Let</c> of the property it names (<see cref="ExpressionFact.LetValueType"/>);
+/// <see langword="null"/> when it names no property with one.
+/// </param>
+/// <param name="DefaultMember">
+/// The default member of the class its declared type is (<see cref="ExpressionFact.DefaultMember"/>); <see langword="null"/> otherwise.
+/// </param>
 public record class ExpressionFactDto(
     SyntaxNodeId Node,
     SourceLocation Location,
@@ -85,7 +93,10 @@ public record class ExpressionFactDto(
     ObjectCreationFact? Creates = null,
     DeclaredTypeKind? TypeKind = null,
     bool IsArray = false,
-    VBTypedValue? ConstantValue = null)
+    VBTypedValue? ConstantValue = null,
+    PropertyAccessors Accessors = PropertyAccessors.None,
+    string? LetValueType = null,
+    DefaultMemberFact? DefaultMember = null)
 {
     /// <summary>
     /// Describes a fact for the wire.
@@ -95,7 +106,8 @@ public record class ExpressionFactDto(
     {
         var (kind, isArray) = DeclaredTypeKinds.Of(fact.DeclaredType);
         return new(fact.Node, fact.Location, fact.DeclaredType?.Name, fact.Classification, fact.Binding?.Uri, fact.Flags,
-            fact.Error is null ? null : CompileErrorDto.From(fact.Error), fact.Creates, kind, isArray, fact.ConstantValue);
+            fact.Error is null ? null : CompileErrorDto.From(fact.Error), fact.Creates, kind, isArray, fact.ConstantValue,
+            fact.Accessors, fact.LetValueType?.Name, fact.DefaultMember);
     }
 }
 
