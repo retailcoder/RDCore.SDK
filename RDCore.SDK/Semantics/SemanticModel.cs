@@ -48,6 +48,12 @@ public sealed record class ProcedureSemanticModel(SemanticId Procedure, Immutabl
     public ImmutableArray<Flow.EmptiedControlReadFact> EmptiedControlReads { get; init; } = [];
 
     /// <summary>
+    /// The arguments of the calls of the procedure's body that the pass mapped to a parameter, each with what the procedure called declares of it
+    /// (<see cref="ArgumentFact"/>), in the order the pass met them. An argument that is not in the list was mapped to no parameter the pass knows.
+    /// </summary>
+    public ImmutableArray<ArgumentFact> Arguments { get; init; } = [];
+
+    /// <summary>
     /// What the language core states about the conversions and operations of the procedure's code, or <see langword="null"/> when the procedure has not been
     /// evaluated. A <see langword="null"/> says nothing about the code.
     /// </summary>
