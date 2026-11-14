@@ -111,8 +111,8 @@ public sealed record class ModuleSemanticModel(
     public ImmutableArray<ClassFact> Classes { get; init; } = [];
 
     /// <summary>
-    /// The names of the document modules a name written in the module can refer to: those of its project, and of the projects it references. The host that
-    /// MS-VBA runs in makes such a name the document, an object of the host's class; RD-VBA has no host to make it one (<see cref="DocumentModuleFact"/>).
+    /// The names of the document modules a name written in the module can refer to: those of its project, and of the projects it references. In MS-VBA, the
+    /// host makes such a name refer to its document, an object of the host's class; RD-VBA has no host to do so (<see cref="DocumentModuleFact"/>).
     /// </summary>
     public ImmutableArray<string> DocumentModules { get; init; } = [];
 
