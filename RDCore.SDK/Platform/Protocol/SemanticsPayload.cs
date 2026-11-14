@@ -82,6 +82,7 @@ public record class CompileErrorDto(RDCoreDiagnosticCode Code, SourceLocation Lo
 /// <param name="DefaultMember">
 /// The default member of the class its declared type is (<see cref="ExpressionFact.DefaultMember"/>); <see langword="null"/> otherwise.
 /// </param>
+/// <param name="IsLetCoerced">Whether its value is taken and Let-coerced to a declared type (<see cref="ExpressionFact.IsLetCoerced"/>).</param>
 public record class ExpressionFactDto(
     SyntaxNodeId Node,
     SourceLocation Location,
@@ -96,7 +97,8 @@ public record class ExpressionFactDto(
     VBTypedValue? ConstantValue = null,
     PropertyAccessors Accessors = PropertyAccessors.None,
     string? LetValueType = null,
-    DefaultMemberFact? DefaultMember = null)
+    DefaultMemberFact? DefaultMember = null,
+    bool IsLetCoerced = false)
 {
     /// <summary>
     /// Describes a fact for the wire.
@@ -107,7 +109,7 @@ public record class ExpressionFactDto(
         var (kind, isArray) = DeclaredTypeKinds.Of(fact.DeclaredType);
         return new(fact.Node, fact.Location, fact.DeclaredType?.Name, fact.Classification, fact.Binding?.Uri, fact.Flags,
             fact.Error is null ? null : CompileErrorDto.From(fact.Error), fact.Creates, kind, isArray, fact.ConstantValue,
-            fact.Accessors, fact.LetValueType?.Name, fact.DefaultMember);
+            fact.Accessors, fact.LetValueType?.Name, fact.DefaultMember, fact.IsLetCoerced);
     }
 }
 

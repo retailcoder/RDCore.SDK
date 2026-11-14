@@ -78,11 +78,4 @@ public enum ValueExpressionSemanticFlags
     /// (<c>TextBox1</c>); code in another module reaches it through the form (<c>UserForm1.TextBox1</c>). A control has no <see cref="DeclarationFact"/>.
     /// </summary>
     BoundToDesignerControl = 1 << 12,
-
-    /// <summary>
-    /// It is an object of a class that has no default member, where a value is expected: the value of a <c>Let</c> assignment, an operand of an operator other
-    /// than <c>Is</c>, an argument of a parameter declared with a value type. <strong>MS-VBAL §5.5.1.1</strong> makes it statically invalid; <strong>MS-VBA</strong>
-    /// compiles it, and raises run-time error 438 (Object doesn't support this property or method) whenever it runs, or 91 when the object is <c>Nothing</c>.
-    /// </summary>
-    ValueOfObjectWithNoDefaultMember = 1 << 13,
 }

@@ -120,6 +120,13 @@ public sealed record class ExpressionFact(
     /// any other type, and of a class that has no default member.
     /// </summary>
     public DefaultMemberFact? DefaultMember { get; init; }
+
+    /// <summary>
+    /// Whether the expression's value is taken and Let-coerced to a declared type (<strong>MS-VBAL §5.5.1.1</strong>): it is an operand of an operator other
+    /// than <c>Is</c>, the value of a <c>Let</c> assignment, or an argument given to a parameter declared with a value type. An object stands there for the
+    /// value of its default member. An argument given to a parameter declared <c>Variant</c> is passed as it is, and is not Let-coerced.
+    /// </summary>
+    public bool IsLetCoerced { get; init; }
 }
 
 /// <summary>
