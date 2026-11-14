@@ -280,6 +280,13 @@ public sealed record class DeclarationFact(
     public bool AutoInstantiationAlwaysFails { get; init; }
 
     /// <summary>
+    /// The class whose object the variable is given where code first uses it, for a variable declared <c>As New</c>, or an array whose elements are
+    /// (<strong>MS-VBAL §5.2.3.1.4</strong>): <see cref="ModuleSemanticModel.Classes"/> says what is known of creating its objects. <see langword="null"/>
+    /// for any other declaration.
+    /// </summary>
+    public SemanticId? AutoInstantiates { get; init; }
+
+    /// <summary>
     /// The kind of type it is declared as, or for an array the kind of its elements' type (<see cref="IsArray"/>): the type its <c>As</c> clause names, the
     /// type a type-declaration character or a <c>Def</c><em>Type</em> directive gives it, or <c>Variant</c> (<strong>MS-VBAL §5.2.3.1.4</strong>,
     /// <strong>§5.2.3.1.5</strong>). For a function or a property, the type it returns. <see langword="null"/> for a declaration that has no type (a

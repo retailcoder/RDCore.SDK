@@ -119,6 +119,11 @@ public static class SymbolProperties
     /// </summary>
     public static readonly SymbolProperty<bool> CreationAlwaysFails = new(nameof(CreationAlwaysFails));
     /// <summary>
+    /// Whether a <see cref="VBClassModuleSymbol"/> of a library has nothing that creates its objects, though it is <see cref="Creatable"/>: nothing is
+    /// registered for the class, as nothing is for <c>ErrObject</c>, whose one object the library provides. <c>false</c> when unset.
+    /// </summary>
+    public static readonly SymbolProperty<bool> Unregistered = new(nameof(Unregistered));
+    /// <summary>
     /// A small documentation string about this symbol.
     /// </summary>
     /// <remarks>

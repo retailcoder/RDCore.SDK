@@ -333,10 +333,14 @@ public record class ProcedureSemanticsDto(
 /// <param name="TypeKind">The kind of type it is declared as, or of its elements' type for an array; <see langword="null"/> when it has no type, or one that did
 /// not resolve.</param>
 /// <param name="IsArray">Whether it is declared as an array.</param>
+/// <param name="AutoInstantiates">
+/// The address of the class whose object it is given where code first uses it, for a variable declared <c>As New</c> (<see cref="DeclarationFact.AutoInstantiates"/>);
+/// <see langword="null"/> for any other declaration.
+/// </param>
 public record class DeclarationFactDto(
     Uri Symbol, string Name, DeclarationKind Kind, AccessModifier Access, bool IsImplicit, SourceLocation Location, DeclarationReferences? References,
     DeclarationRole Role = DeclarationRole.None, LocalDeclarationKind? DeclaredBy = null, HiddenDeclaration? Hides = null, bool AutoInstantiationAlwaysFails = false,
-    ImmutableArray<DeclarationReference>? ReferencedFrom = null, DeclaredTypeKind? TypeKind = null, bool IsArray = false);
+    ImmutableArray<DeclarationReference>? ReferencedFrom = null, DeclaredTypeKind? TypeKind = null, bool IsArray = false, Uri? AutoInstantiates = null);
 
 /// <summary>
 /// A <see cref="ModuleSemanticModel"/>, as it travels.
@@ -349,6 +353,9 @@ public record class DeclarationFactDto(
 /// <param name="Language">The identifier of the language the module is loaded as, when the host says.</param>
 /// <param name="Class">What the objects of the class are, for a class module (<see cref="ClassModuleSemanticFlags"/>); <see langword="null"/> for any other module.</param>
 /// <param name="Document">What the module is the code of, for a document module (<see cref="DocumentModuleFact"/>); <see langword="null"/> for any other module.</param>
+/// <param name="Classes">
+/// Each class whose objects the module's code creates (<see cref="ModuleSemanticModel.Classes"/>); <see langword="null"/> when it creates none.
+/// </param>
 public record class ModuleSemanticsDto(
     Uri Module,
     bool? OptionExplicit,
@@ -357,7 +364,8 @@ public record class ModuleSemanticsDto(
     ImmutableArray<DeclarationFactDto> Declarations,
     string? Language = null,
     ClassModuleSemanticFlags? Class = null,
-    DocumentModuleFact? Document = null)
+    DocumentModuleFact? Document = null,
+    ImmutableArray<ClassFact>? Classes = null)
 {
     /// <summary>
     /// Describes a model for the wire.
@@ -377,10 +385,12 @@ public record class ModuleSemanticsDto(
             procedure.EmptiedControlReads.IsDefaultOrEmpty ? null : procedure.EmptiedControlReads))],
         [.. model.Declarations.Select(declaration => new DeclarationFactDto(
             declaration.Symbol.Uri, declaration.Name, declaration.Kind, declaration.Access, declaration.IsImplicit, declaration.Location, declaration.References, declaration.Role,
-            declaration.DeclaredBy, declaration.Hides, declaration.AutoInstantiationAlwaysFails, declaration.ReferencedFrom, declaration.TypeKind, declaration.IsArray))],
+            declaration.DeclaredBy, declaration.Hides, declaration.AutoInstantiationAlwaysFails, declaration.ReferencedFrom, declaration.TypeKind, declaration.IsArray,
+            declaration.AutoInstantiates?.Uri))],
         model.Language,
         model.Class,
-        model.Document);
+        model.Document,
+        model.Classes.IsDefaultOrEmpty ? null : model.Classes);
 
     private static CompileErrorDto ErrorOf(VBCompileErrorInfo error) => CompileErrorDto.From(error);
 }

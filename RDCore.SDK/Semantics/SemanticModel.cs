@@ -106,6 +106,11 @@ public sealed record class ModuleSemanticModel(
     public ImmutableArray<DeclarationFact> Declarations { get; init; } = [];
 
     /// <summary>
+    /// Each class whose objects the module's code creates, with <c>New</c> or a variable declared <c>As New</c> (<see cref="ClassFact"/>), once.
+    /// </summary>
+    public ImmutableArray<ClassFact> Classes { get; init; } = [];
+
+    /// <summary>
     /// Every compile error of the module: those of its declarations, then those of each procedure.
     /// </summary>
     public ImmutableArray<VBCompileErrorInfo> CompileErrors => [.. DeclarationErrors, .. Procedures.SelectMany(procedure => procedure.CompileErrors)];
