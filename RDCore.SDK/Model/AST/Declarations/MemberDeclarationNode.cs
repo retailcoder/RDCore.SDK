@@ -54,6 +54,12 @@ public record class MemberDeclarationNode(SyntaxNodeId Identity, SourceLocation 
     public SourceRange? ParameterListRange { get; init; }
 
     /// <summary>
+    /// Where the <see cref="TypeHint"/> is written, at the end of the name (the <c>$</c> of <c>Function Name$()</c>); <see langword="null"/> when the name
+    /// is written without one, or when it is not known.
+    /// </summary>
+    public SourceRange? TypeHintRange { get; init; }
+
+    /// <summary>
     /// Where the statement that closes the procedure is written: its <c>End Sub</c>, <c>End Function</c> or <c>End Property</c>; <see langword="null"/>
     /// for a member that is no procedure, for a procedure written without one, or when it is not known.
     /// </summary>

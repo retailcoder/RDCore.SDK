@@ -19,7 +19,14 @@ namespace RDCore.SDK.Model.AST.Declarations;
 /// <param name="TypeHint">The <em>type-declaration character</em> (e.g. <c>$</c> in <c>Const Foo$</c>), if one was supplied.</param>
 /// <param name="NameRange">Where the name is written, with its type-declaration character; <see langword="null"/> when it is not known.</param>
 public record class ConstantDeclarationNode(SyntaxNodeId Identity, SourceLocation Location, string Name, ConstKind ConstKind, ImmutableArray<SyntaxNode> Children, AccessModifier AccessModifier = AccessModifier.Implicit, string? TypeHint = default, SourceRange? NameRange = null)
-    : SyntaxNode(Identity, Location, Children);
+    : SyntaxNode(Identity, Location, Children)
+{
+    /// <summary>
+    /// Where the <see cref="TypeHint"/> is written, at the end of the name (the <c>$</c> of <c>Const Foo$</c>); <see langword="null"/> when the name is
+    /// written without one, or when it is not known.
+    /// </summary>
+    public SourceRange? TypeHintRange { get; init; }
+}
 
 /// <summary>
 /// An AST node representing a precompiler constant declaration.

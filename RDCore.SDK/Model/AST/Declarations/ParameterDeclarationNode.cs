@@ -47,4 +47,10 @@ public record class ParameterDeclarationNode(SyntaxNodeId Identity, SourceLocati
     /// Where the <c>ParamArray</c> keyword is written; <see langword="null"/> when it is not, or when it is not known.
     /// </summary>
     public SourceRange? ParamArrayRange { get; init; }
+
+    /// <summary>
+    /// Where the <see cref="TypeHint"/> is written, at the end of the name (the <c>$</c> of <c>ByVal Name$</c>); <see langword="null"/> when the name is
+    /// written without one, or when it is not known.
+    /// </summary>
+    public SourceRange? TypeHintRange { get; init; }
 }
