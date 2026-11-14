@@ -342,9 +342,12 @@ public record class RuntimeFactsDto(
 /// <param name="EmptiedControlReads">
 /// The reads of its own <c>For Each</c> control variables that see them emptied by the end of the loop; <see langword="null"/> when there are none the pass could tell.
 /// </param>
+/// <param name="Arguments">
+/// The arguments of its calls that the pass mapped to a parameter, with what the procedure called declares of it; <see langword="null"/> when there are none.
+/// </param>
 public record class ProcedureSemanticsDto(
     Uri Procedure, bool IsFullyAnalyzed, ImmutableArray<CompileErrorDto> CompileErrors, ImmutableArray<ExpressionFactDto> Expressions, ReturnValueFact? ReturnValue = null,
-    RuntimeFactsDto? Runtime = null, ImmutableArray<EmptiedControlReadFact>? EmptiedControlReads = null);
+    RuntimeFactsDto? Runtime = null, ImmutableArray<EmptiedControlReadFact>? EmptiedControlReads = null, ImmutableArray<ArgumentFact>? Arguments = null);
 
 /// <summary>
 /// A <see cref="DeclarationFact"/>, as it travels.
@@ -418,7 +421,8 @@ public record class ModuleSemanticsDto(
             [.. procedure.Expressions.Values.Select(ExpressionFactDto.From)],
             procedure.ReturnValue,
             procedure.Runtime is null ? null : RuntimeFactsDto.From(procedure.Runtime),
-            procedure.EmptiedControlReads.IsDefaultOrEmpty ? null : procedure.EmptiedControlReads))],
+            procedure.EmptiedControlReads.IsDefaultOrEmpty ? null : procedure.EmptiedControlReads,
+            procedure.Arguments.IsDefaultOrEmpty ? null : procedure.Arguments))],
         [.. model.Declarations.Select(declaration => new DeclarationFactDto(
             declaration.Symbol.Uri, declaration.Name, declaration.Kind, declaration.Access, declaration.IsImplicit, declaration.Location, declaration.References, declaration.Role,
             declaration.DeclaredBy, declaration.Hides, declaration.AutoInstantiationAlwaysFails, declaration.ReferencedFrom, declaration.TypeKind, declaration.IsArray,
