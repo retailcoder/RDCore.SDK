@@ -125,6 +125,12 @@ public static class RDCoreComponentProtocol
     public const string HostDebugStopped = "rdcore/host/debug/stopped";
 
     /// <summary>
+    /// Tells the language server that the session has no form loaded any more: a notification from the environment host, sent when the last loaded form is
+    /// unloaded, or let go of, or ended with the rest of the session's state by an <c>End</c>.
+    /// </summary>
+    public const string HostFormsUnloaded = "rdcore/host/forms/unloaded";
+
+    /// <summary>
     /// Reads one byte of the environment host's runtime session memory. The language-server side of <see cref="RDCorePlatformProtocol.SessionPeek"/>.
     /// </summary>
     public const string HostPeek = "rdcore/host/memory/peek";
