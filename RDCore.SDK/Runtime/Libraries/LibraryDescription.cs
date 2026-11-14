@@ -255,7 +255,7 @@ public sealed record class ModuleDescription
 }
 
 /// <summary>
-/// A constant of a module a library declares (<strong>MS-VBAL §5.2.3.1</strong>).
+/// A constant of a module a library declares (<strong>MS-VBAL §5.2.3.2</strong>).
 /// </summary>
 public sealed record class ConstantDescription
 {

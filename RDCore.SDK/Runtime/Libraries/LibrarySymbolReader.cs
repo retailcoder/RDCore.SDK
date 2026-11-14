@@ -283,7 +283,7 @@ public sealed class LibrarySymbolReader(Uri workspaceRoot, bool is64Bit = true)
             : member);
     }
 
-    // a constant of a library module is a Public Const of the module (MS-VBAL §5.2.3.1), whose expression is a literal of its declared type: `Const x As
+    // a constant of a library module is a Public Const of the module (MS-VBAL §5.2.3.2), whose expression is a literal of its declared type: `Const x As
     // Integer = 3` is an Integer wherever it is used. One whose value is not a literal of that type is not one a program can use, and is not read.
     private VBConstantMemberSymbol? ReadConstant(LibraryDescription library, ConstantDescription description, Uri moduleUri, TypeNames types)
     {
