@@ -65,6 +65,11 @@ public record class CompileErrorDto(RDCoreDiagnosticCode Code, SourceLocation Lo
 /// <param name="Flags">What else is the case of it.</param>
 /// <param name="Error">Its compile error, when it has one.</param>
 /// <param name="Creates">The class of the object it creates by name, when that is known (<see cref="ExpressionFact.Creates"/>): for tooling only.</param>
+/// <param name="TypeKind">
+/// The kind of its declared type, or of its elements' type for an array (<see cref="DeclaredTypeKinds.Of"/>); <see langword="null"/> when it has no type a
+/// value can have, or one that did not resolve.
+/// </param>
+/// <param name="IsArray">Whether its declared type is an array.</param>
 public record class ExpressionFactDto(
     SyntaxNodeId Node,
     SourceLocation Location,
@@ -73,7 +78,21 @@ public record class ExpressionFactDto(
     Uri? Binding,
     ValueExpressionSemanticFlags Flags,
     CompileErrorDto? Error,
-    ObjectCreationFact? Creates = null);
+    ObjectCreationFact? Creates = null,
+    DeclaredTypeKind? TypeKind = null,
+    bool IsArray = false)
+{
+    /// <summary>
+    /// Describes a fact for the wire.
+    /// </summary>
+    /// <param name="fact">The fact of an expression.</param>
+    public static ExpressionFactDto From(ExpressionFact fact)
+    {
+        var (kind, isArray) = DeclaredTypeKinds.Of(fact.DeclaredType);
+        return new(fact.Node, fact.Location, fact.DeclaredType?.Name, fact.Classification, fact.Binding?.Uri, fact.Flags,
+            fact.Error is null ? null : CompileErrorDto.From(fact.Error), fact.Creates, kind, isArray);
+    }
+}
 
 /// <summary>
 /// A run-time error that code is guaranteed to raise, as it travels.
@@ -306,10 +325,13 @@ public record class ProcedureSemanticsDto(
 /// <param name="Hides">What a local or a parameter hides; <see langword="null"/> when it hides nothing, and for any other declaration.</param>
 /// <param name="AutoInstantiationAlwaysFails">Whether it is a variable declared <c>As New</c> of a class whose objects are never created.</param>
 /// <param name="ReferencedFrom">Each reference to it, in any module of the project; <see langword="null"/> exactly when <paramref name="References"/> is.</param>
+/// <param name="TypeKind">The kind of type it is declared as, or of its elements' type for an array; <see langword="null"/> when it has no type, or one that did
+/// not resolve.</param>
+/// <param name="IsArray">Whether it is declared as an array.</param>
 public record class DeclarationFactDto(
     Uri Symbol, string Name, DeclarationKind Kind, AccessModifier Access, bool IsImplicit, SourceLocation Location, DeclarationReferences? References,
     DeclarationRole Role = DeclarationRole.None, LocalDeclarationKind? DeclaredBy = null, HiddenDeclaration? Hides = null, bool AutoInstantiationAlwaysFails = false,
-    ImmutableArray<DeclarationReference>? ReferencedFrom = null);
+    ImmutableArray<DeclarationReference>? ReferencedFrom = null, DeclaredTypeKind? TypeKind = null, bool IsArray = false);
 
 /// <summary>
 /// A <see cref="ModuleSemanticModel"/>, as it travels.
@@ -344,14 +366,13 @@ public record class ModuleSemanticsDto(
             procedure.Procedure.Uri,
             procedure.IsFullyAnalyzed,
             [.. procedure.CompileErrors.Select(ErrorOf)],
-            [.. procedure.Expressions.Values.Select(fact => new ExpressionFactDto(
-                fact.Node, fact.Location, fact.DeclaredType?.Name, fact.Classification, fact.Binding?.Uri, fact.Flags, fact.Error is null ? null : ErrorOf(fact.Error), fact.Creates))],
+            [.. procedure.Expressions.Values.Select(ExpressionFactDto.From)],
             procedure.ReturnValue,
             procedure.Runtime is null ? null : RuntimeFactsDto.From(procedure.Runtime),
             procedure.EmptiedControlReads.IsDefaultOrEmpty ? null : procedure.EmptiedControlReads))],
         [.. model.Declarations.Select(declaration => new DeclarationFactDto(
             declaration.Symbol.Uri, declaration.Name, declaration.Kind, declaration.Access, declaration.IsImplicit, declaration.Location, declaration.References, declaration.Role,
-            declaration.DeclaredBy, declaration.Hides, declaration.AutoInstantiationAlwaysFails, declaration.ReferencedFrom))],
+            declaration.DeclaredBy, declaration.Hides, declaration.AutoInstantiationAlwaysFails, declaration.ReferencedFrom, declaration.TypeKind, declaration.IsArray))],
         model.Language,
         model.Class,
         model.Document);
