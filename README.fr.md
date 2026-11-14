@@ -14,7 +14,7 @@ Ce dépôt contient le paquet [**RDCore.SDK**](https://www.nuget.org/packages/RD
 
 La plateforme construite sur ces bibliothèques, incluant le runtime RD-VBA, se trouve dans le dépôt [RDCore](https://github.com/rubberduck-vba/RDCore), sous **⚖️GPLv3 ou toute version ultérieure**. Ce que vous construisez avec RDCore vous appartient (voir l'[AVIS de RDCore](https://github.com/rubberduck-vba/RDCore/blob/main/NOTICE.md)).
 
-La licence MIT de [LICENSE](LICENSE) couvre les bibliothèques de ce dépôt. Une version française de la licence est disponible sur demande.
+La licence MIT de [LICENSE](LICENSE) couvre les bibliothèques de ce dépôt. Une version française de la licence est disponible sur demande. [NOTICE.md](NOTICE.md) nomme le code tiers que les bibliothèques contiennent, avec sa licence.
 
 ## 📊 État du projet
 Ces bibliothèques sont en version **alpha** : leur API changera encore avant la version 1.0.

@@ -29,7 +29,7 @@ The package targets .NET 10 (`net10.0`).
 
 ## License
 
-MIT. The license text is in the package and in the [repository](https://github.com/rubberduck-vba/RDCore.SDK/blob/main/LICENSE). A French version of the license is available on request.
+MIT. The license text is in the package and in the [repository](https://github.com/rubberduck-vba/RDCore.SDK/blob/main/LICENSE). A French version of the license is available on request. The package's NOTICE.md names the third-party code it includes, with its license.
 
 The RDCore platform built on this package, the RD-VBA runtime included, is licensed under the GNU GPL v3 or later, in the [RDCore](https://github.com/rubberduck-vba/RDCore) repository.
 
