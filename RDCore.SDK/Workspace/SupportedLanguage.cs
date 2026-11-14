@@ -158,8 +158,8 @@ public static class SupportedLanguages
     /// </summary>
     /// <remarks>
     /// A server takes it when its client names no language in the <c>initializationOptions</c> of its <c>initialize</c> request
-    /// (<see cref="Platform.Protocol.RDCoreInitializationOptions.Language"/>): what the client names wins. A project that was not imported says no language,
-    /// and the server's own setting stands.
+    /// (<see cref="Platform.Protocol.RDCoreInitializationOptions.Language"/>): what the client names wins. A project that was not imported from a <c>.vbp</c> says
+    /// no language, and the server's own setting stands.
     /// </remarks>
     /// <param name="project">The project.</param>
     /// <returns>The language, or <see langword="null"/> when the project's file says none.</returns>
