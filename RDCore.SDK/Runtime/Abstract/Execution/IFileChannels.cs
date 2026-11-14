@@ -493,11 +493,14 @@ public interface IFileChannels
     /// <summary>
     /// Writes a file whole, replacing what it held, opening no channel and taking no file number: what <c>SavePicture</c> writes a picture to.
     /// </summary>
+    /// <remarks>
+    /// A file a channel has open is written too, as MS-VBA writes it, unless the channel locked it against writing.
+    /// </remarks>
     /// <param name="path">The path of the file.</param>
     /// <param name="bytes">What the file is to hold.</param>
     /// <returns>
-    /// The error that stopped it, or <c>null</c>: <c>52</c> for a pattern, <c>55</c> for a file a channel has open, <c>76</c> for a folder that does not exist,
-    /// <c>75</c> for no path, a directory, or a file the file system cannot write, <c>70</c> for one the program may not write.
+    /// The error that stopped it, or <c>null</c>: <c>52</c> for a pattern, <c>76</c> for a folder that does not exist, <c>75</c> for no path, a directory, or a
+    /// file the file system cannot write (one a channel locked included), <c>70</c> for one the program may not write.
     /// </returns>
     Extensibility.Diagnostics.RDCoreDiagnosticCode? TryWriteAll(string path, byte[] bytes);
 
