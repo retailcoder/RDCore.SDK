@@ -334,8 +334,8 @@ public record class ProcedureSemanticsDto(
 /// not resolve.</param>
 /// <param name="IsArray">Whether it is declared as an array.</param>
 /// <param name="AutoInstantiates">
-/// The address of the class whose object it is given where code first uses it, for a variable declared <c>As New</c> (<see cref="DeclarationFact.AutoInstantiates"/>);
-/// <see langword="null"/> for any other declaration.
+/// The address of the class whose object it is given where code first uses it, for a variable declared <c>As New</c>
+/// (<see cref="DeclarationFact.AutoInstantiates"/>); <see langword="null"/> for any other declaration.
 /// </param>
 public record class DeclarationFactDto(
     Uri Symbol, string Name, DeclarationKind Kind, AccessModifier Access, bool IsImplicit, SourceLocation Location, DeclarationReferences? References,

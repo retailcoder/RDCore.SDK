@@ -10,8 +10,8 @@ namespace RDCore.SDK.Semantics;
 /// <param name="Class">The address of the class.</param>
 /// <param name="Name">The name of the class.</param>
 /// <param name="IsCreatable">
-/// Whether <c>New</c> of the class is valid outside its project: the <c>VB_Creatable</c> attribute of a class module, or what its library declares of a
-/// library's class (<see cref="SymbolProperties.Creatable"/>).
+/// Whether <c>New</c> of the class is valid outside its project: the <c>VB_Creatable</c> attribute of a class module, or, for a library's class, what
+/// its library declares (<see cref="SymbolProperties.Creatable"/>).
 /// </param>
 /// <param name="IsRegistered">
 /// Whether anything creates the class's objects when <c>New</c> asks for one. <see langword="false"/> for a class its library declares creatable which
