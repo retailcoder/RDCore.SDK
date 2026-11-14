@@ -10,7 +10,9 @@
     <Authors>9562-7303 Québec inc.</Authors>
     <Company>9562-7303 Québec inc.</Company>
     <Product>RDCore</Product>
-    <Copyright>Copyright © 2026 $(Authors)</Copyright>
+    <!-- the year of the copyright: the package's, and the one the platform's splash says (PlatformSplash.CopyrightYear). It is written here only. -->
+    <CopyrightYear>2026</CopyrightYear>
+    <Copyright>Copyright © $(CopyrightYear) $(Authors)</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/rubberduck-vba/RDCore.SDK</PackageProjectUrl>
     <RepositoryUrl>https://github.com/rubberduck-vba/RDCore.SDK</RepositoryUrl>
