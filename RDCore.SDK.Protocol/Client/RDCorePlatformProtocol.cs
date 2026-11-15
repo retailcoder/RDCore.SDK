@@ -161,4 +161,16 @@ public static class RDCorePlatformProtocol
     /// Asks the language server to call one of the tools it serves an assistant. See <see cref="Assistant.ToolCallParams"/>.
     /// </summary>
     public const string ToolsCall = "rdcore/tools/call";
+
+    /// <summary>
+    /// Asks the language server what the name or expression written at a position of a document is: the symbol it binds to, and the facts of the
+    /// expression. See <see cref="Platform.Protocol.SemanticsDescribeParams"/>.
+    /// </summary>
+    public const string SemanticsDescribe = "rdcore/semantics/describe";
+
+    /// <summary>
+    /// Asks the language server for the outline of a document's module: its declarations and their members, in the order they are written. See
+    /// <see cref="Platform.Protocol.SemanticsOutlineParams"/>.
+    /// </summary>
+    public const string SemanticsOutline = "rdcore/semantics/outline";
 }

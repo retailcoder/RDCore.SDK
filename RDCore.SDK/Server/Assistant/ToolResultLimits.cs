@@ -27,6 +27,11 @@ public static class ToolResultLimits
     public const int References = 500;
 
     /// <summary>
+    /// The most declarations an outline answers, its members not counted.
+    /// </summary>
+    public const int OutlineEntries = 1_000;
+
+    /// <summary>
     /// The most characters the text of a result has (<see cref="CapText"/>): 32,768.
     /// </summary>
     public const int TextLength = 32 * 1024;
