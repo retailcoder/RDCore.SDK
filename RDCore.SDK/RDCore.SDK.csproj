@@ -70,6 +70,11 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>TraceMessages.resx</DependentUpon>
     </Compile>
+    <Compile Update="Server\Assistant\AssistantMessages.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>AssistantMessages.resx</DependentUpon>
+    </Compile>
   </ItemGroup>
 
   <ItemGroup>
@@ -84,6 +89,10 @@
     <EmbeddedResource Update="Server\TraceMessages.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>TraceMessages.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Update="Server\Assistant\AssistantMessages.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>AssistantMessages.Designer.cs</LastGenOutput>
     </EmbeddedResource>
   </ItemGroup>
 
