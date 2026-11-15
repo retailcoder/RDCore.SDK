@@ -7,8 +7,10 @@ namespace RDCore.SDK.Semantics.Refactoring;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Each kind is a refinement of one of LSP's own (<c>refactor</c>, <c>refactor.extract</c>, <c>refactor.inline</c>, <c>refactor.rewrite</c>, <c>source</c>),
-/// so a client that asks for <c>refactor.extract</c> is offered every extraction.
+/// Each kind is a refinement of one of LSP's own (<c>refactor</c>, <c>refactor.extract</c>, <c>refactor.inline</c>, <c>refactor.move</c>,
+/// <c>refactor.rewrite</c>, <c>source</c>), so a client that asks for <c>refactor.extract</c> is offered every extraction. <c>refactor.move</c> is a kind
+/// of <strong>LSP 3.18</strong> and not of 3.17: a client of 3.17 asks for the kinds that move code as <c>refactor</c>, or by their own names. A
+/// refactoring of a whole module is a source action.
 /// </para>
 /// <para>
 /// A client that asks for no kind is offered every action. A client that can show only some of them asks for those, by these names and LSP's own
@@ -45,4 +47,36 @@ public static class RefactoringKinds
     /// statements. Its choices are the new procedure's name, and its parameters, with why each is passed as it is.
     /// </summary>
     public const string ConvertGoSub = "refactor.extract.gosub";
+
+    /// <summary>
+    /// Move Member Up: the procedure a range is in, with the comments directly above it and its <c>Attribute</c> lines, moves above the procedure before it.
+    /// The <c>Property Get</c>, <c>Let</c> and <c>Set</c> of one name, written one after another, move together, and a procedure that moves
+    /// past them moves past all of them. A move into a branch of an <c>#If</c> block, or out of one, is refused (<strong>MS-VBAL §3.4</strong>), and the
+    /// first procedure of a module does not move into its declaration section (<strong>MS-VBAL §5.2</strong>). It asks nothing: the action has its edit.
+    /// </summary>
+    public const string MoveMemberUp = "refactor.move.member.up";
+
+    /// <summary>
+    /// Move Member Down: the procedure a range is in, with the comments directly above it and its <c>Attribute</c> lines, moves below the procedure after it,
+    /// as <see cref="MoveMemberUp"/> moves it above the one before it. A move into a branch of an <c>#If</c> block, or out of one, is refused
+    /// (<strong>MS-VBAL §3.4</strong>). It asks nothing: the action has its edit.
+    /// </summary>
+    public const string MoveMemberDown = "refactor.move.member.down";
+
+    /// <summary>
+    /// Sort Members: the procedures of a module, each with the comments directly above it and its <c>Attribute</c> lines, are written by kind (the
+    /// <c>Sub</c>s, then the <c>Function</c>s, then the properties), then by name. The <c>Property Get</c>, <c>Let</c> and <c>Set</c> of one name, written one
+    /// after another, stay together, in the order they are written. Procedures are sorted among those written one after another with nothing but blank lines
+    /// between them: none is moved past a comment on lines of its own or an <c>#If</c> directive, so none goes into a branch of an <c>#If</c> block or out of
+    /// one (<strong>MS-VBAL §3.4</strong>). It asks nothing: the action has its edit.
+    /// </summary>
+    public const string SortMembers = "source.sortMembers";
+
+    /// <summary>
+    /// Encapsulate Field: a <c>Public</c> variable of a module becomes private state, and the module gets <c>Public</c> properties of the variable's name
+    /// (<strong>MS-VBAL §5.3.1.7</strong>): a <c>Property Get</c>, with a <c>Property Let</c> for a value, a <c>Property Set</c> for an object, and both for a
+    /// <c>Variant</c>. The code of other modules is unchanged, and calls the properties. A caller that passed the variable <c>ByRef</c> passes a copy of the
+    /// property's value instead, so a change it makes to it is lost: the user accepts that change for each such caller.
+    /// </summary>
+    public const string EncapsulateField = "refactor.rewrite.encapsulateField";
 }
