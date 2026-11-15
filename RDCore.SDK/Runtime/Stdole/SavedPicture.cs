@@ -12,10 +12,11 @@ namespace RDCore.SDK.Runtime.Stdole;
 /// <item><term>A metafile, an enhanced metafile</term><description>The file it was loaded from, as it was read.</description></item>
 /// <item><term>An uncompressed bitmap</term><description>Its pixels again, at its depth (24 bits for 32): a <c>BITMAPINFOHEADER</c> that states no
 /// resolution, the colors of its table, and its rows from the bottom up, with the bits past a row's last pixel cleared.</description></item>
-/// <item><term>A compressed bitmap</term><description>Its decoded pixels, uncompressed: at its depth, with a full color table, for 8 bits per pixel or
-/// fewer; at 24 bits otherwise.</description></item>
-/// <item><term>A GIF</term><description>A bitmap of 8 bits per pixel: the color numbers of its first frame on its screen, and a table of 256 colors that is
-/// its own padded with black.</description></item>
+/// <item><term>A compressed bitmap</term><description>Its decoded pixels, uncompressed: for 8 bits per pixel or fewer, at the least of 1, 4 and 8 bits per
+/// pixel that numbers its color table, with that table filled as <see cref="PictureWriter.WriteBitmap"/> fills it; at 24 bits otherwise. A pixel the
+/// compression skips is color number 0.</description></item>
+/// <item><term>A GIF</term><description>A bitmap of its first frame's size and color numbers, at the least of 1, 4 and 8 bits per pixel that numbers its
+/// color table, with that table filled as <see cref="PictureWriter.WriteBitmap"/> fills it. Its transparent color keeps its own number.</description></item>
 /// <item><term>A PNG</term><description>A bitmap of 24 bits per pixel, its alpha left out, as a 32-bit bitmap's is. RD-VBA addition: MS-VBA does not load a
 /// PNG.</description></item>
 /// <item><term>An icon, a cursor</term><description>An icon of one image, the one the picture holds (<see cref="StdPictureObject.Image"/>), written by
@@ -53,7 +54,7 @@ public static class SavedPicture
             PictureFormat.Metafile or PictureFormat.EnhancedMetafile => picture.Bytes.ToArray(),
             PictureFormat.Bitmap => Bitmap(bytes) ?? Decoded(bytes),
             PictureFormat.Icon or PictureFormat.Cursor => Icon(bytes, picture.Image),
-            PictureFormat.Gif => PictureDecoder.TryDecode(bytes, out var gif) is PictureDecodeFailure.None ? PictureWriter.WriteBitmap(gif!, 8) : null,
+            PictureFormat.Gif => PictureDecoder.TryDecode(bytes, out var gif) is PictureDecodeFailure.None ? PictureWriter.WriteBitmap(gif!, Depth(gif!)) : null,
             _ => PictureDecoder.TryDecode(bytes, out var other) is PictureDecodeFailure.None ? PictureWriter.WriteBitmap(other!, 24) : null,
         };
     }
@@ -66,16 +67,27 @@ public static class SavedPicture
         return failure is PictureDecodeFailure.None ? PictureWriter.WriteIcon(decoded!) : null;
     }
 
-    // a compressed bitmap: decoded, then written at its depth where its pixels number their colors, and in 24 bits otherwise.
-    private static byte[]? Decoded(ReadOnlySpan<byte> file)
+    // a compressed bitmap: decoded, then written at the least depth its colors fit where its pixels number them, and in 24 bits otherwise.
+    private static byte[]? Decoded(ReadOnlySpan<byte> file) =>
+        PictureDecoder.TryDecode(file, out var picture) is PictureDecodeFailure.None
+            ? PictureWriter.WriteBitmap(picture!, picture!.Indexes is null ? 24 : Depth(picture))
+            : null;
+
+    // the least of 1, 4 and 8 bits per pixel that numbers the picture's color table, and every number its pixels hold.
+    private static int Depth(DecodedPicture picture)
     {
-        if (PictureDecoder.TryDecode(file, out var picture) is not PictureDecodeFailure.None)
+        var colors = picture.Palette.Length;
+        foreach (var number in picture.Indexes!.Value.Span)
         {
-            return null;
+            colors = Math.Max(colors, number + 1);
         }
 
-        var bits = BinaryPrimitives.ReadUInt16LittleEndian(file[(FileHeader + 14)..]);
-        return PictureWriter.WriteBitmap(picture!, picture!.Indexes is not null && bits is 1 or 4 or 8 ? bits : 24);
+        return colors switch
+        {
+            <= 2 => 1,
+            <= 16 => 4,
+            _ => 8,
+        };
     }
 
     // a bitmap file of uncompressed pixels, whatever its header: a BITMAPINFOHEADER of its size and depth (24 bits for 32), its colors, and its rows from
