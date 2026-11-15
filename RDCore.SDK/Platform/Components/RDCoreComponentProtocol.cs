@@ -49,6 +49,22 @@ public static class RDCoreComponentProtocol
     public const string HostProjectReload = "rdcore/host/project/reload";
 
     /// <summary>
+    /// Asks the environment host to open a run session of a project, in which its procedures are run one request at a time: what a test runner opens for a
+    /// test module.
+    /// </summary>
+    public const string HostRunSessionOpen = "rdcore/host/runSession/open";
+
+    /// <summary>
+    /// Asks the environment host to run one procedure of a run session's project, unattended, with the arguments of a data row and the fakes of the run.
+    /// </summary>
+    public const string HostRunSessionExecute = "rdcore/host/runSession/execute";
+
+    /// <summary>
+    /// Asks the environment host to close a run session.
+    /// </summary>
+    public const string HostRunSessionClose = "rdcore/host/runSession/close";
+
+    /// <summary>
     /// Tells the language server what a program printed, as it prints: a notification from the environment host, sent for a program that was run with its
     /// output streamed (<c>HostExecuteParams.StreamOutput</c>).
     /// </summary>
