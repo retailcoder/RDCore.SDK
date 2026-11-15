@@ -115,4 +115,13 @@ public static class RefactoringKinds
     /// parameters, in the order the user puts them in.
     /// </summary>
     public const string ReorderParameters = "refactor.rewrite.reorderParameters";
+
+    /// <summary>
+    /// Move Closer To Usage: the declaration of a variable moves to a line of its own before the statement that first uses it, in the innermost block that
+    /// holds every use of it (<strong>MS-VBAL §5.4.3.1</strong>). A <c>Private</c> variable of a module that a single procedure uses moves into that
+    /// procedure, declared <c>Static</c> or <c>Dim</c>, the user's choice: <c>Static</c> by default, which keeps its value between calls. In a class module
+    /// either keyword changes the variable's extent (<strong>MS-VBAL §2.3</strong>), and the user accepts that change. The range it is asked for is on the
+    /// variable's declaration or on a use of it.
+    /// </summary>
+    public const string MoveCloserToUsage = "refactor.move.closerToUsage";
 }
