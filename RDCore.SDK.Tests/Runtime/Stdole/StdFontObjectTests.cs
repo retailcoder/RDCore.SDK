@@ -4,7 +4,7 @@ namespace RDCore.Tests.Runtime.Stdole;
 
 /// <summary>
 /// A <c>stdole.StdFont</c>'s object (<see cref="StdFontObject"/>): its defaults, size snapping, limits and change notification, as VB6 and
-/// MS-VBA (Excel 64-bit) read a free StdFont.
+/// MS-VBA (Excel 64-bit) read a StdFont that no control holds.
 /// </summary>
 [TestClass]
 public sealed class StdFontObjectTests
