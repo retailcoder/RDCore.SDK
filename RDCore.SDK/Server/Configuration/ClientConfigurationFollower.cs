@@ -84,7 +84,7 @@ internal sealed class ClientConfigurationFollower : IDisposable
     /// </summary>
     /// <returns>
     /// Whether the settings were set and this change has the last word: not when a newer change came in while the editor's tab size was asked or as the settings
-    /// were set, nor when the follower was disposed. Each change that is not disposed of logs what became of it.
+    /// were set, nor when the follower was disposed. Unless the follower was disposed, each change logs what became of it.
     /// </returns>
     public async Task<bool> FollowAsync()
     {
@@ -127,7 +127,7 @@ internal sealed class ClientConfigurationFollower : IDisposable
             }
 
             // what is told is told once the listeners were told of the change, and of the change that is the last word: one that a newer change came after has been set, and
-            // the newer one is the one that says it was applied. Each change that asked the editor still says what became of it, so that one overtaken here is said to be dropped.
+            // the newer one is the one that says it was applied. Each change that asked the editor still says what became of it, so that one overtaken here says the newer one replaces it.
             bool overtaken;
             lock (_gate)
             {
@@ -141,7 +141,7 @@ internal sealed class ClientConfigurationFollower : IDisposable
 
             if (overtaken)
             {
-                _log("⚙️ A newer change of the client's settings came in as this one was set; this one is dropped, and the newer one has the last word.");
+                _log("⚙️ A newer change of the client's settings came in as this one was set; the newer one replaces it and has the last word.");
                 return false;
             }
 
