@@ -201,7 +201,8 @@ public sealed class StdPictureObject
 }
 
 /// <summary>
-/// Why <see cref="StdPictureObject.TryLoad"/> made no picture of a file: each value is the error number MS-VBA's <c>LoadPicture</c> raises for it.
+/// Why <see cref="StdPictureObject.TryLoad"/> made no picture of a file: each value but <see cref="None"/> is the error number MS-VBA's
+/// <c>LoadPicture</c> raises for it.
 /// </summary>
 public enum StdPictureLoadFailure
 {
