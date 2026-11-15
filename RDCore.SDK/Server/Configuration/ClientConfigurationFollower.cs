@@ -82,7 +82,10 @@ internal sealed class ClientConfigurationFollower : IDisposable
     /// <summary>
     /// Sets the live settings the client said, with the editor's tab size for an indentation the user never set.
     /// </summary>
-    /// <returns>Whether the settings were set: not when a newer change came in while the editor's tab size was asked, nor when the follower was disposed.</returns>
+    /// <returns>
+    /// Whether the settings were set and this change has the last word: not when a newer change came in while the editor's tab size was asked or as the settings
+    /// were set, nor when the follower was disposed. Each change that is not disposed of logs what became of it.
+    /// </returns>
     public async Task<bool> FollowAsync()
     {
         int version;
@@ -124,13 +127,22 @@ internal sealed class ClientConfigurationFollower : IDisposable
             }
 
             // what is told is told once the listeners were told of the change, and of the change that is the last word: one that a newer change came after has been set, and
-            // the newer one is the one that says so.
+            // the newer one is the one that says it was applied. Each change that asked the editor still says what became of it, so that one overtaken here is said to be dropped.
+            bool overtaken;
             lock (_gate)
             {
-                if (_disposed == 1 || version != _version)
+                if (_disposed == 1)
                 {
                     return false;
                 }
+
+                overtaken = version != _version;
+            }
+
+            if (overtaken)
+            {
+                _log("⚙️ A newer change of the client's settings came in as this one was set; this one is dropped, and the newer one has the last word.");
+                return false;
             }
 
             _log($"⚙️ The client's live settings were applied ({said.Count} value(s)){(adopted.Count > 0 ? $"; the indentation is the client's tab size ({adopted.Values.Single()}), which no setting overrides" : string.Empty)}.");
