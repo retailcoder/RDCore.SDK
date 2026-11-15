@@ -319,8 +319,8 @@ public static class CompletionCandidates
     /// <para>
     /// A name is offered wherever an argument starts (<see cref="SignatureSite.IsWhereAnArgumentStarts"/>), the first one included, whether or not the parameter
     /// that argument would be given to by position is <c>Optional</c>: any argument can be named (<strong>MS-VBAL §5.6.13.1</strong>
-    /// <c>positional-or-named-argument-list</c>), and after a named one, every argument is. Where the names rank is the list's to say
-    /// (<see cref="NamedArgumentGroup"/>). No name is offered where a positional argument is written after the cursor, an omitted one included
+    /// <c>positional-or-named-argument-list</c>), and after a named one, every argument is. <see cref="NamedArgumentGroup"/> says where the
+    /// names rank. No name is offered where a positional argument is written after the cursor, an omitted one included
     /// (<see cref="SignatureSite.IsFollowedByAPositionalArgument"/>): it would follow a named one.
     /// </para>
     /// <para>
