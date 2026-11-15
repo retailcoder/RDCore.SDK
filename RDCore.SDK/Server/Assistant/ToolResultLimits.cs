@@ -27,11 +27,6 @@ public static class ToolResultLimits
     public const int References = 500;
 
     /// <summary>
-    /// The most entries an outline answers.
-    /// </summary>
-    public const int OutlineEntries = 1_000;
-
-    /// <summary>
     /// The most characters the text of a result has (<see cref="CapText"/>): 32,768.
     /// </summary>
     public const int TextLength = 32 * 1024;

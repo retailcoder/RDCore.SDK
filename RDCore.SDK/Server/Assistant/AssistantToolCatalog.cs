@@ -13,24 +13,24 @@ namespace RDCore.SDK.Server.Assistant;
 /// <remarks>
 /// A call is answered with what the tool answers, its text cut at <see cref="ToolResultLimits.TextLength"/> characters. A tool that refuses the call, by
 /// throwing an <see cref="AssistantToolRefusedException"/> or an <see cref="RpcErrorException"/>, is answered with a refusal
-/// (<see cref="ToolCallResult.Refusal"/>): the call did nothing, and the assistant reads why. A call of a tool the catalogue does not have is a JSON-RPC
+/// (<see cref="ToolCallResult.Refusal"/>): the call did nothing, and the assistant reads why. A call of a tool the catalog does not have is a JSON-RPC
 /// error (<c>-32602</c>), as the <strong>Model Context Protocol</strong> answers it.
 /// </remarks>
-public sealed partial class AssistantToolCatalogue
+public sealed partial class AssistantToolCatalog
 {
     /// <summary>
-    /// JSON-RPC "Invalid params": the code a call of a tool the catalogue does not have is refused with.
+    /// JSON-RPC "Invalid params": the code a call of a tool the catalog does not have is refused with.
     /// </summary>
     public const int UnknownToolCode = -32602;
 
     private readonly Dictionary<string, IAssistantTool> _tools;
 
     /// <summary>
-    /// A catalogue of tools.
+    /// A catalog of tools.
     /// </summary>
-    /// <param name="tools">The tools, in the order the catalogue lists them.</param>
+    /// <param name="tools">The tools, in the order the catalog lists them.</param>
     /// <exception cref="ArgumentException">Two tools have the same name, or a name is not one a tool can have (<see cref="IAssistantTool.Name"/>).</exception>
-    public AssistantToolCatalogue(IEnumerable<IAssistantTool> tools)
+    public AssistantToolCatalog(IEnumerable<IAssistantTool> tools)
     {
         ArgumentNullException.ThrowIfNull(tools);
         Tools = [.. tools];
@@ -53,7 +53,7 @@ public sealed partial class AssistantToolCatalogue
     private static partial Regex ToolName();
 
     /// <summary>
-    /// The tools, in the order the catalogue lists them.
+    /// The tools, in the order the catalog lists them.
     /// </summary>
     public IReadOnlyList<IAssistantTool> Tools { get; }
 
@@ -74,7 +74,7 @@ public sealed partial class AssistantToolCatalogue
     /// <param name="call">The tool, and its arguments.</param>
     /// <param name="token">Cancels the call.</param>
     /// <returns>What the tool answers, or why it refuses the call.</returns>
-    /// <exception cref="RpcErrorException">The catalogue has no tool by the name the call gives (<see cref="UnknownToolCode"/>).</exception>
+    /// <exception cref="RpcErrorException">The catalog has no tool by the name the call gives (<see cref="UnknownToolCode"/>).</exception>
     /// <exception cref="OperationCanceledException"><paramref name="token"/> was cancelled.</exception>
     public async Task<ToolCallResult> CallAsync(ToolCallParams call, CancellationToken token)
     {

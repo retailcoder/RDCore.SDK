@@ -9,7 +9,7 @@ namespace RDCore.SDK.Server.Assistant;
 /// </summary>
 /// <remarks>
 /// <para>
-/// The language server lists and calls the tools of its <see cref="AssistantToolCatalogue"/> over <c>rdcore/tools/list</c> and <c>rdcore/tools/call</c>.
+/// The language server lists and calls the tools of its <see cref="AssistantToolCatalog"/> over <c>rdcore/tools/list</c> and <c>rdcore/tools/call</c>.
 /// <see cref="AssistantTool{TArguments, TResult}"/> implements this interface for a tool whose arguments and result are records, and derives their schemas
 /// from them.
 /// </para>
@@ -43,7 +43,7 @@ public interface IAssistantTool
 }
 
 /// <summary>
-/// Thrown by a tool that refuses a call: the catalogue answers it with a result whose <see cref="ToolCallResult.IsError"/> is <see langword="true"/>, and
+/// Thrown by a tool that refuses a call: the catalog answers it with a result whose <see cref="ToolCallResult.IsError"/> is <see langword="true"/>, and
 /// whose text is the exception's message.
 /// </summary>
 /// <param name="message">Why the call is refused, in the language of the client's user interface, for an assistant to read.</param>

@@ -9,7 +9,7 @@ namespace RDCore.SDK.Assistant;
 /// </summary>
 /// <remarks>
 /// The tools and their results are shaped as the <strong>Model Context Protocol</strong> (2025-06-18) shapes them, so that a client that bridges them to an
-/// assistant passes them through as they are. The catalogue is not paged: one answer lists every tool.
+/// assistant passes them through as they are. The catalog is not paged: one answer lists every tool.
 /// </remarks>
 public record class ToolsListParams;
 
@@ -97,7 +97,7 @@ public sealed record class ToolAnnotations
 /// Calls a tool the language server serves an assistant (<c>rdcore/tools/call</c>).
 /// </summary>
 /// <remarks>
-/// A tool that is not in the catalogue is refused with the JSON-RPC error <c>-32602</c>. A call the tool itself refuses, arguments it cannot read
+/// A tool that is not in the catalog is refused with the JSON-RPC error <c>-32602</c>. A call the tool itself refuses, arguments it cannot read
 /// included, is answered with a result whose <see cref="ToolCallResult.IsError"/> is <see langword="true"/>. <c>$/cancelRequest</c> cancels the call.
 /// </remarks>
 public record class ToolCallParams

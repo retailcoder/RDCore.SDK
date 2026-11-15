@@ -29,7 +29,7 @@ public sealed record class ToolsListReply : ToolsListResult
     public ToolsListReply() { }
 
     /// <summary>
-    /// An answer of the tools a catalogue lists.
+    /// An answer of the tools a catalog lists.
     /// </summary>
     /// <param name="listed">The tools.</param>
     public ToolsListReply(ToolsListResult listed) : base(listed) { }

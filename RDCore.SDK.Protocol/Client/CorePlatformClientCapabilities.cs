@@ -198,7 +198,7 @@ public class LanguageServerCapabilities
     public Refactoring Refactoring { get; set; } = new();
 
     /// <summary>
-    /// If supported, the language server serves an assistant the tools of its catalogue, over <c>rdcore/tools/list</c> and <c>rdcore/tools/call</c>: what
+    /// If supported, the language server serves an assistant the tools of its catalog, over <c>rdcore/tools/list</c> and <c>rdcore/tools/call</c>: what
     /// a client that bridges an assistant to the platform (<c>rdc mcp</c>, an IDE's chat) asks with.
     /// </summary>
     public AssistantTools AssistantTools { get; set; } = new();
@@ -422,7 +422,7 @@ public record class CliCommand(bool IsSupported = false) : CorePlatformClientCap
 public record class Refactoring(bool IsSupported = false) : CorePlatformClientCapability(IsSupported);
 
 /// <summary>
-/// Advertises that the language server serves an assistant the tools of its catalogue (<c>rdcore/tools/list</c>, <c>rdcore/tools/call</c>), such as the
+/// Advertises that the language server serves an assistant the tools of its catalog (<c>rdcore/tools/list</c>, <c>rdcore/tools/call</c>), such as the
 /// tools of <see cref="Assistant.CoreAssistantTools"/>, which read the workspace's diagnostics and symbols. A client that expects it lists
 /// the tools and calls them.
 /// </summary>

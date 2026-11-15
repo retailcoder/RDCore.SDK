@@ -10,11 +10,11 @@ using System.Text.Json.Nodes;
 namespace RDCore.Tests.Server;
 
 /// <summary>
-/// The catalogue lists its tools in the client's language and calls them by name: a refusal is a result the assistant reads, an unknown name is a
+/// The catalog lists its tools in the client's language and calls them by name: a refusal is a result the assistant reads, an unknown name is a
 /// JSON-RPC error, and the text of a result is cut at its cap.
 /// </summary>
 [TestClass]
-public sealed class AssistantToolCatalogueTests
+public sealed class AssistantToolCatalogTests
 {
     private static readonly CultureInfo English = CultureInfo.GetCultureInfo("en-US");
     private static readonly CultureInfo French = CultureInfo.GetCultureInfo("fr-CA");
@@ -31,9 +31,9 @@ public sealed class AssistantToolCatalogueTests
     [TestMethod]
     public void List_DescribesEveryTool_InOrder_InTheClientsLanguage()
     {
-        var catalogue = new AssistantToolCatalogue([Tool("get_diagnostics"), Tool("references")]);
+        var catalog = new AssistantToolCatalog([Tool("get_diagnostics"), Tool("references")]);
 
-        var listed = catalogue.List(French);
+        var listed = catalog.List(French);
 
         CollectionAssert.AreEqual(new[] { "get_diagnostics", "references" }, listed.Tools.Select(tool => tool.Name).ToArray());
         Assert.AreEqual("references (fr-CA)", listed.Tools[1].Description);
@@ -41,7 +41,7 @@ public sealed class AssistantToolCatalogueTests
 
     [TestMethod]
     public void TwoToolsOfOneName_AreRefused()
-        => Assert.ThrowsExactly<ArgumentException>(() => new AssistantToolCatalogue([Tool("references"), Tool("references")]));
+        => Assert.ThrowsExactly<ArgumentException>(() => new AssistantToolCatalog([Tool("references"), Tool("references")]));
 
     [TestMethod]
     [DataRow("")]
@@ -49,16 +49,16 @@ public sealed class AssistantToolCatalogueTests
     [DataRow("trouvé")]
     [DataRow("a0123456789012345678901234567890123456789012345678901234567890123")]
     public void AToolNamedOtherwiseThanMcpNamesATool_IsRefused(string name)
-        => Assert.ThrowsExactly<ArgumentException>(() => new AssistantToolCatalogue([Tool(name)]));
+        => Assert.ThrowsExactly<ArgumentException>(() => new AssistantToolCatalog([Tool(name)]));
 
     [TestMethod]
-    public async Task ACallOfAToolTheCatalogueDoesNotHave_IsAnInvalidParamsError()
+    public async Task ACallOfAToolTheCatalogDoesNotHave_IsAnInvalidParamsError()
     {
-        var catalogue = new AssistantToolCatalogue([Tool("references")]);
+        var catalog = new AssistantToolCatalog([Tool("references")]);
 
-        var error = await Assert.ThrowsExactlyAsync<RpcErrorException>(() => catalogue.CallAsync(new ToolCallParams { Name = "rename" }, CancellationToken.None));
+        var error = await Assert.ThrowsExactlyAsync<RpcErrorException>(() => catalog.CallAsync(new ToolCallParams { Name = "rename" }, CancellationToken.None));
 
-        Assert.AreEqual(AssistantToolCatalogue.UnknownToolCode, error.Code);
+        Assert.AreEqual(AssistantToolCatalog.UnknownToolCode, error.Code);
         Assert.Contains("rename", error.Message);
     }
 
@@ -66,10 +66,10 @@ public sealed class AssistantToolCatalogueTests
     public async Task ACall_GivesTheToolItsArguments_AndAnEmptyObjectForNone()
     {
         var tool = Tool("references");
-        var catalogue = new AssistantToolCatalogue([tool]);
+        var catalog = new AssistantToolCatalog([tool]);
 
-        await catalogue.CallAsync(new ToolCallParams { Name = "references", Arguments = new JsonObject { ["path"] = "Module1.bas" } }, CancellationToken.None);
-        await catalogue.CallAsync(new ToolCallParams { Name = "references" }, CancellationToken.None);
+        await catalog.CallAsync(new ToolCallParams { Name = "references", Arguments = new JsonObject { ["path"] = "Module1.bas" } }, CancellationToken.None);
+        await catalog.CallAsync(new ToolCallParams { Name = "references" }, CancellationToken.None);
 
         await tool.Received(1).CallAsync(Arg.Is<JsonObject>(arguments => (string?)arguments["path"] == "Module1.bas"), Arg.Any<CancellationToken>());
         await tool.Received(1).CallAsync(Arg.Is<JsonObject>(arguments => arguments.Count == 0), Arg.Any<CancellationToken>());
@@ -80,9 +80,9 @@ public sealed class AssistantToolCatalogueTests
     {
         var tool = Tool("apply_fix");
         tool.CallAsync(Arg.Any<JsonObject>(), Arg.Any<CancellationToken>()).ThrowsAsync(new AssistantToolRefusedException("the document changed"));
-        var catalogue = new AssistantToolCatalogue([tool]);
+        var catalog = new AssistantToolCatalog([tool]);
 
-        var result = await catalogue.CallAsync(new ToolCallParams { Name = "apply_fix" }, CancellationToken.None);
+        var result = await catalog.CallAsync(new ToolCallParams { Name = "apply_fix" }, CancellationToken.None);
 
         Assert.IsTrue(result.IsError);
         Assert.IsNull(result.StructuredContent);
@@ -94,9 +94,9 @@ public sealed class AssistantToolCatalogueTests
     {
         var tool = Tool("rename");
         tool.CallAsync(Arg.Any<JsonObject>(), Arg.Any<CancellationToken>()).ThrowsAsync(new RpcErrorException(-32803, null!, "'x' is not a name"));
-        var catalogue = new AssistantToolCatalogue([tool]);
+        var catalog = new AssistantToolCatalog([tool]);
 
-        var result = await catalogue.CallAsync(new ToolCallParams { Name = "rename" }, CancellationToken.None);
+        var result = await catalog.CallAsync(new ToolCallParams { Name = "rename" }, CancellationToken.None);
 
         Assert.IsTrue(result.IsError);
         Assert.AreEqual("'x' is not a name", result.Content.Single().Text);
@@ -109,9 +109,9 @@ public sealed class AssistantToolCatalogueTests
         await cancelled.CancelAsync();
         var tool = Tool("get_diagnostics");
         tool.CallAsync(Arg.Any<JsonObject>(), Arg.Any<CancellationToken>()).ThrowsAsync(new OperationCanceledException(cancelled.Token));
-        var catalogue = new AssistantToolCatalogue([tool]);
+        var catalog = new AssistantToolCatalog([tool]);
 
-        await Assert.ThrowsAsync<OperationCanceledException>(() => catalogue.CallAsync(new ToolCallParams { Name = "get_diagnostics" }, cancelled.Token));
+        await Assert.ThrowsAsync<OperationCanceledException>(() => catalog.CallAsync(new ToolCallParams { Name = "get_diagnostics" }, cancelled.Token));
     }
 
     [TestMethod]
@@ -119,9 +119,9 @@ public sealed class AssistantToolCatalogueTests
     {
         var text = string.Join("\n", Enumerable.Range(1, 5_000).Select(line => $"Module1.bas:{line}:1 RDC01011 Warning line {line}"));
         var structured = new JsonObject { ["total"] = 5_000 };
-        var catalogue = new AssistantToolCatalogue([Tool("get_diagnostics", ToolCallResult.Of(text, structured))]);
+        var catalog = new AssistantToolCatalog([Tool("get_diagnostics", ToolCallResult.Of(text, structured))]);
 
-        var result = await catalogue.CallAsync(new ToolCallParams { Name = "get_diagnostics" }, CancellationToken.None);
+        var result = await catalog.CallAsync(new ToolCallParams { Name = "get_diagnostics" }, CancellationToken.None);
 
         var lines = result.Content.Single().Text.Split('\n');
         var whole = text.Split('\n').ToHashSet();
