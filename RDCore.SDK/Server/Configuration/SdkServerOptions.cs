@@ -209,6 +209,13 @@ public record class SdkAppOptions
     /// A change takes effect with the next analysis of a document, while the platform runs.
     /// </remarks>
     public SdkAnalysisOptions Analysis { get; set; } = new();
+    /// <summary>
+    /// Inlay hint options: the places an editor shows what the code means without saying it, each on or off.
+    /// </summary>
+    /// <remarks>
+    /// A change takes effect with the next hints a client asks for, while the platform runs.
+    /// </remarks>
+    public SdkInlayHintOptions InlayHints { get; set; } = new();
 }
 
 /// <summary>

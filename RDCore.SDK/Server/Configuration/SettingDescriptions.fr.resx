@@ -211,4 +211,19 @@
   <data name="Analysis_DisabledDiagnostics" xml:space="preserve">
     <value>Les codes des diagnostics qui ne sont pas signalés, séparés par des virgules : RDC01001, XYZ00042. Une erreur de compilation ou d'exécution (VBC, VBR, VBA) ne peut pas être désactivée.</value>
   </data>
+  <data name="InlayHints_Arguments" xml:space="preserve">
+    <value>Si un argument positionnel affiche le nom du paramètre auquel il est passé, entre crochets devant lui : [X:]10.</value>
+  </data>
+  <data name="InlayHints_BlockEnds" xml:space="preserve">
+    <value>Si le End Sub, End Function ou End Property d'une procédure affiche le nom de la procédure après lui : End Sub [DoSomething].</value>
+  </data>
+  <data name="InlayHints_NextVariables" xml:space="preserve">
+    <value>Si un Next qui ne nomme aucune variable affiche celle de la boucle après lui : Next [i].</value>
+  </data>
+  <data name="InlayHints_ImplicitModifiers" xml:space="preserve">
+    <value>Si une procédure déclarée sans Public ni Private affiche l'accès qu'elle a, et un paramètre déclaré sans ByVal ni ByRef la façon dont il est passé : [Public] Sub Work([ByRef]Total As Long).</value>
+  </data>
+  <data name="InlayHints_ImplicitTypes" xml:space="preserve">
+    <value>Si une variable ou un paramètre déclaré sans type affiche celui qu'il a, après son nom : Dim First [As Variant].</value>
+  </data>
 </root>
