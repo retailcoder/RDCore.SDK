@@ -238,7 +238,8 @@ public record class SdkEnvironmentOptions
     /// </summary>
     public int Lcid { get; set; }
     /// <summary>
-    /// The ANSI code page for <c>Byte()</c> ↔ <c>String</c> and non-Unicode <c>Chr</c> / <c>Asc</c>.
+    /// The ANSI code page for <c>Byte()</c> ↔ <c>String</c> and non-Unicode <c>Chr</c> / <c>Asc</c>, and the one a module file without a byte order mark that
+    /// is not UTF-8 is read and written in (<see cref="RDCore.SDK.Workspace.ModuleFileText"/>).
     /// </summary>
     public int AnsiCodePage { get; set; } = 1252;
     /// <summary>
