@@ -48,8 +48,9 @@ public enum PictureDecodeFailure
 /// transparent color of the frame's graphic control extension. The frame's place on the logical screen is ignored, and an animation's later frames are not
 /// decoded.</item>
 /// <item>A JPEG (ITU-T T.81): Huffman-coded, baseline, extended or progressive, of 8-bit samples, gray or YCbCr (RGB where an Adobe <c>APP14</c> segment
-/// says so), with restart intervals. Its chroma is upsampled as the IJG decoder does by default: by its triangle filter at half the width, or half the
-/// width and height; by repeating each sample at any other ratio. The picture is opaque. A file of more than 256 scans is decoded to its 256th.</item>
+/// says so), with restart intervals. Its inverse DCT is in integer arithmetic, rounded as the IJG decoder's integer inverse DCT is, so that its pixels are
+/// those MS-VBA's <c>LoadPicture</c> gives. Its chroma is upsampled as the IJG decoder does by default: by its triangle filter at half the width, or half
+/// the width and height; by repeating each sample at any other ratio. The picture is opaque. A file of more than 256 scans is decoded to its 256th.</item>
 /// <item>An icon's or a cursor's image: a PNG, or a DIB and its AND mask. A DIB image is clear where its 32-bit alpha says so, or, where it has no alpha or
 /// every pixel's is 0, where its mask is set.</item>
 /// </list>

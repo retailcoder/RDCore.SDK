@@ -18,38 +18,12 @@ internal static class JpegDecoder
         35, 42, 49, 56, 57, 50, 43, 36, 29, 22, 15, 23, 30, 37, 44, 51, 58, 59, 52, 45, 38, 31, 39, 46, 53, 60, 61, 54, 47, 55, 62, 63,
     ];
 
-    // cos(kπ/16) for k = 0 to 8, in units of 1/8192.
-    private static readonly int[] Cosines = [8192, 8035, 7568, 6811, 5793, 4551, 3135, 1598, 0];
+    // the inverse DCT's fixed point: constants of 13 fraction bits, and 2 more bits kept between its column pass and its row pass.
+    private const int ConstBits = 13, PassBits = 2;
 
-    // the inverse DCT's basis: Basis[u * 8 + x] is C(u)·cos((2x + 1)uπ/16) in units of 1/8192, where C(0) is 1/√2 and C(u) is 1 otherwise.
-    private static readonly int[] Basis = MakeBasis();
-
-    private static int[] MakeBasis()
-    {
-        var basis = new int[64];
-        for (var u = 0; u < 8; u++)
-        {
-            for (var x = 0; x < 8; x++)
-            {
-                basis[u * 8 + x] = u == 0 ? Cosines[4] : Cosine((2 * x + 1) * u);
-            }
-        }
-
-        return basis;
-    }
-
-    // cos(mπ/16) for any m ≥ 0.
-    private static int Cosine(int m)
-    {
-        m %= 32;
-        return m switch
-        {
-            <= 8 => Cosines[m],
-            <= 16 => -Cosines[16 - m],
-            <= 24 => -Cosines[m - 16],
-            _ => Cosines[32 - m],
-        };
-    }
+    // the constants of the inverse DCT's factorization, each the real number its name gives times 8192, rounded.
+    private const long F0298631336 = 2446, F0390180644 = 3196, F0541196100 = 4433, F0765366865 = 6270, F0899976223 = 7373, F1175875602 = 9633,
+        F1501321110 = 12299, F1847759065 = 15137, F1961570560 = 16069, F2053119869 = 16819, F2562915447 = 20995, F3072711026 = 25172;
 
     private sealed class Huffman
     {
@@ -888,38 +862,75 @@ internal static class JpegDecoder
         }
     }
 
-    // the inverse DCT of a block of quantized coefficients, rounded and level-shifted to samples of 0 to 255, rows of 8 written stride apart.
+    // the inverse DCT of a block of quantized coefficients, level-shifted to samples of 0 to 255, rows of 8 written stride apart. It is the factorization
+    // of Loeffler, Ligtenberg and Moschytz (1989) in fixed point: each column, kept with PassBits more bits, then each row, both passes rounded. Its samples
+    // are those of the IJG decoder's integer inverse DCT, the one MS-VBA's LoadPicture decodes with.
     private static void Idct(ReadOnlySpan<short> block, ushort[] quant, Span<byte> output, int stride)
     {
-        Span<long> rows = stackalloc long[64];
-        for (var v = 0; v < 8; v++)
+        Span<long> work = stackalloc long[64];
+        Span<long> line = stackalloc long[8];
+        Span<long> result = stackalloc long[8];
+        for (var u = 0; u < 8; u++)
         {
-            for (var x = 0; x < 8; x++)
+            for (var v = 0; v < 8; v++)
             {
-                long sum = 0;
-                for (var u = 0; u < 8; u++)
-                {
-                    // a coefficient past what 8-bit samples give is cut to 16 bits, so that the sums stay in range.
-                    sum += Basis[u * 8 + x] * Math.Clamp(block[v * 8 + u] * quant[v * 8 + u], short.MinValue, short.MaxValue);
-                }
+                // a coefficient past what 8-bit samples give is cut to 16 bits, so that the sums stay in range.
+                line[v] = Math.Clamp(block[v * 8 + u] * quant[v * 8 + u], short.MinValue, short.MaxValue);
+            }
 
-                rows[v * 8 + x] = sum;
+            Idct8(line, result, ConstBits - PassBits);
+            for (var y = 0; y < 8; y++)
+            {
+                work[y * 8 + u] = result[y];
             }
         }
 
         for (var y = 0; y < 8; y++)
         {
+            Idct8(work.Slice(y * 8, 8), result, ConstBits + PassBits + 3);
             for (var x = 0; x < 8; x++)
             {
-                long sum = 0;
-                for (var v = 0; v < 8; v++)
-                {
-                    sum += Basis[v * 8 + y] * rows[v * 8 + x];
-                }
-
-                output[y * stride + x] = (byte)Math.Clamp(((sum + (1L << 27)) >> 28) + 128, 0, 255);
+                output[y * stride + x] = (byte)Math.Clamp(result[x] + 128, 0, 255);
             }
         }
+    }
+
+    // one pass of 8 points: the even part from inputs 0, 2, 4 and 6, the odd part from 1, 3, 5 and 7, their sums and differences shifted right by the
+    // bits given, rounded.
+    private static void Idct8(ReadOnlySpan<long> s, Span<long> d, int shift)
+    {
+        var z1 = (s[2] + s[6]) * F0541196100;
+        var t2 = z1 - s[6] * F1847759065;
+        var t3 = z1 + s[2] * F0765366865;
+        var t0 = (s[0] + s[4]) << ConstBits;
+        var t1 = (s[0] - s[4]) << ConstBits;
+        long e10 = t0 + t3, e13 = t0 - t3, e11 = t1 + t2, e12 = t1 - t2;
+
+        long o0 = s[7], o1 = s[5], o2 = s[3], o3 = s[1];
+        long a1 = o0 + o3, a2 = o1 + o2, a3 = o0 + o2, a4 = o1 + o3;
+        var z5 = (a3 + a4) * F1175875602;
+        o0 *= F0298631336;
+        o1 *= F2053119869;
+        o2 *= F3072711026;
+        o3 *= F1501321110;
+        a1 *= -F0899976223;
+        a2 *= -F2562915447;
+        a3 = a3 * -F1961570560 + z5;
+        a4 = a4 * -F0390180644 + z5;
+        o0 += a1 + a3;
+        o1 += a2 + a4;
+        o2 += a2 + a3;
+        o3 += a1 + a4;
+
+        var round = 1L << (shift - 1);
+        d[0] = (e10 + o3 + round) >> shift;
+        d[7] = (e10 - o3 + round) >> shift;
+        d[1] = (e11 + o2 + round) >> shift;
+        d[6] = (e11 - o2 + round) >> shift;
+        d[2] = (e12 + o1 + round) >> shift;
+        d[5] = (e12 - o1 + round) >> shift;
+        d[3] = (e13 + o0 + round) >> shift;
+        d[4] = (e13 - o0 + round) >> shift;
     }
 
     // the picture's BGRA: each component's samples upsampled to the picture's size, then gray, YCbCr or RGB to color. A pixel is given where every
