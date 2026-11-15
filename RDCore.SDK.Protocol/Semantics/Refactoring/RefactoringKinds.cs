@@ -99,4 +99,11 @@ public static class RefactoringKinds
     /// </para>
     /// </remarks>
     public const string ImplementInterface = "refactor.rewrite.implementInterface";
+
+    /// <summary>
+    /// Remove Parameter: a parameter of a procedure is removed from its declaration, and its argument from every call that passes it, by position or by
+    /// name (<strong>MS-VBAL §5.3.1.5</strong>, <strong>§5.6.13.1</strong>). The accessors of a property lose it together, and so do the member of a class
+    /// that other classes implement and the procedures that implement it. The range it is asked for is on the parameter.
+    /// </summary>
+    public const string RemoveParameter = "refactor.rewrite.removeParameter";
 }
