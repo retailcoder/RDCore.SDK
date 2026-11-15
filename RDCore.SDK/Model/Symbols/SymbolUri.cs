@@ -1,5 +1,6 @@
 using OmniSharp.Extensions.LanguageServer.Protocol;
 using RDCore.SDK.Platform.Components;
+using RDCore.SDK.Workspace;
 
 namespace RDCore.SDK.Model.Symbols;
 
@@ -115,6 +116,66 @@ public static class SymbolUri
         return document.IsFile && !string.IsNullOrEmpty(workspaceRoot)
             ? Root(workspaceRoot)
             : new UriBuilder(document) { Fragment = string.Empty }.Uri;
+    }
+
+    /// <summary>
+    /// The root a symbol is addressed under: its address without the fragment, which is the root of its project or library (<see cref="Module(Uri, string)"/>).
+    /// </summary>
+    /// <remarks>
+    /// The root of a root is the root itself.
+    /// </remarks>
+    /// <param name="symbol">The address of a symbol, or the root of a project or a library.</param>
+    /// <returns>The root.</returns>
+    /// <exception cref="ArgumentException"><paramref name="symbol"/> is a relative URI.</exception>
+    public static Uri ProjectRootOf(Uri symbol)
+    {
+        ArgumentNullException.ThrowIfNull(symbol);
+        if (!symbol.IsAbsoluteUri)
+        {
+            throw new ArgumentException(string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                "'{0}' is a relative URI: a symbol is addressed under the absolute root of its project or library.", symbol.OriginalString), nameof(symbol));
+        }
+
+        return symbol.Fragment.Length == 0 ? symbol : new UriBuilder(symbol) { Fragment = string.Empty }.Uri;
+    }
+
+    /// <summary>
+    /// Whether two addresses are under the same root (<see cref="ProjectRootOf"/>): whether the symbols are of one project or library.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Two <c>file</c> roots compare as the paths of the platform do (<see cref="WorkspacePaths.Comparison"/>): on Windows, a client may write the drive or a folder of the
+    /// same root in another case (<c>file:///c:/Work</c>, <c>file:///C:/Work</c>), and both name one folder. A root of any other scheme compares as it is written.
+    /// </para>
+    /// <para>
+    /// <see cref="Uri.Equals(object?)"/> cannot say so: it ignores the fragment, so the addresses of two modules of a project are equal by it, and it compares the
+    /// path as it is written.
+    /// </para>
+    /// </remarks>
+    /// <param name="left">The address of a symbol, or a root.</param>
+    /// <param name="right">The address of another symbol, or another root.</param>
+    /// <returns>Whether the roots are the same.</returns>
+    /// <exception cref="ArgumentException">Either is a relative URI.</exception>
+    public static bool SameRoot(Uri left, Uri right)
+    {
+        var (leftRoot, rightRoot) = (ProjectRootOf(left), ProjectRootOf(right));
+        return string.Equals(leftRoot.AbsoluteUri, rightRoot.AbsoluteUri, leftRoot.IsFile && rightRoot.IsFile ? WorkspacePaths.Comparison : StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// Compares addresses by their root, as <see cref="SameRoot"/> does: what keys a project by its root, whichever address of it is given.
+    /// </summary>
+    public static IEqualityComparer<Uri> RootComparer { get; } = new SameRootComparer();
+
+    private sealed class SameRootComparer : IEqualityComparer<Uri>
+    {
+        public bool Equals(Uri? x, Uri? y) => x is null || y is null ? ReferenceEquals(x, y) : SameRoot(x, y);
+
+        public int GetHashCode(Uri obj)
+        {
+            var root = ProjectRootOf(obj);
+            return (root.IsFile ? WorkspacePaths.Comparer : StringComparer.Ordinal).GetHashCode(root.AbsoluteUri);
+        }
     }
 
     /// <summary>
