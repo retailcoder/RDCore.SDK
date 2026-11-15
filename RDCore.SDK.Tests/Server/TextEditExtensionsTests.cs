@@ -53,4 +53,8 @@ public sealed class TextEditExtensionsTests
     [TestMethod]
     public void AnEditEndingBeforeItStarts_IsRefused()
         => Assert.ThrowsExactly<ArgumentException>(() => new[] { Edit(0, 4, 0, 2, "x") }.ApplyTo("Dim a"));
+
+    [TestMethod]
+    public void NoText_IsRefused()
+        => Assert.ThrowsExactly<ArgumentNullException>(() => new[] { Edit(0, 0, 0, 0, "x") }.ApplyTo(null!));
 }
