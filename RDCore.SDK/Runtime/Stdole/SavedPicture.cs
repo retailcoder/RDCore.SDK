@@ -20,6 +20,8 @@ namespace RDCore.SDK.Runtime.Stdole;
 /// PNG.</description></item>
 /// <item><term>An icon, a cursor</term><description>An icon of one image, the one the picture holds (<see cref="StdPictureObject.Image"/>), written by
 /// <see cref="PictureWriter.WriteIcon"/>: 4 bits per pixel in <see cref="PictureWriter.IconColors"/>, and its AND mask.</description></item>
+/// <item><term>A JPEG</term><description>None: its pixels are not decoded (<see cref="PictureDecodeFailure.NotDecoded"/>), and
+/// <see cref="BytesOf"/> returns <see langword="null"/>.</description></item>
 /// </list>
 /// <para>
 /// A picture's pixels are decoded by <see cref="PictureDecoder"/>, so a body cut short is written with the pixels it lacks as 0.
