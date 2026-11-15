@@ -42,4 +42,17 @@ public sealed class ExternalCallRequestTests
 
         Assert.AreEqual("Initialize(String())", request.Describe());
     }
+
+    // the platform's answer is a fact the runtime adds to a request: none by default, and a copy keeps it.
+    [TestMethod]
+    public void ARequest_IsAnsweredByThePlatformOnlyWhenTheRuntimeSaysSo()
+    {
+        var request = new ExternalCallRequest(ClassLifecycleInterface.Initialize, []);
+        var answered = request with { IsAnsweredByPlatform = true };
+
+        Assert.IsFalse(request.IsAnsweredByPlatform);
+        Assert.IsTrue(answered.IsAnsweredByPlatform);
+        Assert.IsTrue((answered with { CallSite = default }).IsAnsweredByPlatform);
+        Assert.AreNotEqual(request, answered);
+    }
 }

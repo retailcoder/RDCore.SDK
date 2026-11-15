@@ -120,18 +120,32 @@ public record class HostRunSessionExecuteResult : ExecuteResult
 
 /// <summary>
 /// Request for <c>rdcore/host/runSession/close</c>: closes a run session, and releases what it holds. A session that is closed or was never opened is
-/// ignored.
+/// ignored, and the answer says so (<see cref="HostRunSessionCloseResult.Closed"/>).
 /// </summary>
 /// <remarks>
 /// Part of the component protocol (<see cref="RDCoreComponentProtocol"/>), outside the SDK's compatibility promise.
 /// </remarks>
 [Method(RDCoreComponentProtocol.HostRunSessionClose, Direction.ClientToServer)]
-public record class HostRunSessionCloseParams : IRequest
+public record class HostRunSessionCloseParams : IRequest, IRequest<HostRunSessionCloseResult>
 {
     /// <summary>
     /// The run session, as <see cref="HostRunSessionOpenResult.SessionId"/> named it.
     /// </summary>
     public string SessionId { get; init; } = string.Empty;
+}
+
+/// <summary>
+/// The answer to <see cref="HostRunSessionCloseParams"/>.
+/// </summary>
+/// <remarks>
+/// Part of the component protocol (<see cref="RDCoreComponentProtocol"/>), outside the SDK's compatibility promise.
+/// </remarks>
+public record class HostRunSessionCloseResult
+{
+    /// <summary>
+    /// Whether the request closed an open run session: <see langword="false"/> for a session that was already closed, or was never opened.
+    /// </summary>
+    public bool Closed { get; init; }
 }
 
 /// <summary>
