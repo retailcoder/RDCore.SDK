@@ -106,4 +106,13 @@ public static class RefactoringKinds
     /// that other classes implement and the procedures that implement it. The range it is asked for is on the parameter.
     /// </summary>
     public const string RemoveParameter = "refactor.rewrite.removeParameter";
+
+    /// <summary>
+    /// Reorder Parameters: the parameters of a procedure are put in another order in its declaration, and the arguments passed by position in every call
+    /// to it with them (<strong>MS-VBAL §5.3.1.5</strong>, <strong>§5.6.13.1</strong>). The accessors of a property change together, and so do the member
+    /// of a class that other classes implement and the procedures that implement it; the value of a <c>Property Let</c> or <c>Property Set</c> stays last.
+    /// The range it is asked for is on the name of the procedure where it is declared, or on one of its parameters. Its choice is the list of the
+    /// parameters, in the order the user puts them in.
+    /// </summary>
+    public const string ReorderParameters = "refactor.rewrite.reorderParameters";
 }

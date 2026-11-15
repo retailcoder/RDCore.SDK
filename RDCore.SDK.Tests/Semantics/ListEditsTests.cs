@@ -4,7 +4,7 @@ using RDCore.SDK.Semantics.Refactoring;
 namespace RDCore.SDK.Tests.Semantics;
 
 /// <summary>
-/// The items of a list separated by commas, a procedure's parameters or a call's arguments, and the edit that removes one of them.
+/// The items of a list separated by commas, a procedure's parameters or a call's arguments, the edit that removes one of them, and the edits that write them as others.
 /// </summary>
 [TestClass]
 public sealed class ListEditsTests
@@ -84,4 +84,25 @@ public sealed class ListEditsTests
         Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => ListEdits.RemoveItem("F a, b", ListOf("F a, b"), -1));
         Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => ListEdits.ItemsOf("F a", new SourceRange(new SourcePosition(0, 0), new SourcePosition(2, 0))));
     }
+
+    private static string Replaced(string text, params string[] items)
+        => DeclarationEdits.ApplyTo(text, [.. ListEdits.ReplaceItems(text, ListOf(text), items)]);
+
+    [TestMethod]
+    [DataRow("Sub F(a, b, c)", "c|a|b", "Sub F(c, a, b)", DisplayName = "in another order")]
+    [DataRow("F a, b", "b|a", "F b, a", DisplayName = "the arguments of a call statement")]
+    [DataRow("F a, b", "|a", "F , a", DisplayName = "an argument that becomes omitted")]
+    [DataRow("F a, , c", "a|c|", "F a, c, ", DisplayName = "an omitted argument that is given one, after a blank")]
+    [DataRow("F a,, c", "a|c|", "F a, c, ", DisplayName = "an omitted argument that is given one, after its comma")]
+    [DataRow("F , b", "b|", "F b, ", DisplayName = "an omitted first argument that is given one")]
+    [DataRow("F a", "|b|a", "F , b, a", DisplayName = "more items than the list has")]
+    [DataRow("F a, b, c", "c", "F c", DisplayName = "fewer items than the list has")]
+    [DataRow("F(a, b)", "", "F()", DisplayName = "no item")]
+    [DataRow("Sub F(a, _\r\n      b)", "b|a", "Sub F(b, _\r\n      a)", DisplayName = "on continued lines")]
+    public void TheItems_AreWrittenWhereTheListHasThem(string text, string items, string replaced)
+        => Assert.AreEqual(replaced, Replaced(text, items.Length == 0 ? [] : items.Split('|')));
+
+    [TestMethod]
+    public void ItemsAsTheyAreWritten_AreNoEdit()
+        => Assert.IsEmpty(ListEdits.ReplaceItems("F a, , c", ListOf("F a, , c"), ["a", "", "c"]));
 }

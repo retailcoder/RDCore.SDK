@@ -66,6 +66,68 @@ public static class ListEdits
         return new RefactorTextEdit { Range = new SourceRange(lines.PositionOf(start), lines.PositionOf(end)), NewText = string.Empty };
     }
 
+    /// <summary>
+    /// The edits that write a list's items as others: the parameters of a procedure in another order, the arguments of a call to it. Each item is replaced
+    /// where it is, so the commas, the line continuations and the comments between the items stay. Items past the end of the list follow its last item,
+    /// each after <c>", "</c>; the items of the list past the last one given are removed with their commas. An empty item is an omitted argument:
+    /// <c>F a, b</c> written as <c>""</c> and <c>"a"</c> is <c>F , a</c>.
+    /// </summary>
+    /// <param name="text">The text of the module.</param>
+    /// <param name="list">The range of the list in <paramref name="text"/> (<see cref="ItemsOf"/>).</param>
+    /// <param name="items">The text of each item, in the order they are written; an empty one for an omitted argument.</param>
+    /// <returns>The edits, one per item that changes, in the order of the text; none when every item is as it is written.</returns>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="list"/> is not a range of <paramref name="text"/>.</exception>
+    public static IReadOnlyList<RefactorTextEdit> ReplaceItems(string text, SourceRange list, IReadOnlyList<string> items)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        ArgumentNullException.ThrowIfNull(items);
+        var lines = TextLines.Of(text);
+        var written = Items(text, lines, list);
+        var edits = new List<RefactorTextEdit>();
+        RefactorTextEdit Edit(int start, int end, string newText)
+            => new() { Range = new SourceRange(lines.PositionOf(start), lines.PositionOf(end)), NewText = newText };
+
+        if (written.Count == 0)
+        {
+            return items.Count == 0 ? [] : [Edit(lines.Offset(list.Start), lines.Offset(list.Start), string.Join(", ", items))];
+        }
+
+        if (items.Count == 0)
+        {
+            return [Edit(lines.Offset(list.Start), written[^1].End, string.Empty)];
+        }
+
+        var kept = Math.Min(written.Count, items.Count);
+        for (var index = 0; index < kept; index++)
+        {
+            var (start, end) = written[index];
+            var newText = items[index];
+            var last = index == kept - 1;
+            if (last && items.Count > written.Count)
+            {
+                newText += string.Concat(items.Skip(kept).Select(item => ", " + item));
+            }
+
+            if (last && items.Count < written.Count)
+            {
+                end = written[^1].End;
+            }
+
+            // an omitted argument is written at the comma after it, after a blank: F a, , c becomes F a, b, c.
+            if (start == end && newText.Length > 0 && index > 0 && start > 0 && text[start - 1] == ',')
+            {
+                newText = " " + newText;
+            }
+
+            if (newText != text[start..end])
+            {
+                edits.Add(Edit(start, end, newText));
+            }
+        }
+
+        return edits;
+    }
+
     // the items, as offsets: split at each comma outside a string literal, parentheses and brackets, up to a comment.
     private static List<(int Start, int End)> Items(string text, TextLines lines, SourceRange list)
     {
@@ -117,9 +179,10 @@ public static class ListEdits
         return items;
     }
 
-    // an item without the blanks, line ends and line continuations around it; an empty one is at its end.
+    // an item without the blanks, line ends and line continuations around it; an empty one is at its end: the comma after it, or the end of the list.
     private static (int Start, int End) Trimmed(string text, int start, int end)
     {
+        var after = end;
         while (end > start && IsBlank(text[end - 1]) || end - 1 > start && text[end - 1] == '_' && IsBlank(text[end - 2]))
         {
             end--;
@@ -130,7 +193,7 @@ public static class ListEdits
             start++;
         }
 
-        return start == end ? (end, end) : (start, end);
+        return start == end ? (after, after) : (start, end);
     }
 
     private static bool IsBlank(char c) => c is ' ' or '\t' or '\r' or '\n';
