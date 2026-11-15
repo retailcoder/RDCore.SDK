@@ -137,4 +137,69 @@ public sealed class SymbolUriTests
 
         Assert.AreEqual(document, SymbolUri.RootOf(document, workspaceRoot: string.Empty));
     }
+
+    [TestMethod]
+    public void TheRootOfASymbol_IsItsAddressWithoutTheFragment()
+    {
+        var module = SymbolUri.Module(Root, "GameBoard");
+
+        Assert.AreEqual(Root.AbsoluteUri, SymbolUri.ProjectRootOf(module).AbsoluteUri);
+        Assert.AreEqual(Root.AbsoluteUri, SymbolUri.ProjectRootOf(SymbolUri.Member(module, "Reset")).AbsoluteUri);
+        Assert.AreSame(Root, SymbolUri.ProjectRootOf(Root));
+    }
+
+    [TestMethod]
+    public void TwoModulesOfAProject_AreUnderTheSameRoot_AndTheSameModuleOfTwoProjectsIsNot()
+    {
+        var other = new Uri(Path.Combine(Path.GetTempPath(), "rdcore-symboluri-other"));
+
+        Assert.IsTrue(SymbolUri.SameRoot(SymbolUri.Module(Root, "GameBoard"), SymbolUri.Module(Root, "Ship")));
+        Assert.IsTrue(SymbolUri.SameRoot(SymbolUri.Module(Root, "GameBoard"), Root));
+        Assert.IsFalse(SymbolUri.SameRoot(SymbolUri.Module(Root, "GameBoard"), SymbolUri.Module(other, "GameBoard")));
+    }
+
+    // a client may write the drive or a folder of one root in another case: the same folder on Windows, another folder elsewhere.
+    [TestMethod]
+    [DataRow("file:///C:/Work/App", "file:///c:/Work/App", DisplayName = "the drive")]
+    [DataRow("file:///C:/Work/App", "file:///C:/work/app", DisplayName = "the folders")]
+    public void ARootWrittenInAnotherCase_IsTheSameRoot_WhereThePlatformSaysItIs(string written, string otherwise)
+    {
+        var (left, right) = (SymbolUri.Module(new Uri(written), "GameBoard"), SymbolUri.Module(new Uri(otherwise), "Ship"));
+        Assert.AreNotEqual(new Uri(written).AbsoluteUri, new Uri(otherwise).AbsoluteUri, "a Uri keeps the case it is written with");
+
+        Assert.AreEqual(OperatingSystem.IsWindows(), SymbolUri.SameRoot(left, right));
+        Assert.AreEqual(OperatingSystem.IsWindows(), SymbolUri.RootComparer.Equals(left, right));
+    }
+
+    [TestMethod]
+    public void ARootOfAnotherScheme_IsTheSameRoot_AsItIsWritten()
+    {
+        Assert.IsTrue(SymbolUri.SameRoot(new Uri("untitled:Untitled-1#Module1"), new Uri("untitled:Untitled-1#Module2")));
+        Assert.IsFalse(SymbolUri.SameRoot(new Uri("untitled:Untitled-1#Module1"), new Uri("untitled:untitled-1#Module1")));
+    }
+
+    [TestMethod]
+    public void TheRootComparer_KeysTheModulesOfAProjectTogether()
+    {
+        var other = new Uri(Path.Combine(Path.GetTempPath(), "rdcore-symboluri-other"));
+        var drive = new Uri("file:///C:/Work/App");
+
+        var roots = new HashSet<Uri>(SymbolUri.RootComparer)
+        {
+            SymbolUri.Module(Root, "GameBoard"), SymbolUri.Module(Root, "Ship"), Root, SymbolUri.Module(other, "GameBoard"),
+            SymbolUri.Module(drive, "GameBoard"), SymbolUri.Module(new Uri("file:///c:/Work/App"), "GameBoard"),
+        };
+
+        Assert.HasCount(OperatingSystem.IsWindows() ? 3 : 4, roots);
+        Assert.IsTrue(roots.Contains(SymbolUri.Member(SymbolUri.Module(other, "Ship"), "Sink")));
+    }
+
+    [TestMethod]
+    public void TheRootOfARelativeUri_IsRefusedSaying()
+    {
+        var relative = new Uri("Module1#Modèle", UriKind.Relative);
+
+        StringAssert.Contains(Assert.Throws<ArgumentException>(() => SymbolUri.ProjectRootOf(relative)).Message, "Module1#Modèle");
+        Assert.Throws<ArgumentException>(() => SymbolUri.SameRoot(relative, Root));
+    }
 }
