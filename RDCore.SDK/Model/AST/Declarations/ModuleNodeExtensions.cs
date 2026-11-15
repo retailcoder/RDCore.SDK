@@ -38,7 +38,7 @@ public static class ModuleNodeExtensions
 
     /// <summary>
     /// The <see cref="ModuleDirectives"/> a module declares, read from its <c>Option</c> directives and its <c>Attribute VB_PredeclaredId</c>,
-    /// <c>VB_Creatable</c> and <c>VB_Extensible</c> declarations.
+    /// <c>VB_Creatable</c>, <c>VB_Exposed</c> and <c>VB_Extensible</c> declarations.
     /// </summary>
     /// <param name="module">The module, or <c>null</c> for a module that did not parse.</param>
     /// <returns>
@@ -59,7 +59,8 @@ public static class ModuleNodeExtensions
             PrivateModule: module.HasOptionPrivateModule(),
             PredeclaredId: module.IsPredeclared(),
             Creatable: module.IsCreatable(),
-            Extensible: module.IsExtensible());
+            Extensible: module.IsExtensible(),
+            Exposed: module.IsExposed());
 
     /// <summary>
     /// Whether the module declares <c>Option Private Module</c> (<strong>MS-VBAL §5.2.1.4</strong>).
@@ -152,6 +153,24 @@ public static class ModuleNodeExtensions
         }
 
         return true;
+    }
+
+    /// <summary>
+    /// Whether a class module is accessible within the projects that reference its project, per its <c>Attribute VB_Exposed</c> directive
+    /// (<strong>MS-VBAL §5.2.4.1.1</strong>). Defaults to <c>false</c>, the <em>Private</em> instancing mode, for a module that declares no such attribute.
+    /// </summary>
+    /// <param name="module">The module.</param>
+    public static bool IsExposed(this ModuleNode module)
+    {
+        foreach (var attribute in module.Children.OfType<AttributeDirectiveNode>())
+        {
+            if (attribute.Binding is null && string.Equals(attribute.Name, Tokens.VB_Exposed, StringComparison.OrdinalIgnoreCase))
+            {
+                return string.Equals(attribute.Value.Trim(), "True", StringComparison.OrdinalIgnoreCase);
+            }
+        }
+
+        return false;
     }
 
     /// <summary>
