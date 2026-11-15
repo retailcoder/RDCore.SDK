@@ -48,7 +48,7 @@ public record class HostProjectAnalyzeResult
     public bool Composed { get; init; }
 
     /// <summary>
-    /// The number of modules the project lists, when it was composed.
+    /// The number of modules the project lists; 0 when it was not composed.
     /// </summary>
     public int ModuleCount { get; init; }
 }
