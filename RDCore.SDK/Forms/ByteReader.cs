@@ -7,6 +7,7 @@ namespace RDCore.SDK.Forms;
 /// A forward-only reader over a stream's bytes, whose every read is bounds-checked: running out of bytes is a
 /// <see cref="MSFormsFormatProblem.Truncated"/> stream.
 /// </summary>
+/// <param name="data">The bytes to read, from the first.</param>
 internal ref struct ByteReader(ReadOnlySpan<byte> data)
 {
     private readonly ReadOnlySpan<byte> _data = data;

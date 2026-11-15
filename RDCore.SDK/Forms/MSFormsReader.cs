@@ -87,6 +87,10 @@ public static class MSFormsReader
     /// <summary>
     /// A control being read: its site, its kind and class, its own properties, and its controls.
     /// </summary>
+    /// <param name="site">The control's site.</param>
+    /// <param name="kind">The control's kind, as its site's class gives it.</param>
+    /// <param name="classId">The control's CLSID, when its site's class names one.</param>
+    /// <param name="properties">The control's properties, until its data is read.</param>
     private sealed class Node(RawSite site, MSFormsControlKind kind, Guid? classId, MSFormsProperties properties)
     {
         public RawSite Site { get; } = site;

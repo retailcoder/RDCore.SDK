@@ -97,6 +97,7 @@ internal sealed class CompoundFile
     /// <summary>
     /// Opens the compound file in <paramref name="data"/>.
     /// </summary>
+    /// <param name="data">The compound file's bytes, from its signature.</param>
     /// <exception cref="MSFormsFormatException"><paramref name="data"/> is not a compound file, or a damaged one.</exception>
     public static CompoundFile Open(ReadOnlyMemory<byte> data) => new(data);
 

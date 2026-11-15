@@ -6,6 +6,13 @@ namespace RDCore.SDK.Forms;
 /// What the tab row of a <c>TabStrip</c> (or of a <c>MultiPage</c>) stores about each tab, and which of its per-tab
 /// arrays it stores ([MS-OFORMS] 2.2.9).
 /// </summary>
+/// <param name="Tabs">The tabs, in the order the row stores them.</param>
+/// <param name="CaptionsStored">Whether the row stores the tabs' captions.</param>
+/// <param name="NamesStored">Whether the row stores the tabs' names.</param>
+/// <param name="TipsStored">Whether the row stores the tabs' tip texts.</param>
+/// <param name="TagsStored">Whether the row stores the tabs' tags.</param>
+/// <param name="AcceleratorsStored">Whether the row stores the tabs' accelerators.</param>
+/// <param name="FlagCount">How many tab flags the row stores.</param>
 internal sealed record class TabRow(
     IReadOnlyList<MSFormsTab> Tabs,
     bool CaptionsStored,
@@ -19,6 +26,9 @@ internal sealed record class TabRow(
 /// A control's data in its parent's object stream (<c>o</c>), read: its kind (a generic <c>MorphDataControl</c>'s comes
 /// from its <c>DisplayStyle</c>), its properties, and a <c>TabStrip</c>'s tabs.
 /// </summary>
+/// <param name="Kind">The control's kind.</param>
+/// <param name="Properties">The control's properties.</param>
+/// <param name="TabRow">A <c>TabStrip</c>'s tab row; <c>null</c> for another control.</param>
 internal sealed record class ControlData(MSFormsControlKind Kind, MSFormsProperties Properties, TabRow? TabRow = null);
 
 /// <summary>
@@ -226,6 +236,9 @@ internal static class ControlStructures
     /// The object model properties a <c>VariousPropertyBits</c> ([MS-OFORMS] 2.5.96.1) gives a control of kind
     /// <paramref name="kind"/>.
     /// </summary>
+    /// <param name="bits">The <c>VariousPropertyBits</c> value.</param>
+    /// <param name="kind">The control's kind, which decides which of the bits are its properties.</param>
+    /// <param name="into">The properties to add the decoded ones to, by name.</param>
     public static void DecodeVariousPropertyBits(uint bits, MSFormsControlKind kind, IDictionary<string, object> into)
     {
         foreach (var (bit, width, name, isInteger, appliesTo) in VariousBits)
@@ -250,6 +263,9 @@ internal static class ControlStructures
     /// The properties of a control of kind <paramref name="kind"/> from its structure's stored values and its slots'
     /// defaults, with its <c>VariousPropertyBits</c> decoded.
     /// </summary>
+    /// <param name="block">The structure's stored values.</param>
+    /// <param name="slots">The structure's slots.</param>
+    /// <param name="kind">The control's kind.</param>
     public static (Dictionary<string, object> Stored, Dictionary<string, object> Defaults) PropertiesOf(Block block, IReadOnlyList<Slot> slots, MSFormsControlKind kind)
     {
         var stored = block.Values.Where(value => !value.Key.StartsWith('_')).ToDictionary(StringComparer.OrdinalIgnoreCase);
@@ -270,8 +286,11 @@ internal static class ControlStructures
     /// Reads a control's data in its parent's object stream ([MS-OFORMS] 2.1.2.2.1): <paramref name="piece"/>, the bytes
     /// its site gives it.
     /// </summary>
+    /// <param name="piece">The control's bytes of the object stream.</param>
     /// <param name="kind">The control's kind by its site's class; for a generic <c>MorphDataControl</c> (class cache index
     /// 15, [MS-OFORMS] 2.4.5), <paramref name="isGenericMorphData"/> says its <c>DisplayStyle</c> decides.</param>
+    /// <param name="isGenericMorphData">Whether the control is a generic <c>MorphDataControl</c>, whose kind its
+    /// <c>DisplayStyle</c> decides.</param>
     public static ControlData Read(ReadOnlySpan<byte> piece, MSFormsControlKind kind, bool isGenericMorphData)
     {
         var reader = new ByteReader(piece);

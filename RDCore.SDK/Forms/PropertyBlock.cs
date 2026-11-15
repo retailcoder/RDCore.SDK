@@ -56,6 +56,12 @@ internal enum SlotType
 /// A name that starts with an underscore is the structure's own business (a count, a raw bit field); it is not one of the
 /// control's properties.
 /// </remarks>
+/// <param name="Bit">The property's bit in the structure's mask.</param>
+/// <param name="Type">How the property is persisted.</param>
+/// <param name="Name">The property's name.</param>
+/// <param name="Default">The file format's default, when the structure does not store the property.</param>
+/// <param name="Name2">The name of a size's or a position's second value; <c>null</c> for another property.</param>
+/// <param name="AppliesTo">The kinds of control the property applies to; <c>null</c> when it applies to every kind.</param>
 internal sealed record class Slot(
     int Bit,
     SlotType Type,
@@ -72,6 +78,7 @@ internal sealed record class Slot(
 /// <summary>
 /// The values a mask-driven structure stores: its mask, and each stored property's value by name.
 /// </summary>
+/// <param name="mask">The structure's mask.</param>
 internal sealed class Block(ulong mask)
 {
     public ulong Mask { get; } = mask;
@@ -100,6 +107,9 @@ internal static class PropertyBlock
     /// a 2-byte size of what follows it up to its StreamData, a mask of <paramref name="maskSize"/> bytes, its blocks, and
     /// its StreamData.
     /// </summary>
+    /// <param name="reader">The reader, at the structure's first byte; past its StreamData once read.</param>
+    /// <param name="slots">The structure's slots.</param>
+    /// <param name="maskSize">The size of the structure's mask, in bytes: <c>4</c> or <c>8</c>.</param>
     /// <param name="majorVersion">The major version the structure must have, its minor version being <c>0</c>; <c>null</c>
     /// when its version is not checked.</param>
     public static Block Read(ref ByteReader reader, IReadOnlyList<Slot> slots, int maskSize, byte? majorVersion)
@@ -222,6 +232,8 @@ internal static class PropertyBlock
     /// The file format's default of each slot that has one and applies to <paramref name="kind"/>, as the values
     /// <see cref="Read"/> gives.
     /// </summary>
+    /// <param name="slots">The structure's slots.</param>
+    /// <param name="kind">The control's kind.</param>
     public static Dictionary<string, object> Defaults(IReadOnlyList<Slot> slots, MSFormsControlKind kind)
     {
         var result = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
@@ -264,6 +276,7 @@ internal static class PropertyBlock
     /// Reads a <c>TextProps</c> ([MS-OFORMS] 2.3.1): the font it describes, and its <c>ParagraphAlign</c> as the object
     /// model's <c>TextAlign</c> (<c>null</c> when it is not stored).
     /// </summary>
+    /// <param name="reader">The reader, at the <c>TextProps</c>' first byte; past it once read.</param>
     public static (MSFormsFont Font, int? TextAlign) ReadTextProps(ref ByteReader reader)
     {
         var block = Read(ref reader, TextPropsSlots, maskSize: 4, majorVersion: 2);
@@ -288,6 +301,7 @@ internal static class PropertyBlock
     /// The object model's <c>TextAlign</c> (<c>fmTextAlign</c>: 1 left, 2 center, 3 right) of a <c>TextProps</c>'
     /// <c>ParagraphAlign</c> (1 left, 2 right, 3 center).
     /// </summary>
+    /// <param name="paragraphAlign">The <c>ParagraphAlign</c>.</param>
     public static int TextAlignOf(int paragraphAlign) => paragraphAlign switch
     {
         2 => 3,

@@ -4,12 +4,21 @@ namespace RDCore.SDK.Forms;
 /// A site of a parent control's form stream, read ([MS-OFORMS] 2.2.10.12): what the reader needs to find the control's
 /// class and data, and what the control's <see cref="MSFormsSite"/> exposes.
 /// </summary>
+/// <param name="Name">The control's name.</param>
+/// <param name="Id">The control's ID, which names its own storage (<c>i</c> and the ID in two digits).</param>
+/// <param name="ClsidCacheIndex">The control's class: an index into the class cache, or with its high bit set, into the
+/// class table ([MS-OFORMS] 2.4.1).</param>
+/// <param name="Depth">How deep the control is nested under its parent's other sites ([MS-OFORMS] 2.2.10.7).</param>
+/// <param name="Site">The site's properties.</param>
 internal sealed record class RawSite(string Name, int Id, ushort ClsidCacheIndex, int Depth, MSFormsSite Site);
 
 /// <summary>
 /// A parent control's form stream (<c>f</c>), read: its <c>FormControl</c>'s properties, the class table, and the sites
 /// of its embedded controls ([MS-OFORMS] 2.2.10).
 /// </summary>
+/// <param name="Block">The <c>FormControl</c>'s stored values.</param>
+/// <param name="Sites">The sites, in the order the stream stores them.</param>
+/// <param name="ClassTable">The class table's CLSIDs ([MS-OFORMS] 2.2.10.10), <c>null</c> for an entry that has none.</param>
 internal sealed record class FormStream(Block Block, IReadOnlyList<RawSite> Sites, IReadOnlyList<Guid?> ClassTable)
 {
     // FormFlags ([MS-OFORMS] 2.5.6.1): FORM_FLAG_ENABLED, FORM_FLAG_DONTSAVECLASSTABLE
@@ -72,6 +81,8 @@ internal sealed record class FormStream(Block Block, IReadOnlyList<RawSite> Site
     /// <summary>
     /// Reads the content of a form stream: a <c>FormControl</c> ([MS-OFORMS] 2.2.10.1), up to its sites.
     /// </summary>
+    /// <param name="stream">The form stream's bytes.</param>
+    /// <param name="kind">The kind of the parent control the stream is the form stream of.</param>
     /// <exception cref="MSFormsFormatException">The stream is not a <c>FormControl</c> of a known version, or ends before
     /// its sites do.</exception>
     public static FormStream Read(ReadOnlySpan<byte> stream, MSFormsControlKind kind)
@@ -134,6 +145,7 @@ internal sealed record class FormStream(Block Block, IReadOnlyList<RawSite> Site
     /// The properties of the parent control of kind <paramref name="kind"/> whose <c>FormControl</c> this is, with its
     /// <c>BooleanProperties</c> and <c>ScrollBars</c> decoded ([MS-OFORMS] 2.5.6.1, 2.5.7).
     /// </summary>
+    /// <param name="kind">The parent control's kind.</param>
     public MSFormsProperties PropertiesOf(MSFormsControlKind kind)
     {
         var slots = kind == MSFormsControlKind.Form ? FormSlots : ContainerSlots;
