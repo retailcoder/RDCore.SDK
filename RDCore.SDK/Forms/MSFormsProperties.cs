@@ -14,7 +14,7 @@ namespace RDCore.SDK.Forms;
 /// <item><term><see cref="int"/></term><description>Enumerations and integers, with the Microsoft Forms object
 /// model's values (<c>SpecialEffect</c>, <c>MousePointer</c>, <c>PicturePosition</c>, <c>TextAlign</c>, <c>Style</c>,
 /// <c>Max</c>, <c>Zoom</c>), and <c>BackStyle</c>.</description></item>
-/// <item><term><see cref="uint"/></term><description>Colours, as <c>OLE_COLOR</c> values ([MS-OFORMS] 2.4.9):
+/// <item><term><see cref="uint"/></term><description>Colors, as <c>OLE_COLOR</c> values ([MS-OFORMS] 2.4.9):
 /// <c>BackColor</c>, <c>ForeColor</c>, <c>BorderColor</c>.</description></item>
 /// <item><term><see cref="bool"/></term><description>Flags, among them the <c>VariousPropertyBits</c> of a control
 /// ([MS-OFORMS] 2.5.96.1): <c>Enabled</c>, <c>Locked</c>, <c>WordWrap</c>, <c>AutoSize</c>, <c>MultiLine</c>.</description></item>
