@@ -145,10 +145,10 @@ public static class SymbolUri
     /// <remarks>
     /// <para>
     /// Two <c>file</c> roots compare as the paths of the platform do (<see cref="WorkspacePaths.Comparison"/>): on Windows, a client may write the drive or a folder of the
-    /// same root in another case (<c>file:///c:/Work</c>, <c>file:///C:/Work</c>), and the root is one folder. A root of any other scheme is the text it is.
+    /// same root in another case (<c>file:///c:/Work</c>, <c>file:///C:/Work</c>), and both name one folder. A root of any other scheme compares as it is written.
     /// </para>
     /// <para>
-    /// <see cref="Uri.Equals(object?)"/> does not tell: it ignores the fragment, so the addresses of two modules of a project are equal by it, and it compares the
+    /// <see cref="Uri.Equals(object?)"/> cannot say so: it ignores the fragment, so the addresses of two modules of a project are equal by it, and it compares the
     /// path as it is written.
     /// </para>
     /// </remarks>
