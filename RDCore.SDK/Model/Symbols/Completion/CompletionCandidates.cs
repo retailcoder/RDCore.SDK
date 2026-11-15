@@ -71,7 +71,7 @@ public sealed record class CompletionCandidate(string Label, CompletionItemKind 
 }
 
 /// <summary>
-/// Candidates a completion list ranks before the others, as a tier of their own (<see cref="CompletionCandidates.ListOf"/>).
+/// Candidates a completion list ranks as a tier of their own, before the others or after them (<see cref="CompletionCandidates.ListOf"/>).
 /// </summary>
 /// <param name="Candidates">The candidates, in the order they rank where the word matches them alike.</param>
 /// <param name="IsSelectedWhenNothingIsTyped">
@@ -79,7 +79,11 @@ public sealed record class CompletionCandidate(string Label, CompletionItemKind 
 /// are: one of them is what is most likely written there. The named arguments are not: a value is as likely as a name, and a name is selected once the
 /// word typed matches it.
 /// </param>
-public sealed record class CompletionGroup(IReadOnlyList<CompletionCandidate> Candidates, bool IsSelectedWhenNothingIsTyped = true);
+/// <param name="RanksAfterTheOthers">
+/// Whether the group ranks after every candidate that is in no group, rather than before them. The named arguments do where the argument at the cursor would
+/// be given to a parameter that is not <c>Optional</c>: a value is what is most likely written there (<see cref="CompletionCandidates.NamedArgumentGroup"/>).
+/// </param>
+public sealed record class CompletionGroup(IReadOnlyList<CompletionCandidate> Candidates, bool IsSelectedWhenNothingIsTyped = true, bool RanksAfterTheOthers = false);
 
 /// <summary>
 /// How a label matches the word being typed, which decides whether it is offered and where it ranks (<see cref="CompletionCandidates.MatchOf"/>).
@@ -313,9 +317,10 @@ public static class CompletionCandidates
     /// </summary>
     /// <remarks>
     /// <para>
-    /// A name is offered where an argument starts (<see cref="SignatureSite.IsWhereAnArgumentStarts"/>), when the parameter that argument would be given to by
-    /// position is <c>Optional</c>, or when a named argument is written before it: after one, every argument is named (<strong>MS-VBAL §5.6.13.1</strong>
-    /// <c>positional-or-named-argument-list</c>). No name is offered where a positional argument is written after the cursor, an omitted one included
+    /// A name is offered wherever an argument starts (<see cref="SignatureSite.IsWhereAnArgumentStarts"/>), the first one included, whether or not the parameter
+    /// that argument would be given to by position is <c>Optional</c>: any argument can be named (<strong>MS-VBAL §5.6.13.1</strong>
+    /// <c>positional-or-named-argument-list</c>), and after a named one, every argument is. <see cref="NamedArgumentGroup"/> says where the
+    /// names rank. No name is offered where a positional argument is written after the cursor, an omitted one included
     /// (<see cref="SignatureSite.IsFollowedByAPositionalArgument"/>): it would follow a named one.
     /// </para>
     /// <para>
@@ -344,10 +349,6 @@ public static class CompletionCandidates
         }
 
         var namedBefore = site.NamesBefore;
-        if (namedBefore.Count == 0 && (signature.ActiveParameterOf(site.ArgumentIndex) is not { } active || !signature.Parameters[active].IsOptional))
-        {
-            return [];
-        }
 
         // the rest of the word, then the `:=` that makes it a name.
         var restOfWord = RestOfWordIn(after);
@@ -360,13 +361,37 @@ public static class CompletionCandidates
     }
 
     /// <summary>
+    /// The named arguments of the call being written (<see cref="NamedArguments"/>), as the group of a completion list (<see cref="ListOf"/>), ranked where
+    /// they are most likely to be written.
+    /// </summary>
+    /// <remarks>
+    /// The names rank before the other candidates where the argument at the cursor would be given to an <c>Optional</c> parameter by position, which is often
+    /// skipped by naming the one after it, and where a named argument is written before the cursor: after one, nothing but a name can be written. Elsewhere a
+    /// value is what is most likely written, and the names rank after every other candidate (<see cref="CompletionGroup.RanksAfterTheOthers"/>). None of them
+    /// is preselected before a word is typed (<see cref="CompletionGroup.IsSelectedWhenNothingIsTyped"/>).
+    /// </remarks>
+    /// <param name="signature">The signature of what is called.</param>
+    /// <param name="site">The call being written.</param>
+    /// <param name="word">What is typed of the name at the cursor.</param>
+    /// <param name="after">The text of the logical line from the cursor on, where named arguments can be written already.</param>
+    /// <returns>The group of the named arguments; it has no candidates where a name cannot be written.</returns>
+    public static CompletionGroup NamedArgumentGroup(SignatureDescription signature, SignatureSite site, string word, string after)
+    {
+        var names = NamedArguments(signature, site, word, after);
+        var isLikely = site.NamesBefore.Count > 0
+            || signature.ActiveParameterOf(site.ArgumentIndex) is { } active && signature.Parameters[active].IsOptional;
+        return new CompletionGroup(names, IsSelectedWhenNothingIsTyped: false, RanksAfterTheOthers: !isLikely);
+    }
+
+    /// <summary>
     /// The completion list for the word being typed (<strong>LSP 3.17</strong> §Completion Request): the candidates <paramref name="word"/> matches
     /// (<see cref="MatchOf"/>), each label once, the best of them preselected.
     /// </summary>
     /// <remarks>
     /// <para>
     /// The groups of <paramref name="first"/> are tiers of their own, in their order, before every other candidate: <c>Paint DR</c> ranks and preselects the
-    /// constant <c>DeepRed</c>, whose humps the word matches, before a function <c>Drum</c> the word starts. In each tier the labels the word starts rank
+    /// constant <c>DeepRed</c>, whose humps the word matches, before a function <c>Drum</c> the word starts. A group that ranks after the others
+    /// (<see cref="CompletionGroup.RanksAfterTheOthers"/>) is a tier after every other candidate instead, in the same order. In each tier the labels the word starts rank
     /// before the ones whose humps it matches; then the candidates of a group keep their order, and the others rank by
     /// <see cref="CompletionCandidate.Rank"/>, then by label in any case. The item that ranks first is the one <c>preselect</c> marks, unless nothing is typed
     /// and its group is not selected then (<see cref="CompletionGroup.IsSelectedWhenNothingIsTyped"/>): the first item that can be is marked instead.
@@ -382,8 +407,8 @@ public static class CompletionCandidates
     /// </remarks>
     /// <param name="word">What is typed of the name; an empty word matches every candidate.</param>
     /// <param name="first">
-    /// The groups of candidates most likely to be written, in the order they rank: the constants of the <c>Enum</c> an argument's parameter is declared as,
-    /// then the named arguments (<see cref="NamedArguments"/>).
+    /// The groups of candidates ranked apart from the others, in the order they rank: the constants of the <c>Enum</c> an argument's parameter is declared as,
+    /// then the named arguments (<see cref="NamedArgumentGroup"/>).
     /// </param>
     /// <param name="candidates">The other candidates; a label of <paramref name="first"/> is not offered again.</param>
     /// <param name="cursor">
@@ -414,8 +439,10 @@ public static class CompletionCandidates
             {
                 if (MatchOf(candidate.Label, word) is var match and not CompletionMatch.None && offered.Add(candidate.Label))
                 {
-                    // a `!` sorts before the digit every other item's sort text starts with; the index is as wide as a group of every name in scope.
-                    items.Add((Placed(candidate.ToCompletionItem(match), candidate, word, cursor, after) with { SortText = $"!{rank}{CompletionCandidate.TierOf(match)}{index:D6}" },
+                    // a `!` sorts before the digit every other item's sort text starts with, and a `~` after it; the index is as wide as a group of every name
+                    // in scope.
+                    var tier = group.RanksAfterTheOthers ? '~' : '!';
+                    items.Add((Placed(candidate.ToCompletionItem(match), candidate, word, cursor, after) with { SortText = $"{tier}{rank}{CompletionCandidate.TierOf(match)}{index:D6}" },
                         isSelectable));
                 }
             }

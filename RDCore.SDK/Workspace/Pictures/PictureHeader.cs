@@ -56,7 +56,10 @@ public enum PictureFormat
 /// What a picture's header says about it: its format and its size in pixels.
 /// </summary>
 /// <param name="Format">The picture's file format.</param>
-/// <param name="Width">The picture's width in pixels, or 0 for a metafile, which has no size in pixels.</param>
+/// <param name="Width">
+/// The picture's width in pixels, or 0 for a metafile, which has no size in pixels. A GIF's size is its first frame's, not its logical screen's, as
+/// <c>LoadPicture</c> reads it; a GIF whose bytes end before a frame has its screen's.
+/// </param>
 /// <param name="Height">The picture's height in pixels, or 0 for a metafile.</param>
 public readonly record struct PictureInfo(PictureFormat Format, int Width, int Height)
 {
@@ -253,7 +256,7 @@ public static class PictureHeader
 
         if (b.StartsWith("GIF87a"u8) || b.StartsWith("GIF89a"u8))
         {
-            return b.Length < 10 ? null : new PictureInfo(PictureFormat.Gif, U16(b, 6), U16(b, 8));
+            return Gif(b);
         }
 
         if (b.StartsWith((ReadOnlySpan<byte>)[0xFF, 0xD8]))
@@ -280,6 +283,33 @@ public static class PictureHeader
         }
 
         return null;
+    }
+
+    // a GIF's size is its first frame's: the image descriptor after the screen descriptor, the global table and any extensions, whose size is at 5 and 7.
+    // Where the bytes end before a frame, it is the screen's, at 6 and 8.
+    private static PictureInfo? Gif(ReadOnlySpan<byte> b)
+    {
+        if (b.Length < 10)
+        {
+            return null;
+        }
+
+        var at = 13 + (b.Length > 10 && (b[10] & 0x80) != 0 ? 3 * (2 << (b[10] & 7)) : 0);
+        while (at + 1 < b.Length && b[at] == 0x21)
+        {
+            // an extension: its introducer and its label, then sub-blocks, each a length and that many bytes, until a length of 0.
+            at += 2;
+            while (at < b.Length && b[at] != 0)
+            {
+                at += 1 + b[at];
+            }
+
+            at++;
+        }
+
+        return at + 9 <= b.Length && b[at] == 0x2C
+            ? new PictureInfo(PictureFormat.Gif, U16(b, at + 5), U16(b, at + 7))
+            : new PictureInfo(PictureFormat.Gif, U16(b, 6), U16(b, 8));
     }
 
     // a bitmap file header (14 bytes), then a DIB header.
@@ -391,6 +421,42 @@ public static class PictureHeader
         var width = BinaryPrimitives.ReadInt32BigEndian(b[16..]);
         var height = BinaryPrimitives.ReadInt32BigEndian(b[20..]);
         return width > 0 && height > 0 ? new PictureInfo(PictureFormat.Png, width, height) : null;
+    }
+
+    // whether a JPEG's bytes end before the header of its first scan does: a segment that runs past the end, or no start of scan at all. A walk that meets
+    // anything but a marker, or an end of image, stops there: that is not a JPEG cut short.
+    internal static bool JpegEndsBeforeScan(ReadOnlySpan<byte> b)
+    {
+        var at = 2;
+        while (at + 4 <= b.Length)
+        {
+            if (b[at] != 0xFF)
+            {
+                return false;
+            }
+
+            var code = b[at + 1];
+            if (code is 0xFF or >= 0xD0 and <= 0xD7 or 0x01)
+            {
+                at += code == 0xFF ? 1 : 2;
+                continue;
+            }
+
+            if (code == 0xD9)
+            {
+                return false;
+            }
+
+            var end = at + 2 + BinaryPrimitives.ReadUInt16BigEndian(b[(at + 2)..]);
+            if (code == 0xDA || end > b.Length)
+            {
+                return end > b.Length;
+            }
+
+            at = Math.Max(end, at + 4);
+        }
+
+        return true;
     }
 
     // markers from the start of image: each one 0xFF and a code, with a big-endian length that counts itself, until a start of frame, whose header holds the

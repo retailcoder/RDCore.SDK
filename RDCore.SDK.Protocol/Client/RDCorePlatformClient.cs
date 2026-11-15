@@ -1,3 +1,4 @@
+using RDCore.SDK.Assistant;
 using RDCore.SDK.Platform.Protocol;
 
 namespace RDCore.SDK.Client;
@@ -181,6 +182,24 @@ public sealed class RDCorePlatformClient(IRDCorePlatformChannel channel)
     /// </returns>
     public Task<RefactorIdentifierCheckResult> RefactorCheckIdentifierAsync(RefactorIdentifierCheckParams request, CancellationToken token)
         => Send<RefactorIdentifierCheckParams, RefactorIdentifierCheckResult>(RDCorePlatformProtocol.RefactorCheckIdentifier, request, token);
+
+    /// <summary>
+    /// Lists the tools the language server serves an assistant (<see cref="RDCorePlatformProtocol.ToolsList"/>), in the language of the client's user
+    /// interface.
+    /// </summary>
+    /// <param name="token">Cancels the request.</param>
+    /// <returns>Each tool.</returns>
+    public Task<ToolsListResult> ListToolsAsync(CancellationToken token)
+        => Send<ToolsListParams, ToolsListResult>(RDCorePlatformProtocol.ToolsList, new ToolsListParams(), token);
+
+    /// <summary>
+    /// Calls a tool the language server serves an assistant (<see cref="RDCorePlatformProtocol.ToolsCall"/>).
+    /// </summary>
+    /// <param name="request">The tool, and its arguments.</param>
+    /// <param name="token">Cancels the call.</param>
+    /// <returns>What the tool answers; a refusal is a result whose <see cref="ToolCallResult.IsError"/> is <see langword="true"/>.</returns>
+    public Task<ToolCallResult> CallToolAsync(ToolCallParams request, CancellationToken token)
+        => Send<ToolCallParams, ToolCallResult>(RDCorePlatformProtocol.ToolsCall, request, token);
 
     /// <summary>
     /// Shows the program's <c>MsgBox</c> calls (<see cref="RDCorePlatformProtocol.SessionMessageBox"/>), for a client that expects <see cref="SessionInteraction"/>.

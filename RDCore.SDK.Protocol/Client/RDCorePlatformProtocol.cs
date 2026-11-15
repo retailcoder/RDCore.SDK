@@ -150,4 +150,27 @@ public static class RDCorePlatformProtocol
     /// where the refactoring declares it, and what it would hide.
     /// </summary>
     public const string RefactorCheckIdentifier = "rdcore/refactor/checkIdentifier";
+
+    /// <summary>
+    /// Asks the language server for the tools it serves an assistant: sent by a client that expects the <c>AssistantTools</c> capability. See
+    /// <see cref="Assistant.ToolsListParams"/>.
+    /// </summary>
+    public const string ToolsList = "rdcore/tools/list";
+
+    /// <summary>
+    /// Asks the language server to call one of the tools it serves an assistant. See <see cref="Assistant.ToolCallParams"/>.
+    /// </summary>
+    public const string ToolsCall = "rdcore/tools/call";
+
+    /// <summary>
+    /// Asks the language server what the name or expression written at a position of a document is: the symbol it binds to, and the facts of the
+    /// expression. See <see cref="Platform.Protocol.SemanticsDescribeParams"/>.
+    /// </summary>
+    public const string SemanticsDescribe = "rdcore/semantics/describe";
+
+    /// <summary>
+    /// Asks the language server for the outline of a document's module: its declarations and their members, in the order they are written. See
+    /// <see cref="Platform.Protocol.SemanticsOutlineParams"/>.
+    /// </summary>
+    public const string SemanticsOutline = "rdcore/semantics/outline";
 }

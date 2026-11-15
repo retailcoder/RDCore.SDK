@@ -608,15 +608,10 @@ public sealed class FormattingTabSizeTests
         await using var client = new RawClient(new JObject { ["workspace"] = new JObject { ["configuration"] = false, ["didChangeConfiguration"] = new JObject() } });
         await client.StartAsync();
 
-        await client.SendAsync(new JObject
-        {
-            ["jsonrpc"] = "2.0",
-            ["method"] = "workspace/didChangeConfiguration",
-            ["params"] = new JObject { ["settings"] = new JObject { [LiveSettingsProtocol.Section] = new JObject { ["Formatting"] = new JObject { ["IndentSpaces"] = "5" } } } },
-        });
+        await client.PushSettingsAsync(new JObject { [LiveSettingsProtocol.Section] = new JObject { ["Formatting"] = new JObject { ["IndentSpaces"] = "5" } } });
 
         // OmniSharp asks for its section as it starts any client that declares didChangeConfiguration, and what that is answered with is followed too: each
-        // change followed is waited for, until the one the client pushed.
+        // change followed is waited for, until the one the client pushed. The client answers what it pushed, so whichever answer is followed last says the same.
         while (client.Options.Formatting.IndentSpaces != 5)
         {
             Assert.IsTrue(await client.FollowedAsync(), "the settings it pushes are followed, as it says them");
@@ -626,7 +621,7 @@ public sealed class FormattingTabSizeTests
     }
 
     // a client that is not OmniSharp's: it says the capabilities it is given, as they are - OmniSharp's own fills in what the handlers it has can answer - and
-    // answers workspace/configuration with nothing, saying which sections it was asked for.
+    // answers workspace/configuration with the settings it pushed last (nothing before it pushes any), saying which sections it was asked for.
     private sealed class RawClient(JObject capabilities) : IAsyncDisposable
     {
         private readonly Pipe _toServer = new();
@@ -635,6 +630,7 @@ public sealed class FormattingTabSizeTests
         private readonly TaskCompletionSource _initialized = new(TaskCreationOptions.RunContinuationsAsynchronously);
         private readonly CancellationTokenSource _lifetime = new(TimeSpan.FromMinutes(1));
         private readonly List<string> _asked = [];
+        private JObject? _settings;
         private OmniSharpLanguageServer? _server;
         private ClientConfigurationFollower? _follower;
         private Task? _reading;
@@ -685,6 +681,22 @@ public sealed class FormattingTabSizeTests
 
         public Task<bool> FollowedAsync() => _followed.WaitAsync(TimeSpan.FromSeconds(20));
 
+        // the settings the client says it has, by section: what it pushes, and what it answers workspace/configuration with from then on, as a client does.
+        public async Task PushSettingsAsync(JObject settings)
+        {
+            lock (_asked)
+            {
+                _settings = settings;
+            }
+
+            await SendAsync(new JObject
+            {
+                ["jsonrpc"] = "2.0",
+                ["method"] = "workspace/didChangeConfiguration",
+                ["params"] = new JObject { ["settings"] = settings },
+            });
+        }
+
         public async Task SendAsync(JObject message)
         {
             var body = Encoding.UTF8.GetBytes(message.ToString(Newtonsoft.Json.Formatting.None));
@@ -703,12 +715,15 @@ public sealed class FormattingTabSizeTests
                 }
                 else if (message["method"]?.Value<string>() == "workspace/configuration" && message["params"]?["items"] is JArray items)
                 {
+                    JArray result;
                     lock (_asked)
                     {
-                        _asked.AddRange(items.Select(item => item["section"]?.Value<string>() ?? string.Empty));
+                        var sections = items.Select(item => item["section"]?.Value<string>() ?? string.Empty).ToList();
+                        _asked.AddRange(sections);
+                        result = new JArray(sections.Select(section => _settings?[section]?.DeepClone() ?? JValue.CreateNull()));
                     }
 
-                    await SendAsync(new JObject { ["jsonrpc"] = "2.0", ["id"] = message["id"], ["result"] = new JArray(items.Select(_ => JValue.CreateNull())) });
+                    await SendAsync(new JObject { ["jsonrpc"] = "2.0", ["id"] = message["id"], ["result"] = result });
                 }
             }
         }

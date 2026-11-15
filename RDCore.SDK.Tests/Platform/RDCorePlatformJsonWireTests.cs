@@ -52,6 +52,7 @@ public sealed class RDCorePlatformJsonWireTests
             Outcome = ExecutionOutcome.Suspended,
             FormsShown = true,
             Output = ["1"],
+            DurationMilliseconds = 42,
             StreamedLines = 7,
             Diagnostics = ["RDC00001"],
             ErrorNumber = 13,
@@ -126,7 +127,7 @@ public sealed class RDCorePlatformJsonWireTests
             Expected = new CorePlatformClientCapabilities
             {
                 Parsing = new ParserCapabilities { ParseFullDocument = new ParseFullDocument(true) },
-                EnvironmentHost = new EnvironmentHostCapabilities { DefineSymbols = new DefineSymbols(true) },
+                EnvironmentHost = new EnvironmentHostCapabilities { DefineSymbols = new DefineSymbols(true), ProjectAnalysis = new ProjectAnalysis(true) },
                 LanguageServer = new LanguageServerCapabilities
                 {
                     SessionExecute = new SessionExecute(true), SessionInteraction = new SessionInteraction(true), SessionStops = new SessionStops(true),
@@ -231,6 +232,19 @@ public sealed class RDCorePlatformJsonWireTests
             Notices = [new RefactorNotice { Code = "extractMethod.shadows", Kind = RefactorNoticeKind.Note, Message = "m", Related = new SourceLocation(Module, Range), Choice = "name", Item = "total" }],
         });
         yield return Same(new Refactoring(true));
+        yield return (new SemanticsDescribeParams { Uri = Module, Position = new SourcePosition(1, 2) }, new SemanticsDescribeRequest { Uri = Module, Position = new SourcePosition(1, 2) });
+        yield return (new SemanticsOutlineParams { Uri = Module }, new SemanticsOutlineRequest { Uri = Module });
+        yield return Same(new FakesTable(
+        [
+            new FakeRow(
+                "VBA.Interaction.MsgBox",
+                [new FakeArgumentMatcher(0, FakeMatch.Like, new RunValue("String", "Save*")), new FakeArgumentMatcher(1, FakeMatch.Range, new RunValue("Long", "0"), new RunValue("Long", "4"))],
+                new FakeInvocation(FakeInvocationKind.Nth, 2),
+                new FakeAction(FakeActionKind.Return, new RunValue("Long", "6"), Assignments: [new FakeAssignment(3, new RunValue("Date", "2026-11-15T00:00:00"))])),
+            new FakeRow("VBA.Interaction.Shell", [], FakeInvocation.Every, new FakeAction(FakeActionKind.Raise, ErrorNumber: 53, ErrorDescription: "File not found")),
+        ]));
+        yield return Same(new FakesTableDelta(true, [new FakeRow("VBA.DateTime.Now", [new FakeArgumentMatcher(0, FakeMatch.Any)], FakeInvocation.Every, new FakeAction(FakeActionKind.PassThrough))], ["VBA.Interaction.MsgBox"]));
+        yield return Same(new FakeInvocationRecord("VBA.Interaction.MsgBox", 2, [new RunValue("String", "Save?"), new RunValue("Empty", null)], "Module1", "Main", 3, 4, true));
     }
 
     /// <summary>
@@ -242,8 +256,8 @@ public sealed class RDCorePlatformJsonWireTests
         ("SessionStatusParams", """{"waitMilliseconds":250}"""),
         ("SessionStatusResult", """{"isComposed":true,"projectName":"VBAProject","moduleCount":3,"referenceCount":2,"formsLoaded":1,"memory":{"reservedBytes":1,"availableBytes":2,"allocatedBytes":3,"freeBytes":4,"committedBytes":5,"largestFreeBlock":6}}"""),
         ("SessionExecuteParams", """{"source":"Debug.Print 1","moduleName":"Module1","entryPoint":"Main","debug":true,"immediate":true,"sessionModule":true}"""),
-        ("ExecuteResult", """{"outcome":7,"formsShown":true,"output":["1"],"streamedLines":7,"diagnostics":["RDC00001"],"errorNumber":13,"errorMessage":"Type mismatch","errorCode":"VBR00013","errorTitle":"Type mismatch","errorSource":"VBAProject","errorLine":3,"errorCharacter":4,"errorModule":"Module1","errorLineNumber":100,"conditionError":"x","stackTrace":[{"procedure":"Main","line":1,"character":2,"returnLines":[5,6],"module":"Module1"}],"errorDetails":null}"""),
-        ("ExecuteResult", """{"outcome":3,"formsShown":false,"output":[],"streamedLines":0,"diagnostics":[],"errorNumber":6,"errorMessage":"","errorCode":"","errorTitle":"","errorSource":"","errorLine":-1,"errorCharacter":-1,"errorModule":"","errorLineNumber":0,"conditionError":"","stackTrace":[],"errorDetails":{"message":"Overflow","expression":{"kind":"Binary","semanticId":"Module1.Main.x","location":{"uri":"file:///c:/workspace/Module1.bas","range":{"start":{"line":1,"character":2},"end":{"line":3,"character":4},"isEmpty":false}}},"frames":[{"nodeId":"node-1","inputs":[{"typeName":"Long","value":"40000"},{"typeName":"Variant","value":null}],"coercion":{"source":{"typeName":"Long","value":"40000"},"destinationTypeName":"Integer"}}],"framesTruncated":true}}"""),
+        ("ExecuteResult", """{"outcome":7,"formsShown":true,"output":["1"],"durationMilliseconds":42,"streamedLines":7,"diagnostics":["RDC00001"],"errorNumber":13,"errorMessage":"Type mismatch","errorCode":"VBR00013","errorTitle":"Type mismatch","errorSource":"VBAProject","errorLine":3,"errorCharacter":4,"errorModule":"Module1","errorLineNumber":100,"conditionError":"x","stackTrace":[{"procedure":"Main","line":1,"character":2,"returnLines":[5,6],"module":"Module1"}],"errorDetails":null}"""),
+        ("ExecuteResult", """{"outcome":3,"formsShown":false,"output":[],"durationMilliseconds":0,"streamedLines":0,"diagnostics":[],"errorNumber":6,"errorMessage":"","errorCode":"","errorTitle":"","errorSource":"","errorLine":-1,"errorCharacter":-1,"errorModule":"","errorLineNumber":0,"conditionError":"","stackTrace":[],"errorDetails":{"message":"Overflow","expression":{"kind":"Binary","semanticId":"Module1.Main.x","location":{"uri":"file:///c:/workspace/Module1.bas","range":{"start":{"line":1,"character":2},"end":{"line":3,"character":4},"isEmpty":false}}},"frames":[{"nodeId":"node-1","inputs":[{"typeName":"Long","value":"40000"},{"typeName":"Variant","value":null}],"coercion":{"source":{"typeName":"Long","value":"40000"},"destinationTypeName":"Integer"}}],"framesTruncated":true}}"""),
         ("SessionDiscardParams", """{"moduleName":"Module1","endProgram":true}"""),
         ("DiscardResult", """{"discarded":2}"""),
         ("SessionPeekParams", """{"address":16}"""),
@@ -267,7 +281,7 @@ public sealed class RDCorePlatformJsonWireTests
         ("SessionDebugVariablesParams", """{"frameId":1,"scope":1,"reference":9}"""),
         ("SessionDebugEvaluateParams", """{"frameId":1,"expression":"i + 1"}"""),
         ("SessionDebugExecuteParams", """{"frameId":1,"statement":"i = 2"}"""),
-        ("SessionDebugStoppedParams", """{"stop":{"outcome":7,"formsShown":false,"output":["clicked"],"streamedLines":0,"diagnostics":[],"errorNumber":0,"errorMessage":"","errorCode":"","errorTitle":"","errorSource":"","errorLine":-1,"errorCharacter":-1,"errorModule":"","errorLineNumber":0,"conditionError":"","stackTrace":[{"procedure":"Command1_Click","line":4,"character":4,"returnLines":[],"module":"Form1"}],"errorDetails":null}}"""),
+        ("SessionDebugStoppedParams", """{"stop":{"outcome":7,"formsShown":false,"output":["clicked"],"durationMilliseconds":0,"streamedLines":0,"diagnostics":[],"errorNumber":0,"errorMessage":"","errorCode":"","errorTitle":"","errorSource":"","errorLine":-1,"errorCharacter":-1,"errorModule":"","errorLineNumber":0,"conditionError":"","stackTrace":[{"procedure":"Command1_Click","line":4,"character":4,"returnLines":[],"module":"Form1"}],"errorDetails":null}}"""),
         ("DebugAck", """{"acted":true,"stopping":false}"""),
         ("DebugGotoResult", """{"moved":true,"reason":"moved","line":4,"character":0}"""),
         ("DebugGotoResult", """{"moved":false,"reason":null,"line":-1,"character":-1}"""),
@@ -276,8 +290,8 @@ public sealed class RDCorePlatformJsonWireTests
         ("DebugStackResult", """{"frames":[{"id":1,"procedure":"Main","module":"Module1","line":2,"character":3,"handler":"ErrHandler","returnLines":[4],"beginsAnEvent":true},{"id":2,"procedure":"Other","module":"Module1","line":5,"character":6,"handler":null,"returnLines":[],"beginsAnEvent":false}]}"""),
         ("DebugVariablesResult", """{"variables":[{"name":"i","value":"1","type":"Integer","reference":0},{"name":"o","value":"Object","type":"Class1","reference":3}],"notListed":2}"""),
         ("DebugEvaluateResult", """{"success":true,"value":"2","type":"Integer","reference":1,"error":"none","output":["x"],"endedTheProgram":true}"""),
-        ("PlatformInitializeParams", """{"expectedComponent":1,"expected":{"parsing":{"parseFullDocument":{"isSupported":true},"parseTokens":{"isSupported":false}},"environmentHost":{"defineSymbols":{"isSupported":true},"sessionStatus":{"isSupported":false},"sessionExecute":{"isSupported":false},"sessionDiscard":{"isSupported":false},"projectReload":{"isSupported":false},"programDebugging":{"isSupported":false},"semanticAnalysis":{"isSupported":false},"sessionMemoryAccess":{"isSupported":false}},"languageServer":{"sessionStatus":{"isSupported":false},"sessionExecute":{"isSupported":true},"programDebugging":{"isSupported":false},"sessionDiscard":{"isSupported":false},"sessionAnalyze":{"isSupported":false},"sessionCompletion":{"isSupported":false},"sessionSignatureHelp":{"isSupported":false},"sessionSemanticTokens":{"isSupported":false},"sessionMemoryAccess":{"isSupported":false},"sessionInteraction":{"isSupported":true},"sessionStops":{"isSupported":true},"unattended":{"isSupported":true},"rubberduckIndenterSettings":{"isSupported":false},"listSettingValue":{"isSupported":false},"refactoring":{"isSupported":false}}}}"""),
-        ("PlatformInitializeParams", """{"expectedComponent":1,"expected":{"languageServer":{"sessionStatus":{"isSupported":false},"sessionExecute":{"isSupported":false},"programDebugging":{"isSupported":false},"sessionDiscard":{"isSupported":false},"sessionAnalyze":{"isSupported":false},"sessionCompletion":{"isSupported":false},"sessionSignatureHelp":{"isSupported":false},"sessionSemanticTokens":{"isSupported":false},"sessionMemoryAccess":{"isSupported":false},"sessionInteraction":{"isSupported":false},"sessionStops":{"isSupported":false},"unattended":{"isSupported":false},"rubberduckIndenterSettings":{"isSupported":false},"listSettingValue":{"isSupported":false},"refactoring":{"isSupported":false}}}}"""),
+        ("PlatformInitializeParams", """{"expectedComponent":1,"expected":{"parsing":{"parseFullDocument":{"isSupported":true},"parseTokens":{"isSupported":false}},"environmentHost":{"defineSymbols":{"isSupported":true},"sessionStatus":{"isSupported":false},"sessionExecute":{"isSupported":false},"sessionDiscard":{"isSupported":false},"projectReload":{"isSupported":false},"projectAnalysis":{"isSupported":true},"programDebugging":{"isSupported":false},"semanticAnalysis":{"isSupported":false},"sessionMemoryAccess":{"isSupported":false}},"languageServer":{"sessionStatus":{"isSupported":false},"sessionExecute":{"isSupported":true},"programDebugging":{"isSupported":false},"sessionDiscard":{"isSupported":false},"sessionAnalyze":{"isSupported":false},"sessionCompletion":{"isSupported":false},"sessionSignatureHelp":{"isSupported":false},"sessionSemanticTokens":{"isSupported":false},"sessionMemoryAccess":{"isSupported":false},"sessionInteraction":{"isSupported":true},"sessionStops":{"isSupported":true},"unattended":{"isSupported":true},"rubberduckIndenterSettings":{"isSupported":false},"listSettingValue":{"isSupported":false},"refactoring":{"isSupported":false},"assistantTools":{"isSupported":false}}}}"""),
+        ("PlatformInitializeParams", """{"expectedComponent":1,"expected":{"languageServer":{"sessionStatus":{"isSupported":false},"sessionExecute":{"isSupported":false},"programDebugging":{"isSupported":false},"sessionDiscard":{"isSupported":false},"sessionAnalyze":{"isSupported":false},"sessionCompletion":{"isSupported":false},"sessionSignatureHelp":{"isSupported":false},"sessionSemanticTokens":{"isSupported":false},"sessionMemoryAccess":{"isSupported":false},"sessionInteraction":{"isSupported":false},"sessionStops":{"isSupported":false},"unattended":{"isSupported":false},"rubberduckIndenterSettings":{"isSupported":false},"listSettingValue":{"isSupported":false},"refactoring":{"isSupported":false},"assistantTools":{"isSupported":false}}}}"""),
         ("PlatformInitializeResult", """{"component":1,"provided":["SessionExecute","SessionStatus"]}"""),
         ("DiagnoseDocument", """{"isSupported":true}"""),
         ("CliCommand", """{"isSupported":true}"""),
@@ -297,6 +311,11 @@ public sealed class RDCorePlatformJsonWireTests
         ("RefactorIdentifierCheckParams", """{"kind":"refactor.extract.method","uri":"file:///c:/workspace/Module1.bas","range":{"start":{"line":1,"character":2},"end":{"line":3,"character":4},"isEmpty":false},"answers":[{"id":"parameters","value":null,"items":[{"id":"total","answers":[{"id":"name","value":"Sum","items":[]}]}]}]}"""),
         ("RefactorIdentifierCheckResult", """{"notices":[{"code":"extractMethod.shadows","kind":2,"message":"m","location":null,"related":{"uri":"file:///c:/workspace/Module1.bas","range":{"start":{"line":1,"character":2},"end":{"line":3,"character":4},"isEmpty":false}},"choice":"name","item":"total"}]}"""),
         ("Refactoring", """{"isSupported":true}"""),
+        ("SemanticsDescribeParams", """{"uri":"file:///c:/workspace/Module1.bas","position":{"line":1,"character":2}}"""),
+        ("SemanticsOutlineParams", """{"uri":"file:///c:/workspace/Module1.bas"}"""),
+        ("FakesTable", """{"rows":[{"target":"VBA.Interaction.MsgBox","arguments":[{"index":0,"match":2,"value":{"typeName":"String","value":"Save*"},"upper":null},{"index":1,"match":3,"value":{"typeName":"Long","value":"0"},"upper":{"typeName":"Long","value":"4"}}],"when":{"kind":1,"n":2},"action":{"kind":0,"value":{"typeName":"Long","value":"6"},"errorNumber":0,"errorDescription":null,"assignments":[{"index":3,"value":{"typeName":"Date","value":"2026-11-15T00:00:00"}}]}},{"target":"VBA.Interaction.Shell","arguments":[],"when":{"kind":0,"n":0},"action":{"kind":1,"value":null,"errorNumber":53,"errorDescription":"File not found","assignments":[]}}]}"""),
+        ("FakesTableDelta", """{"reset":true,"add":[{"target":"VBA.DateTime.Now","arguments":[{"index":0,"match":0,"value":null,"upper":null}],"when":{"kind":0,"n":0},"action":{"kind":2,"value":null,"errorNumber":0,"errorDescription":null,"assignments":[]}}],"remove":["VBA.Interaction.MsgBox"]}"""),
+        ("FakeInvocationRecord", """{"target":"VBA.Interaction.MsgBox","ordinal":2,"arguments":[{"typeName":"String","value":"Save?"},{"typeName":"Empty","value":null}],"module":"Module1","procedure":"Main","line":3,"character":4,"answered":true}"""),
     ];
 
     private static IEnumerable<OmniSharpSerializer> PlatformSerializers() => [new LspSerializer(), new PullDiagnosticsLspSerializer()];
@@ -401,6 +420,10 @@ public sealed class RDCorePlatformJsonWireTests
         ("RefactorPrepare", "rdcore/refactor/prepare"),
         ("RefactorApply", "rdcore/refactor/apply"),
         ("RefactorCheckIdentifier", "rdcore/refactor/checkIdentifier"),
+        ("ToolsList", "rdcore/tools/list"),
+        ("ToolsCall", "rdcore/tools/call"),
+        ("SemanticsDescribe", "rdcore/semantics/describe"),
+        ("SemanticsOutline", "rdcore/semantics/outline"),
     ];
 
     [TestMethod]
@@ -436,10 +459,12 @@ public sealed class RDCorePlatformJsonWireTests
         ];
         // the project file model is a workspace's .rdproj, which a client reads from disk: it is no message either.
         var projectFileModel = typeof(ProjectFile).Namespace;
+        // the rdcore/tools/* messages hold JSON, and the tools' arguments and results travel inside it: AssistantToolsWireTests has them all.
+        var assistantTools = typeof(RDCore.SDK.Assistant.ToolDescriptor).Namespace;
 
         var unreached = typeof(RDCorePlatformJson).Assembly.GetExportedTypes()
             .Where(type => !type.IsAbstract && !type.IsEnum && !type.IsInterface && !typeof(Exception).IsAssignableFrom(type) && !notMessages.Contains(type) && !reached.Contains(type))
-            .Where(type => type.Namespace != projectFileModel)
+            .Where(type => type.Namespace != projectFileModel && type.Namespace != assistantTools)
             .Select(type => type.FullName)
             .ToList();
 
