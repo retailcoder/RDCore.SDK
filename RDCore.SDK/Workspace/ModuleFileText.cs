@@ -63,8 +63,9 @@ public sealed partial class ModuleFileText
     public bool HasByteOrderMark => _preamble.Length > 0;
 
     /// <summary>
-    /// <see langword="true"/> when every byte of the file decodes in its encoding. A file that is not (a byte order mark followed by bytes that are not valid in
-    /// its encoding) is read with a replacement character for each such byte, and is not edited (<see cref="Edit"/>).
+    /// <see langword="true"/> when every byte of the file decodes in its encoding. A file that is not (bytes not valid in the encoding its byte order mark
+    /// names, or a byte the ANSI code page has no character for) is read with a replacement character for each such byte, and is not edited
+    /// (<see cref="Edit"/>).
     /// </summary>
     public bool IsLossless { get; }
 

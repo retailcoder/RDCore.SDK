@@ -62,7 +62,7 @@
     <value>The locale identifier of the environment; 0 is the invariant locale.</value>
   </data>
   <data name="Environment_AnsiCodePage" xml:space="preserve">
-    <value>The ANSI code page a String is converted to and from bytes with, that Chr and Asc use, and that a module file without a byte order mark that isn't UTF-8 is read and written in.</value>
+    <value>The ANSI code page a String is converted to and from bytes with, that Chr and Asc use, and that a module file without a byte order mark that is not UTF-8 is read and written in.</value>
   </data>
   <data name="Environment_SupportsOptionCompareDatabase" xml:space="preserve">
     <value>Whether the Option Compare Database directive is allowed, as Microsoft Access allows it.</value>
