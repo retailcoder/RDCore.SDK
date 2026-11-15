@@ -244,16 +244,16 @@ public sealed class PictureDecoderTests
         Assert.AreEqual(-1, picture.TransparentIndex);
     }
 
-    // a frame of 2 by 2 at 1,1 on a screen of 4 by 3, its color 1 transparent: a transparent pixel, and every pixel outside the frame, is 0.
+    // a frame of 2 by 2 at 1,1 on a screen of 4 by 3, its color 1 transparent: the picture is the frame, and its transparent pixels are clear.
     [TestMethod]
-    public void AGifsFrame_IsPlacedOnItsScreen_ItsTransparentColorClear_AndTheRestIs0()
+    public void AGif_IsItsFrame_ItsPlaceOnTheScreenIgnored_AndItsTransparentColorClear()
     {
         var picture = Decoded(Gif(4, 3, [0x112233, 0x445566], [0, 1, 1, 0], 2, 2, left: 1, top: 1, transparent: 1));
 
-        Assert.AreEqual("0 0 0 0 0 0 1 0 0 1 0 0", Numbers(picture.Indexes));
+        Assert.AreEqual((2, 2), (picture.Width, picture.Height));
+        Assert.AreEqual("0 1 1 0", Numbers(picture.Indexes));
         Assert.AreEqual(1, picture.TransparentIndex);
-        Assert.AreEqual(string.Join(" ", "00000000 00000000 00000000 00000000", "00000000 FF112233 00000000 00000000", "00000000 00000000 FF112233 00000000"),
-            Pixels(picture));
+        Assert.AreEqual("FF112233 00000000 00000000 FF112233", Pixels(picture));
     }
 
     [TestMethod]

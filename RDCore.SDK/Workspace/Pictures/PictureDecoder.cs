@@ -43,8 +43,9 @@ public enum PictureDecodeFailure
 /// fewer. A bitmap file's fourth byte of a 32-bit pixel is not alpha, so the picture is opaque, unless bit fields give an alpha mask.</item>
 /// <item>A PNG: every color type and bit depth, interlaced or not, with its <c>tRNS</c> transparency. Its checksums are not checked. A sample of 16 bits
 /// keeps its high byte.</item>
-/// <item>A GIF: its first frame, on its logical screen, with its local color table or else its global one, and the transparent color of the frame's graphic
-/// control extension. An animation's later frames are not decoded.</item>
+/// <item>A GIF: its first frame, at the frame's own size (<see cref="PictureHeader.TryRead"/>), with its local color table or else its global one, and the
+/// transparent color of the frame's graphic control extension. The frame's place on the logical screen is ignored, and an animation's later frames are not
+/// decoded.</item>
 /// <item>An icon's or a cursor's image: a PNG, or a DIB and its AND mask. A DIB image is clear where its 32-bit alpha says so, or, where it has no alpha or
 /// every pixel's is 0, where its mask is set.</item>
 /// </list>

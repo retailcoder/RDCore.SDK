@@ -40,6 +40,18 @@ public sealed class PictureHeaderTests
         Assert.AreEqual(Sized(PictureFormat.Cursor, 3, 2), Accepted(Icon(2, png)));
     }
 
+    // a frame of 4 by 3 at 1,1 on a screen of 6 by 5, after a graphic control extension, with a global table or its own; and the bytes ending before it.
+    [TestMethod]
+    public void AGifsSize_IsItsFirstFrames_OrItsScreensWhereTheBytesEndBeforeIt()
+    {
+        byte[] pixels = [0, 1, 2, 3, 3, 2, 1, 0, 1, 1, 2, 2];
+        var gif = Gif(6, 5, [0, 0x404040, 0x808080, 0xFFFFFF], pixels, 4, 3, left: 1, top: 1, transparent: 1);
+
+        Assert.AreEqual(Sized(PictureFormat.Gif, 4, 3), Accepted(gif));
+        Assert.AreEqual(Sized(PictureFormat.Gif, 4, 3), Accepted(Gif(6, 5, [0, 0xFFFFFF], pixels, 4, 3, local: true)));
+        Assert.AreEqual(Sized(PictureFormat.Gif, 6, 5), Accepted(gif[..30]));
+    }
+
     [TestMethod]
     public void ABitmapsHeight_IsItsSizeWhenTopDown_AndAnIconsDibHoldsItsMaskBelowIt()
     {

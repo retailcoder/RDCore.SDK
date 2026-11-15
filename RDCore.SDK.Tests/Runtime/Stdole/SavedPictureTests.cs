@@ -79,9 +79,7 @@ public sealed class SavedPictureTests
     [TestMethod]
     public void AGif_APng_AnIcon_AndACursor_AreSavedInMSVBAsLayout()
     {
-        var gif = (byte[])Gif1x1.Clone();
-        BinaryPrimitives.WriteInt16LittleEndian(gif.AsSpan(6), 7);
-        BinaryPrimitives.WriteInt16LittleEndian(gif.AsSpan(8), 5);
+        var gif = Gif(7, 5, Enumerable.Range(0, 256).Select(i => (uint)i).ToArray(), new byte[35], 7, 5);
         var dib = IconDib(32, 32, 32, [], new byte[32 * 32 * 4], new byte[32 * 4]);
 
         Assert.AreEqual("len 1118 424D5E04000000000000360400002800", Head(Saved(gif)));
