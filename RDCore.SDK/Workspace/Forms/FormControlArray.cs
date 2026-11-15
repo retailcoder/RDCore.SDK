@@ -18,8 +18,8 @@ namespace RDCore.SDK.Workspace.Forms;
 /// No type library describes a control array: VB6.OLB declares the classes of the controls, not the object that holds them. The array's class is described
 /// here as a library's (<see cref="LibraryDescription"/>), read as one is (<see cref="LibrarySymbolReader"/>), with one class for each class of control. Its
 /// default member takes the index and returns the control, as the control's class; <c>Count</c>, <c>LBound</c> and <c>UBound</c> are <c>Integer</c>, as the
-/// Visual Basic 6.0 documentation gives them. Its hidden enumerator, <c>_NewEnum</c> (dispatch identifier <c>-4</c>), is what <c>For Each</c> goes through
-/// the controls with. It has no other member, and no event: the events of a control of the array are its class's, and a handler of one takes the control's
+/// Visual Basic 6.0 documentation gives them. Its hidden enumerator, <c>_NewEnum</c> (dispatch identifier <c>-4</c>), is what <c>For Each</c> asks for to
+/// go through the controls. The class has no other member, and no event: the events of a control of the array are its class's, and a handler of one takes the control's
 /// index first (<c>MemberRoles</c>).
 /// </para>
 /// <para>
