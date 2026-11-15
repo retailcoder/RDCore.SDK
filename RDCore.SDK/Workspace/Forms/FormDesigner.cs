@@ -1,6 +1,7 @@
 ﻿using System.Buffers.Binary;
 using System.Globalization;
 using System.Text.RegularExpressions;
+using RDCore.SDK.Forms;
 
 namespace RDCore.SDK.Workspace.Forms;
 
@@ -174,7 +175,14 @@ public static partial class FormDesigner
         if (kind == FormDesignerKind.MSForms && CompanionOf(designer) is { } reference)
         {
             state = BlobAt(companion, reference.Offset);
-            controls = [.. MSFormsDesignerStorage.ReadControls(CompoundFile.Open(state))];
+            try
+            {
+                controls = [.. MSFormsDesignerStorage.ReadControls(CompoundFile.Open(state))];
+            }
+            catch (MSFormsFormatException exception)
+            {
+                throw new FormDesignerFormatException(exception);
+            }
         }
         else if (kind == FormDesignerKind.VisualBasic6)
         {

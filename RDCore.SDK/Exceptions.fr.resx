@@ -207,6 +207,9 @@
   <data name="FormDesigner_InvalidControl" xml:space="preserve">
     <value>Un contrôle du formulaire ne nomme aucune classe que le formulaire décrit.</value>
   </data>
+  <data name="FormDesigner_InvalidObjectStream" xml:space="preserve">
+    <value>Les données de concepteur du formulaire ont un flux d&apos;objets (o) qui ne contient pas exactement les contrôles que décrivent ses sites.</value>
+  </data>
   <data name="ProjectFile_InvalidJson" xml:space="preserve">
     <value>Le fichier de projet &apos;{0}&apos; n&apos;est pas du JSON valide, à la ligne {1}, position {2} : {3}</value>
   </data>

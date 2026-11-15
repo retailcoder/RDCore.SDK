@@ -1,4 +1,6 @@
-﻿namespace RDCore.SDK.Workspace.Forms;
+﻿using RDCore.SDK.Forms;
+
+namespace RDCore.SDK.Workspace.Forms;
 
 /// <summary>
 /// Reads the controls of a Microsoft Forms form out of the storage the form persists itself to ([MS-OFORMS] 2.1.2).

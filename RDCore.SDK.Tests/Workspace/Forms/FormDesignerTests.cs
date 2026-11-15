@@ -2,6 +2,7 @@
 using System.Globalization;
 using System.Text;
 using System.IO.Abstractions.TestingHelpers;
+using RDCore.SDK.Forms;
 using RDCore.SDK.Workspace.Forms;
 
 namespace RDCore.Tests.Workspace.Forms;
