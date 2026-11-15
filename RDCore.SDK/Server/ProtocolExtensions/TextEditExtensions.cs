@@ -10,8 +10,8 @@ namespace RDCore.SDK.Server.ProtocolExtensions;
 public static class TextEditExtensions
 {
     /// <summary>
-    /// The text, with the edits made. Every edit is placed by the text as it was before any of them (<strong>LSP 3.17</strong> §TextEdit), so the result does
-    /// not depend on the order the edits are made in.
+    /// The text, with the edits made. Every edit is placed by the text as it was before any of them (<strong>LSP 3.17</strong> §TextEdit), so the order of the
+    /// edits matters only for edits that insert at the same position.
     /// </summary>
     /// <param name="edits">The edits, none of them overlapping another. Edits that insert at the same position are written in the order they are given.</param>
     /// <param name="text">The text the edits are of.</param>
