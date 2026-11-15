@@ -38,8 +38,8 @@ public static class RunValues
     /// </remarks>
     /// <param name="value">The value.</param>
     /// <returns>
-    /// The value as a <see cref="RunValue"/>; <see langword="null"/> when it is not known (an indeterminate value), or a value no constant can be
-    /// (<c>Missing</c>, an unknown value).
+    /// The value as a <see cref="RunValue"/>; <see langword="null"/> for an indeterminate value, and for a value of no type the remarks of
+    /// <see cref="RunValue"/> list, such as <c>Missing</c>.
     /// </returns>
     public static RunValue? ToRunValue(this VBTypedValue value)
     {

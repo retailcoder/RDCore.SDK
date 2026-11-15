@@ -119,7 +119,7 @@ public sealed record class OutlineToolResult : OutlinedModule
     public IReadOnlyList<ToolOutlineEntry> Entries { get; init; } = [];
 
     /// <summary>
-    /// How many declarations the module has.
+    /// How many declarations the module has, their members not counted.
     /// </summary>
     public int Total { get; init; }
 

@@ -346,7 +346,8 @@ public abstract record class DescribedExpression
     public string? DefaultMember { get; init; }
 
     /// <summary>
-    /// The name of the class of the object it creates by name, when that is known (<see cref="ObjectCreationFact.ClassName"/>).
+    /// The name of the class of the object it creates by name (<see cref="ObjectCreationFact.ClassName"/>); <see langword="null"/> when it creates
+    /// none, or the class is not known.
     /// </summary>
     public string? Creates { get; init; }
 
