@@ -94,7 +94,8 @@ public static class RefactoringKinds
     /// </para>
     /// <para>
     /// An interface member is implemented by a call to the class's own <c>Public</c> member of the same kind, name, parameters and type, when it has one;
-    /// otherwise it raises error 5. An event handler is empty. It only adds code and asks nothing: the action has its edit.
+    /// otherwise it raises error 5. An event handler is an <c>Exit Sub</c> with a comment, so that it is not an empty procedure and raises nothing to the
+    /// code that raises the event. It only adds code and asks nothing: the action has its edit.
     /// </para>
     /// </remarks>
     public const string ImplementInterface = "refactor.rewrite.implementInterface";
