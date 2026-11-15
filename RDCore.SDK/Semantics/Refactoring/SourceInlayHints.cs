@@ -144,7 +144,8 @@ public static class SourceInlayHints
 
                     break;
                 case ParameterDeclarationNode parameter:
-                    if (sites.ImplicitModifiers && parameter is { PassingRange: null, IsParamArray: false, NameRange: { } nameRange }
+                    // an implicit kind is one no keyword says, but a ByRef written on the value of a Property Let or Set, which it does not change.
+                    if (sites.ImplicitModifiers && parameter is { IsParamArray: false, IsByRefIgnored: false, NameRange: { } nameRange }
                         && parameter.ParameterKind is ParameterKind.ImplicitByRef or ParameterKind.ImplicitByVal)
                     {
                         hints.Add(new SourceInlayHint(nameRange.Start, parameter.ParameterKind == ParameterKind.ImplicitByVal ? "[ByVal]" : "[ByRef]",
