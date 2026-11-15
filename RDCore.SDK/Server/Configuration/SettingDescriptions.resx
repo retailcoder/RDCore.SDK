@@ -221,7 +221,7 @@
     <value>Whether a Next that names no variable shows the loop's variable after it: Next [i].</value>
   </data>
   <data name="InlayHints_ImplicitModifiers" xml:space="preserve">
-    <value>Whether a procedure declared without Public or Private shows the access it has, and a parameter declared without ByVal or ByRef how it is passed: [Public] Sub Work([ByRef]Total As Long).</value>
+    <value>Whether a procedure declared without Public, Private or Friend shows the access it has, and a parameter declared without ByVal or ByRef how it is passed: [Public] Sub Work([ByRef]Total As Long).</value>
   </data>
   <data name="InlayHints_ImplicitTypes" xml:space="preserve">
     <value>Whether a variable or a parameter declared without a type shows the one it has, after its name: Dim First [As Variant].</value>

@@ -79,8 +79,8 @@ public readonly record struct SourceInlayHint(SourcePosition Position, string La
 }
 
 /// <summary>
-/// The inlay hints of a module: what its code means without saying it, each in square brackets, at the place it describes - never at the end of a line it
-/// does not describe, where it would read like code.
+/// The inlay hints of a module: what its code means without saying it, each in square brackets, at the place it describes. A hint is never at the end of a
+/// line it does not describe, where it would read like code.
 /// </summary>
 public static class SourceInlayHints
 {
