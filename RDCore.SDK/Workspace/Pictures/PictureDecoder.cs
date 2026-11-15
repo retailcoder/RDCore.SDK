@@ -39,11 +39,11 @@ public enum PictureDecodeFailure
 /// (<see cref="DecodedPicture.IsComplete"/>).
 /// </para>
 /// <list type="bullet">
-/// <item>A bitmap: 1, 4, 8, 16, 24 or 32 bits per pixel; uncompressed, RLE8 or RLE4, or with bit fields. Its colour table is kept for 8 bits per pixel or
+/// <item>A bitmap: 1, 4, 8, 16, 24 or 32 bits per pixel; uncompressed, RLE8 or RLE4, or with bit fields. Its color table is kept for 8 bits per pixel or
 /// fewer. A bitmap file's fourth byte of a 32-bit pixel is not alpha, so the picture is opaque, unless bit fields give an alpha mask.</item>
-/// <item>A PNG: every colour type and bit depth, interlaced or not, with its <c>tRNS</c> transparency. Its checksums are not checked. A sample of 16 bits
+/// <item>A PNG: every color type and bit depth, interlaced or not, with its <c>tRNS</c> transparency. Its checksums are not checked. A sample of 16 bits
 /// keeps its high byte.</item>
-/// <item>A GIF: its first frame, on its logical screen, with its local colour table or else its global one, and the transparent colour of the frame's graphic
+/// <item>A GIF: its first frame, on its logical screen, with its local color table or else its global one, and the transparent color of the frame's graphic
 /// control extension. An animation's later frames are not decoded.</item>
 /// <item>An icon's or a cursor's image: a PNG, or a DIB and its AND mask. A DIB image is clear where its 32-bit alpha says so, or, where it has no alpha or
 /// every pixel's is 0, where its mask is set.</item>
@@ -115,7 +115,7 @@ public static class PictureDecoder
         return decoded is null ? failure is PictureDecodeFailure.None ? PictureDecodeFailure.Refused : failure : PictureDecodeFailure.None;
     }
 
-    // a colour as a palette entry holds it.
+    // a color as a palette entry holds it.
     internal static uint Argb(byte alpha, byte red, byte green, byte blue) => (uint)alpha << 24 | (uint)red << 16 | (uint)green << 8 | blue;
 
     // a palette entry written as 4 bytes of BGRA.
@@ -128,8 +128,8 @@ public static class PictureDecoder
         bgra[at + 3] = (byte)(argb >> 24);
     }
 
-    // the colours of indexed pixels: the palette's entries, and an opaque black for a number past its end.
-    internal static byte[] Colours(ReadOnlySpan<byte> indexes, ImmutableArray<uint> palette)
+    // the colors of indexed pixels: the palette's entries, and an opaque black for a number past its end.
+    internal static byte[] Colors(ReadOnlySpan<byte> indexes, ImmutableArray<uint> palette)
     {
         var bgra = new byte[indexes.Length * 4];
         for (var i = 0; i < indexes.Length; i++)

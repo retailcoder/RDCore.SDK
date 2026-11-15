@@ -4,7 +4,7 @@ using static RDCore.Tests.Workspace.Pictures.TestPictures;
 namespace RDCore.Tests.Workspace.Pictures;
 
 /// <summary>
-/// A picture's pixels (<see cref="PictureDecoder"/>): a bitmap, a PNG, a GIF and an icon's image, each to 32-bit BGRA, with the colour numbers, the mask and
+/// A picture's pixels (<see cref="PictureDecoder"/>): a bitmap, a PNG, a GIF and an icon's image, each to 32-bit BGRA, with the color numbers, the mask and
 /// the completeness kept; and never an exception, nor more pixels than the header states.
 /// </summary>
 [TestClass]
@@ -27,7 +27,7 @@ public sealed class PictureDecoderTests
     private static string Numbers(ReadOnlyMemory<byte>? numbers) => string.Join(" ", numbers!.Value.ToArray());
 
     [TestMethod]
-    public void ABitmapOf24Bits_IsItsColours_FromTheTopDown_AndOpaque()
+    public void ABitmapOf24Bits_IsItsColors_FromTheTopDown_AndOpaque()
     {
         var picture = Decoded(Bitmap2x2);
 
@@ -38,7 +38,7 @@ public sealed class PictureDecoderTests
     }
 
     [TestMethod]
-    public void ABitmapOf8Bits_KeepsItsNumbersAndItsTable_OfTheColoursItUses()
+    public void ABitmapOf8Bits_KeepsItsNumbersAndItsTable_OfTheColorsItUses()
     {
         var picture = Decoded(Bitmap(3, 1, 8, 0, [0x0000FF, 0x00FF00, 0xFF0000], [2, 0, 1, 0], used: 3));
 
@@ -138,7 +138,7 @@ public sealed class PictureDecoderTests
         Assert.IsTrue(picture.IsComplete);
     }
 
-    // 2-bit indexed colour with tRNS: the numbers and the table are kept, each entry with its alpha.
+    // 2-bit indexed color with tRNS: the numbers and the table are kept, each entry with its alpha.
     [TestMethod]
     public void AnIndexedPng_KeepsItsNumbersAndItsTable_WithTheAlphaOfTRNS()
     {
@@ -149,33 +149,33 @@ public sealed class PictureDecoderTests
         Assert.AreEqual("FFFF0000 0000FF00 FF0000FF 0000FF00", Pixels(picture));
     }
 
-    // grey of 16 bits keeps its high byte, its tRNS grey transparent; grey of 1 bit is black or white.
+    // gray of 16 bits keeps its high byte, its tRNS gray transparent; gray of 1 bit is black or white.
     [TestMethod]
-    public void AGreyPng_IsScaledTo8Bits_AndItsTRNSGrey_IsTransparent()
+    public void AGrayPng_IsScaledTo8Bits_AndItsTRNSGray_IsTransparent()
     {
         Assert.AreEqual("FF121212 00ABABAB", Pixels(Decoded(Png(2, 1, 0, 16, [0, 0x12, 0x34, 0xAB, 0xCD], chunks: [("tRNS", [0xAB, 0xCD])]))));
         Assert.AreEqual("FFFFFFFF FF000000 FFFFFFFF", Pixels(Decoded(Png(3, 1, 0, 1, [0, 0b1010_0000]))));
     }
 
     [TestMethod]
-    public void ATruecolourPng_ItsTRNSColour_IsTransparent_AndGreyWithAlpha_HasItsAlpha()
+    public void ATruecolorPng_ItsTRNSColor_IsTransparent_AndGrayWithAlpha_HasItsAlpha()
     {
         Assert.AreEqual("FF010203 00040506", Pixels(Decoded(Png(2, 1, 2, 8, [0, 1, 2, 3, 4, 5, 6], chunks: [("tRNS", [0, 4, 0, 5, 0, 6])]))));
         Assert.AreEqual("80404040", Pixels(Decoded(Png(1, 1, 4, 8, [0, 0x40, 0x80]))));
     }
 
-    // Adam7 places the same pixels as a picture that is not interlaced: 9 by 9 RGB, each pixel its own colour.
+    // Adam7 places the same pixels as a picture that is not interlaced: 9 by 9 RGB, each pixel its own color.
     [TestMethod]
     public void AnInterlacedPng_IsThePictureItInterlaces()
     {
         const int side = 9;
-        byte[] Colour(int x, int y) => [(byte)(x * 20), (byte)(y * 20), (byte)(x + y)];
+        byte[] Color(int x, int y) => [(byte)(x * 20), (byte)(y * 20), (byte)(x + y)];
         var plain = new List<byte>();
         for (var y = 0; y < side; y++)
         {
             plain.Add(0);
             for (var x = 0; x < side; x++)
-                plain.AddRange(Colour(x, y));
+                plain.AddRange(Color(x, y));
         }
 
         var interlaced = new List<byte>();
@@ -187,7 +187,7 @@ public sealed class PictureDecoderTests
                     continue;
                 interlaced.Add(0);
                 for (var x = startX; x < side; x += stepX)
-                    interlaced.AddRange(Colour(x, y));
+                    interlaced.AddRange(Color(x, y));
             }
         }
 
@@ -221,9 +221,9 @@ public sealed class PictureDecoderTests
     }
 
     [TestMethod]
-    [DataRow((byte)2, (byte)4, DisplayName = "truecolour of 4 bits")]
+    [DataRow((byte)2, (byte)4, DisplayName = "truecolor of 4 bits")]
     [DataRow((byte)3, (byte)16, DisplayName = "indexed of 16 bits")]
-    [DataRow((byte)5, (byte)8, DisplayName = "colour type 5")]
+    [DataRow((byte)5, (byte)8, DisplayName = "color type 5")]
     public void APngOfADepthOrATypeNoPngHas_IsRefused(byte type, byte depth)
     {
         Assert.AreEqual(PictureDecodeFailure.Refused, PictureDecoder.TryDecode(Png(1, 1, type, depth, [0, 0, 0, 0, 0, 0, 0]), out var picture));
@@ -236,17 +236,17 @@ public sealed class PictureDecoderTests
     {
         var pixels = Enumerable.Range(0, 400).Select(i => (byte)(i * 7 % 13 % 4)).ToArray();
         var picture = Decoded(Gif(20, 20, [0xFF0000, 0x00FF00, 0x0000FF, 0xFFFFFF], pixels, 20, 20));
-        var colours = new[] { "FFFF0000", "FF00FF00", "FF0000FF", "FFFFFFFF" };
+        var colors = new[] { "FFFF0000", "FF00FF00", "FF0000FF", "FFFFFFFF" };
 
         CollectionAssert.AreEqual(pixels, picture.Indexes!.Value.ToArray());
-        CollectionAssert.AreEqual(pixels.Select(p => colours[p]).ToArray(), Pixels(picture).Split(' '));
+        CollectionAssert.AreEqual(pixels.Select(p => colors[p]).ToArray(), Pixels(picture).Split(' '));
         Assert.IsTrue(picture.IsComplete);
         Assert.AreEqual(-1, picture.TransparentIndex);
     }
 
-    // a frame of 2 by 2 at 1,1 on a screen of 4 by 3, its colour 1 transparent: a transparent pixel, and every pixel outside the frame, is 0.
+    // a frame of 2 by 2 at 1,1 on a screen of 4 by 3, its color 1 transparent: a transparent pixel, and every pixel outside the frame, is 0.
     [TestMethod]
-    public void AGifsFrame_IsPlacedOnItsScreen_ItsTransparentColourClear_AndTheRestIs0()
+    public void AGifsFrame_IsPlacedOnItsScreen_ItsTransparentColorClear_AndTheRestIs0()
     {
         var picture = Decoded(Gif(4, 3, [0x112233, 0x445566], [0, 1, 1, 0], 2, 2, left: 1, top: 1, transparent: 1));
 
@@ -300,7 +300,7 @@ public sealed class PictureDecoderTests
         Assert.IsTrue(picture.IsComplete);
     }
 
-    // a 2 by 2 image of 4 bits: its colours, and its mask set on the top right; that pixel is clear.
+    // a 2 by 2 image of 4 bits: its colors, and its mask set on the top right; that pixel is clear.
     [TestMethod]
     public void AnIconsDibImage_KeepsItsMask_AndIsClearWhereTheMaskIsSet()
     {

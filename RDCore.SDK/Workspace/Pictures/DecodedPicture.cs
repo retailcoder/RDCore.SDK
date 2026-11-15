@@ -7,8 +7,8 @@ namespace RDCore.SDK.Workspace.Pictures;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Every picture has its pixels in <see cref="Bgra"/>. A picture of a format that numbers its colours (a GIF, a bitmap of 8 bits per pixel or fewer, a PNG
-/// of indexed colour) also keeps those numbers, in <see cref="Indexes"/>, and its colour table, in <see cref="Palette"/>, so that it can be written with the
+/// Every picture has its pixels in <see cref="Bgra"/>. A picture of a format that numbers its colors (a GIF, a bitmap of 8 bits per pixel or fewer, a PNG
+/// of indexed color) also keeps those numbers, in <see cref="Indexes"/>, and its color table, in <see cref="Palette"/>, so that it can be written with the
 /// same table again. An icon's or a cursor's image keeps its AND mask, in <see cref="Mask"/>.
 /// </para>
 /// <para>
@@ -48,19 +48,19 @@ public sealed class DecodedPicture
     public ReadOnlyMemory<byte> Bgra { get; }
 
     /// <summary>
-    /// The colour table of a picture whose pixels number their colours, each entry as <c>0xAARRGGBB</c>; empty for any other picture, and for a GIF that has
+    /// The color table of a picture whose pixels number their colors, each entry as <c>0xAARRGGBB</c>; empty for any other picture, and for a GIF that has
     /// no table.
     /// </summary>
     public ImmutableArray<uint> Palette { get; }
 
     /// <summary>
     /// Each pixel's number in <see cref="Palette"/>, one byte each and row by row from the top; <see langword="null"/> for a picture that does not number its
-    /// colours. A number past the end of the palette is drawn black.
+    /// colors. A number past the end of the palette is drawn black.
     /// </summary>
     public ReadOnlyMemory<byte>? Indexes { get; }
 
     /// <summary>
-    /// The number of a GIF's transparent colour, or -1 for none.
+    /// The number of a GIF's transparent color, or -1 for none.
     /// </summary>
     public int TransparentIndex { get; }
 

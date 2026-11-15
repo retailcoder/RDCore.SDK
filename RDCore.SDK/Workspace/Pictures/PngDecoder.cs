@@ -7,7 +7,7 @@ namespace RDCore.SDK.Workspace.Pictures;
 // A PNG's pixels: its IDAT chunks inflated a row at a time, each row unfiltered and its samples taken to 8 bits.
 internal static class PngDecoder
 {
-    private const int Grey = 0, Truecolour = 2, Indexed = 3, GreyAlpha = 4, TruecolourAlpha = 6;
+    private const int Gray = 0, Truecolor = 2, Indexed = 3, GrayAlpha = 4, TruecolorAlpha = 6;
 
     // the seven passes of Adam7 interlacing: where each starts across and down, and its steps.
     private static readonly (int X, int Y, int StepX, int StepY)[] Adam7 =
@@ -17,7 +17,7 @@ internal static class PngDecoder
 
     public static bool IsPng(ReadOnlySpan<byte> b) => b.StartsWith(Signature);
 
-    // the IHDR's bit depth, colour type, compression, filter and interlace methods follow its width and height; a depth or a method no PNG has is refused.
+    // the IHDR's bit depth, color type, compression, filter and interlace methods follow its width and height; a depth or a method no PNG has is refused.
     public static DecodedPicture? Decode(ReadOnlySpan<byte> b, int width, int height, out PictureDecodeFailure failure)
     {
         failure = PictureDecodeFailure.Refused;
@@ -30,9 +30,9 @@ internal static class PngDecoder
         var interlaced = b[28] == 1;
         var valid = (type, depth) switch
         {
-            (Grey, 1 or 2 or 4 or 8 or 16) => true,
+            (Gray, 1 or 2 or 4 or 8 or 16) => true,
             (Indexed, 1 or 2 or 4 or 8) => true,
-            (Truecolour or GreyAlpha or TruecolourAlpha, 8 or 16) => true,
+            (Truecolor or GrayAlpha or TruecolorAlpha, 8 or 16) => true,
             _ => false,
         };
         if (!valid || b[26] != 0 || b[27] != 0 || b[28] > 1)
@@ -88,13 +88,13 @@ internal static class PngDecoder
             palette = entries.MoveToImmutable();
         }
 
-        // tRNS of a grey or a truecolour picture: the one colour, in samples of the picture's depth, that is transparent.
-        int? clearGrey = type == Grey && trns.Length >= 2 ? BinaryPrimitives.ReadUInt16BigEndian(trns) : null;
-        (int, int, int)? clearColour = type == Truecolour && trns.Length >= 6
+        // tRNS of a gray or a truecolor picture: the one color, in samples of the picture's depth, that is transparent.
+        int? clearGray = type == Gray && trns.Length >= 2 ? BinaryPrimitives.ReadUInt16BigEndian(trns) : null;
+        (int, int, int)? clearColor = type == Truecolor && trns.Length >= 6
             ? (BinaryPrimitives.ReadUInt16BigEndian(trns), BinaryPrimitives.ReadUInt16BigEndian(trns[2..]), BinaryPrimitives.ReadUInt16BigEndian(trns[4..]))
             : null;
 
-        var channels = type switch { Truecolour => 3, GreyAlpha => 2, TruecolourAlpha => 4, _ => 1 };
+        var channels = type switch { Truecolor => 3, GrayAlpha => 2, TruecolorAlpha => 4, _ => 1 };
         var bitsPerPixel = channels * depth;
         var bytesPerPixel = Math.Max(1, bitsPerPixel / 8);
         var bgra = new byte[width * height * 4];
@@ -136,20 +136,20 @@ internal static class PngDecoder
                             indexes![pixel] = index;
                             PictureDecoder.Put(bgra, pixel, index < palette.Length ? palette[index] : 0xFF000000);
                             break;
-                        case Grey:
-                            var grey = Sample(line, i, depth);
-                            var g = Eight(grey, depth);
-                            PictureDecoder.Put(bgra, pixel, PictureDecoder.Argb(grey == clearGrey ? (byte)0 : (byte)0xFF, g, g, g));
+                        case Gray:
+                            var gray = Sample(line, i, depth);
+                            var g = Eight(gray, depth);
+                            PictureDecoder.Put(bgra, pixel, PictureDecoder.Argb(gray == clearGray ? (byte)0 : (byte)0xFF, g, g, g));
                             break;
-                        case GreyAlpha:
+                        case GrayAlpha:
                             var ga = Eight(Sample(line, i * 2, depth), depth);
                             PictureDecoder.Put(bgra, pixel, PictureDecoder.Argb(Eight(Sample(line, i * 2 + 1, depth), depth), ga, ga, ga));
                             break;
                         default:
                             int red = Sample(line, i * channels, depth), green = Sample(line, i * channels + 1, depth),
                                 blue = Sample(line, i * channels + 2, depth);
-                            var opacity = type == TruecolourAlpha ? Eight(Sample(line, i * channels + 3, depth), depth)
-                                : (red, green, blue) == clearColour ? (byte)0 : (byte)0xFF;
+                            var opacity = type == TruecolorAlpha ? Eight(Sample(line, i * channels + 3, depth), depth)
+                                : (red, green, blue) == clearColor ? (byte)0 : (byte)0xFF;
                             PictureDecoder.Put(bgra, pixel, PictureDecoder.Argb(opacity, Eight(red, depth), Eight(green, depth), Eight(blue, depth)));
                             break;
                     }

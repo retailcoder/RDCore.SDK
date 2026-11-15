@@ -15,7 +15,7 @@ internal static class BitmapDecoder
     public static DecodedPicture? File(ReadOnlySpan<byte> b, out PictureDecodeFailure failure) =>
         Dib(b, 14, (int)BinaryPrimitives.ReadUInt32LittleEndian(b[10..]), icon: false, out failure);
 
-    // a DIB at dib: its header, its bit fields and its colour table, then its pixels at pixels, or right after the table where pixels is -1. An icon's DIB is
+    // a DIB at dib: its header, its bit fields and its color table, then its pixels at pixels, or right after the table where pixels is -1. An icon's DIB is
     // twice its image's height: the image, then its AND mask.
     public static DecodedPicture? Dib(ReadOnlySpan<byte> b, int dib, int pixels, bool icon, out PictureDecodeFailure failure)
     {
@@ -104,22 +104,22 @@ internal static class BitmapDecoder
             }
         }
 
-        // the colour table, of the colours the header says it uses or else of every colour the depth numbers: 3 bytes an entry after a core header, 4 after
+        // the color table, of the colors the header says it uses or else of every color the depth numbers: 3 bytes an entry after a core header, 4 after
         // another. An entry past the end of the bytes is black.
         var palette = ImmutableArray<uint>.Empty;
         if (bits <= 8)
         {
-            var colours = used > 0 && used < 1u << bits ? (int)used : 1 << bits;
+            var colors = used > 0 && used < 1u << bits ? (int)used : 1 << bits;
             var entry = core ? 3 : 4;
-            var table = ImmutableArray.CreateBuilder<uint>(colours);
-            for (var i = 0; i < colours; i++)
+            var table = ImmutableArray.CreateBuilder<uint>(colors);
+            for (var i = 0; i < colors; i++)
             {
                 var at = after + i * entry;
                 table.Add(at + 3 <= b.Length ? PictureDecoder.Argb(0xFF, b[at + 2], b[at + 1], b[at]) : 0xFF000000);
             }
 
             palette = table.MoveToImmutable();
-            after += colours * entry;
+            after += colors * entry;
         }
 
         var start = pixels < 0 ? after : pixels;
@@ -172,7 +172,7 @@ internal static class BitmapDecoder
 
         if (indexes is not null)
         {
-            bgra = PictureDecoder.Colours(indexes, palette);
+            bgra = PictureDecoder.Colors(indexes, palette);
         }
 
         if (!icon)

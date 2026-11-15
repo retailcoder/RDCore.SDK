@@ -8,7 +8,7 @@ internal static class GifDecoder
 {
     private const int MaxCodes = 4096;
 
-    // the screen descriptor after the 6-byte signature: its width and height, flags (a global table, and its size), a background colour and an aspect; then
+    // the screen descriptor after the 6-byte signature: its width and height, flags (a global table, and its size), a background color and an aspect; then
     // the global table; then blocks: extensions (0x21), an image (0x2C), the trailer (0x3B).
     public static DecodedPicture Decode(ReadOnlySpan<byte> b, int width, int height)
     {
@@ -24,7 +24,7 @@ internal static class GifDecoder
             var block = b[at];
             if (block == 0x21 && at + 1 < b.Length)
             {
-                // a graphic control extension: a block of 4 bytes whose first holds the transparency flag and whose last is the transparent colour.
+                // a graphic control extension: a block of 4 bytes whose first holds the transparency flag and whose last is the transparent color.
                 if (b[at + 1] == 0xF9 && at + 7 <= b.Length && b[at + 2] == 4)
                 {
                     transparent = (b[at + 3] & 1) != 0 ? b[at + 6] : -1;
@@ -78,7 +78,7 @@ internal static class GifDecoder
         return new DecodedPicture(width, height, bgra, palette, indexes, transparent, isComplete: complete);
     }
 
-    // a colour table of 2 to the power of the flags' low 3 bits plus 1 entries, 3 bytes each; an entry past the end of the bytes is black.
+    // a color table of 2 to the power of the flags' low 3 bits plus 1 entries, 3 bytes each; an entry past the end of the bytes is black.
     private static ImmutableArray<uint> Table(ReadOnlySpan<byte> b, ref int at, byte flags)
     {
         var count = 2 << (flags & 7);

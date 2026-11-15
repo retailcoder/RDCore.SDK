@@ -104,7 +104,7 @@ internal static class TestPictures
         return png.ToArray();
     }
 
-    // A GIF89a of the given screen, global table and one frame at the given place: a graphic control extension where a colour is transparent, then the
+    // A GIF89a of the given screen, global table and one frame at the given place: a graphic control extension where a color is transparent, then the
     // frame's pixels LZW-encoded.
     public static byte[] Gif(int width, int height, uint[] table, byte[] pixels, int frameWidth, int frameHeight, int left = 0, int top = 0,
         int transparent = -1, bool interlaced = false)
@@ -122,8 +122,8 @@ internal static class TestPictures
         gif.WriteByte(0);
         for (var i = 0; i < 1 << bits; i++)
         {
-            var colour = i < table.Length ? table[i] : 0;
-            gif.Write([(byte)(colour >> 16), (byte)(colour >> 8), (byte)colour]);
+            var color = i < table.Length ? table[i] : 0;
+            gif.Write([(byte)(color >> 16), (byte)(color >> 8), (byte)color]);
         }
         if (transparent >= 0)
             gif.Write([0x21, 0xF9, 4, 1, 0, 0, (byte)transparent, 0]);
@@ -195,10 +195,10 @@ internal static class TestPictures
         return [.. output];
     }
 
-    // A DIB as an icon holds an image: a BITMAPINFOHEADER of twice the height, the colour table, the rows from the bottom up, then the AND mask's.
-    public static byte[] IconDib(int width, int height, int bits, uint[] table, byte[] colourRows, byte[] maskRows)
+    // A DIB as an icon holds an image: a BITMAPINFOHEADER of twice the height, the color table, the rows from the bottom up, then the AND mask's.
+    public static byte[] IconDib(int width, int height, int bits, uint[] table, byte[] colorRows, byte[] maskRows)
     {
-        var bytes = new byte[40 + table.Length * 4 + colourRows.Length + maskRows.Length];
+        var bytes = new byte[40 + table.Length * 4 + colorRows.Length + maskRows.Length];
         BinaryPrimitives.WriteInt32LittleEndian(bytes, 40);
         BinaryPrimitives.WriteInt32LittleEndian(bytes.AsSpan(4), width);
         BinaryPrimitives.WriteInt32LittleEndian(bytes.AsSpan(8), height * 2);
@@ -208,12 +208,12 @@ internal static class TestPictures
             BinaryPrimitives.WriteInt32LittleEndian(bytes.AsSpan(32), table.Length);
         for (var i = 0; i < table.Length; i++)
             BinaryPrimitives.WriteUInt32LittleEndian(bytes.AsSpan(40 + i * 4), table[i] & 0xFFFFFF);
-        colourRows.CopyTo(bytes, 40 + table.Length * 4);
-        maskRows.CopyTo(bytes, 40 + table.Length * 4 + colourRows.Length);
+        colorRows.CopyTo(bytes, 40 + table.Length * 4);
+        maskRows.CopyTo(bytes, 40 + table.Length * 4 + colorRows.Length);
         return bytes;
     }
 
-    // A bitmap file: the file header, a BITMAPINFOHEADER of the given depth and compression, the bit fields or the colour table given, then the pixels.
+    // A bitmap file: the file header, a BITMAPINFOHEADER of the given depth and compression, the bit fields or the color table given, then the pixels.
     public static byte[] Bitmap(int width, int height, int bits, int compression, uint[] table, byte[] pixels, int used = 0)
     {
         var offset = 14 + 40 + table.Length * 4;
