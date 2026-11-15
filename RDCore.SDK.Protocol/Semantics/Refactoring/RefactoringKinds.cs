@@ -79,4 +79,23 @@ public static class RefactoringKinds
     /// property's value instead, so a change it makes to it is lost: the user accepts that change for each such caller.
     /// </summary>
     public const string EncapsulateField = "refactor.rewrite.encapsulateField";
+
+    /// <summary>
+    /// Implement Interface: a class module gets a <c>Private</c> procedure for each member of an interface class it names in an <c>Implements</c> directive
+    /// and does not implement (<strong>MS-VBAL §5.2.4.2</strong>, <strong>§5.3.1.9</strong>), or a handler for each event of a <c>WithEvents</c>
+    /// variable's class that it does not handle (<strong>MS-VBAL §5.3.1.8</strong>). The range it is asked for is on the directive or on the variable's
+    /// declaration.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Each new procedure is named for the interface or the variable and the member. It has the member's parameters, with their names, explicit passing,
+    /// types and <c>Optional</c> defaults, and the member's type. A <c>Public</c> variable of the interface gets a <c>Property Get</c>, with a
+    /// <c>Property Let</c> for a value, a <c>Property Set</c> for an object, and both for a <c>Variant</c>.
+    /// </para>
+    /// <para>
+    /// An interface member is implemented by a call to the class's own <c>Public</c> member of the same kind, name, parameters and type, when it has one;
+    /// otherwise it raises error 5. An event handler is empty. It only adds code and asks nothing: the action has its edit.
+    /// </para>
+    /// </remarks>
+    public const string ImplementInterface = "refactor.rewrite.implementInterface";
 }
