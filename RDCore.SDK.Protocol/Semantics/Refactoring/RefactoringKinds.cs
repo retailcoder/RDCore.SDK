@@ -48,8 +48,8 @@ public static class RefactoringKinds
 
     /// <summary>
     /// Implement Interface: a class module gets a <c>Private</c> procedure for each member of an interface class it names in an <c>Implements</c> directive
-    /// and does not implement yet (<strong>MS-VBAL §5.2.4.2</strong>, <strong>§5.3.1.9</strong>), or a handler for each event of a <c>WithEvents</c>
-    /// variable's class that it does not handle yet (<strong>MS-VBAL §5.3.1.8</strong>). The range it is asked for is on the directive or on the variable's
+    /// and does not implement (<strong>MS-VBAL §5.2.4.2</strong>, <strong>§5.3.1.9</strong>), or a handler for each event of a <c>WithEvents</c>
+    /// variable's class that it does not handle (<strong>MS-VBAL §5.3.1.8</strong>). The range it is asked for is on the directive or on the variable's
     /// declaration.
     /// </summary>
     /// <remarks>
