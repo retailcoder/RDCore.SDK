@@ -122,6 +122,42 @@ public sealed class StdFontObjectTests
         Assert.AreEqual("MS Sans Serif", font.Name);
     }
 
+    // The sizes of no name are those a font never named reads back.
+    [TestMethod]
+    [DataRow(0.0001, 1.5)]
+    [DataRow(1.5, 2.25)]
+    [DataRow(8.0, 8.25)]
+    [DataRow(14.0, 14.25)]
+    [DataRow(30000.0, 24575.25)]
+    public void TheDrawnSize_OfNoName_IsAScalableFacesWithTwoPixelsAsThree(double size, double drawn)
+    {
+        Assert.AreEqual((decimal)drawn, StdFontObject.DrawnSize(null, (decimal)size));
+    }
+
+    [TestMethod]
+    public void TheDrawnSize_OfNoSize_Throws()
+    {
+        Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => StdFontObject.DrawnSize(null, 0));
+        Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => StdFontObject.DrawnSize("Arial", -1));
+    }
+
+    [TestMethod]
+    public void AFont_IsNamed_OnceANameIsSet_ItsOwnIncluded_AndAClone_IsAsNamed()
+    {
+        var font = new StdFontObject();
+        font.Bold = true;
+        font.TrySetCharset(2);
+        font.TrySetSize(14);
+        var unnamed = font.Clone();
+        Assert.IsFalse(font.IsNamed);
+
+        Assert.AreEqual(StdFontFailure.None, font.TrySetName(font.Name));
+
+        Assert.IsTrue(font.IsNamed);
+        Assert.IsTrue(font.Clone().IsNamed);
+        Assert.IsFalse(unnamed.IsNamed);
+    }
+
     [TestMethod]
     public void NamingAFont_ItsOwnName_GivesItTheBitmapSizes()
     {
