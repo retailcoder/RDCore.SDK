@@ -77,11 +77,16 @@ public sealed class StdPictureObject
     /// </summary>
     /// <remarks>
     /// <para>
-    /// A picture is what its header says it is (<see cref="PictureHeader.TryRead"/>). A PNG is not one <c>LoadPicture</c> reads, and neither is a metafile
-    /// whose header states no size. An icon or a cursor is its image of the size asked for, of the most bits per pixel when it has several of that size,
-    /// and otherwise its first image, whatever its size. Asking for 0 by 0 is asking for the system's icon size, 32 by 32.
+    /// A picture is what its header says it is (<see cref="PictureHeader.TryRead"/>). A metafile whose header states no size is not one
+    /// <c>LoadPicture</c> reads. A PNG is a bitmap of the size its header states, its bytes kept as they are, alpha channel included: an
+    /// RD-VBA addition, where MS-VBA raises error 481 for one. An icon or a cursor is its image of the size asked for, of the most bits per pixel
+    /// when it has several of that size, and otherwise its first image, whatever its size. Asking for 0 by 0 is asking for the system's icon size,
+    /// 32 by 32.
     /// </para>
-    /// <para>The failures are those MS-VBA raises for the same files (Excel 64-bit), with the error numbers <see cref="StdPictureLoadFailure"/> gives.</para>
+    /// <para>
+    /// The failures are those MS-VBA raises for the same files (Excel 64-bit), with the error numbers <see cref="StdPictureLoadFailure"/> gives. A
+    /// PNG whose header is malformed is an invalid picture.
+    /// </para>
     /// </remarks>
     /// <param name="bytes">The file's bytes. The picture keeps them as they are.</param>
     /// <param name="iconWidth">The width in pixels of the image to load from an icon or a cursor; ignored for any other picture.</param>
@@ -103,8 +108,6 @@ public sealed class StdPictureObject
 
         switch (info.Format)
         {
-            case PictureFormat.Png:
-                return StdPictureLoadFailure.InvalidPicture;
             case PictureFormat.Metafile when info.HimetricWidth == 0 && info.HimetricHeight == 0:
                 return StdPictureLoadFailure.MetafileStatesNoSize;
             case PictureFormat.Icon or PictureFormat.Cursor:
@@ -155,7 +158,7 @@ public sealed class StdPictureObject
     public int Handle { get; }
 
     /// <summary>
-    /// The picture's <c>Type</c>: 0 for none, 1 for a bitmap (a GIF and a JPEG are loaded as one), 2 for a metafile, 3 for an icon or a cursor, 4 for an
+    /// The picture's <c>Type</c>: 0 for none, 1 for a bitmap (a GIF, a JPEG and a PNG are loaded as one), 2 for a metafile, 3 for an icon or a cursor, 4 for an
     /// enhanced metafile.
     /// </summary>
     public short Type => Format switch
@@ -168,10 +171,10 @@ public sealed class StdPictureObject
     };
 
     /// <summary>
-    /// Whether the picture has a palette that <c>hPal</c> reads and a program can assign: a bitmap, a GIF or a JPEG. MS-VBA fails <c>hPal</c> on any
-    /// other picture, and on no picture.
+    /// Whether the picture has a palette that <c>hPal</c> reads and a program can assign: a bitmap, a GIF, a JPEG or a PNG, the pictures of type 1.
+    /// MS-VBA fails <c>hPal</c> on any other picture, and on no picture.
     /// </summary>
-    public bool HasPalette => Format is PictureFormat.Bitmap or PictureFormat.Gif or PictureFormat.Jpeg;
+    public bool HasPalette => Type == 1;
 
     /// <summary>
     /// The value <c>hPal</c> reads, which a program can assign: 0 until it does.
@@ -212,8 +215,8 @@ public enum StdPictureLoadFailure
     None = 0,
 
     /// <summary>
-    /// The file is not a picture that <c>LoadPicture</c> reads: no bytes, a format it does not recognize or refuses (a PNG), or a malformed header. Run-time
-    /// error 481, "Invalid picture".
+    /// The file is not a picture that <c>LoadPicture</c> reads: no bytes, a format it does not recognize, or a malformed header. Run-time error 481,
+    /// "Invalid picture".
     /// </summary>
     InvalidPicture = 481,
 
