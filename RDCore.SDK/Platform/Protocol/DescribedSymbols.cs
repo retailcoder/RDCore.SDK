@@ -71,6 +71,7 @@ public static class DescribedSymbols
     /// </remarks>
     /// <param name="symbol">The symbol.</param>
     /// <param name="declaration">The symbol's declaration, as code would write it.</param>
+    /// <returns>The symbol's description, without the facts of the environment host.</returns>
     public static SymbolDescription Describe(Symbol symbol, string declaration)
     {
         var type = symbol is ITypedSymbol typed ? typed.ResolvedType : null;
@@ -100,9 +101,10 @@ public static class DescribedSymbols
     /// the children of its entry. A symbol declared in more than one conditional-compilation branch is at its primary declaration
     /// (<see cref="WorkspaceSymbol.PrimaryRange"/>). The locals and parameters of a procedure are not in the outline.
     /// </remarks>
-    /// <param name="module">The address of the module (<see cref="SymbolUri.Module"/>).</param>
+    /// <param name="module">The address of the module (<see cref="SymbolUri.Module(Uri, string)"/>).</param>
     /// <param name="symbols">The module's symbols, and the symbols of its members.</param>
     /// <param name="declarationOf">A symbol's declaration, as code would write it.</param>
+    /// <returns>The module's entries, an empty list when it declares no member.</returns>
     public static IReadOnlyList<OutlineEntry> OutlineOf(Uri module, IEnumerable<Symbol> symbols, Func<Symbol, string> declarationOf)
     {
         // Uri.Equals ignores the fragment, which is where a member's address is: parentage is compared by the full string.
