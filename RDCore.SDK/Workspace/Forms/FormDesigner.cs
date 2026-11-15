@@ -46,7 +46,7 @@ public static partial class FormDesigner
     /// <summary>
     /// The name of the Microsoft Forms type library, which qualifies the classes of a UserForm and of its controls (<c>MSForms.TextBox</c>).
     /// </summary>
-    public const string MSFormsLibrary = MSFormsDesignerStorage.Library;
+    public const string MSFormsLibrary = "MSForms";
 
     private const int BlobHeaderSize = 24;
 
@@ -177,7 +177,7 @@ public static partial class FormDesigner
             state = BlobAt(companion, reference.Offset);
             try
             {
-                controls = [.. MSFormsDesignerStorage.ReadControls(CompoundFile.Open(state))];
+                controls = [.. MSFormsReader.Read(state.Span).Form.Children.Select(ToDescriptor)];
             }
             catch (MSFormsFormatException exception)
             {
@@ -241,7 +241,7 @@ public static partial class FormDesigner
         if (Guid.TryParse(token, out var classId))
         {
             return classId == MSFormsClassId
-                ? (FormDesignerKind.MSForms, new FormControlClass(MSFormsDesignerStorage.Library, "UserForm", classId))
+                ? (FormDesignerKind.MSForms, new FormControlClass(MSFormsLibrary, "UserForm", classId))
                 : (FormDesignerKind.Other, new FormControlClass(null, null, classId));
         }
 
@@ -267,6 +267,21 @@ public static partial class FormDesigner
             IntegerOf(block.Properties.GetValueOrDefault("TabIndex")),
             IntegerOf(block.Properties.GetValueOrDefault("Index")),
             [.. block.Children.Select(ToDescriptor)]);
+
+    // a UserForm's control by the Microsoft Forms reader: an ActiveX control that is not Microsoft Forms' own is named by its
+    // CLSID, a nested form (cache index 7 outside a MultiPage) is a UserForm
+    private static FormControlDescriptor ToDescriptor(MSFormsControl control)
+        => new(
+            control.Name,
+            control.Kind switch
+            {
+                MSFormsControlKind.Other => new FormControlClass(null, null, control.ClassId),
+                MSFormsControlKind.Form => new FormControlClass(MSFormsLibrary, "UserForm"),
+                _ => new FormControlClass(MSFormsLibrary, control.Kind.ToString()),
+            },
+            control.Site is { TabIndex: >= 0 } site ? site.TabIndex : null,
+            Index: null,
+            [.. control.Children.Select(ToDescriptor)]);
 
     private static int? IntegerOf(string? value)
         => int.TryParse(value, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var result) ? result : null;
