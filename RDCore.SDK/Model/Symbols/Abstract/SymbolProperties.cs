@@ -222,8 +222,9 @@ public static class SymbolProperties
     public static readonly SymbolProperty<bool> DesignTimeOnly = new(nameof(DesignTimeOnly));
 
     /// <summary>
-    /// What <c>TypeName</c> says of an object of a class of the standard library, when it is not the class's name (<c>Object</c>, for the <c>UserForms</c>
-    /// collection's). Absent on every other class.
+    /// What <c>TypeName</c> says of an object of a class of the standard library or of a referenced library, when it is not the class's name (<c>Object</c>,
+    /// for the <c>UserForms</c> collection's; <c>Picture</c>, for a <c>StdPicture</c>, from <see cref="Runtime.Libraries.ClassDescription.TypeName"/>). Absent on
+    /// every other class.
     /// </summary>
     public static readonly SymbolProperty<string> ReportedTypeName = new(nameof(ReportedTypeName));
 

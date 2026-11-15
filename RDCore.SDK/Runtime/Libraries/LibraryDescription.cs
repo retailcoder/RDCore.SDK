@@ -213,6 +213,17 @@ public sealed record class ClassDescription
     /// <summary>Whether the library leaves the <see cref="DefaultInterface"/> out of what it shows.</summary>
     public bool IsDefaultInterfaceHidden { get; init; }
 
+    /// <summary>
+    /// What <c>TypeName</c> (MS-VBAL §6.1.2.7.1.12) says of an object of the class, when it is not the class's name: <c>Picture</c>, for the OLE Automation
+    /// library's <c>StdPicture</c>, whose objects report the name of their dispatch interface. <see langword="null"/> for a class whose objects report its name.
+    /// </summary>
+    /// <remarks>
+    /// MS-VBA asks the object for the name, and a type library does not say which one an object gives: <c>Scripting.Dictionary</c> reports its class and
+    /// <c>StdPicture</c> its interface, though both have a <see cref="DefaultInterface"/>. So this is stated from what was observed and never derived, and a
+    /// description exported from a type library leaves it out. Stated from format version 4 of the file (<see cref="LibraryJson.CurrentFormatVersion"/>).
+    /// </remarks>
+    public string? TypeName { get; init; }
+
     /// <summary>The members of the class, in declaration order.</summary>
     public ImmutableArray<MemberDescription> Members { get; init; } = [];
 
