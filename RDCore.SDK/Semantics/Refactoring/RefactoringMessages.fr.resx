@@ -20,7 +20,7 @@
     <value>« {0} » n'est pas déclaré par l'espace de travail : seul ce que l'espace de travail déclare peut être renommé.</value>
   </data>
   <data name="Rename_Type" xml:space="preserve">
-    <value>« {0} » est aussi nommé hors de son code (par un concepteur, un hôte, son fichier ou un projet) : le renommer n'est pas pris en charge.</value>
+    <value>« {0} » est un module de document : son nom est celui que lui donne son hôte, et il n'est pas renommé.</value>
   </data>
   <data name="Rename_ModuleNameTooLong" xml:space="preserve">
     <value>« {0} » est trop long pour le nom d'un module, qui compte au plus {1} caractères.</value>

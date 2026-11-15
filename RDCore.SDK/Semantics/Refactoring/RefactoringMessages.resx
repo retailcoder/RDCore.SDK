@@ -20,7 +20,7 @@
     <value>'{0}' is not declared by the workspace: only what the workspace declares can be renamed.</value>
   </data>
   <data name="Rename_Type" xml:space="preserve">
-    <value>'{0}' is also named outside its code (by a designer, a host, its file or a project): renaming it is not supported.</value>
+    <value>'{0}' is a document module: its name is its host's, and it is not renamed.</value>
   </data>
   <data name="Rename_ModuleNameTooLong" xml:space="preserve">
     <value>'{0}' is too long for the name of a module, which is at most {1} characters long.</value>
