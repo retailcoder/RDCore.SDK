@@ -19,14 +19,15 @@ public enum PictureDecodeFailure
     Refused,
 
     /// <summary>
-    /// The picture is accepted, and is of a format or a kind the decoder does not decode: a JPEG, a metafile, an enhanced metafile, or a bitmap of a depth or
-    /// a compression it does not take, such as 2 bits per pixel or pixels that are JPEG or PNG data.
+    /// The picture is accepted, and is of a format or a kind the decoder does not decode: a metafile, an enhanced metafile, a bitmap of a depth or a
+    /// compression it does not take, such as 2 bits per pixel or pixels that are JPEG or PNG data, or a JPEG that is lossless, hierarchical or
+    /// arithmetic-coded, of 12-bit samples, or of 2 or 4 components.
     /// </summary>
     NotDecoded,
 }
 
 /// <summary>
-/// Decodes a picture's pixels: a bitmap, a PNG, a GIF, or an image of an icon or a cursor.
+/// Decodes a picture's pixels: a bitmap, a PNG, a GIF, a JPEG, or an image of an icon or a cursor.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -46,6 +47,10 @@ public enum PictureDecodeFailure
 /// <item>A GIF: its first frame, at the frame's own size (<see cref="PictureHeader.TryRead"/>), with its local color table or else its global one, and the
 /// transparent color of the frame's graphic control extension. The frame's place on the logical screen is ignored, and an animation's later frames are not
 /// decoded.</item>
+/// <item>A JPEG (ITU-T T.81): Huffman-coded, baseline, extended or progressive, of 8-bit samples, gray or YCbCr (RGB where an Adobe <c>APP14</c> segment
+/// says so), with restart intervals. Its inverse DCT is in integer arithmetic, rounded as the IJG decoder's integer inverse DCT is, so that its pixels are
+/// those MS-VBA's <c>LoadPicture</c> gives. Its chroma is upsampled as the IJG decoder does by default: by its triangle filter at half the width, or half
+/// the width and height; by repeating each sample at any other ratio. The picture is opaque. A file of more than 256 scans is decoded to its 256th.</item>
 /// <item>An icon's or a cursor's image: a PNG, or a DIB and its AND mask. A DIB image is clear where its 32-bit alpha says so, or, where it has no alpha or
 /// every pixel's is 0, where its mask is set.</item>
 /// </list>
@@ -53,7 +58,7 @@ public enum PictureDecodeFailure
 public static class PictureDecoder
 {
     /// <summary>
-    /// Decodes a bitmap, a PNG or a GIF, or the first image of an icon or a cursor.
+    /// Decodes a bitmap, a PNG, a GIF or a JPEG, or the first image of an icon or a cursor.
     /// </summary>
     /// <param name="bytes">The picture, as its file holds it.</param>
     /// <param name="picture">The pixels where the picture is decoded; <see langword="null"/> otherwise.</param>
@@ -78,6 +83,8 @@ public static class PictureDecoder
                 return Done(PngDecoder.Decode(bytes, info.Width, info.Height, out failure), failure, out picture);
             case PictureFormat.Gif:
                 return Done(GifDecoder.Decode(bytes, info.Width, info.Height), PictureDecodeFailure.None, out picture);
+            case PictureFormat.Jpeg:
+                return Done(JpegDecoder.Decode(bytes, info.Width, info.Height, out failure), failure, out picture);
             default:
                 return PictureDecodeFailure.NotDecoded;
         }
