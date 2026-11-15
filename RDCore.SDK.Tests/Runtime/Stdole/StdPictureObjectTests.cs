@@ -91,12 +91,28 @@ public sealed class StdPictureObjectTests
     }
 
     [TestMethod]
-    public void NoBytes_AnUnknownFormat_AndAPng_AreInvalidPictures_481()
+    public void NoBytes_AnUnknownFormat_AndAMalformedPng_AreInvalidPictures_481()
     {
         Assert.AreEqual(StdPictureLoadFailure.InvalidPicture, Refused([]));
         Assert.AreEqual(StdPictureLoadFailure.InvalidPicture, Refused("not a picture"u8.ToArray()));
-        Assert.AreEqual(StdPictureLoadFailure.InvalidPicture, Refused(PngHeader(4, 4)));
+        Assert.AreEqual(StdPictureLoadFailure.InvalidPicture, Refused(PngHeader(4, 4)[..20]));
+        Assert.AreEqual(StdPictureLoadFailure.InvalidPicture, Refused(PngHeader(0, 4)));
         Assert.AreEqual(481, (int)StdPictureLoadFailure.InvalidPicture);
+    }
+
+    // an RD-VBA addition: MS-VBA raises 481 for a PNG.
+    [TestMethod]
+    public void APng_IsABitmap_Type1_ItsSizeInHimetric_AndItsBytesAsRead()
+    {
+        var bytes = PngHeader(6, 4);
+
+        var picture = Loaded(bytes, handle: 9);
+
+        Assert.AreEqual((PictureFormat.Png, (short)1), (picture.Format, picture.Type));
+        Assert.AreEqual((PictureInfo.PixelsToHimetric(6), PictureInfo.PixelsToHimetric(4)), (picture.Width, picture.Height));
+        Assert.AreEqual(9, picture.Handle);
+        Assert.IsNull(picture.Image);
+        Assert.IsTrue(picture.Bytes.Span.SequenceEqual(bytes));
     }
 
     [TestMethod]
@@ -136,7 +152,7 @@ public sealed class StdPictureObjectTests
     [TestMethod]
     public void ABitmapsPalette_Is0_AndKeepsWhatIsAssigned()
     {
-        foreach (var bytes in new[] { BitmapHeader(2, 2), Gif1x1, JpegHeader(2, 2) })
+        foreach (var bytes in new[] { BitmapHeader(2, 2), Gif1x1, JpegHeader(2, 2), PngHeader(2, 2) })
         {
             var picture = Loaded(bytes);
             Assert.IsTrue(picture.HasPalette);
