@@ -38,10 +38,11 @@ internal static class TestPictures
         return bytes;
     }
 
-    // A JPEG's start of image, an APP0 segment, and a baseline start of frame declaring a size.
+    // A JPEG's start of image, an APP0 segment, a baseline start of frame declaring a size, then a start of scan with no data and the end of image.
     public static byte[] JpegHeader(int width, int height)
     {
-        var bytes = Hex("FFD8 FFE0 0010 4A46494600 0101 00 0001 0001 0000", "FFC0 0011 08 0000 0000 03 012200 021101 031101");
+        var bytes = Hex("FFD8 FFE0 0010 4A46494600 0101 00 0001 0001 0000", "FFC0 0011 08 0000 0000 03 012200 021101 031101",
+            "FFDA 000C 03 0100 0211 0311 00 3F 00 FFD9");
         BinaryPrimitives.WriteUInt16BigEndian(bytes.AsSpan(25), (ushort)height);
         BinaryPrimitives.WriteUInt16BigEndian(bytes.AsSpan(27), (ushort)width);
         return bytes;
@@ -104,10 +105,10 @@ internal static class TestPictures
         return png.ToArray();
     }
 
-    // A GIF89a of the given screen, global table and one frame at the given place: a graphic control extension where a color is transparent, then the
-    // frame's pixels LZW-encoded.
+    // A GIF89a of the given screen, table and one frame at the given place: the table global, or the frame's own where local; a graphic control extension
+    // where a color is transparent; then the frame's pixels LZW-encoded.
     public static byte[] Gif(int width, int height, uint[] table, byte[] pixels, int frameWidth, int frameHeight, int left = 0, int top = 0,
-        int transparent = -1, bool interlaced = false)
+        int transparent = -1, bool interlaced = false, bool local = false)
     {
         var bits = 1;
         while (1 << bits < table.Length)
@@ -115,16 +116,21 @@ internal static class TestPictures
         using var gif = new MemoryStream();
         gif.Write("GIF89a"u8);
         void U16(int value) { gif.WriteByte((byte)value); gif.WriteByte((byte)(value >> 8)); }
+        void Table()
+        {
+            for (var i = 0; i < 1 << bits; i++)
+            {
+                var color = i < table.Length ? table[i] : 0;
+                gif.Write([(byte)(color >> 16), (byte)(color >> 8), (byte)color]);
+            }
+        }
         U16(width);
         U16(height);
-        gif.WriteByte((byte)(0x80 | bits - 1));
+        gif.WriteByte((byte)(local ? 0 : 0x80 | bits - 1));
         gif.WriteByte(0);
         gif.WriteByte(0);
-        for (var i = 0; i < 1 << bits; i++)
-        {
-            var color = i < table.Length ? table[i] : 0;
-            gif.Write([(byte)(color >> 16), (byte)(color >> 8), (byte)color]);
-        }
+        if (!local)
+            Table();
         if (transparent >= 0)
             gif.Write([0x21, 0xF9, 4, 1, 0, 0, (byte)transparent, 0]);
         gif.WriteByte(0x2C);
@@ -132,7 +138,9 @@ internal static class TestPictures
         U16(top);
         U16(frameWidth);
         U16(frameHeight);
-        gif.WriteByte((byte)(interlaced ? 0x40 : 0));
+        gif.WriteByte((byte)((interlaced ? 0x40 : 0) | (local ? 0x80 | bits - 1 : 0)));
+        if (local)
+            Table();
         var minimum = Math.Max(2, bits);
         gif.WriteByte((byte)minimum);
         var data = Lzw(pixels, minimum);

@@ -15,6 +15,28 @@ internal static class BitmapDecoder
     public static DecodedPicture? File(ReadOnlySpan<byte> b, out PictureDecodeFailure failure) =>
         Dib(b, 14, (int)BinaryPrimitives.ReadUInt32LittleEndian(b[10..]), icon: false, out failure);
 
+    // whether a bitmap file of uncompressed pixels, with no bit fields, ends before the last of the rows its header states.
+    public static bool RowsCutShort(ReadOnlySpan<byte> b)
+    {
+        const int dib = 14;
+        if (b.Length < dib + CoreHeader)
+        {
+            return false;
+        }
+
+        var size = U32(b, dib);
+        var core = size == CoreHeader;
+        if (!core && (size < InfoHeader || b.Length < dib + InfoHeader || U32(b, dib + 16) != Rgb))
+        {
+            return false;
+        }
+
+        long width = Math.Abs((long)(core ? U16(b, dib + 4) : BinaryPrimitives.ReadInt32LittleEndian(b[(dib + 4)..])));
+        long height = Math.Abs((long)(core ? U16(b, dib + 6) : BinaryPrimitives.ReadInt32LittleEndian(b[(dib + 8)..])));
+        var bits = U16(b, dib + (core ? 10 : 14));
+        return U32(b, 10) + (width * bits + 31) / 32 * 4 * height > b.Length;
+    }
+
     // a DIB at dib: its header, its bit fields and its color table, then its pixels at pixels, or right after the table where pixels is -1. An icon's DIB is
     // twice its image's height: the image, then its AND mask.
     public static DecodedPicture? Dib(ReadOnlySpan<byte> b, int dib, int pixels, bool icon, out PictureDecodeFailure failure)

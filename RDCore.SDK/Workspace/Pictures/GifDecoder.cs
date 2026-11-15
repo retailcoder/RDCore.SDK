@@ -3,13 +3,13 @@ using System.Collections.Immutable;
 
 namespace RDCore.SDK.Workspace.Pictures;
 
-// A GIF's first frame, LZW-decoded onto its logical screen.
+// A GIF's first frame, LZW-decoded at its own size: the logical screen's size and the frame's place on it are not part of the picture.
 internal static class GifDecoder
 {
     private const int MaxCodes = 4096;
 
     // the screen descriptor after the 6-byte signature: its width and height, flags (a global table, and its size), a background color and an aspect; then
-    // the global table; then blocks: extensions (0x21), an image (0x2C), the trailer (0x3B).
+    // the global table; then blocks: extensions (0x21), an image (0x2C), the trailer (0x3B). The width and the height are the first frame's.
     public static DecodedPicture Decode(ReadOnlySpan<byte> b, int width, int height)
     {
         var indexes = new byte[width * height];
@@ -39,8 +39,8 @@ internal static class GifDecoder
                 break;
             }
 
-            // the image descriptor: its place and size on the screen, then flags (a local table and its size, interlacing).
-            int left = U16(b, at + 1), top = U16(b, at + 3), across = U16(b, at + 5), down = U16(b, at + 7);
+            // the image descriptor: its place on the screen, which is ignored, and its size, then flags (a local table and its size, interlacing).
+            int across = U16(b, at + 5), down = U16(b, at + 7);
             var flags = b[at + 9];
             at += 10;
             if ((flags & 0x80) != 0)
@@ -54,9 +54,9 @@ internal static class GifDecoder
                 var data = SubBlocks(b, at + 1);
                 complete = Lzw(data, minimum, across, down, (flags & 0x40) != 0, (x, y, index) =>
                 {
-                    if (left + x < width && top + y < height)
+                    if (x < width && y < height)
                     {
-                        var pixel = (top + y) * width + left + x;
+                        var pixel = y * width + x;
                         indexes[pixel] = index;
                         given[pixel] = true;
                     }

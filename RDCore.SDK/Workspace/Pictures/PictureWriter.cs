@@ -23,9 +23,19 @@ public static class PictureWriter
 
     /// <summary>
     /// The 16 colors an icon is written in, each as <c>0xAARRGGBB</c>, in the order of its color table: black, maroon, green, olive, navy, purple, teal,
-    /// silver, gray, red, lime, yellow, blue, fuchsia, aqua and white.
+    /// gray, silver, red, lime, yellow, blue, fuchsia, aqua and white.
     /// </summary>
     public static ImmutableArray<uint> IconColors { get; } =
+    [
+        0xFF000000, 0xFF800000, 0xFF008000, 0xFF808000, 0xFF000080, 0xFF800080, 0xFF008080, 0xFF808080,
+        0xFFC0C0C0, 0xFFFF0000, 0xFF00FF00, 0xFFFFFF00, 0xFF0000FF, 0xFFFF00FF, 0xFF00FFFF, 0xFFFFFFFF,
+    ];
+
+    /// <summary>
+    /// The 16 standard colors, each as <c>0xAARRGGBB</c>, in the order <see cref="WriteBitmap"/> fills a color table with them: black, maroon, green, olive,
+    /// navy, purple, teal, silver, gray, red, lime, yellow, blue, fuchsia, aqua and white.
+    /// </summary>
+    public static ImmutableArray<uint> StandardColors { get; } =
     [
         0xFF000000, 0xFF800000, 0xFF008000, 0xFF808000, 0xFF000080, 0xFF800080, 0xFF008080, 0xFFC0C0C0,
         0xFF808080, 0xFFFF0000, 0xFF00FF00, 0xFFFFFF00, 0xFF0000FF, 0xFFFF00FF, 0xFF00FFFF, 0xFFFFFFFF,
@@ -37,7 +47,8 @@ public static class PictureWriter
     /// <param name="picture">The picture.</param>
     /// <param name="bitsPerPixel">
     /// 24, to write <see cref="DecodedPicture.Bgra"/> with its alpha left out; or 1, 4 or 8, to write <see cref="DecodedPicture.Indexes"/> with a color table
-    /// of 2, 16 or 256 entries: <see cref="DecodedPicture.Palette"/>, then black entries to fill the table.
+    /// of 2, 16 or 256 entries: <see cref="DecodedPicture.Palette"/>, then the <see cref="StandardColors"/> it lacks, in their order, when the palette and
+    /// they fill the table exactly; otherwise black entries fill it.
     /// </param>
     /// <returns>The bitmap file's bytes.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="picture"/> is <see langword="null"/>.</exception>
@@ -67,9 +78,10 @@ public static class PictureWriter
         BinaryPrimitives.WriteInt32LittleEndian(bytes.AsSpan(2), bytes.Length);
         BinaryPrimitives.WriteInt32LittleEndian(bytes.AsSpan(10), offset);
         Header(bytes.AsSpan(FileHeader), width, height, bitsPerPixel, stride * height);
-        for (var i = 0; i < picture.Palette.Length; i++)
+        var table = Table(picture.Palette, colors);
+        for (var i = 0; i < table.Count; i++)
         {
-            Entry(bytes.AsSpan(FileHeader + InfoHeader + i * 4), picture.Palette[i]);
+            Entry(bytes.AsSpan(FileHeader + InfoHeader + i * 4), table[i]);
         }
 
         var bgra = picture.Bgra.Span;
@@ -101,9 +113,9 @@ public static class PictureWriter
     /// <returns>The icon file's bytes.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="picture"/> is <see langword="null"/>.</exception>
     /// <remarks>
-    /// Each pixel is written as the nearest of the 16 colors, the first of them where two are as near. The mask is <see cref="DecodedPicture.Mask"/>, or for
-    /// a picture with none, set where a pixel's alpha is 0; a pixel the mask is set for is written black. A directory entry states a side of 256 pixels or more
-    /// as 0.
+    /// Each pixel is written as the nearest of the 16 colors, the first of them where two are as near, the pixels the mask is set for included. The mask is
+    /// <see cref="DecodedPicture.Mask"/>, whatever the pixels' alpha, or for a picture with none, set where a pixel's alpha is 0. A directory entry states a
+    /// side of 256 pixels or more as 0.
     /// </remarks>
     public static byte[] WriteIcon(DecodedPicture picture)
     {
@@ -138,19 +150,32 @@ public static class PictureWriter
             for (var x = 0; x < width; x++)
             {
                 var pixel = y * width + x;
-                var masked = given.IsEmpty ? bgra[pixel * 4 + 3] == 0 : given[pixel] != 0;
-                if (masked)
+                if (given.IsEmpty ? bgra[pixel * 4 + 3] == 0 : given[pixel] != 0)
                 {
                     Pack(maskRow, x, 1, 1);
                 }
-                else
-                {
-                    Pack(colorRow, x, 4, Nearest(bgra[pixel * 4 + 2], bgra[pixel * 4 + 1], bgra[pixel * 4]));
-                }
+
+                Pack(colorRow, x, 4, Nearest(bgra[pixel * 4 + 2], bgra[pixel * 4 + 1], bgra[pixel * 4]));
             }
         }
 
         return bytes;
+    }
+
+    // a color table of the size given: the palette, then the standard colors it lacks where they fill the table exactly; the entries left are black.
+    private static List<uint> Table(ImmutableArray<uint> palette, int size)
+    {
+        var table = new List<uint>(palette);
+        if (table.Count < size)
+        {
+            var lacking = StandardColors.Where(standard => !palette.Any(color => (color & 0xFFFFFF) == (standard & 0xFFFFFF))).ToList();
+            if (table.Count + lacking.Count == size)
+            {
+                table.AddRange(lacking);
+            }
+        }
+
+        return table;
     }
 
     private static int Stride(int width, int bits) => (int)(((long)width * bits + 31) / 32 * 4);

@@ -81,11 +81,12 @@ public sealed class StdPictureObject
     /// <c>LoadPicture</c> reads. A PNG is a bitmap of the size its header states, its bytes kept as they are, alpha channel included: an
     /// RD-VBA addition, where MS-VBA raises error 481 for one. An icon or a cursor is its image of the size asked for, of the most bits per pixel
     /// when it has several of that size, and otherwise its first image, whatever its size. Asking for 0 by 0 is asking for the system's icon size,
-    /// 32 by 32.
+    /// 32 by 32. A GIF's size is its first frame's.
     /// </para>
     /// <para>
     /// The failures are those MS-VBA raises for the same files (Excel 64-bit), with the error numbers <see cref="StdPictureLoadFailure"/> gives. A
-    /// PNG whose header is malformed is an invalid picture.
+    /// PNG whose header is malformed, a bitmap of uncompressed pixels whose rows end before its header says, and an icon or a cursor whose image to load is
+    /// stored as a PNG are invalid pictures.
     /// </para>
     /// </remarks>
     /// <param name="bytes">The file's bytes. The picture keeps them as they are.</param>
@@ -103,16 +104,25 @@ public sealed class StdPictureObject
         var span = bytes.Span;
         if (!PictureHeader.TryRead(span, out var info))
         {
-            return span.StartsWith("BM"u8) ? StdPictureLoadFailure.BitmapCutShort : StdPictureLoadFailure.InvalidPicture;
+            return span.StartsWith("BM"u8) ? StdPictureLoadFailure.CutShort : StdPictureLoadFailure.InvalidPicture;
         }
 
         switch (info.Format)
         {
             case PictureFormat.Metafile when info.HimetricWidth == 0 && info.HimetricHeight == 0:
                 return StdPictureLoadFailure.MetafileStatesNoSize;
+            case PictureFormat.Bitmap when BitmapDecoder.RowsCutShort(span):
+                return StdPictureLoadFailure.InvalidPicture;
+            case PictureFormat.Jpeg when PictureHeader.JpegEndsBeforeScan(span):
+                return StdPictureLoadFailure.CutShort;
             case PictureFormat.Icon or PictureFormat.Cursor:
                 _ = PictureHeader.TryReadIconImages(span, out var images);
                 var image = Chosen(images, iconWidth, iconHeight);
+                if (PngDecoder.IsPng(span.Slice(image.Offset, image.Length)))
+                {
+                    return StdPictureLoadFailure.InvalidPicture;
+                }
+
                 picture = new StdPictureObject(info.Format, bytes, PictureInfo.PixelsToHimetric(image.Width), PictureInfo.PixelsToHimetric(image.Height), handle(), image);
                 return StdPictureLoadFailure.None;
             default:
@@ -221,9 +231,10 @@ public enum StdPictureLoadFailure
     InvalidPicture = 481,
 
     /// <summary>
-    /// The file starts as a bitmap and is cut short or malformed: <c>E_UNEXPECTED</c>, -2147418113.
+    /// The file starts as a bitmap whose header is cut short or malformed, or it is a JPEG whose bytes end before the header of its first scan:
+    /// <c>E_UNEXPECTED</c>, -2147418113.
     /// </summary>
-    BitmapCutShort = unchecked((int)0x8000FFFF),
+    CutShort = unchecked((int)0x8000FFFF),
 
     /// <summary>
     /// The file is a metafile whose header states no size, one with no placeable header: <c>E_FAIL</c>, -2147467259.
