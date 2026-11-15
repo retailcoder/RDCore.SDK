@@ -74,7 +74,7 @@ public abstract class AppHost<TApp>() : IDisposable
     public virtual int ExitCode => 0;
 
     /// <summary>
-    /// Whether the application writes to its console: its log, and what it says as it ends.
+    /// Whether the application writes to its console: its log, and what it says as it fails.
     /// </summary>
     /// <remarks>
     /// 🧩 The base implementation is <see langword="true"/>: a client's console is the user's. A server's is no one's to read. A server talks to its client
@@ -100,6 +100,73 @@ public abstract class AppHost<TApp>() : IDisposable
     /// </summary>
     /// <param name="provider">The constructed service provider.</param>
     protected virtual Task BeforeAppStartAsync(IServiceProvider provider) => Task.CompletedTask;
+
+    /// <summary>
+    /// 🧩 Shows the application's splash as it starts. Override it to show a splash of your own, or none.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <strong>When it runs.</strong> Once per run of the application: after <see cref="BeforeAppStartAsync"/>, so that what the application set up there
+    /// (its theme, its console) is ready to draw with, and before the application runs, so that the splash comes before anything the application writes. It
+    /// does not run for a command line the application answers without starting (<see cref="TryAnswerCommandLine"/>: <c>--help</c>, <c>--version</c>), nor
+    /// when the application fails before it is built.
+    /// </para>
+    /// <para>
+    /// <strong>What the base implementation draws.</strong> The platform's splash (<see cref="PlatformSplash"/>): the logo, the slogan and the copyright
+    /// notice, in the language of the user interface, as plain text (<see cref="PlatformSplash.WriteTo"/>). It writes it to the standard output of an
+    /// application that writes to its console (<see cref="WritesToConsole"/>), and only when that output is a console: output redirected to a file or a pipe
+    /// is a program's, and gets no splash in it. A server never shows one.
+    /// </para>
+    /// <para>
+    /// <strong>Your own splash.</strong> An override replaces the base implementation: what it draws is the one splash the application shows, and the
+    /// platform's plain one is not drawn as well. To draw with:
+    /// </para>
+    /// <list type="bullet">
+    /// <item><description><paramref name="provider"/>: the application's services, the ones its console and its theme are among.</description></item>
+    /// <item><description><see cref="PlatformSplash.Lines"/>: the platform's splash, line by line, each line with the part of the splash it is of
+    /// (<see cref="SplashPart"/>), to style as your console does.</description></item>
+    /// <item><description><see cref="SplashTitle"/>: a title of your own, which <see cref="PlatformSplash.Lines"/> puts between the logo and the slogan and
+    /// centres the slogan under.</description></item>
+    /// <item><description><see cref="PlatformSplash.WriteTo"/>: the same lines, written as plain text.</description></item>
+    /// <item><description><paramref name="args"/>: the command line, for a splash that depends on what the application was asked to do.</description></item>
+    /// </list>
+    /// <para>
+    /// <strong>No splash.</strong> An override that draws nothing shows no splash at all. It can also draw nothing for some command lines only, and call the
+    /// base implementation for the others: for a command whose output is the splash itself, say.
+    /// </para>
+    /// </remarks>
+    /// <example>
+    /// <para>The platform's splash with a title of the application's own, in plain text:</para>
+    /// <code>
+    /// protected override void ShowSplash(IServiceProvider provider, IReadOnlyList&lt;string&gt; args)
+    ///     =&gt; PlatformSplash.WriteTo(Console.Out, title: new SplashTitle(["M Y   A P P"], LogoIndent: 0));
+    /// </code>
+    /// <para>Each line styled by its part, as a console with colours draws it:</para>
+    /// <code>
+    /// protected override void ShowSplash(IServiceProvider provider, IReadOnlyList&lt;string&gt; args)
+    /// {
+    ///     foreach (var line in PlatformSplash.Lines(title: new SplashTitle(["M Y   A P P"], LogoIndent: 0)))
+    ///     {
+    ///         Console.ForegroundColor = line.Part == SplashPart.Title ? ConsoleColor.White : ConsoleColor.Yellow;
+    ///         Console.WriteLine(line.Text);
+    ///     }
+    ///     Console.ResetColor();
+    /// }
+    /// </code>
+    /// <para>No splash:</para>
+    /// <code>
+    /// protected override void ShowSplash(IServiceProvider provider, IReadOnlyList&lt;string&gt; args) { }
+    /// </code>
+    /// </example>
+    /// <param name="provider">The application's services, as <see cref="BeforeAppStartAsync"/> left them.</param>
+    /// <param name="args">The command line the application was started with.</param>
+    protected virtual void ShowSplash(IServiceProvider provider, IReadOnlyList<string> args)
+    {
+        if (WritesToConsole && !Console.IsOutputRedirected)
+        {
+            PlatformSplash.WriteTo(Console.Out);
+        }
+    }
 
     /// <summary>
     /// 🧩 A method that runs after <see cref="IRDCoreApp.RunAsync"/> returns, but before the host is stopped.<br/>
@@ -133,6 +200,7 @@ public abstract class AppHost<TApp>() : IDisposable
         }
 
         await BeforeAppStartAsync(_host.Services);
+        ShowSplash(_host.Services, args);
 
         try
         {
@@ -292,13 +360,6 @@ public abstract class AppHost<TApp>() : IDisposable
             // something went wrong:
             await (WritesToConsole ? Console.Out : Console.Error).WriteLineAsync(exception.ToString());
             return -1;
-        }
-        finally
-        {
-            if (WritesToConsole)
-            {
-                Console.WriteLine("V I V A T  ♥  C U C U M I S ™\n©Copyright 2026 9562-7303 Québec inc.");
-            }
         }
 
         return _unhandledFault is null ? ExitCode : Math.Max(ExitCode, 1);

@@ -24,6 +24,11 @@
     <PackageReference Include="System.IO.Abstractions" Version="22.2.0" />
   </ItemGroup>
 
+  <!-- the year of the copyright, which the platform's splash reads from the assembly (PlatformSplash.CopyrightYear); the company is the assembly's own. -->
+  <ItemGroup>
+    <AssemblyMetadata Include="CopyrightYear" Value="$(CopyrightYear)" />
+  </ItemGroup>
+
   <!-- the protocol ships inside this package as its own assembly, so it is no package dependency: its assembly, xmldoc and fr resources
        go in lib/, and its symbols in the .snupkg. -->
   <ItemGroup>
