@@ -31,6 +31,29 @@ public static class CoreAssistantTools
     /// <see cref="LocationsToolResult"/>.
     /// </summary>
     public const string Definition = "definition";
+
+    /// <summary>
+    /// What the name or expression written at a position is, as <c>rdcore/semantics/describe</c> describes it: <see cref="PositionToolArguments"/>,
+    /// answered with a <c>DescribeToolResult</c> (RDCore.SDK).
+    /// </summary>
+    public const string DescribeAt = "describe_at";
+
+    /// <summary>
+    /// The declarations of a document's module, as <c>rdcore/semantics/outline</c> outlines it: <see cref="OutlineToolArguments"/>, answered with an
+    /// <c>OutlineToolResult</c> (RDCore.SDK).
+    /// </summary>
+    public const string Outline = "outline";
+}
+
+/// <summary>
+/// The arguments of <see cref="CoreAssistantTools.Outline"/>.
+/// </summary>
+public sealed record class OutlineToolArguments
+{
+    /// <summary>
+    /// The document: a path relative to the workspace root, or absolute.
+    /// </summary>
+    public required string Path { get; init; }
 }
 
 /// <summary>

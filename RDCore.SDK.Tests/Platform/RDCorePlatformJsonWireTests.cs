@@ -232,6 +232,8 @@ public sealed class RDCorePlatformJsonWireTests
             Notices = [new RefactorNotice { Code = "extractMethod.shadows", Kind = RefactorNoticeKind.Note, Message = "m", Related = new SourceLocation(Module, Range), Choice = "name", Item = "total" }],
         });
         yield return Same(new Refactoring(true));
+        yield return (new SemanticsDescribeParams { Uri = Module, Position = new SourcePosition(1, 2) }, new SemanticsDescribeRequest { Uri = Module, Position = new SourcePosition(1, 2) });
+        yield return (new SemanticsOutlineParams { Uri = Module }, new SemanticsOutlineRequest { Uri = Module });
         yield return Same(new FakesTable(
         [
             new FakeRow(
@@ -309,6 +311,8 @@ public sealed class RDCorePlatformJsonWireTests
         ("RefactorIdentifierCheckParams", """{"kind":"refactor.extract.method","uri":"file:///c:/workspace/Module1.bas","range":{"start":{"line":1,"character":2},"end":{"line":3,"character":4},"isEmpty":false},"answers":[{"id":"parameters","value":null,"items":[{"id":"total","answers":[{"id":"name","value":"Sum","items":[]}]}]}]}"""),
         ("RefactorIdentifierCheckResult", """{"notices":[{"code":"extractMethod.shadows","kind":2,"message":"m","location":null,"related":{"uri":"file:///c:/workspace/Module1.bas","range":{"start":{"line":1,"character":2},"end":{"line":3,"character":4},"isEmpty":false}},"choice":"name","item":"total"}]}"""),
         ("Refactoring", """{"isSupported":true}"""),
+        ("SemanticsDescribeParams", """{"uri":"file:///c:/workspace/Module1.bas","position":{"line":1,"character":2}}"""),
+        ("SemanticsOutlineParams", """{"uri":"file:///c:/workspace/Module1.bas"}"""),
         ("FakesTable", """{"rows":[{"target":"VBA.Interaction.MsgBox","arguments":[{"index":0,"match":2,"value":{"typeName":"String","value":"Save*"},"upper":null},{"index":1,"match":3,"value":{"typeName":"Long","value":"0"},"upper":{"typeName":"Long","value":"4"}}],"when":{"kind":1,"n":2},"action":{"kind":0,"value":{"typeName":"Long","value":"6"},"errorNumber":0,"errorDescription":null,"assignments":[{"index":3,"value":{"typeName":"Date","value":"2026-11-15T00:00:00"}}]}},{"target":"VBA.Interaction.Shell","arguments":[],"when":{"kind":0,"n":0},"action":{"kind":1,"value":null,"errorNumber":53,"errorDescription":"File not found","assignments":[]}}]}"""),
         ("FakesTableDelta", """{"reset":true,"add":[{"target":"VBA.DateTime.Now","arguments":[{"index":0,"match":0,"value":null,"upper":null}],"when":{"kind":0,"n":0},"action":{"kind":2,"value":null,"errorNumber":0,"errorDescription":null,"assignments":[]}}],"remove":["VBA.Interaction.MsgBox"]}"""),
         ("FakeInvocationRecord", """{"target":"VBA.Interaction.MsgBox","ordinal":2,"arguments":[{"typeName":"String","value":"Save?"},{"typeName":"Empty","value":null}],"module":"Module1","procedure":"Main","line":3,"character":4,"answered":true}"""),
@@ -418,6 +422,8 @@ public sealed class RDCorePlatformJsonWireTests
         ("RefactorCheckIdentifier", "rdcore/refactor/checkIdentifier"),
         ("ToolsList", "rdcore/tools/list"),
         ("ToolsCall", "rdcore/tools/call"),
+        ("SemanticsDescribe", "rdcore/semantics/describe"),
+        ("SemanticsOutline", "rdcore/semantics/outline"),
     ];
 
     [TestMethod]
