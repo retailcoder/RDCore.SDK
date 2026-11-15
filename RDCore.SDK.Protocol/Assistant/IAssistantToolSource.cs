@@ -5,8 +5,8 @@ namespace RDCore.SDK.Assistant;
 /// (<c>rdcore/tools/list</c> and <c>rdcore/tools/call</c>).
 /// </summary>
 /// <remarks>
-/// A <see cref="McpToolServer"/> serves the tools of one source. <c>rdc mcp</c> fills it from its LSP connection; an IDE add-in fills it from its host's
-/// channel to the language server.
+/// A <see cref="McpToolServer"/> serves the tools of one source. A client app fills it from its LSP connection (<c>ClientAppToolSource</c>); an IDE add-in
+/// can fill it from its host's channel to the language server.
 /// </remarks>
 public interface IAssistantToolSource
 {
