@@ -301,4 +301,21 @@ public sealed class ProjectFileTests
         Assert.IsTrue(eqopResult, "== operation should return true");
         Assert.IsFalse(neqopResult, "!= operation should return false");
     }
+
+    [TestMethod]
+    public void TheProjectsName_IsWhereItsFileWritesIt_AndNotTheNameOfAReference()
+    {
+        const string text = "﻿{\r\n  \"Version\": \"1.1\",\r\n  \"References\": [ { \"Name\": \"VBA\" } ],\r\n  \"Name\": \"Café\",\r\n  \"Modules\": []\r\n}";
+
+        var range = ProjectFile.NameRangeIn(text);
+
+        Assert.AreEqual(new RDCore.SDK.Model.Source.SourceRange(new RDCore.SDK.Model.Source.SourcePosition(3, 11), new RDCore.SDK.Model.Source.SourcePosition(3, 15)), range);
+    }
+
+    [TestMethod]
+    [DataRow("{ \"Version\": \"1.1\" }", DisplayName = "no name")]
+    [DataRow("{ \"Name\": 3 }", DisplayName = "a name that is no string")]
+    [DataRow("not a project", DisplayName = "no JSON")]
+    public void AFileThatWritesNoName_HasNoRangeOfIt(string text)
+        => Assert.IsNull(ProjectFile.NameRangeIn(text));
 }
