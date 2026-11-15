@@ -19,7 +19,7 @@ public record class ToolsListParams;
 public record class ToolsListResult
 {
     /// <summary>
-    /// Each tool, by its name.
+    /// Each tool, in the order the server lists them.
     /// </summary>
     public IReadOnlyList<ToolDescriptor> Tools { get; init; } = [];
 }
@@ -59,7 +59,7 @@ public sealed record class ToolDescriptor
     public JsonObject? OutputSchema { get; init; }
 
     /// <summary>
-    /// What a call does to the workspace, which a client asks its user to approve by.
+    /// What a call does to the workspace: the hints a client decides by whether to ask its user before a call.
     /// </summary>
     public ToolAnnotations Annotations { get; init; } = new();
 }

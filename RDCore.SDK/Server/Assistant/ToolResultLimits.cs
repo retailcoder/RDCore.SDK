@@ -7,7 +7,7 @@ namespace RDCore.SDK.Server.Assistant;
 /// </summary>
 /// <remarks>
 /// A list beyond its cap is answered with its first items, its total, and <c>truncated: true</c>; its text ends with a line that says how many are shown
-/// (<see cref="TruncatedLine{T}"/>). An assistant narrows the call (a path, a range, a query) to see the others.
+/// (<see cref="TruncatedLine{T}"/>). An assistant narrows the call (a path, a query) to see the others.
 /// </remarks>
 public static class ToolResultLimits
 {

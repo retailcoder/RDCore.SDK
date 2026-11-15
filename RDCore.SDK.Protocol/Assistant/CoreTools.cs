@@ -172,7 +172,7 @@ public sealed record class ToolDiagnostic
     public string? HelpUrl { get; init; }
 
     /// <summary>
-    /// Whether a code action fixes it: the fix tools list it.
+    /// Whether a code action fixes it.
     /// </summary>
     public bool HasFix { get; init; }
 }

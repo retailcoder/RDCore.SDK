@@ -422,8 +422,9 @@ public record class CliCommand(bool IsSupported = false) : CorePlatformClientCap
 public record class Refactoring(bool IsSupported = false) : CorePlatformClientCapability(IsSupported);
 
 /// <summary>
-/// Advertises that the language server serves an assistant the tools of its catalogue (<c>rdcore/tools/list</c>, <c>rdcore/tools/call</c>): reading the
-/// workspace's diagnostics and symbols, and listing, previewing and applying fixes. A client that expects it lists the tools and calls them.
+/// Advertises that the language server serves an assistant the tools of its catalogue (<c>rdcore/tools/list</c>, <c>rdcore/tools/call</c>), such as the
+/// tools of <see cref="Assistant.CoreAssistantTools"/>, which read the workspace's diagnostics and symbols. A client that expects it lists
+/// the tools and calls them.
 /// </summary>
 /// <remarks>
 /// The tools are shaped as the <strong>Model Context Protocol</strong> shapes them (<see cref="Assistant.ToolDescriptor"/>), so that a client that bridges

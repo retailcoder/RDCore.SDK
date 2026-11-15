@@ -21,7 +21,7 @@ namespace RDCore.SDK.Server.Assistant;
 /// </para>
 /// <para>
 /// The arguments are read the way <see cref="RDCorePlatformJson.Options"/> reads a message, in any case, and an argument that is not a member of
-/// <typeparamref name="TArguments"/> refuses the call: a misspelt argument is told, never ignored.
+/// <typeparamref name="TArguments"/> refuses the call: a misspelled argument is told, never ignored.
 /// </para>
 /// </remarks>
 /// <typeparam name="TArguments">The arguments of a call.</typeparam>
