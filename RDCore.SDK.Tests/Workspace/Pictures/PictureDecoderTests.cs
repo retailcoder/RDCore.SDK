@@ -350,11 +350,10 @@ public sealed class PictureDecoderTests
     }
 
     [TestMethod]
-    public void AJpegAndAMetafile_AreNotDecoded_AndARefusedPicture_IsRefused()
+    public void AMetafile_IsNotDecoded_AndARefusedPicture_IsRefused()
     {
-        Assert.AreEqual(PictureDecodeFailure.NotDecoded, PictureDecoder.TryDecode(JpegHeader(9, 11), out var jpeg));
-        Assert.IsNull(jpeg);
-        Assert.AreEqual(PictureDecodeFailure.NotDecoded, PictureDecoder.TryDecode(Hex("D7CDC69A 0000 0000 0000 A005 D002 A005 00000000 0000"), out _));
+        Assert.AreEqual(PictureDecodeFailure.NotDecoded, PictureDecoder.TryDecode(Hex("D7CDC69A 0000 0000 0000 A005 D002 A005 00000000 0000"), out var metafile));
+        Assert.IsNull(metafile);
         Assert.AreEqual(PictureDecodeFailure.Refused, PictureDecoder.TryDecode(PngHeader(PictureHeader.MaxSide + 1, 1), out _));
         Assert.AreEqual(PictureDecodeFailure.Refused, PictureDecoder.TryDecode(ReadOnlySpan<byte>.Empty, out _));
         Assert.AreEqual(PictureDecodeFailure.NotDecoded, PictureDecoder.TryDecode(Bitmap(1, 1, 2, 0, [0, 0, 0, 0], [0, 0, 0, 0]), out _));

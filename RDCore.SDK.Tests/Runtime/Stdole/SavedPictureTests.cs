@@ -120,7 +120,6 @@ public sealed class SavedPictureTests
     }
 
     [TestMethod]
-    [Ignore("JPEG pixels are not decoded")]
     public void AJpeg_IsSavedAsA24BitBitmap()
         => Assert.AreEqual("len 362 424D6A01000000000000360000002800", Head(Saved(JpegHeader(9, 11))));
 
