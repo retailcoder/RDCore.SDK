@@ -21,9 +21,13 @@ public static class TextEditExtensions
     /// position encoding of the protocol. A position past the end of its line is the end of the line, before its line end; a line past the last one is the end
     /// of the text.
     /// </remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="edits"/> or <paramref name="text"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException">Two edits overlap, or an edit ends before it starts.</exception>
     public static string ApplyTo(this IEnumerable<TextEdit> edits, string text)
     {
+        ArgumentNullException.ThrowIfNull(edits);
+        ArgumentNullException.ThrowIfNull(text);
+
         var lines = LinesOf(text);
         var placed = edits
             .Select((edit, index) => (Start: OffsetOf(text, lines, edit.Range.Start), End: OffsetOf(text, lines, edit.Range.End), edit.NewText, Index: index))
