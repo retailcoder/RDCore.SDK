@@ -78,12 +78,15 @@ public sealed class StdPictureObject
     /// <remarks>
     /// <para>
     /// A picture is what its header says it is (<see cref="PictureHeader.TryRead"/>). A metafile whose header states no size is not one
-    /// <c>LoadPicture</c> reads. A PNG is a bitmap of the size its header states, its bytes kept as they are, alpha channel included: an RD-VBA addition,
-    /// where MS-VBA raises error 481 for one. An icon or a cursor is its image of the size asked for, of the most bits per pixel when it has several of that size,
-    /// and otherwise its first image, whatever its size. Asking for 0 by 0 is asking for the system's icon size, 32 by 32.
+    /// <c>LoadPicture</c> reads. A PNG is a bitmap of the size its header states, its bytes kept as they are, alpha channel included: an
+    /// RD-VBA addition, where MS-VBA raises error 481 for one. An icon or a cursor is its image of the size asked for, of the most bits per pixel
+    /// when it has several of that size, and otherwise its first image, whatever its size. Asking for 0 by 0 is asking for the system's icon size,
+    /// 32 by 32.
     /// </para>
-    /// <para>The failures are those MS-VBA raises for the same files (Excel 64-bit), with the error numbers <see cref="StdPictureLoadFailure"/> gives. A PNG
-    /// whose header is malformed is an invalid picture.</para>
+    /// <para>
+    /// The failures are those MS-VBA raises for the same files (Excel 64-bit), with the error numbers <see cref="StdPictureLoadFailure"/> gives. A
+    /// PNG whose header is malformed is an invalid picture.
+    /// </para>
     /// </remarks>
     /// <param name="bytes">The file's bytes. The picture keeps them as they are.</param>
     /// <param name="iconWidth">The width in pixels of the image to load from an icon or a cursor; ignored for any other picture.</param>
