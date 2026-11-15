@@ -23,7 +23,7 @@ namespace RDCore.SDK.Runtime.Stdole;
 /// <para>
 /// A font whose name was never set reads <c>MS Sans Serif</c> but is drawn in a scalable face, as MS-VBA draws it in the face Windows
 /// maps no name to: its sizes snap to whole pixels, of at least 2, and a size of 2 pixels reads back as 3 (2.25 points). Setting any
-/// name, <c>MS Sans Serif</c> included, gives it that face's sizes.
+/// name, <c>MS Sans Serif</c> included, gives it that face's sizes. <see cref="IsNamed"/> tells the two apart, for whoever draws the font.
 /// </para>
 /// <para>
 /// The object is safe to use from several threads. <see cref="Changed"/> is raised on the thread that made the change.
@@ -123,6 +123,21 @@ public sealed class StdFontObject
     }
 
     /// <summary>
+    /// Whether the font's name was ever set (<see cref="TrySetName"/>). A font never named reads <c>MS Sans Serif</c> but is drawn in a
+    /// scalable face, at the sizes <see cref="DrawnSize"/> gives for no name.
+    /// </summary>
+    public bool IsNamed
+    {
+        get
+        {
+            lock (_lock)
+            {
+                return _named;
+            }
+        }
+    }
+
+    /// <summary>
     /// The font's size in points, which <c>Size</c> reads: the size it is drawn at (<see cref="DrawnSize"/>).
     /// </summary>
     /// <remarks>
@@ -137,7 +152,7 @@ public sealed class StdFontObject
             {
                 if (!_sizeIsDrawn)
                 {
-                    _size = _named ? DrawnSize(_name, _size) : UnnamedDrawnPixels(_size) * 0.75m;
+                    _size = DrawnSize(_named ? _name : null, _size);
                     _sizeIsDrawn = true;
                 }
 
@@ -359,22 +374,26 @@ public sealed class StdFontObject
     /// The size a font of a face is drawn at, and so the size a font reads back, in points.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// A font is drawn at a whole number of pixels, 96 to an inch, so at a multiple of 0.75 points: the size asked, in pixels and rounded
     /// half up, at least 2 pixels and at most 32767. <c>MS Sans Serif</c>, <c>MS Serif</c>, <c>Courier</c>, <c>System</c> and <c>Small Fonts</c> are
     /// bitmap fonts, each drawn at sizes of its own up to 160 pixels (153 for <c>Small Fonts</c>): <c>MS Sans Serif</c> asked for 8 points,
     /// about 10.7 pixels, is drawn at 11 pixels, 8.25 points. Past those sizes, they are drawn at whole pixels too. The sizes are those
     /// VB6 and Excel read back; the face name is compared ignoring case.
+    /// </para>
+    /// <para>
+    /// A font never named (<see cref="IsNamed"/>) is drawn in the scalable face Windows maps no name to: at whole pixels too, but a size
+    /// of 2 pixels is drawn at 3 (2.25 points), as measured in VB6 and Excel.
+    /// </para>
     /// </remarks>
-    /// <param name="name">The face name.</param>
+    /// <param name="name">The face name, or <see langword="null"/> for a font never named.</param>
     /// <param name="size">The size asked for, in points; more than 0.</param>
     /// <returns>The size the font is drawn at, in points.</returns>
-    /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="size"/> is 0 or less.</exception>
-    public static decimal DrawnSize(string name, decimal size)
+    public static decimal DrawnSize(string? name, decimal size)
     {
-        ArgumentNullException.ThrowIfNull(name);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(size);
-        return DrawnPixels(name, size) * 0.75m;
+        return (name is null ? UnnamedDrawnPixels(size) : DrawnPixels(name, size)) * 0.75m;
     }
 
     private static decimal DrawnPixels(string name, decimal size)
