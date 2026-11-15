@@ -47,8 +47,8 @@ public static class PictureWriter
     /// <param name="picture">The picture.</param>
     /// <param name="bitsPerPixel">
     /// 24, to write <see cref="DecodedPicture.Bgra"/> with its alpha left out; or 1, 4 or 8, to write <see cref="DecodedPicture.Indexes"/> with a color table
-    /// of 2, 16 or 256 entries: <see cref="DecodedPicture.Palette"/>, then the <see cref="StandardColors"/> it lacks, in their order, where they fill the
-    /// table exactly, and black entries otherwise.
+    /// of 2, 16 or 256 entries: <see cref="DecodedPicture.Palette"/>, then the <see cref="StandardColors"/> it lacks, in their order, when the palette and
+    /// they fill the table exactly; otherwise black entries fill it.
     /// </param>
     /// <returns>The bitmap file's bytes.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="picture"/> is <see langword="null"/>.</exception>
