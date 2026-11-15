@@ -220,7 +220,7 @@ public sealed record class ClassDescription
     /// <remarks>
     /// MS-VBA asks the object for the name, and a type library does not say which one an object gives: <c>Scripting.Dictionary</c> reports its class and
     /// <c>StdPicture</c> its interface, though both have a <see cref="DefaultInterface"/>. So this is stated from what was observed and never derived, and a
-    /// description exported from a type library leaves it out. Stated from format version 4 of the file (<see cref="LibraryJson.CurrentFormatVersion"/>).
+    /// description exported from a type library leaves it out. A file states it from format version 4 (<see cref="LibraryJson.CurrentFormatVersion"/>).
     /// </remarks>
     public string? TypeName { get; init; }
 

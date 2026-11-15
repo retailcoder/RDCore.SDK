@@ -62,7 +62,10 @@ public static class LibraryJson
     /// Reads a description.
     /// </summary>
     /// <param name="json">The text of the file.</param>
-    /// <exception cref="InvalidDataException">The text is not a description this reads: it is not JSON of the format, has no name, or is of a format version this does not know.</exception>
+    /// <exception cref="InvalidDataException">
+    /// The text is not a description this reads: it is not JSON of the format, has no name, is of a format version this does not know, or states what its
+    /// format version does not have (a dependency's identity before version 2, modules before version 3, a class's type name before version 4).
+    /// </exception>
     public static LibraryDescription Read(string json)
     {
         LibraryDescription? description;
