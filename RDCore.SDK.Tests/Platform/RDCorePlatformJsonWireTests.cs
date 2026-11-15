@@ -288,8 +288,8 @@ public sealed class RDCorePlatformJsonWireTests
         ("DebugStackResult", """{"frames":[{"id":1,"procedure":"Main","module":"Module1","line":2,"character":3,"handler":"ErrHandler","returnLines":[4],"beginsAnEvent":true},{"id":2,"procedure":"Other","module":"Module1","line":5,"character":6,"handler":null,"returnLines":[],"beginsAnEvent":false}]}"""),
         ("DebugVariablesResult", """{"variables":[{"name":"i","value":"1","type":"Integer","reference":0},{"name":"o","value":"Object","type":"Class1","reference":3}],"notListed":2}"""),
         ("DebugEvaluateResult", """{"success":true,"value":"2","type":"Integer","reference":1,"error":"none","output":["x"],"endedTheProgram":true}"""),
-        ("PlatformInitializeParams", """{"expectedComponent":1,"expected":{"parsing":{"parseFullDocument":{"isSupported":true},"parseTokens":{"isSupported":false}},"environmentHost":{"defineSymbols":{"isSupported":true},"sessionStatus":{"isSupported":false},"sessionExecute":{"isSupported":false},"sessionDiscard":{"isSupported":false},"projectReload":{"isSupported":false},"programDebugging":{"isSupported":false},"semanticAnalysis":{"isSupported":false},"sessionMemoryAccess":{"isSupported":false}},"languageServer":{"sessionStatus":{"isSupported":false},"sessionExecute":{"isSupported":true},"programDebugging":{"isSupported":false},"sessionDiscard":{"isSupported":false},"sessionAnalyze":{"isSupported":false},"sessionCompletion":{"isSupported":false},"sessionSignatureHelp":{"isSupported":false},"sessionSemanticTokens":{"isSupported":false},"sessionMemoryAccess":{"isSupported":false},"sessionInteraction":{"isSupported":true},"sessionStops":{"isSupported":true},"unattended":{"isSupported":true},"rubberduckIndenterSettings":{"isSupported":false},"listSettingValue":{"isSupported":false},"refactoring":{"isSupported":false}}}}"""),
-        ("PlatformInitializeParams", """{"expectedComponent":1,"expected":{"languageServer":{"sessionStatus":{"isSupported":false},"sessionExecute":{"isSupported":false},"programDebugging":{"isSupported":false},"sessionDiscard":{"isSupported":false},"sessionAnalyze":{"isSupported":false},"sessionCompletion":{"isSupported":false},"sessionSignatureHelp":{"isSupported":false},"sessionSemanticTokens":{"isSupported":false},"sessionMemoryAccess":{"isSupported":false},"sessionInteraction":{"isSupported":false},"sessionStops":{"isSupported":false},"unattended":{"isSupported":false},"rubberduckIndenterSettings":{"isSupported":false},"listSettingValue":{"isSupported":false},"refactoring":{"isSupported":false}}}}"""),
+        ("PlatformInitializeParams", """{"expectedComponent":1,"expected":{"parsing":{"parseFullDocument":{"isSupported":true},"parseTokens":{"isSupported":false}},"environmentHost":{"defineSymbols":{"isSupported":true},"sessionStatus":{"isSupported":false},"sessionExecute":{"isSupported":false},"sessionDiscard":{"isSupported":false},"projectReload":{"isSupported":false},"programDebugging":{"isSupported":false},"semanticAnalysis":{"isSupported":false},"sessionMemoryAccess":{"isSupported":false}},"languageServer":{"sessionStatus":{"isSupported":false},"sessionExecute":{"isSupported":true},"programDebugging":{"isSupported":false},"sessionDiscard":{"isSupported":false},"sessionAnalyze":{"isSupported":false},"sessionCompletion":{"isSupported":false},"sessionSignatureHelp":{"isSupported":false},"sessionSemanticTokens":{"isSupported":false},"sessionMemoryAccess":{"isSupported":false},"sessionInteraction":{"isSupported":true},"sessionStops":{"isSupported":true},"unattended":{"isSupported":true},"rubberduckIndenterSettings":{"isSupported":false},"listSettingValue":{"isSupported":false},"refactoring":{"isSupported":false},"assistantTools":{"isSupported":false}}}}"""),
+        ("PlatformInitializeParams", """{"expectedComponent":1,"expected":{"languageServer":{"sessionStatus":{"isSupported":false},"sessionExecute":{"isSupported":false},"programDebugging":{"isSupported":false},"sessionDiscard":{"isSupported":false},"sessionAnalyze":{"isSupported":false},"sessionCompletion":{"isSupported":false},"sessionSignatureHelp":{"isSupported":false},"sessionSemanticTokens":{"isSupported":false},"sessionMemoryAccess":{"isSupported":false},"sessionInteraction":{"isSupported":false},"sessionStops":{"isSupported":false},"unattended":{"isSupported":false},"rubberduckIndenterSettings":{"isSupported":false},"listSettingValue":{"isSupported":false},"refactoring":{"isSupported":false},"assistantTools":{"isSupported":false}}}}"""),
         ("PlatformInitializeResult", """{"component":1,"provided":["SessionExecute","SessionStatus"]}"""),
         ("DiagnoseDocument", """{"isSupported":true}"""),
         ("CliCommand", """{"isSupported":true}"""),
@@ -416,6 +416,8 @@ public sealed class RDCorePlatformJsonWireTests
         ("RefactorPrepare", "rdcore/refactor/prepare"),
         ("RefactorApply", "rdcore/refactor/apply"),
         ("RefactorCheckIdentifier", "rdcore/refactor/checkIdentifier"),
+        ("ToolsList", "rdcore/tools/list"),
+        ("ToolsCall", "rdcore/tools/call"),
     ];
 
     [TestMethod]
@@ -451,10 +453,12 @@ public sealed class RDCorePlatformJsonWireTests
         ];
         // the project file model is a workspace's .rdproj, which a client reads from disk: it is no message either.
         var projectFileModel = typeof(ProjectFile).Namespace;
+        // the rdcore/tools/* messages hold JSON, and the tools' arguments and results travel inside it: AssistantToolsWireTests has them all.
+        var assistantTools = typeof(RDCore.SDK.Assistant.ToolDescriptor).Namespace;
 
         var unreached = typeof(RDCorePlatformJson).Assembly.GetExportedTypes()
             .Where(type => !type.IsAbstract && !type.IsEnum && !type.IsInterface && !typeof(Exception).IsAssignableFrom(type) && !notMessages.Contains(type) && !reached.Contains(type))
-            .Where(type => type.Namespace != projectFileModel)
+            .Where(type => type.Namespace != projectFileModel && type.Namespace != assistantTools)
             .Select(type => type.FullName)
             .ToList();
 
