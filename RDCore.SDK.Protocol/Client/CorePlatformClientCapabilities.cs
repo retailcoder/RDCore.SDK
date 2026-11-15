@@ -82,6 +82,12 @@ public class EnvironmentHostCapabilities
     public ProjectReload ProjectReload { get; set; } = new();
 
     /// <summary>
+    /// If supported, the environment host composes the other projects of the workspace for analysis only, over <c>rdcore/host/project/analyze</c>, and drops
+    /// them over <c>rdcore/host/project/release</c>: the modules of each are defined and analyzed, and never run.
+    /// </summary>
+    public ProjectAnalysis ProjectAnalysis { get; set; } = new();
+
+    /// <summary>
     /// If supported, the environment host can run a program so that it stops and waits where a <c>Stop</c> or a break puts it, and resumes, steps or ends it
     /// over <c>rdcore/host/debug/*</c>.
     /// </summary>
@@ -207,6 +213,7 @@ public class LanguageServerCapabilities
 [JsonDerivedType(typeof(ParseTokens))]
 [JsonDerivedType(typeof(DefineSymbols))]
 [JsonDerivedType(typeof(ProjectReload))]
+[JsonDerivedType(typeof(ProjectAnalysis))]
 [JsonDerivedType(typeof(CliCommand))]
 [JsonDerivedType(typeof(DiagnoseDocument))]
 [JsonDerivedType(typeof(SessionStatus))]
@@ -280,6 +287,17 @@ public record class SessionDiscard(bool IsSupported = false) : CorePlatformClien
 /// is not one until the session is composed again. A program that is running or waits keeps the session it runs in.
 /// </remarks>
 public record class ProjectReload(bool IsSupported = false) : CorePlatformClientCapability(IsSupported);
+
+/// <summary>
+/// Advertises that the declaring component composes the other projects of a workspace for analysis only, over <c>rdcore/host/project/analyze</c> and
+/// <c>rdcore/host/project/release</c> between the language server and the component that owns the runtime session.
+/// </summary>
+/// <remarks>
+/// Each project is composed on its own, with the references its project file lists, as the runtime session is composed: its names bind as they would in a
+/// run. The runtime session is never changed by it, and a program is never run in a project composed for analysis.
+/// </remarks>
+/// <param name="IsSupported">Whether the capability is expected, or provided.</param>
+public record class ProjectAnalysis(bool IsSupported = false) : CorePlatformClientCapability(IsSupported);
 
 /// <summary>
 /// Advertises that the declaring component can run a program under a debugger: the program waits where a <c>Stop</c> or a break puts it

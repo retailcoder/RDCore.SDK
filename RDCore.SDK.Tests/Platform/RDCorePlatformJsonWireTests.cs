@@ -126,7 +126,7 @@ public sealed class RDCorePlatformJsonWireTests
             Expected = new CorePlatformClientCapabilities
             {
                 Parsing = new ParserCapabilities { ParseFullDocument = new ParseFullDocument(true) },
-                EnvironmentHost = new EnvironmentHostCapabilities { DefineSymbols = new DefineSymbols(true) },
+                EnvironmentHost = new EnvironmentHostCapabilities { DefineSymbols = new DefineSymbols(true), ProjectAnalysis = new ProjectAnalysis(true) },
                 LanguageServer = new LanguageServerCapabilities
                 {
                     SessionExecute = new SessionExecute(true), SessionInteraction = new SessionInteraction(true), SessionStops = new SessionStops(true),

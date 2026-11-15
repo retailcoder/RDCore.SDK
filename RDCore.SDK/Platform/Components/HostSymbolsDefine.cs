@@ -32,6 +32,8 @@ public record class DefineSymbolsParams : IRequest, IRequest<DefineSymbolsResult
     /// <summary>
     /// The workspace root the module and its symbols are addressed under. Matches the root the host
     /// composed its session with, so reconstructed symbol <c>Uri</c>s line up with the module symbol.
+    /// The root of a project the host composed for analysis (<see cref="HostProjectAnalyzeParams"/>)
+    /// defines the module in that project, and the runtime session is left as it is.
     /// </summary>
     public Uri? WorkspaceRoot { get; init; }
 

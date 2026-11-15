@@ -49,6 +49,18 @@ public static class RDCoreComponentProtocol
     public const string HostProjectReload = "rdcore/host/project/reload";
 
     /// <summary>
+    /// Asks the environment host to compose a project of the workspace other than the one it runs, for analysis only (<see cref="HostProjectAnalyzeParams"/>):
+    /// what the language server asks for each other project it loads, before it defines that project's modules.
+    /// </summary>
+    public const string HostProjectAnalyze = "rdcore/host/project/analyze";
+
+    /// <summary>
+    /// Asks the environment host to drop a project it composed for analysis (<see cref="HostProjectReleaseParams"/>): what the language server asks once the
+    /// client took the project's folder out of the workspace.
+    /// </summary>
+    public const string HostProjectRelease = "rdcore/host/project/release";
+
+    /// <summary>
     /// Tells the language server what a program printed, as it prints: a notification from the environment host, sent for a program that was run with its
     /// output streamed (<c>HostExecuteParams.StreamOutput</c>).
     /// </summary>
