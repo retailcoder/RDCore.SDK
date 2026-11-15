@@ -67,8 +67,8 @@ public sealed record class ExternalCallRequest(
     /// The runtime sets it when it builds the request; it is <see langword="false"/> for a creation and for a call that obtains an object by name.
     /// </summary>
     /// <remarks>
-    /// An interceptor that refuses automation lets such a call through, and one that fakes calls leaves it to the platform: it is part of the program's own
-    /// user interface, even when <see cref="IsAutomation"/> is <see langword="true"/> because the form's classes belong to a referenced library.
+    /// An interceptor that refuses automation is to let such a call through, and one that fakes calls is to leave it to the platform: the call is part of
+    /// the program's own user interface, even when <see cref="IsAutomation"/> is <see langword="true"/> because the form's classes belong to a referenced library.
     /// </remarks>
     public bool IsAnsweredByPlatform { get; init; }
 
