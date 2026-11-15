@@ -102,7 +102,7 @@ public enum FakeMatch
 public sealed record class FakeArgumentMatcher(int Index, FakeMatch Match, RunValue? Value = null, RunValue? Upper = null);
 
 /// <summary>
-/// Which calls of its target a <see cref="FakeRow"/> matches.
+/// The kind of a <see cref="FakeInvocation"/>: every call of the target, or the nth.
 /// </summary>
 public enum FakeInvocationKind
 {
