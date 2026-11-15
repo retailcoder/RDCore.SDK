@@ -1,9 +1,11 @@
 using RDCore.SDK.Model;
+using RDCore.SDK.Model.AST.Abstract;
 using RDCore.SDK.Model.Source;
 using RDCore.SDK.Model.Symbols;
 using RDCore.SDK.Model.Symbols.Abstract;
 using RDCore.SDK.Model.Symbols.VBProject;
 using RDCore.SDK.Model.Types;
+using RDCore.SDK.Model.Types.Complex;
 using RDCore.SDK.Platform.Protocol;
 using RDCore.SDK.Semantics;
 
@@ -86,6 +88,82 @@ public sealed class DescribedSymbolsTests
         Assert.IsNull(described.References);
         Assert.IsNull(described.Hides);
         Assert.IsNull(described.AutoInstantiates);
+    }
+
+    [TestMethod]
+    public void TheModelsFacts_DescribeTheSymbol()
+    {
+        var field = new VBModuleFieldVariableMemberSymbol(Root, Module, "total", ScopeKind.Module, VBLongType.TypeInfo, Range, Range, AccessModifier.Private)
+            .With(SymbolProperties.DocString, "The running total.");
+
+        var described = DescribedSymbols.Describe(field, "Private total As Long");
+
+        Assert.AreEqual(field.Uri, described.Id);
+        Assert.AreEqual("total", described.Name);
+        Assert.AreEqual("Private total As Long", described.Declaration);
+        Assert.AreEqual(DescribedSymbolKind.Variable, described.Kind);
+        Assert.AreEqual(DescribedScope.Module, described.Scope);
+        Assert.AreEqual("Long", described.DeclaredType);
+        Assert.AreEqual(DeclaredTypeKind.Intrinsic, described.TypeKind);
+        Assert.IsFalse(described.IsArray);
+        Assert.AreEqual(AccessModifier.Private, described.Access);
+        Assert.AreEqual("The running total.", described.Documentation);
+        Assert.IsNull(described.Library);
+        Assert.IsNull(described.IsImplicit);
+    }
+
+    [TestMethod]
+    public void ASub_HasNoDeclaredType()
+    {
+        var sub = new VBProcedureMemberSymbol(Root, Module, "DoSomething", ScopeKind.Module, SymbolKindExt.Procedure, VBVoidType.TypeInfo, Range, Range, AccessModifier.Public);
+
+        var described = DescribedSymbols.Describe(sub, "Public Sub DoSomething()");
+
+        Assert.IsNull(described.DeclaredType);
+        Assert.IsNull(described.TypeKind);
+    }
+
+    [TestMethod]
+    public void TheOutline_HasOneEntryPerMember_ThePropertyAccessorsAsOne_AndTheEnumConstantsAsChildren()
+    {
+        var sub = new VBProcedureMemberSymbol(Root, Module, "DoSomething", ScopeKind.Module, SymbolKindExt.Procedure, VBVoidType.TypeInfo, new(1, 0, 3, 7), new(1, 4, 1, 15), AccessModifier.Public);
+        var local = new VBLocalVariableSymbol(Root, sub.Uri, "count", ScopeKind.Local, new(2, 4, 2, 19), new(2, 8, 2, 13));
+        var get = new VBPropertyGetMemberSymbol(Root, Module, ScopeKind.Module, "Size", new(5, 0, 7, 12), new(5, 13, 5, 17), AccessModifier.Public);
+        var let = new VBPropertyLetMemberSymbol(Root, Module, "size", ScopeKind.Module, SymbolKindExt.Property, VBVoidType.TypeInfo, new(9, 0, 11, 12), new(9, 13, 9, 17), AccessModifier.Public);
+        var colors = new VBEnumMemberSymbol(Root, Module, "Colors", ScopeKind.Module, SymbolKindExt.Enum, VBUnknownType.TypeInfo, new(13, 0, 15, 8), new(13, 12, 13, 18), AccessModifier.Public);
+        var red = new VBEnumConstMemberSymbol(Root, colors.Uri, "Red", ScopeKind.Module, SymbolKindExt.EnumMember, new(14, 4, 14, 7), new(14, 4, 14, 7));
+
+        var entries = DescribedSymbols.OutlineOf(Module, [sub, local, get, let, colors, red], symbol => $"declaration of {symbol.Name}");
+
+        CollectionAssert.AreEqual(new[] { "DoSomething", "Size", "Colors" }, entries.Select(entry => entry.Name).ToArray());
+        Assert.AreEqual(0, entries[0].Children.Count);
+        Assert.AreEqual(new SourceRange(1, 4, 1, 15), entries[0].SelectionRange);
+
+        var size = entries[1];
+        Assert.AreEqual(DescribedSymbolKind.Property, size.Kind);
+        CollectionAssert.AreEqual(new[] { "Get", "Let" }, size.Accessors.ToArray());
+        Assert.AreEqual(new SourceRange(5, 0, 11, 12), size.Range);
+        Assert.AreEqual(new SourceRange(5, 13, 5, 17), size.SelectionRange);
+        Assert.AreEqual("declaration of Size", size.Declaration);
+
+        var constant = entries[2].Children.Single();
+        Assert.AreEqual("Red", constant.Name);
+        Assert.AreEqual(DescribedSymbolKind.EnumMember, constant.Kind);
+    }
+
+    [TestMethod]
+    public void TheExpressionAtAPosition_IsTheInnermostThatHoldsIt()
+    {
+        var procedure = SymbolUri.Member(Module, "DoSomething");
+        ExpressionFactDto Fact(int start, int end, string type) => new(
+            new SyntaxNodeId(Module.ToString(), [0, start]), new SourceLocation(Module, new SourceRange(2, start, 2, end)), type,
+            ExpressionClassification.Value, null, default, null);
+        var semantics = new ModuleSemanticsDto(Module, true, [], [new ProcedureSemanticsDto(procedure, true, [], [Fact(4, 20, "Double"), Fact(10, 15, "Long")])], []);
+
+        Assert.AreEqual("Long", ExpressionDescription.At(semantics, new SourcePosition(2, 12))?.DeclaredType);
+        Assert.AreEqual("Double", ExpressionDescription.At(semantics, new SourcePosition(2, 5))?.DeclaredType);
+        Assert.IsNull(ExpressionDescription.At(semantics, new SourcePosition(2, 20)));
+        Assert.IsNull(ExpressionDescription.At(semantics, new SourcePosition(3, 0)));
     }
 
     private static SymbolDescription Description(Uri symbol) => new()
