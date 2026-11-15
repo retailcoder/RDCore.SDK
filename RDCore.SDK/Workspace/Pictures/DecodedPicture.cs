@@ -12,7 +12,7 @@ namespace RDCore.SDK.Workspace.Pictures;
 /// same table again. An icon's or a cursor's image keeps its AND mask, in <see cref="Mask"/>.
 /// </para>
 /// <para>
-/// A pixel the file does not give, past the end of a body cut short or outside a GIF's frame, is 0: black and transparent in <see cref="Bgra"/>, index 0 in
+/// A pixel the file does not give, past the end of a body cut short, is 0: black and transparent in <see cref="Bgra"/>, index 0 in
 /// <see cref="Indexes"/>, and no mask. <see cref="IsComplete"/> tells whether the body was cut short.
 /// </para>
 /// </remarks>

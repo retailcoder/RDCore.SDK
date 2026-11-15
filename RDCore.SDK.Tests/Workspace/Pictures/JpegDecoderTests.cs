@@ -145,7 +145,7 @@ public sealed class JpegDecoderTests
         var full = Decoded(whole);
         var cut = Decoded(whole[..^60]);
         var noEnd = Decoded(whole[..^2]);
-        var header = Decoded(JpegHeader(9, 11));
+        var header = Decoded(JpegHeader(9, 11)[..^16]);
 
         Assert.IsFalse(cut.IsComplete);
         CollectionAssert.AreEqual(full.Bgra.Slice(0, 16 * 8 * 4).ToArray(), cut.Bgra.Slice(0, 16 * 8 * 4).ToArray());

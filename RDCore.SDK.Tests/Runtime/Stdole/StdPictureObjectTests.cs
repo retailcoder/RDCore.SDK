@@ -26,6 +26,9 @@ public sealed class StdPictureObjectTests
         return failure;
     }
 
+    // an icon's DIB image of 32 bits, black and its mask clear.
+    private static byte[] Dib(int side) => IconDib(side, side, 32, [], new byte[side * side * 4], new byte[(side + 31) / 32 * 4 * side]);
+
     [TestMethod]
     public void ABitmap_IsType1_ItsSizeInHimetric_WithTheHandleGiven_AndItsBytesAsRead()
     {
@@ -56,8 +59,8 @@ public sealed class StdPictureObjectTests
         " EMF"u8.CopyTo(enhanced.AsSpan(40));
 
         Assert.AreEqual(2, Loaded(Hex("D7CDC69A 0000 0000 0000 A005 D002 A005 00000000 0000")).Type);
-        Assert.AreEqual(3, Loaded(Icon(1, PngHeader(32, 32))).Type);
-        Assert.AreEqual(3, Loaded(Icon(2, PngHeader(32, 32))).Type);
+        Assert.AreEqual(3, Loaded(Icon(1, Dib(32))).Type);
+        Assert.AreEqual(3, Loaded(Icon(2, Dib(32))).Type);
         Assert.AreEqual(4, Loaded(enhanced).Type);
     }
 
@@ -73,7 +76,7 @@ public sealed class StdPictureObjectTests
     [TestMethod]
     public void AnIcon_IsItsImageOfTheSizeAskedFor_ElseItsFirst_And32By32WhenNoneIsAsked()
     {
-        var icon = Icon(1, PngHeader(16, 16), PngHeader(48, 48), PngHeader(32, 32));
+        var icon = Icon(1, Dib(16), Dib(48), Dib(32));
 
         Assert.AreEqual((16, 16), (Loaded(icon, 16, 16).Image!.Value.Width, Loaded(icon, 16, 16).Image!.Value.Height));
         Assert.AreEqual(32, Loaded(icon).Image!.Value.Width);
@@ -85,7 +88,7 @@ public sealed class StdPictureObjectTests
     public void AnIconWithTwoImagesOfTheSize_IsTheOneOfMoreBits()
     {
         var dib = Bitmap2x2[14..];
-        var icon = Icon(1, dib, PngHeader(2, 1));
+        var icon = Icon(1, dib, IconDib(2, 1, 32, [], new byte[8], new byte[4]));
 
         Assert.AreEqual(32, Loaded(icon, 2, 1).Image!.Value.BitCount);
     }
@@ -116,10 +119,41 @@ public sealed class StdPictureObjectTests
     }
 
     [TestMethod]
-    public void ABitmapCutShort_IsEUnexpected()
+    public void AnIconOrACursor_WhoseImageIsAPng_IsAnInvalidPicture_481()
     {
-        Assert.AreEqual(StdPictureLoadFailure.BitmapCutShort, Refused(Bitmap2x2[..20]));
-        Assert.AreEqual(-2147418113, (int)StdPictureLoadFailure.BitmapCutShort);
+        Assert.AreEqual(StdPictureLoadFailure.InvalidPicture, Refused(Icon(1, PngHeader(32, 32))));
+        Assert.AreEqual(StdPictureLoadFailure.InvalidPicture, Refused(Icon(2, PngHeader(32, 32))));
+    }
+
+    [TestMethod]
+    public void ABitmapsHeaderCutShort_IsEUnexpected()
+    {
+        Assert.AreEqual(StdPictureLoadFailure.CutShort, Refused(Bitmap2x2[..20]));
+        Assert.AreEqual(-2147418113, (int)StdPictureLoadFailure.CutShort);
+    }
+
+    // an 8-bit bitmap of 4 by 4 cut after its first row, and the 24-bit one short of its last bytes.
+    [TestMethod]
+    public void ABitmapWhoseRowsAreCutShort_IsAnInvalidPicture_481()
+    {
+        var bitmap = Bitmap(4, 4, 8, 0, [0x000000, 0xFF0000, 0x00FF00, 0x0000FF], [1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1], used: 4);
+
+        Assert.AreEqual(StdPictureLoadFailure.InvalidPicture, Refused(bitmap[..(14 + 40 + 16 + 4)]));
+        Assert.AreEqual(StdPictureLoadFailure.InvalidPicture, Refused(Bitmap2x2[..^4]));
+        Assert.AreEqual(StdPictureLoadFailure.None, StdPictureObject.TryLoad(bitmap, 0, 0, () => 1, out _));
+    }
+
+    // its segments cut in a table, its bytes ending after its frame, and its scan's header cut.
+    [TestMethod]
+    public void AJpegWhoseBytesEndBeforeItsScan_IsEUnexpected()
+    {
+        var jpeg = JpegHeader(4, 3);
+        var frame = jpeg[..^16];
+
+        Assert.AreEqual(StdPictureLoadFailure.CutShort, Refused([.. frame, .. Hex("FFC4 00B5 0001 0203")]));
+        Assert.AreEqual(StdPictureLoadFailure.CutShort, Refused(frame));
+        Assert.AreEqual(StdPictureLoadFailure.CutShort, Refused(jpeg[..^10]));
+        Assert.AreEqual(StdPictureLoadFailure.None, StdPictureObject.TryLoad(jpeg, 0, 0, () => 1, out _));
     }
 
     [TestMethod]
@@ -165,7 +199,7 @@ public sealed class StdPictureObjectTests
     [TestMethod]
     public void AnIconAMetafileAndNoPicture_HaveNoPalette_ToReadOrAssign()
     {
-        foreach (var picture in new[] { Loaded(Icon(1, PngHeader(32, 32))), Loaded(Hex("D7CDC69A 0000 0000 0000 A005 D002 A005 00000000 0000")), StdPictureObject.CreateNew() })
+        foreach (var picture in new[] { Loaded(Icon(1, Dib(32))), Loaded(Hex("D7CDC69A 0000 0000 0000 A005 D002 A005 00000000 0000")), StdPictureObject.CreateNew() })
         {
             Assert.IsFalse(picture.HasPalette);
             Assert.ThrowsExactly<InvalidOperationException>(() => _ = picture.Palette);

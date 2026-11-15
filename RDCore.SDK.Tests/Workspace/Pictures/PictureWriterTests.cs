@@ -18,15 +18,13 @@ public sealed class PictureWriterTests
 
     private static string Head(byte[] file) => $"len {file.Length} {Convert.ToHexString(file[..16])}";
 
-    // The length and the first 16 bytes of MS-VBA's SavePicture of these pictures, measured on the same headers: a GIF of 7 by 5 as a bitmap of 8 bits
-    // with a table of 256 colors, and an icon's 32 by 32 image as an icon of 16 colors. The PNG, 6 by 4, as a 24-bit bitmap, is RD-VBA's own: MS-VBA does
+    // The length and the first 16 bytes of MS-VBA's SavePicture of these pictures, measured on the same headers: a GIF of 7 by 5 with a table of 256
+    // colors as a bitmap of 8 bits, and an icon's 32 by 32 image as an icon of 16 colors. The PNG, 6 by 4, as a 24-bit bitmap, is RD-VBA's own: MS-VBA does
     // not load a PNG.
     [TestMethod]
     public void AGif_A24BitBitmap_AndAnIcon_AreWrittenInMSVBAsLayout()
     {
-        var gif = (byte[])Gif1x1.Clone();
-        BinaryPrimitives.WriteInt16LittleEndian(gif.AsSpan(6), 7);
-        BinaryPrimitives.WriteInt16LittleEndian(gif.AsSpan(8), 5);
+        var gif = Gif(7, 5, Enumerable.Range(0, 256).Select(i => (uint)i).ToArray(), new byte[35], 7, 5);
         var icon = Icon(1, IconDib(32, 32, 32, [], new byte[32 * 32 * 4], new byte[32 * 4]));
         Assert.IsTrue(PictureHeader.TryReadIconImages(icon, out var images));
         Assert.AreEqual(PictureDecodeFailure.None, PictureDecoder.TryDecodeIconImage(icon, images[0], out var image));
@@ -69,18 +67,32 @@ public sealed class PictureWriterTests
         Assert.AreEqual(14 + 40 + colors * 4 + (int)((3L * bits + 31) / 32 * 4) * 2, file.Length);
     }
 
-    // each pixel as the nearest of the 16 colors; a clear one masked, and black.
+    // each pixel as the nearest of the 16 colors, a clear one masked and its color kept.
     [TestMethod]
     public void AnIcon_IsEachPixelsNearestColor_AndItsMask()
     {
-        var png = Decoded(Png(3, 1, 6, 8, [0, 250, 10, 10, 255, 0, 0, 0, 0, 200, 190, 180, 255]));
+        var png = Decoded(Png(3, 1, 6, 8, [0, 250, 10, 10, 255, 0, 0, 255, 0, 200, 190, 180, 255]));
         var icon = PictureWriter.WriteIcon(png);
         var back = Decoded(icon);
 
-        Assert.AreEqual("9 0 7", string.Join(" ", back.Indexes!.Value.ToArray()));
+        Assert.AreEqual("9 12 8", string.Join(" ", back.Indexes!.Value.ToArray()));
         Assert.AreEqual("0 1 0", string.Join(" ", back.Mask!.Value.ToArray()));
         CollectionAssert.AreEqual(PictureWriter.IconColors.ToArray(), back.Palette.ToArray());
         Assert.AreEqual(6 + 16 + 40 + 64 + 4 + 4, icon.Length);
+    }
+
+    // a table of 2 of the standard colors: filled with the 14 it lacks at 4 bits, which fill it exactly, and with black at 8 bits.
+    [TestMethod]
+    public void AnIndexedBitmapsTableOfStandardColors_IsFilledWithTheStandardColorsItLacks_WhereTheyFillItExactly()
+    {
+        var gif = Decoded(Gif(3, 2, [0xFF0000, 0x00FF00], [1, 0, 1, 0, 0, 1], 3, 2));
+
+        var four = Decoded(PictureWriter.WriteBitmap(gif, 4)).Palette;
+        var eight = Decoded(PictureWriter.WriteBitmap(gif, 8)).Palette;
+
+        CollectionAssert.AreEqual(new[] { 0xFFFF0000u, 0xFF00FF00u }.Concat(PictureWriter.StandardColors.Where(color => color is not (0xFFFF0000 or 0xFF00FF00))).ToArray(),
+            four.ToArray());
+        Assert.IsTrue(eight.Skip(2).All(entry => entry == 0xFF000000));
     }
 
     [TestMethod]
