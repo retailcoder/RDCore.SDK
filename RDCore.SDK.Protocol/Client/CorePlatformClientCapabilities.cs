@@ -196,6 +196,12 @@ public class LanguageServerCapabilities
     /// that has a dialog of its own asks with. Any client is offered the refactorings as LSP code actions, which complete with their defaults.
     /// </summary>
     public Refactoring Refactoring { get; set; } = new();
+
+    /// <summary>
+    /// If supported, the language server serves an assistant the tools of its catalogue, over <c>rdcore/tools/list</c> and <c>rdcore/tools/call</c>: what
+    /// a client that bridges an assistant to the platform (<c>rdc mcp</c>, an IDE's chat) asks with.
+    /// </summary>
+    public AssistantTools AssistantTools { get; set; } = new();
 }
 
 /// <summary>
@@ -225,6 +231,7 @@ public class LanguageServerCapabilities
 [JsonDerivedType(typeof(Refactoring))]
 [JsonDerivedType(typeof(RubberduckIndenterSettings))]
 [JsonDerivedType(typeof(ListSettingValue))]
+[JsonDerivedType(typeof(AssistantTools))]
 public abstract record class CorePlatformClientCapability(bool IsSupported = true);
 
 /// <summary>
@@ -413,3 +420,15 @@ public record class CliCommand(bool IsSupported = false) : CorePlatformClientCap
 /// </remarks>
 /// <param name="IsSupported">Whether the capability is expected, or provided.</param>
 public record class Refactoring(bool IsSupported = false) : CorePlatformClientCapability(IsSupported);
+
+/// <summary>
+/// Advertises that the language server serves an assistant the tools of its catalogue (<c>rdcore/tools/list</c>, <c>rdcore/tools/call</c>): reading the
+/// workspace's diagnostics and symbols, and listing, previewing and applying fixes. A client that expects it lists the tools and calls them.
+/// </summary>
+/// <remarks>
+/// The tools are shaped as the <strong>Model Context Protocol</strong> shapes them (<see cref="Assistant.ToolDescriptor"/>), so that a client that bridges
+/// them to an assistant passes them through. A tool that edits a document sends the edit to the client (<c>workspace/applyEdit</c>), which applies it: the
+/// language server writes no file of the workspace itself.
+/// </remarks>
+/// <param name="IsSupported">Whether the capability is expected, or provided.</param>
+public record class AssistantTools(bool IsSupported = false) : CorePlatformClientCapability(IsSupported);

@@ -150,4 +150,15 @@ public static class RDCorePlatformProtocol
     /// where the refactoring declares it, and what it would hide.
     /// </summary>
     public const string RefactorCheckIdentifier = "rdcore/refactor/checkIdentifier";
+
+    /// <summary>
+    /// Asks the language server for the tools it serves an assistant: sent by a client that expects the <c>AssistantTools</c> capability. See
+    /// <see cref="Assistant.ToolsListParams"/>.
+    /// </summary>
+    public const string ToolsList = "rdcore/tools/list";
+
+    /// <summary>
+    /// Asks the language server to call one of the tools it serves an assistant. See <see cref="Assistant.ToolCallParams"/>.
+    /// </summary>
+    public const string ToolsCall = "rdcore/tools/call";
 }
