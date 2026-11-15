@@ -45,6 +45,8 @@ public enum PictureDecodeFailure
 /// keeps its high byte.</item>
 /// <item>A GIF: its first frame, on its logical screen, with its local colour table or else its global one, and the transparent colour of the frame's graphic
 /// control extension. An animation's later frames are not decoded.</item>
+/// <item>An icon's or a cursor's image: a PNG, or a DIB and its AND mask. A DIB image is clear where its 32-bit alpha says so, or, where it has no alpha or
+/// every pixel's is 0, where its mask is set.</item>
 /// </list>
 /// </remarks>
 public static class PictureDecoder
