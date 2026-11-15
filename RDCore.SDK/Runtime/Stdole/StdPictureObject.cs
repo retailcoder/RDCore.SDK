@@ -211,7 +211,7 @@ public enum StdPictureLoadFailure
     None = 0,
 
     /// <summary>
-    /// The file is no picture <c>LoadPicture</c> reads: no bytes, a format it does not recognize or refuses (a PNG), or a malformed header. Run-time
+    /// The file is not a picture that <c>LoadPicture</c> reads: no bytes, a format it does not recognize or refuses (a PNG), or a malformed header. Run-time
     /// error 481, "Invalid picture".
     /// </summary>
     InvalidPicture = 481,
