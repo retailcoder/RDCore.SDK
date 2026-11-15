@@ -387,6 +387,21 @@ public sealed record class ExpressionDescription : DescribedExpression
         Creates = fact.Creates?.ClassName,
         Error = fact.Error is { } error ? new DescribedError { Code = error.Code.ToString(), Description = error.Description } : null,
     };
+
+    /// <summary>
+    /// Describes the innermost expression of a module that is written at a position: of the expressions whose range holds it, the one that starts last, and
+    /// of those the one that ends first.
+    /// </summary>
+    /// <param name="semantics">What the environment host found out about the module.</param>
+    /// <param name="position">The position, in the module's text.</param>
+    /// <returns>The expression's description; <see langword="null"/> when no expression of a procedure of the module is written there.</returns>
+    public static ExpressionDescription? At(ModuleSemanticsDto semantics, SourcePosition position) => semantics.Procedures
+        .SelectMany(procedure => procedure.Expressions)
+        .Where(fact => fact.Location.Range.Contains(position))
+        .OrderByDescending(fact => fact.Location.Range.Start)
+        .ThenBy(fact => fact.Location.Range.End)
+        .Select(Of)
+        .FirstOrDefault();
 }
 
 /// <summary>
