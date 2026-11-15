@@ -199,6 +199,11 @@ public sealed class LibrarySymbolReader(Uri workspaceRoot, bool is64Bit = true)
             symbol = (VBClassModuleSymbol)symbol.With(SymbolProperties.ProgId, progId);
         }
 
+        if (description.TypeName is { Length: > 0 } typeName)
+        {
+            symbol = (VBClassModuleSymbol)symbol.With(SymbolProperties.ReportedTypeName, typeName);
+        }
+
         ImmutableArray<VBTypeMemberSymbol> members =
         [
             .. description.Members.Select(member => ReadMember(library, description.Name, member, symbol.Uri, types)),

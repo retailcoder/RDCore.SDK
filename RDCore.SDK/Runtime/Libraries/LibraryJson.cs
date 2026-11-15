@@ -44,13 +44,14 @@ public static class LibraryJson
     /// </summary>
     /// <remarks>
     /// <list type="bullet">
+    /// <item>Version 4 states what <c>TypeName</c> says of an object of a class, when it is not the class's name (<see cref="ClassDescription.TypeName"/>).</item>
     /// <item>Version 3 states the modules a library declares (<see cref="LibraryDescription.Modules"/>).</item>
     /// <item>Version 2 states a dependency as the library it was built against, <c>{ "name": "DAO", "guid": "{00025E04-...}", "version": "3.5" }</c>, as
     /// well as by its name alone (<c>"stdole"</c>).</item>
     /// <item>Version 1 states a dependency by its name alone.</item>
     /// </list>
     /// </remarks>
-    public const int CurrentFormatVersion = 3;
+    public const int CurrentFormatVersion = 4;
 
     /// <summary>
     /// The oldest version of the format this reads.
@@ -61,7 +62,10 @@ public static class LibraryJson
     /// Reads a description.
     /// </summary>
     /// <param name="json">The text of the file.</param>
-    /// <exception cref="InvalidDataException">The text is not a description this reads: it is not JSON of the format, has no name, or is of a format version this does not know.</exception>
+    /// <exception cref="InvalidDataException">
+    /// The text is not a description this reads: it is not JSON of the format, has no name, is of a format version this does not know, or states what its
+    /// format version does not have (a dependency's identity before version 2, modules before version 3, a class's type name before version 4).
+    /// </exception>
     public static LibraryDescription Read(string json)
     {
         LibraryDescription? description;
@@ -95,6 +99,12 @@ public static class LibraryJson
         {
             throw new InvalidDataException(
                 $"The library description of '{description.Name}' is of format version {description.FormatVersion}, which states no modules, and states '{description.Modules[0].Name}'.");
+        }
+
+        if (description.FormatVersion < 4 && description.Classes.FirstOrDefault(declared => declared.TypeName is not null) is { } named)
+        {
+            throw new InvalidDataException(
+                $"The library description of '{description.Name}' is of format version {description.FormatVersion}, which states no type name of a class, and states one for '{named.Name}'.");
         }
 
         // a name is one type or module of the library, whatever its case: VBA names are not case sensitive, and a library that declares one twice is not one a
