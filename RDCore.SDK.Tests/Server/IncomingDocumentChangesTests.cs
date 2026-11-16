@@ -403,7 +403,7 @@ public sealed class IncomingDocumentChangesTests
         CollectionAssert.AreEqual(Encoding.UTF8.GetBytes(wire), passedOn);
         Assert.IsFalse(incoming.WhenFileChangesReadAsync(new Uri(DocumentA), CancellationToken.None).IsCompleted, "A's file changed");
         Assert.IsFalse(incoming.WhenFileChangesReadAsync(new Uri(DocumentB), CancellationToken.None).IsCompleted, "B's file was deleted");
-        Assert.IsTrue(incoming.WhenFileChangesReadAsync(new Uri("file:///c:/ws/C.bas"), CancellationToken.None).IsCompleted, "a setting is no file");
+        Assert.IsTrue(incoming.WhenFileChangesReadAsync(new Uri("file:///c:/ws/C.bas"), CancellationToken.None).IsCompleted, "a setting is not a file");
     }
 
     [TestMethod]

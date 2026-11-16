@@ -12,6 +12,8 @@ namespace RDCore.SDK.Server;
 /// JSON. Only a message that names a document notification or <c>workspace/didChangeWatchedFiles</c> is parsed. A message the tap can't make out is passed on all the same, and only goes unseen: the
 /// worst that comes of it is a request that waits for the change, as it would without the tap.
 /// </remarks>
+/// <param name="inner">The stream the client's messages arrive on.</param>
+/// <param name="changes">What is told of each change as it arrives.</param>
 internal sealed class DocumentChangeTap(Stream inner, IncomingDocumentChanges changes) : Stream
 {
     private static readonly byte[] HeaderEnd = "\r\n\r\n"u8.ToArray();

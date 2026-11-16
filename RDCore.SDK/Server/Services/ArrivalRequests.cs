@@ -29,6 +29,8 @@ namespace RDCore.SDK.Server.Services;
 /// notification is handled in the same order as the marked requests.
 /// </para>
 /// </remarks>
+/// <param name="services">The server's services: its router of requests and notifications, its handlers, and its output.</param>
+/// <param name="logger">Logs a request or a notification whose parameters can't be read, and one whose handler fails.</param>
 internal sealed class ArrivalRequests(IServiceProvider services, ILogger<ArrivalRequests> logger)
 {
     private readonly Lazy<IRequestRouter<IHandlerDescriptor?>> _router = new(services.GetRequiredService<IRequestRouter<IHandlerDescriptor?>>);
