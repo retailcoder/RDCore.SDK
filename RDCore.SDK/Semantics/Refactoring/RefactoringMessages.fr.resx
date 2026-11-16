@@ -162,7 +162,7 @@
   <data name="Hover_ControlArrayOf" xml:space="preserve">
     <value>Groupe de contrôles de type {0}</value>
   </data>
-  <!-- What a completion item says of a member RD-VBA adds to a library (SymbolProperties.LibraryAddition): {0} is the library, VB. -->
+  <!-- What a completion item or a hover says of a member RD-VBA adds to a library (SymbolProperties.LibraryAddition): {0} is the library, VB. -->
   <data name="Symbol_LibraryAddition" xml:space="preserve">
     <value>Ajout de RD-VBA : la bibliothèque de types de {0} ne le déclare pas.</value>
   </data>
