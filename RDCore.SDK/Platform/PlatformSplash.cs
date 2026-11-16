@@ -5,7 +5,8 @@ using System.Resources;
 namespace RDCore.SDK.Platform;
 
 /// <summary>
-/// The splash of the platform: its logo, its slogan and its copyright notice, as a console component of the platform shows them when it starts.
+/// The splash of the platform: its logo, its slogan, the versions that run and its copyright notice, as a console component of the platform shows them when
+/// it starts.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -15,11 +16,15 @@ namespace RDCore.SDK.Platform;
 /// what a program writes.
 /// </para>
 /// <para>
+/// The version line (<see cref="VersionLine"/>) names the application and its version, and the version of the SDK it runs on. A component that renders the
+/// lines keeps it, or leaves out the lines of its part (<see cref="SplashPart.Version"/>).
+/// </para>
+/// <para>
 /// An application shows it as it starts (<see cref="RDCore.SDK.Server.AppHost{TApp}.ShowSplash"/>), in plain text unless it overrides that method to show a splash of
 /// its own, drawn with these lines, or none at all.
 /// </para>
 /// <para>
-/// The copyright notice is in the language of the user interface; the logo and the slogan are in none. The year and the company the notice names are those
+/// The version line and the copyright notice are in the language of the user interface; the logo and the slogan are in none. The year and the company the notice names are those
 /// of the SDK's own assembly (<see cref="CopyrightYear"/>, <see cref="Company"/>), which its package's copyright says too.
 /// </para>
 /// </remarks>
@@ -66,10 +71,35 @@ public static class PlatformSplash
     }
 
     /// <summary>
-    /// The splash, line by line, as it is shown: the logo, the component's title when it has one, a blank line, the slogan centred under what is above it, a
-    /// blank line, and the copyright notice, which is not indented.
+    /// The version of the SDK the application runs on: the informational version of the SDK's own assembly (<see cref="AssemblyDisplayVersion"/>).
     /// </summary>
-    /// <param name="culture">The language of the copyright notice; the current one of the user interface when it is not said.</param>
+    public static string SdkVersion => AssemblyDisplayVersion.Get(typeof(PlatformSplash).Assembly);
+
+    /// <summary>
+    /// The line of the splash that says which versions run, in a language: <c>RDCore 0.1.0+3cab50a, built on RDCore.SDK 0.1.5-alpha+30d43d6</c>.
+    /// </summary>
+    /// <remarks>
+    /// The application is named by the product of its assembly (<see cref="AssemblyProductAttribute"/>), or by the assembly's name when it says none, and its
+    /// version is the assembly's informational version (<see cref="AssemblyDisplayVersion"/>). The build metadata of a version, the commit it was built
+    /// from, is shown by its first 7 characters.
+    /// </remarks>
+    /// <param name="application">The application's assembly; the process's entry assembly (<see cref="Assembly.GetEntryAssembly"/>) when it is not said.</param>
+    /// <param name="culture">The language of the user interface; the current one (<see cref="CultureInfo.CurrentUICulture"/>) when it is not said.</param>
+    /// <returns>The line in that language, or in English when the platform has none in it.</returns>
+    public static string VersionLine(Assembly? application = null, CultureInfo? culture = null)
+    {
+        culture ??= CultureInfo.CurrentUICulture;
+        application ??= Assembly.GetEntryAssembly();
+        var product = application?.GetCustomAttribute<AssemblyProductAttribute>()?.Product is { Length: > 0 } named ? named : application?.GetName().Name ?? string.Empty;
+        return string.Format(culture, Resources.GetString(nameof(VersionLine), culture) ?? string.Empty,
+            product, Shown(AssemblyDisplayVersion.Get(application)), Shown(SdkVersion));
+    }
+
+    /// <summary>
+    /// The splash, line by line, as it is shown: the logo, the component's title when it has one, a blank line, the slogan centred under what is above it, a
+    /// blank line, then the version line (<see cref="VersionLine"/>) of the process's entry assembly and the copyright notice, neither of them indented.
+    /// </summary>
+    /// <param name="culture">The language of the version line and the copyright notice; the current one of the user interface when it is not said.</param>
     /// <param name="title">The component's own title, under the logo; none when it is not said.</param>
     /// <returns>Each line, with the part of the splash it is of: a renderer styles each part as its console does.</returns>
     public static IReadOnlyList<SplashLine> Lines(CultureInfo? culture = null, SplashTitle? title = null)
@@ -95,6 +125,7 @@ public static class PlatformSplash
             new SplashLine(SplashPart.Space, string.Empty),
             new SplashLine(SplashPart.Slogan, sloganIndent + Slogan),
             new SplashLine(SplashPart.Space, string.Empty),
+            new SplashLine(SplashPart.Version, VersionLine(culture: culture)),
             new SplashLine(SplashPart.CopyrightNotice, CopyrightNotice(culture)),
         ];
     }
@@ -103,7 +134,7 @@ public static class PlatformSplash
     /// Writes the splash (<see cref="Lines"/>) as plain text, a line at a time, in no colour: what a component that renders it in none of its own shows.
     /// </summary>
     /// <param name="writer">What the splash is written to: the component's standard output, say.</param>
-    /// <param name="culture">The language of the copyright notice; the current one of the user interface when it is not said.</param>
+    /// <param name="culture">The language of the version line and the copyright notice; the current one of the user interface when it is not said.</param>
     /// <param name="title">The component's own title, under the logo; none when it is not said.</param>
     public static void WriteTo(TextWriter writer, CultureInfo? culture = null, SplashTitle? title = null)
     {
@@ -118,6 +149,9 @@ public static class PlatformSplash
     private static string Text(string name) => (Resources.GetString(name, CultureInfo.InvariantCulture) ?? string.Empty).Replace("\r\n", "\n");
 
     private static IEnumerable<string> LinesOf(string text) => text.Split('\n').Select(line => line.TrimEnd());
+
+    // a version as the splash shows it: its build metadata, a commit, by its first 7 characters.
+    private static string Shown(string version) => version.IndexOf('+') is >= 0 and var plus ? version[..Math.Min(version.Length, plus + 8)] : version;
 }
 
 /// <summary>
@@ -156,6 +190,13 @@ public enum SplashPart
     /// The copyright notice (<see cref="PlatformSplash.CopyrightNotice"/>).
     /// </summary>
     CopyrightNotice,
+
+    /// <summary>
+    /// The versions that run (<see cref="PlatformSplash.VersionLine"/>): the application's, the informational version of the process's entry assembly, named
+    /// by its product; and the SDK's, the informational version of the SDK's own assembly (<see cref="PlatformSplash.SdkVersion"/>). A host that draws a
+    /// splash of its own from <see cref="PlatformSplash.Lines"/> leaves it out by skipping the lines of this part.
+    /// </summary>
+    Version,
 }
 
 /// <summary>
