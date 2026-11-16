@@ -881,7 +881,7 @@ public static class CompletionCandidates
             return documentation;
         }
 
-        var addition = Semantics.Refactoring.RefactoringTitles.LibraryAddition(library);
+        var addition = SymbolTexts.LibraryAddition(library);
         return documentation is { Length: > 0 } ? $"{addition}\n\n{documentation}" : addition;
     }
 

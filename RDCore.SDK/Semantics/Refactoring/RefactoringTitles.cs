@@ -168,12 +168,32 @@ public static class RefactoringTitles
     public static string RenameOutsideCallersCancel(CultureInfo? culture = null) => Say("Rename_OutsideCallers_Cancel", culture);
 
     /// <summary>
-    /// What a completion item (ahead of its documentation) or a hover says of a member RD-VBA adds to a library
-    /// (<see cref="Model.Symbols.Abstract.SymbolProperties.LibraryAddition"/>): <c>RD-VBA addition: the type library of VB does not declare it.</c>
+    /// Why a rename is refused, as the user is told: <c>'Foo' already means Module1.Foo at Module2 4:12: the rename would change what the code refers to.</c>
     /// </summary>
-    /// <param name="library">The name of the library the member is added to.</param>
+    /// <param name="kind">Why the rename is refused.</param>
+    /// <param name="name">The name the rename is asked for: the symbol's for a refused symbol, the new name for a refused name
+    /// (<see cref="RenameRefusalKind.Empty"/>, <see cref="RenameRefusalKind.NotAnIdentifier"/>, <see cref="RenameRefusalKind.Reserved"/>,
+    /// <see cref="RenameRefusalKind.Conflict"/>).</param>
+    /// <param name="other">What else the refusal names: the interface of a <see cref="RenameRefusalKind.InterfaceMember"/>, what the new name already means for
+    /// a <see cref="RenameRefusalKind.Conflict"/>. Unused by the other kinds.</param>
+    /// <param name="where">Where the refusal is, as the client names a position: the conflict of a <see cref="RenameRefusalKind.Conflict"/>, the name of an
+    /// <see cref="RenameRefusalKind.Unresolved"/>. Unused by the other kinds.</param>
     /// <param name="culture">The language of the reader; the current UI culture by default.</param>
-    public static string LibraryAddition(string library, CultureInfo? culture = null) => Say("Symbol_LibraryAddition", culture, library);
+    /// <returns>The text, formatted with <paramref name="culture"/>; the name of <paramref name="kind"/> for a kind the platform has no text for.</returns>
+    public static string RenameRefusal(RenameRefusalKind kind, string name, string? other = null, string? where = null, CultureInfo? culture = null)
+    {
+        culture ??= CultureInfo.CurrentUICulture;
+        return string.Format(culture, Messages.GetString($"Rename_{kind}", culture) ?? kind.ToString(), name, other ?? string.Empty, where ?? string.Empty);
+    }
+
+    /// <summary>
+    /// What a client is told of the references of a symbol where a name is written whose binding cannot be told, which may be the symbol: <c>The references of 'Foo' may be incomplete: what 'Foo' refers to at Module1 4:12 is not known.</c>
+    /// </summary>
+    /// <param name="name">The name the symbol is declared with.</param>
+    /// <param name="where">Where the first such name is written, as the client names a position.</param>
+    /// <param name="culture">The language of the reader; the current UI culture by default.</param>
+    /// <returns>The text, formatted with <paramref name="culture"/>.</returns>
+    public static string ReferencesIncomplete(string name, string where, CultureInfo? culture = null) => Say("References_Incomplete", culture, name, where);
 
     private static string Say(string key, CultureInfo? culture, params object[] arguments)
     {

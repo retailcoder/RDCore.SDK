@@ -4,7 +4,6 @@ using RDCore.SDK.Model.Symbols.VBProject;
 using RDCore.SDK.Model.Symbols.Completion;
 using RDCore.SDK.Model.Types.Complex;
 using RDCore.SDK.Runtime.Libraries;
-using RDCore.SDK.Semantics.Refactoring;
 using System.Globalization;
 
 namespace RDCore.Tests.Runtime.Libraries;
@@ -105,7 +104,7 @@ public sealed class LibraryAdditionTests
 
         var items = CompletionCandidates.MembersOf(VBClassType.FromClassModule(label)).ToDictionary(candidate => candidate.Label);
 
-        Assert.AreEqual(RefactoringTitles.LibraryAddition("VB"), items["Opacity"].Documentation);
+        Assert.AreEqual(SymbolTexts.LibraryAddition("VB"), items["Opacity"].Documentation);
         Assert.IsNull(items["Caption"].Documentation);
     }
 
@@ -113,5 +112,5 @@ public sealed class LibraryAdditionTests
     [DataRow("en", "RD-VBA addition: the type library of VB does not declare it.")]
     [DataRow("fr", "Ajout de RD-VBA : la bibliothèque de types de VB ne le déclare pas.")]
     public void TheMarkOfAnAddition_NamesItsLibrary_InTheLanguageOfTheReader(string language, string expected)
-        => Assert.AreEqual(expected, RefactoringTitles.LibraryAddition("VB", CultureInfo.GetCultureInfo(language)));
+        => Assert.AreEqual(expected, SymbolTexts.LibraryAddition("VB", CultureInfo.GetCultureInfo(language)));
 }
