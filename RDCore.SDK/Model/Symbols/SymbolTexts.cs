@@ -5,7 +5,8 @@ namespace RDCore.SDK.Model.Symbols;
 
 /// <summary>
 /// What the platform says of a symbol where an editor shows it to the reader (a hover, the documentation of a completion item, or the answer to a request for
-/// its references), in the language of the reader. Each text is formatted with the reader's culture; a culture the platform has no texts for gets the English texts.
+/// its references), in the language of the reader. Each text is formatted with the reader's culture; a culture the platform has no texts for gets the
+/// English texts.
 /// </summary>
 public static class SymbolTexts
 {
