@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- What an import of a VB6 project could not carry over (VbpImportNote): VbpImport_ and the VbpImportNoteKind. {0} is what, as the .vbp writes it. -->
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="NotRepresentable" xml:space="preserve">
+    <value>Le texte ne peut pas être écrit en {0}, l'encodage du fichier : la ligne {1} contient « {2} ».</value>
+  </data>
+  <data name="NotLossless" xml:space="preserve">
+    <value>Le fichier n'est pas du {0} valide : le modifier y écrirait un caractère de remplacement pour chaque octet qui ne se décode pas.</value>
+  </data>
+  <data name="ResourceOperation" xml:space="preserve">
+    <value>La création, le renommage et la suppression de fichiers ne sont pas pris en charge; la modification n'est pas appliquée.</value>
+  </data>
+  <data name="Stale" xml:space="preserve">
+    <value>« {0} » a changé depuis que la modification a été faite; elle n'est pas appliquée.</value>
+  </data>
+  <data name="NoFile" xml:space="preserve">
+    <value>Il n'y a aucun fichier « {0} ».</value>
+  </data>
+  <data name="NotWritten" xml:space="preserve">
+    <value>« {0} » n'a pas pu être écrit : {1}</value>
+  </data>
+  <data name="EditDoesNotFit" xml:space="preserve">
+    <value>La modification de « {0} » ne correspond pas à son texte : {1}</value>
+  </data>
+  <data name="NotRead" xml:space="preserve">
+    <value>« {0} » n'a pas pu être lu : {1}</value>
+  </data>
+</root>

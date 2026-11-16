@@ -159,14 +159,6 @@ public static class SyntaxNodeWalk
 
                 break;
 
-            case CaseExpressionStatementNode caseExpression:
-                foreach (var clause in caseExpression.RangeClauses)
-                {
-                    yield return clause;
-                }
-
-                break;
-
             case Declarations.ArrayBoundsNode arrayBounds when !arrayBounds.Bounds.IsDefault:
                 foreach (var bound in arrayBounds.Bounds)
                 {

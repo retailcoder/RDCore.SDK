@@ -31,6 +31,67 @@ public sealed record class ProjectFile : IEquatable<ProjectFile>
     public const string SchemaVersion = "1.1";
 
     /// <summary>
+    /// Where the text of a project file writes the project's name (<see cref="RDCoreProject.Name"/>): the value of its <c>Name</c> member, between its quotes.
+    /// An edit of that range renames the project in its file and leaves the rest of the text as it is.
+    /// </summary>
+    /// <param name="text">The text of a project file, as <see cref="FileName"/> is read.</param>
+    /// <returns>
+    /// The range, by line and character from 0; <see langword="null"/> when the text is not a JSON object, or its object has no <c>Name</c> member whose value
+    /// is a string.
+    /// </returns>
+    public static RDCore.SDK.Model.Source.SourceRange? NameRangeIn(string text)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        var start = text.Length > 0 && text[0] == '﻿' ? 1 : 0;
+        var bytes = System.Text.Encoding.UTF8.GetBytes(text[start..]);
+        var reader = new Utf8JsonReader(bytes, new JsonReaderOptions { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true });
+        try
+        {
+            while (reader.Read())
+            {
+                if (reader.TokenType == JsonTokenType.PropertyName && reader.CurrentDepth == 1 && reader.ValueTextEquals(nameof(RDCoreProject.Name)))
+                {
+                    if (!reader.Read() || reader.TokenType != JsonTokenType.String)
+                    {
+                        return null;
+                    }
+
+                    // the token starts at its opening quote; its raw value is as written, escapes and all.
+                    var from = start + System.Text.Encoding.UTF8.GetCharCount(bytes, 0, (int)reader.TokenStartIndex + 1);
+                    var to = from + System.Text.Encoding.UTF8.GetCharCount(reader.ValueSpan);
+                    return new RDCore.SDK.Model.Source.SourceRange(PositionOf(text, from), PositionOf(text, to));
+                }
+
+                if (reader.CurrentDepth >= 1 && reader.TokenType is JsonTokenType.StartObject or JsonTokenType.StartArray)
+                {
+                    reader.Skip();
+                }
+            }
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+
+        return null;
+    }
+
+    // the line and character of an offset of a text whose lines end with a line feed, a carriage return and a line feed, or a carriage return.
+    private static RDCore.SDK.Model.Source.SourcePosition PositionOf(string text, int offset)
+    {
+        var (line, lineStart) = (0, 0);
+        for (var at = 0; at < offset; at++)
+        {
+            if (text[at] == '\n' || (text[at] == '\r' && (at + 1 >= text.Length || text[at + 1] != '\n')))
+            {
+                (line, lineStart) = (line + 1, at + 1);
+            }
+        }
+
+        return new RDCore.SDK.Model.Source.SourcePosition(line, offset - lineStart);
+    }
+
+    /// <summary>
     /// How the format a project file says it is (<see cref="Version"/>) compares with the one the platform reads and writes (<see cref="SchemaVersion"/>).
     /// </summary>
     /// <remarks>

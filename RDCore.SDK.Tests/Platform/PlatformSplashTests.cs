@@ -1,5 +1,7 @@
 using System.Globalization;
 using System.Reflection;
+using System.Text.RegularExpressions;
+using RDCore.SDK;
 using RDCore.SDK.Platform;
 
 namespace RDCore.Tests.Platform;
@@ -53,7 +55,7 @@ public sealed class PlatformSplashTests
     {
         var lines = PlatformSplash.Lines(English);
 
-        CollectionAssert.AreEqual(new[] { SplashPart.Logo, SplashPart.Space, SplashPart.Slogan, SplashPart.Space, SplashPart.CopyrightNotice },
+        CollectionAssert.AreEqual(new[] { SplashPart.Logo, SplashPart.Space, SplashPart.Slogan, SplashPart.Space, SplashPart.Version, SplashPart.CopyrightNotice },
             Parts(lines), "the parts, in the order they are shown");
         var logo = lines.Where(line => line.Part == SplashPart.Logo).Select(line => line.Text).ToArray();
         Assert.AreEqual(19, logo.Length);
@@ -64,6 +66,7 @@ public sealed class PlatformSplashTests
         var sloganIndent = left + (drawn.Max(line => line.Length) - left - PlatformSplash.Slogan.Length) / 2;
         Assert.AreEqual(new string(' ', sloganIndent) + PlatformSplash.Slogan, lines.Single(line => line.Part == SplashPart.Slogan).Text,
             "the slogan is centred under the logo: under its leftmost character to its rightmost");
+        Assert.AreEqual(PlatformSplash.VersionLine(culture: English), lines[^2].Text, "the version line is over the notice, and it is not indented");
         Assert.AreEqual(PlatformSplash.CopyrightNotice(English), lines[^1].Text, "the notice is the last line, and it is not indented");
         AssertEachIsOneLine(lines);
     }
@@ -75,7 +78,7 @@ public sealed class PlatformSplashTests
 
         var lines = PlatformSplash.Lines(English, title);
 
-        CollectionAssert.AreEqual(new[] { SplashPart.Logo, SplashPart.Title, SplashPart.Space, SplashPart.Slogan, SplashPart.Space, SplashPart.CopyrightNotice },
+        CollectionAssert.AreEqual(new[] { SplashPart.Logo, SplashPart.Title, SplashPart.Space, SplashPart.Slogan, SplashPart.Space, SplashPart.Version, SplashPart.CopyrightNotice },
             Parts(lines), "the parts, in the order they are shown");
         var logo = PlatformSplash.Lines(English).Where(line => line.Part == SplashPart.Logo).Select(line => line.Text.Length == 0 ? line.Text : new string(' ', 15) + line.Text);
         CollectionAssert.AreEqual(logo.ToArray(), lines.Where(line => line.Part == SplashPart.Logo).Select(line => line.Text).ToArray(),
@@ -90,7 +93,7 @@ public sealed class PlatformSplashTests
     [TestMethod]
     public void TheLogoAndTheSlogan_AreInNoLanguage()
     {
-        string[] Art(CultureInfo culture) => [.. PlatformSplash.Lines(culture).Where(line => line.Part != SplashPart.CopyrightNotice).Select(line => line.Text)];
+        string[] Art(CultureInfo culture) => [.. PlatformSplash.Lines(culture).Where(line => line.Part is not (SplashPart.CopyrightNotice or SplashPart.Version)).Select(line => line.Text)];
 
         CollectionAssert.AreEqual(Art(English), Art(French));
         Assert.AreEqual("V I V A T  ♥  C U C U M I S ™", PlatformSplash.Slogan);
@@ -106,6 +109,27 @@ public sealed class PlatformSplashTests
 
         Assert.AreEqual(string.Concat(PlatformSplash.Lines(French).Select(line => line.Text + "\n")), writer.ToString());
     }
+
+    [TestMethod]
+    public void TheVersionLine_NamesTheApplicationsProductAndVersion_AndTheSdksVersion()
+    {
+        var sdk = typeof(PlatformSplash).Assembly;
+        var version = Shown(AssemblyDisplayVersion.Get(sdk));
+
+        Assert.AreEqual(AssemblyDisplayVersion.Get(sdk), PlatformSplash.SdkVersion);
+        Assert.AreEqual($"RDCore {version}, built on RDCore.SDK {version}", PlatformSplash.VersionLine(sdk, English), "the SDK's own assembly, as an application");
+        Assert.AreEqual($"RDCore {version}, bâti sur RDCore.SDK {version}", PlatformSplash.VersionLine(sdk, French));
+        StringAssert.Matches(version, new Regex(@"^[^+]+(\+[0-9A-Za-z.-]{1,7})?$"), "the commit of a version, by its first 7 characters");
+    }
+
+    [TestMethod]
+    public void TheVersionLine_IsTheEntryAssemblys_WhenNoApplicationIsSaid()
+    {
+        Assert.AreEqual(PlatformSplash.VersionLine(Assembly.GetEntryAssembly(), English), PlatformSplash.VersionLine(culture: English));
+    }
+
+    // a version by the first 7 characters of its build metadata.
+    private static string Shown(string version) => version.Contains('+') ? version[..Math.Min(version.Length, version.IndexOf('+') + 8)] : version;
 
     private static SplashPart[] Parts(IReadOnlyList<SplashLine> lines)
         => [.. lines.Select(line => line.Part).Where((part, index) => index == 0 || part != lines[index - 1].Part)];

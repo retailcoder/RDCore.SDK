@@ -7,16 +7,15 @@ using RDCore.SDK.Runtime.Shared;
 namespace RDCore.SDK.Model.Symbols;
 
 /// <summary>
-/// The enclosing VBA project itself, as a resolvable, named symbol: the <c>Enclosing Project
-/// namespace</c> tier of <strong>MS-VBAL 5.6.4</strong>'s <em>type binding context</em>: a qualified
-/// type reference like <c>Project.ClassName</c> resolves <c>Project</c> here before looking up
-/// <c>ClassName</c>.
+/// A VBA project, as a resolvable, named symbol: the enclosing project, or a library it references. It is a namespace of the
+/// <em>type binding context</em> (<strong>MS-VBAL §5.6.4</strong>): a qualified type reference like <c>Project.ClassName</c> resolves
+/// <c>Project</c> to a project symbol before looking up <c>ClassName</c> among that project's modules.
 /// </summary>
 /// <remarks>
-/// Scoped to the enclosing (workspace) project only for now: a referenced project's own module
-/// namespace (MS-VBAL's further "Referenced Project" / "Module in Referenced Project" tiers) needs a
-/// library symbol provider that doesn't exist yet, so qualifying by a referenced project's name isn't
-/// modeled here.
+/// The enclosing project's symbol has no <see cref="SymbolProperties.Library"/>. A referenced library is a project symbol of its own, named for
+/// the library, with <see cref="SymbolProperties.Library"/> set to that name, as are the symbols it declares (<c>LibrarySymbolReader</c>, and
+/// the standard library's symbol provider). The property is what tells a library's types from those of the enclosing project, and from
+/// those of another library (<see cref="ISymbolResolver.ResolveProjectType"/>).
 /// </remarks>
 /// <param name="WorkspaceRoot">A <c>Uri</c> representing the absolute path to the workspace.</param>
 /// <param name="Name">The project's own name (its <c>.rdproj</c>/VBA project name).</param>
@@ -24,7 +23,7 @@ public sealed record class VBProjectSymbol(Uri WorkspaceRoot, string Name)
     : Symbol(WorkspaceRoot, StaticSymbol.GlobalUri, Name, ScopeKind.Global, SymbolKindExt.Project)
 {
     /// <summary>
-    /// Resolves the type <paramref name="name"/> in the type binding context (<strong>MS-VBAL 5.6.4</strong>),
+    /// Resolves the type <paramref name="name"/> in the type binding context (<strong>MS-VBAL §5.6.4</strong>),
     /// honoring an optional <paramref name="qualifier"/> (a project name, e.g. the <c>Project</c> in
     /// <c>Project.ClassName</c>).
     /// </summary>
@@ -32,14 +31,19 @@ public sealed record class VBProjectSymbol(Uri WorkspaceRoot, string Name)
     /// The lookup is positional. A bare name, and the last part of a qualified one, is bound by
     /// <see cref="ISymbolResolver.ResolveType"/>; the qualifier is a namespace, bound by
     /// <see cref="ISymbolResolver.ResolveQualifier"/>, where neither a user-defined type nor an Enum type is a
-    /// candidate — neither can contain a type. A <c>Type</c> of the enclosing module that shares the project's
+    /// candidate, since neither can contain a type. A <c>Type</c> of the enclosing module that shares the project's
     /// name therefore does not stand in for the project in <c>Project.ClassName</c>, though it is still what the bare
-    /// name <c>Project</c> means. When the qualifier is the enclosing project, <paramref name="name"/> is looked up
-    /// from the project's own scope, not from <paramref name="handle"/>, so nothing declared in the enclosing module
-    /// can hide the project's module or type it names. A qualifier that doesn't resolve to a
-    /// <see cref="VBProjectSymbol"/> stays unbound, rather than silently ignoring a qualifier that might have named
-    /// something real (a referenced project) this doesn't model yet.
+    /// name <c>Project</c> means. When the qualifier is a project, the enclosing one or a referenced library,
+    /// <paramref name="name"/> is looked up among that project's types (<see cref="ISymbolResolver.ResolveProjectType"/>), not from
+    /// <paramref name="handle"/>, so nothing declared in the enclosing module can hide the project's module or type it names. When the qualifier
+    /// is a module, <paramref name="name"/> is a <c>Type</c> or an <c>Enum</c> of that module (<strong>MS-VBAL §5.6.12</strong>). A qualifier that
+    /// resolves to neither a project nor a module stays unbound.
     /// </remarks>
+    /// <param name="resolver">The resolver names are bound by.</param>
+    /// <param name="qualifier">The qualifier, a project's or a module's name; <see langword="null"/> for a bare name.</param>
+    /// <param name="name">The name of the type.</param>
+    /// <param name="handle">The address of the symbol whose scope a bare name, and the qualifier, are bound from.</param>
+    /// <returns>The type, or <see cref="SymbolResolutionResult.Unbound"/>.</returns>
     public static SymbolResolutionResult ResolveQualifiedType(ISymbolResolver resolver, string? qualifier, string name, Uri handle)
     {
         if (qualifier is null)

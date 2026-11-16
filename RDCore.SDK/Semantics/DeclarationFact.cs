@@ -2,6 +2,7 @@ using RDCore.SDK.Model;
 using RDCore.SDK.Model.Source;
 using RDCore.SDK.Model.Symbols;
 using RDCore.SDK.Model.Symbols.Abstract;
+using RDCore.SDK.Runtime;
 using System.Collections.Immutable;
 
 namespace RDCore.SDK.Semantics;
@@ -292,6 +293,38 @@ public sealed record class DeclarationFact(
     /// (<strong>MS-VBAL §5.4.3.3</strong>). <see cref="TypeKind"/> is then the kind of its elements' type. A <c>Variant</c> that holds an array is not one.
     /// </summary>
     public bool IsArray { get; init; }
+
+    /// <summary>
+    /// For a procedure declared by a <c>Declare</c> statement (<strong>MS-VBAL §5.2.3.5</strong>), the platforms it is declared on: the union of those of
+    /// each of its statements (<see cref="StatementsCompiledOn"/>).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A procedure written once in each branch of a <c>#If</c> is one procedure, which each platform declares with the statement of its own live branch. A
+    /// statement compiled on every platform calls its one library whatever the platform; a procedure declared on every platform by several statements, each
+    /// on some of them, does not: each platform calls the library of its own statement.
+    /// </para>
+    /// <para>
+    /// The host finds it by evaluating the module's <c>#If</c> and <c>#ElseIf</c> conditions once for each platform of
+    /// <see cref="CompiledPlatformProfiles.Each"/>, with the predefined constants of that platform
+    /// (<see cref="PredefinedConditionalConstants.Of(RDCore.SDK.Runtime.Abstract.Execution.IRuntimeEnvironmentProfile)"/>) and every other constant as
+    /// the session has it: not only under the constants of the session that analyzed the code, which are those of the one platform it runs on.
+    /// <see langword="null"/> for any other declaration, and where a condition one of its statements depends on cannot be evaluated.
+    /// </para>
+    /// </remarks>
+    public CompiledPlatforms? CompiledOn { get; init; }
+
+    /// <summary>
+    /// For a procedure declared by <c>Declare</c> statements (<strong>MS-VBAL §5.2.3.5</strong>), the platforms each of them is compiled on, in the order they
+    /// are written: those whose predefined conditional-compilation constants make live the <c>#If</c> branch the statement is written in
+    /// (<strong>MS-VBAL §3.4.2</strong>). <see cref="CompiledPlatforms.All"/> for a statement outside any <c>#If</c> block.
+    /// </summary>
+    /// <remarks>
+    /// One element for a procedure that one statement declares; one for each statement of a procedure written once in each branch of a <c>#If</c>, whose
+    /// <see cref="CompiledOn"/> is their union. The host finds them as it finds <see cref="CompiledOn"/>. Default for any other declaration, and where
+    /// <see cref="CompiledOn"/> is <see langword="null"/>.
+    /// </remarks>
+    public ImmutableArray<CompiledPlatforms> StatementsCompiledOn { get; init; }
 }
 
 /// <summary>

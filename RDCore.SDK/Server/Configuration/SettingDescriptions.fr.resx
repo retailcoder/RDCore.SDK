@@ -62,7 +62,7 @@
     <value>L'identificateur de paramètres régionaux de l'environnement; 0 désigne les paramètres invariants.</value>
   </data>
   <data name="Environment_AnsiCodePage" xml:space="preserve">
-    <value>La page de codes ANSI selon laquelle une chaîne String est convertie en octets et inversement, et qu'utilisent Chr et Asc.</value>
+    <value>La page de codes ANSI selon laquelle une chaîne String est convertie en octets et inversement, qu'utilisent Chr et Asc, et dans laquelle est lu et écrit un fichier de module sans marque d'ordre des octets qui n'est pas en UTF-8.</value>
   </data>
   <data name="Environment_SupportsOptionCompareDatabase" xml:space="preserve">
     <value>Si la directive Option Compare Database est permise, comme dans Microsoft Access.</value>

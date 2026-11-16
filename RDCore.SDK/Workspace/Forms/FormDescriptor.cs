@@ -199,6 +199,6 @@ public sealed record class FormDescriptor(
     /// </remarks>
     public IEnumerable<FormControlDescriptor> DeclaredControls()
         => AllControls()
-            .Where(control => !(Kind == FormDesignerKind.MSForms && control.Class is { Library: MSFormsDesignerStorage.Library, Name: "Page" }))
+            .Where(control => !(Kind == FormDesignerKind.MSForms && control.Class is { Library: FormDesigner.MSFormsLibrary, Name: "Page" }))
             .DistinctBy(control => control.Name, StringComparer.OrdinalIgnoreCase);
 }

@@ -18,21 +18,22 @@ public record class VBClassType(VBClassModuleSymbol Symbol, ImmutableArray<VBTyp
     : VBType(typeof(object), Symbol.Name, IsHidden), IVBMemberOwnerType
 {
     /// <summary>
-    /// Builds the class's own default interface — its <c>Public</c>, implicitly-public, and
+    /// Builds the class's own default interface: its <c>Public</c>, implicitly-public, and
     /// <c>Friend</c> members, the surface visible to a member-access expression typed against this
     /// class, whether the reference is <c>Me</c> or any other variable declared as this class.
-    /// <c>Friend</c> counts as visible here because RDCore only ever composes one project's modules
-    /// at a time (no referenced-project/library symbol provider exists yet) — anything resolving
-    /// against a given composition is, by construction, same-project code, and MS-VBAL's <c>Friend</c>
-    /// accessibility is visible project-wide, not just module-wide. <c>Private</c> members are reached,
-    /// from inside the class's own code, only through ordinary lexical name resolution — never through
-    /// member access — so they alone are excluded from <see cref="Members"/> here.
+    /// <c>Friend</c> counts as visible here because only a class of the enclosing project has <c>Friend</c> members: every member of a
+    /// referenced library's class is <c>Public</c>. Code of the enclosing project is the only code that reaches them, and MS-VBAL's
+    /// <c>Friend</c> accessibility is visible project-wide. <c>Private</c> members are reached,
+    /// from inside the class's own code, only through ordinary lexical name resolution, never through
+    /// member access, so they alone are excluded from <see cref="Members"/> here.
     /// </summary>
     /// <remarks>
     /// <c>WorkspaceSymbolResolver.Compose</c> populates <see cref="VBClassModuleSymbol.DefaultInterfaceMembers"/> with it, and the run time asks it of
     /// the class of an object each time it Set-coerces the object or calls its default member: the type is built once for each class module symbol,
     /// which is immutable, and the same type is returned for it every time.
     /// </remarks>
+    /// <param name="classModule">The class module.</param>
+    /// <returns>The class's type.</returns>
     public static VBClassType FromClassModule(VBClassModuleSymbol classModule)
         => Built.GetValue(classModule, static symbol => FromClassModule(symbol, [symbol.Uri.AbsoluteUri]));
 

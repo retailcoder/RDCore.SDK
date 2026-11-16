@@ -207,6 +207,9 @@
   <data name="FormDesigner_InvalidControl" xml:space="preserve">
     <value>A control of the form names no class the form describes.</value>
   </data>
+  <data name="FormDesigner_InvalidObjectStream" xml:space="preserve">
+    <value>The form&apos;s designer data has an object stream (o) that does not hold exactly the controls its sites describe.</value>
+  </data>
   <data name="ProjectFile_InvalidJson" xml:space="preserve">
     <value>The project file &apos;{0}&apos; is not valid JSON, at line {1}, position {2}: {3}</value>
   </data>
