@@ -620,14 +620,47 @@ public sealed class FormattingTabSizeTests
         Assert.IsFalse(client.Asked.Contains(FormattingTabSize.EditorSection), string.Join(", ", client.Asked));
     }
 
+    // a client that answers no workspace/configuration, but says its configuration changed, pushes its settings as it starts, and answers what it is asked
+    // after that: with nothing, or with an error. It is not asked, so no answer of its own sets its settings over the ones it pushed.
+    [TestMethod]
+    [Timeout(60_000, CooperativeCancellation = true)]
+    [DataRow(false, DisplayName = "answered with nothing")]
+    [DataRow(true, DisplayName = "answered with an error")]
+    public async Task AClientThatDeclaresWorkspaceConfigurationFalse_KeepsWhatItPushedAsItStarts_WhateverItAnswers(bool withAnError)
+    {
+        await using var client = new RawClient(new JObject { ["workspace"] = new JObject { ["configuration"] = false, ["didChangeConfiguration"] = new JObject() } }, holdsWhatItIsAsked: true);
+        await client.StartAsync();
+        await client.FollowingAsync();
+
+        await client.PushSettingsAsync(new JObject { [LiveSettingsProtocol.Section] = new JObject { ["Formatting"] = new JObject { ["IndentSpaces"] = "5" } } });
+        await client.AnswerWhatItHeldAsync(withAnError);
+        var server = await client.StartedAsync();
+        while (client.Options.Formatting.IndentSpaces != 5)
+        {
+            Assert.IsTrue(await client.FollowedAsync(),
+                $"the settings it pushed are followed; seen: [{client.Seen}], asked: [{string.Join(", ", client.Asked)}], "
+                + $"server: {server.Configuration[$"{LiveSettingsProtocol.Section}:Formatting:IndentSpaces"] ?? "null"}");
+        }
+
+        Assert.AreEqual("5", server.Configuration[$"{LiveSettingsProtocol.Section}:Formatting:IndentSpaces"]);
+        Assert.IsEmpty(client.Asked, string.Join(", ", client.Asked));
+    }
+
     // a client that is not OmniSharp's: it says the capabilities it is given, as they are - OmniSharp's own fills in what the handlers it has can answer - and
     // answers workspace/configuration with the settings it pushed last (nothing before it pushes any), saying which sections it was asked for.
-    private sealed class RawClient(JObject capabilities) : IAsyncDisposable
+    // A client that holds what it is asked answers none of it until it is told to.
+    private sealed class RawClient(JObject capabilities, bool holdsWhatItIsAsked = false) : IAsyncDisposable
     {
         private readonly Pipe _toServer = new();
         private readonly Pipe _toClient = new();
         private readonly SemaphoreSlim _followed = new(0);
         private readonly TaskCompletionSource _initialized = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource _following = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly List<(JToken Id, int Sections)> _heldAsks = [];
+        private readonly List<int> _seen = [];
+        private bool _holding = holdsWhatItIsAsked;
+        private bool _answersWithAnError;
+        private Task<OmniSharpLanguageServer>? _serving;
         private readonly CancellationTokenSource _lifetime = new(TimeSpan.FromMinutes(1));
         private readonly List<string> _asked = [];
         private JObject? _settings;
@@ -636,6 +669,18 @@ public sealed class FormattingTabSizeTests
         private Task? _reading;
 
         public SdkAppOptions Options { get; } = new();
+
+        // the indentation of the settings, each time a change of them was followed.
+        public string Seen
+        {
+            get
+            {
+                lock (_asked)
+                {
+                    return string.Join(", ", _seen);
+                }
+            }
+        }
 
         /// <summary>The sections the server asked for, in the order it asked.</summary>
         public IReadOnlyList<string> Asked
@@ -662,11 +707,18 @@ public sealed class FormattingTabSizeTests
                 {
                     _follower = ClientConfigurationFollower.StartFollowing(services, started, () =>
                     {
+                        lock (_asked)
+                        {
+                            _seen.Add(Options.Formatting.IndentSpaces);
+                        }
+
                         _followed.Release();
                         return Task.CompletedTask;
                     }, _ => { });
+                    _following.TrySetResult();
                     return Task.CompletedTask;
                 }), _lifetime.Token);
+            _serving = serving;
 
             _reading = ReadAsync(_lifetime.Token);
             await SendAsync(new JObject
@@ -676,8 +728,40 @@ public sealed class FormattingTabSizeTests
             });
             await _initialized.Task.WaitAsync(_lifetime.Token);
             await SendAsync(new JObject { ["jsonrpc"] = "2.0", ["method"] = "initialized", ["params"] = new JObject() });
-            _server = await serving.WaitAsync(_lifetime.Token);
+            if (!holdsWhatItIsAsked)
+            {
+                _server = await serving.WaitAsync(_lifetime.Token);
+            }
         }
+
+        // a server is started once what it asks as it starts is answered.
+        public async Task<OmniSharpLanguageServer> StartedAsync() => _server = await _serving!.WaitAsync(_lifetime.Token);
+
+        // the server is following the client's settings: what the client pushes from then on is followed.
+        public Task FollowingAsync() => _following.Task.WaitAsync(_lifetime.Token);
+
+        // what the client held is answered at last, and what it is asked from then on as it is asked: with a null for each section, or with the error a
+        // client that answers no workspace/configuration sends.
+        public async Task AnswerWhatItHeldAsync(bool withAnError)
+        {
+            List<(JToken Id, int Sections)> asks;
+            lock (_asked)
+            {
+                _holding = false;
+                _answersWithAnError = withAnError;
+                asks = [.. _heldAsks];
+                _heldAsks.Clear();
+            }
+
+            foreach (var (id, sections) in asks)
+            {
+                await SendAsync(Unanswered(id, sections, withAnError));
+            }
+        }
+
+        private static JObject Unanswered(JToken id, int sections, bool withAnError) => withAnError
+            ? new JObject { ["jsonrpc"] = "2.0", ["id"] = id, ["error"] = new JObject { ["code"] = -32601, ["message"] = "Unhandled method workspace/configuration" } }
+            : new JObject { ["jsonrpc"] = "2.0", ["id"] = id, ["result"] = new JArray(Enumerable.Range(0, sections).Select(_ => JValue.CreateNull())) };
 
         public Task<bool> FollowedAsync() => _followed.WaitAsync(TimeSpan.FromSeconds(20));
 
@@ -715,15 +799,33 @@ public sealed class FormattingTabSizeTests
                 }
                 else if (message["method"]?.Value<string>() == "workspace/configuration" && message["params"]?["items"] is JArray items)
                 {
-                    JArray result;
+                    JObject answer;
+                    bool held;
                     lock (_asked)
                     {
                         var sections = items.Select(item => item["section"]?.Value<string>() ?? string.Empty).ToList();
                         _asked.AddRange(sections);
-                        result = new JArray(sections.Select(section => _settings?[section]?.DeepClone() ?? JValue.CreateNull()));
+                        held = _holding;
+                        if (held)
+                        {
+                            _heldAsks.Add((message["id"]!, sections.Count));
+                        }
+
+                        answer = holdsWhatItIsAsked
+                            ? Unanswered(message["id"]!, sections.Count, _answersWithAnError)
+                            : new JObject
+                            {
+                                ["jsonrpc"] = "2.0", ["id"] = message["id"],
+                                ["result"] = new JArray(sections.Select(section => _settings?[section]?.DeepClone() ?? JValue.CreateNull())),
+                            };
                     }
 
-                    await SendAsync(new JObject { ["jsonrpc"] = "2.0", ["id"] = message["id"], ["result"] = result });
+                    if (held)
+                    {
+                        continue;
+                    }
+
+                    await SendAsync(answer);
                 }
             }
         }
