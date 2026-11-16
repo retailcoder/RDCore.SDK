@@ -304,7 +304,7 @@ public abstract class RDCoreServerApp(
             // OmniSharp completes both as it handles exit, under the loops that read and write them: the input then ends, and a message still being
             // written is no longer cancelled through the writer that was completed. Neither disposes the pipe, which this app does as it is disposed.
             .WithInput(new ServerInput(PipeReader.Create(_incomingChanges.Tap(_namedPipe))))
-            .WithOutput(ServerOutput.Over(_namedPipe))
+            .WithOutput(ConnectionOutput.Over(_namedPipe))
             // basic server app information:
             .WithServerInfo(GetServerInfo())
             // wire-up lifecycle delegates:
