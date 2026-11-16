@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- What an import of a VB6 project could not carry over (VbpImportNote): VbpImport_ and the VbpImportNoteKind. {0} is what, as the .vbp writes it. -->
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="NotRepresentable" xml:space="preserve">
+    <value>The text cannot be written in {0}, the file's encoding: line {1} has '{2}'.</value>
+    <comment>{0} is the encoding's name, {1} the 1-based line, {2} the character.</comment>
+  </data>
+  <data name="NotLossless" xml:space="preserve">
+    <value>The file is not valid {0}: editing it would write a replacement character for each byte that does not decode.</value>
+    <comment>{0} is the encoding's name.</comment>
+  </data>
+  <data name="ResourceOperation" xml:space="preserve">
+    <value>Creating, renaming and deleting files is not supported; the edit is not applied.</value>
+  </data>
+  <data name="Stale" xml:space="preserve">
+    <value>'{0}' changed after the edit was made; the edit is not applied.</value>
+    <comment>{0} is the file's path.</comment>
+  </data>
+  <data name="NoFile" xml:space="preserve">
+    <value>There is no file '{0}'.</value>
+    <comment>{0} is the file's path.</comment>
+  </data>
+  <data name="NotWritten" xml:space="preserve">
+    <value>'{0}' could not be written: {1}</value>
+    <comment>{0} is the file's path, {1} why.</comment>
+  </data>
+  <data name="EditDoesNotFit" xml:space="preserve">
+    <value>The edit of '{0}' does not fit its text: {1}</value>
+    <comment>{0} is the file's path, {1} why.</comment>
+  </data>
+  <data name="NotRead" xml:space="preserve">
+    <value>'{0}' could not be read: {1}</value>
+    <comment>{0} is the file's path, {1} why.</comment>
+  </data>
+</root>
