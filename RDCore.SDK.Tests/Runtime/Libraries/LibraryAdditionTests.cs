@@ -1,13 +1,17 @@
 using RDCore.SDK.Model.Symbols;
 using RDCore.SDK.Model.Symbols.Abstract;
 using RDCore.SDK.Model.Symbols.VBProject;
+using RDCore.SDK.Model.Symbols.Completion;
+using RDCore.SDK.Model.Types.Complex;
 using RDCore.SDK.Runtime.Libraries;
+using RDCore.SDK.Semantics.Refactoring;
+using System.Globalization;
 
 namespace RDCore.Tests.Runtime.Libraries;
 
 /// <summary>
 /// What RD-VBA adds to a library that its type library does not declare (<see cref="MemberDescription.IsAddition"/>): read from the file, written back only
-/// where it is true, refused in a format that states none, and carried by each symbol as <see cref="SymbolProperties.LibraryAddition"/>.
+/// where it is true, refused in a format that states none, carried by each symbol as <see cref="SymbolProperties.LibraryAddition"/>, and said by its completion item.
 /// </summary>
 [TestClass]
 public sealed class LibraryAdditionTests
@@ -92,4 +96,21 @@ public sealed class LibraryAdditionTests
         Assert.IsTrue(Added(symbols.Single(symbol => symbol.Name == "rdSolid")));
         Assert.IsFalse(Added(symbols.Single(symbol => symbol.Name == "vbOpaque")));
     }
+
+    [TestMethod]
+    public void ACompletionItem_OfAnAddition_SaysItIsOne_AndOneOfAnExportedMemberDoesNot()
+    {
+        var label = new LibrarySymbolReader(Root).Read([LibraryJson.Read(Library)]).OfType<VBClassModuleSymbol>().Single(declared => declared.Name == "Label");
+
+        var items = CompletionCandidates.MembersOf(VBClassType.FromClassModule(label)).ToDictionary(candidate => candidate.Label);
+
+        Assert.AreEqual(RefactoringTitles.LibraryAddition("VB"), items["Opacity"].Documentation);
+        Assert.IsNull(items["Caption"].Documentation);
+    }
+
+    [TestMethod]
+    [DataRow("en", "RD-VBA addition: the type library of VB does not declare it.")]
+    [DataRow("fr", "Ajout de RD-VBA : la bibliothèque de types de VB ne le déclare pas.")]
+    public void TheMarkOfAnAddition_NamesItsLibrary_InTheLanguageOfTheReader(string language, string expected)
+        => Assert.AreEqual(expected, RefactoringTitles.LibraryAddition("VB", CultureInfo.GetCultureInfo(language)));
 }

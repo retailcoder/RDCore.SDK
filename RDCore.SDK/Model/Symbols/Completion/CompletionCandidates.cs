@@ -870,7 +870,20 @@ public static class CompletionCandidates
 
     // the candidate a symbol is: its name as it is written, in brackets when it is no identifier; its kind, and what is said of it.
     private static CompletionCandidate Describe(Symbol symbol)
-        => new(IsIdentifier(symbol.Name) ? symbol.Name : $"[{symbol.Name}]", KindOf(symbol), DetailOf(symbol), symbol.GetProperty(SymbolProperties.DocString), symbol);
+        => new(IsIdentifier(symbol.Name) ? symbol.Name : $"[{symbol.Name}]", KindOf(symbol), DetailOf(symbol), DocumentationOf(symbol), symbol);
+
+    // what is said of a symbol: its doc string, after the mark of what RD-VBA adds to a library that its type library does not declare.
+    private static string? DocumentationOf(Symbol symbol)
+    {
+        var documentation = symbol.GetProperty(SymbolProperties.DocString);
+        if (!symbol.GetProperty(SymbolProperties.LibraryAddition) || symbol.GetProperty(SymbolProperties.Library) is not { Length: > 0 } library)
+        {
+            return documentation;
+        }
+
+        var addition = Semantics.Refactoring.RefactoringTitles.LibraryAddition(library);
+        return documentation is { Length: > 0 } ? $"{addition}\n\n{documentation}" : addition;
+    }
 
     private static CompletionItemKind KindOf(Symbol symbol) => symbol switch
     {

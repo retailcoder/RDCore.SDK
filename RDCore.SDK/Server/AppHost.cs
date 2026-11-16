@@ -416,9 +416,9 @@ public abstract class AppHost<TApp>() : IDisposable
             .AddSingleton<IProjectFileLoader, ProjectFileLoader>()
             .AddSingleton<IProjectFileWriter, ProjectFileWriter>()
             .AddSingleton<IPlatformEnvironment, PlatformEnvironment>()
-            // the descriptions of the libraries a project can reference ship with the platform, in its Symbols folder.
-            .AddSingleton<RDCore.SDK.Runtime.Libraries.ILibrarySource>(provider => new RDCore.SDK.Runtime.Libraries.DirectoryLibrarySource(
-                provider.GetRequiredService<IFileSystem>(), provider.GetRequiredService<IPlatformEnvironment>().Resolve(PlatformEnvironment.SymbolsDirectory)))
+            // the descriptions of the libraries a project can reference ship with the platform, in its Symbols folder, and with what the application adds.
+            .AddSingleton(provider => LibrarySource(provider, new RDCore.SDK.Runtime.Libraries.DirectoryLibrarySource(
+                provider.GetRequiredService<IFileSystem>(), provider.GetRequiredService<IPlatformEnvironment>().Resolve(PlatformEnvironment.SymbolsDirectory))))
             .AddSingleton<IPlatformCompositionService, PlatformCompositionService>()
             .AddSingleton<IExtensionsProvider, ExtensionsClient>()
             .AddSingleton<IExtensionManifestValidationService, ExtensionManifestValidationService>()
@@ -470,6 +470,19 @@ public abstract class AppHost<TApp>() : IDisposable
     protected virtual void ConfigureAdditionalExternalServices(IServiceCollection services, IConfiguration configuration)
     {
     }
+
+    /// <summary>
+    /// The descriptions of the libraries a project of the application can reference: the <see cref="RDCore.SDK.Runtime.Libraries.ILibrarySource"/> the
+    /// external services give every service that asks for one.
+    /// </summary>
+    /// <remarks>
+    /// The base implementation returns <paramref name="symbols"/>. An application that ships a package describing libraries of its own puts that package's
+    /// source ahead of <paramref name="symbols"/>, with a <see cref="RDCore.SDK.Runtime.Libraries.CompositeLibrarySource"/>.
+    /// </remarks>
+    /// <param name="provider">The external services, to resolve what the source needs.</param>
+    /// <param name="symbols">The descriptions in the platform's <see cref="PlatformEnvironment.SymbolsDirectory"/> folder.</param>
+    /// <returns>The source the external services register.</returns>
+    protected virtual RDCore.SDK.Runtime.Libraries.ILibrarySource LibrarySource(IServiceProvider provider, RDCore.SDK.Runtime.Libraries.ILibrarySource symbols) => symbols;
 
     /// <summary>
     /// Configures the <em>external service provider</em> logging targets for a <c>RDCore.SDK</c> client/server application.
