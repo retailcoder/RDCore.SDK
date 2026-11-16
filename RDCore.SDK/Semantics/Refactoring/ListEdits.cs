@@ -68,7 +68,7 @@ public static class ListEdits
 
     /// <summary>
     /// The edits that write a list's items as others: the parameters of a procedure in another order, the arguments of a call to it. Each item is replaced
-    /// where it is, so the commas, the line continuations and the comments between the items stay. Items past the end of the list follow its last item,
+    /// where it is, so the commas, the blanks and the line continuations between the items stay. Items past the end of the list follow its last item,
     /// each after <c>", "</c>; the items of the list past the last one given are removed with their commas. An empty item is an omitted argument:
     /// <c>F a, b</c> written as <c>""</c> and <c>"a"</c> is <c>F , a</c>.
     /// </summary>
