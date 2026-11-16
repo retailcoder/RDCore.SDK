@@ -168,8 +168,8 @@ public static class RefactoringTitles
     public static string RenameOutsideCallersCancel(CultureInfo? culture = null) => Say("Rename_OutsideCallers_Cancel", culture);
 
     /// <summary>
-    /// What a hover and a completion item say of a member RD-VBA adds to a library (<see cref="Model.Symbols.Abstract.SymbolProperties.LibraryAddition"/>):
-    /// <c>RD-VBA addition: the type library of VB does not declare it.</c>
+    /// What a completion item says, ahead of its documentation, of a member RD-VBA adds to a library
+    /// (<see cref="Model.Symbols.Abstract.SymbolProperties.LibraryAddition"/>): <c>RD-VBA addition: the type library of VB does not declare it.</c>
     /// </summary>
     /// <param name="library">The name of the library the member is added to.</param>
     /// <param name="culture">The language of the reader; the current UI culture by default.</param>
