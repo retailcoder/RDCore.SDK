@@ -16,6 +16,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Update="Assistant\McpMessages.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>McpMessages.resx</DependentUpon>
+    </Compile>
     <Compile Update="Client\LaunchMessages.Designer.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
@@ -29,6 +34,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Update="Assistant\McpMessages.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>McpMessages.Designer.cs</LastGenOutput>
+      <CustomToolNamespace>RDCore.SDK.Assistant</CustomToolNamespace>
+    </EmbeddedResource>
     <EmbeddedResource Update="Client\LaunchMessages.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>LaunchMessages.Designer.cs</LastGenOutput>
