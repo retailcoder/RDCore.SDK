@@ -47,7 +47,7 @@ internal static class ClientConfigurationOptions
 // a client that answers workspace/configuration says its configuration changed: the server asks, whatever settings the notification carries - an empty object,
 // or settings of its own, are no answer for the section the server asks for. What a client that is not asked says the settings are is taken as it says them.
 // The server is resolved as the notification comes in, not injected: OmniSharp 0.19.9 gives ILanguageServer as a dependency only once the server has started
-// (every OnStarted delegate and handler done), and a notification that comes in before that - a client pushes its settings once it sent initialized - would
+// (every OnStarted delegate and handler done), and a notification that comes in before that (a client pushes its settings once it sent initialized) would
 // find no behavior to resolve, and be dropped.
 internal sealed class ConfigurationChangedBehavior(IServiceProvider services) : IPipelineBehavior<DidChangeConfigurationParams, Unit>
 {

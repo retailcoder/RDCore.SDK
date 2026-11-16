@@ -620,8 +620,8 @@ public sealed class FormattingTabSizeTests
         Assert.IsFalse(client.Asked.Contains(FormattingTabSize.EditorSection), string.Join(", ", client.Asked));
     }
 
-    // a client that answers no workspace/configuration, but says its configuration changed, pushes its settings as it starts - once it sent initialized,
-    // while what the server does as it starts still runs - and answers what it is asked after that: with nothing, or with an error. It is not asked, so no
+    // a client that answers no workspace/configuration, but says its configuration changed, pushes its settings as it starts (once it sent initialized,
+    // while what the server does as it starts still runs), and answers what it is asked after that: with nothing, or with an error. It is not asked, so no
     // answer of its own sets its settings over the ones it pushed.
     [TestMethod]
     [Timeout(60_000, CooperativeCancellation = true)]
@@ -652,8 +652,8 @@ public sealed class FormattingTabSizeTests
 
     // a client that is not OmniSharp's: it says the capabilities it is given, as they are - OmniSharp's own fills in what the handlers it has can answer - and
     // answers workspace/configuration with the settings it pushed last (nothing before it pushes any), saying which sections it was asked for.
-    // A client that holds what it is asked answers none of it until it is told to. One that holds the start keeps the server starting - OmniSharp says it
-    // started once every OnStarted delegate and handler is done - until it lets it start.
+    // A client that holds what it is asked answers none of it until it is told to. One that holds the start keeps the server starting (OmniSharp says it
+    // started once every OnStarted delegate and handler is done) until it lets it start.
     private sealed class RawClient(JObject capabilities, bool holdsWhatItIsAsked = false, bool holdsTheStart = false) : IAsyncDisposable
     {
         private readonly Pipe _toServer = new();
