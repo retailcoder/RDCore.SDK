@@ -17,14 +17,19 @@ internal static class ClientConfigurationOptions
     // workspace.configuration is what says a client answers workspace/configuration; workspace/didChangeConfiguration is a notification any client may send,
     // and workspace.didChangeConfiguration says only whether the client registers for it dynamically. OmniSharp 0.19.9 asks, and reads the notification,
     // only for a client that declares the latter: a client that declares workspace.configuration alone is one whose notification is registered statically.
+    // A client that declares the latter but answers no workspace/configuration is not asked: OmniSharp would ask it as it starts, and set its settings to the
+    // answer when the answer comes (nothing, or an error) over the settings the client pushed in the meantime. With no section to ask for, it asks nothing,
+    // and still takes the settings the client pushes.
     internal static LanguageServerOptions WithClientConfiguration(this LanguageServerOptions options, string section) => options
         .WithConfigurationSection(section)
         .WithServices(services => services.AddTransient<IPipelineBehavior<DidChangeConfigurationParams, Unit>, ConfigurationChangedBehavior>())
         .OnInitialize((server, request, _) =>
         {
-            if (Answers(request.Capabilities)
-                && !server.Configuration.IsSupported
-                && server.Configuration is ICapability<DidChangeConfigurationCapability> configuration)
+            if (!Answers(request.Capabilities))
+            {
+                server.Configuration.RemoveConfigurationItems([new ConfigurationItem { Section = section }]);
+            }
+            else if (!server.Configuration.IsSupported && server.Configuration is ICapability<DidChangeConfigurationCapability> configuration)
             {
                 configuration.SetCapability(new DidChangeConfigurationCapability(), request.Capabilities);
             }
