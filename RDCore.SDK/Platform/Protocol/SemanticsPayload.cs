@@ -87,6 +87,10 @@ public record class CompileErrorDto(RDCoreDiagnosticCode Code, SourceLocation Lo
 /// The kind of the declared type of the value parameter of the <c>Property Let</c> of the property it names (<see cref="DeclaredTypeKinds.Of"/>), which
 /// <paramref name="LetValueType"/> names; <see langword="null"/> when it names no property with one, or one whose type did not resolve.
 /// </param>
+/// <param name="NativeCall">
+/// For an expression bound to a procedure a <c>Declare</c> statement declares, the platforms it is compiled on and those the procedure is declared on
+/// (<see cref="ExpressionFact.NativeCall"/>); <see langword="null"/> otherwise.
+/// </param>
 public record class ExpressionFactDto(
     SyntaxNodeId Node,
     SourceLocation Location,
@@ -103,7 +107,8 @@ public record class ExpressionFactDto(
     string? LetValueType = null,
     DefaultMemberFact? DefaultMember = null,
     bool IsLetCoerced = false,
-    DeclaredTypeKind? LetValueTypeKind = null)
+    DeclaredTypeKind? LetValueTypeKind = null,
+    NativeCallPlatforms? NativeCall = null)
 {
     /// <summary>
     /// Describes a fact for the wire.
@@ -114,7 +119,7 @@ public record class ExpressionFactDto(
         var (kind, isArray) = DeclaredTypeKinds.Of(fact.DeclaredType);
         return new(fact.Node, fact.Location, fact.DeclaredType?.Name, fact.Classification, fact.Binding?.Uri, fact.Flags,
             fact.Error is null ? null : CompileErrorDto.From(fact.Error), fact.Creates, kind, isArray, fact.ConstantValue,
-            fact.Accessors, fact.LetValueType?.Name, fact.DefaultMember, fact.IsLetCoerced, DeclaredTypeKinds.Of(fact.LetValueType).Kind);
+            fact.Accessors, fact.LetValueType?.Name, fact.DefaultMember, fact.IsLetCoerced, DeclaredTypeKinds.Of(fact.LetValueType).Kind, fact.NativeCall);
     }
 }
 
@@ -377,10 +382,15 @@ public record class ProcedureSemanticsDto(
 /// The address of the class whose object it is given where code first uses it, for a variable declared <c>As New</c>
 /// (<see cref="DeclarationFact.AutoInstantiates"/>); <see langword="null"/> for any other declaration.
 /// </param>
+/// <param name="CompiledOn">
+/// For a procedure a <c>Declare</c> statement declares, the platforms it is declared on (<see cref="DeclarationFact.CompiledOn"/>); <see langword="null"/>
+/// for any other declaration.
+/// </param>
 public record class DeclarationFactDto(
     Uri Symbol, string Name, DeclarationKind Kind, AccessModifier Access, bool IsImplicit, SourceLocation Location, DeclarationReferences? References,
     DeclarationRole Role = DeclarationRole.None, LocalDeclarationKind? DeclaredBy = null, HiddenDeclaration? Hides = null,
-    ImmutableArray<DeclarationReference>? ReferencedFrom = null, DeclaredTypeKind? TypeKind = null, bool IsArray = false, Uri? AutoInstantiates = null);
+    ImmutableArray<DeclarationReference>? ReferencedFrom = null, DeclaredTypeKind? TypeKind = null, bool IsArray = false, Uri? AutoInstantiates = null,
+    CompiledPlatforms? CompiledOn = null);
 
 /// <summary>
 /// A <see cref="ModuleSemanticModel"/>, as it travels.
@@ -432,7 +442,7 @@ public record class ModuleSemanticsDto(
         [.. model.Declarations.Select(declaration => new DeclarationFactDto(
             declaration.Symbol.Uri, declaration.Name, declaration.Kind, declaration.Access, declaration.IsImplicit, declaration.Location, declaration.References, declaration.Role,
             declaration.DeclaredBy, declaration.Hides, declaration.ReferencedFrom, declaration.TypeKind, declaration.IsArray,
-            declaration.AutoInstantiates?.Uri))],
+            declaration.AutoInstantiates?.Uri, declaration.CompiledOn))],
         model.Language,
         model.Class,
         model.Document,
