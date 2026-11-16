@@ -85,6 +85,17 @@ public abstract class RDCoreServerApp(
     /// </remarks>
     protected virtual TextDocumentSelector? DocumentSelector => null;
 
+    /// <summary>
+    /// Whether the server reads the changes to documents' files that its client says of (<c>workspace/didChangeWatchedFiles</c>), and says when each is read:
+    /// a request about a document then waits for the changes to its file that arrived before it (<see cref="IncomingDocumentChanges.ServeFileChanges"/>).
+    /// <see langword="false"/> unless the server says so.
+    /// </summary>
+    /// <remarks>
+    /// A server that says so marks its handler of the notification <see cref="HandledOnArrivalAttribute"/>, and says each change it names is read
+    /// (<see cref="IncomingDocumentChanges.FileChangeRead"/>), a change to a file it leaves alone included.
+    /// </remarks>
+    protected virtual bool ServesFileChanges => false;
+
     // the changes to documents the client has sent and the server has not applied yet, known as they arrive (HexIDE's findings desk #31).
     private readonly IncomingDocumentChanges _incomingChanges = new();
     public async Task<TResult> SendRequestAsync<TParams, TResult>(TParams request, CancellationToken token) where TParams : IRequest<TResult>
@@ -339,6 +350,11 @@ public abstract class RDCoreServerApp(
             {
                 services.AddSingleton(selector);
                 _incomingChanges.Serve(selector);
+            }
+
+            if (ServesFileChanges)
+            {
+                _incomingChanges.ServeFileChanges();
             }
 
             // the other half of the platform handshake: what the connected client expects of us.

@@ -4,12 +4,12 @@ using System.Text.Json;
 namespace RDCore.SDK.Server;
 
 /// <summary>
-/// Reads a client's messages as they pass, and says to <see cref="IncomingDocumentChanges"/> which of them change a document: a stream that is the one it
-/// wraps, read for read.
+/// Reads a client's messages as they pass, and says to <see cref="IncomingDocumentChanges"/> which of them change a document, and which files the client says
+/// changed: a stream that is the one it wraps, read for read.
 /// </summary>
 /// <remarks>
 /// The messages are framed the way <strong>LSP 3.17</strong> §Base Protocol has it: a <c>Content-Length</c> header, an empty line, and that many bytes of
-/// JSON. Only a message that names a document notification is parsed. A message the tap can't make out is passed on all the same, and only goes unseen: the
+/// JSON. Only a message that names a document notification or <c>workspace/didChangeWatchedFiles</c> is parsed. A message the tap can't make out is passed on all the same, and only goes unseen: the
 /// worst that comes of it is a request that waits for the change, as it would without the tap.
 /// </remarks>
 internal sealed class DocumentChangeTap(Stream inner, IncomingDocumentChanges changes) : Stream
@@ -17,6 +17,8 @@ internal sealed class DocumentChangeTap(Stream inner, IncomingDocumentChanges ch
     private static readonly byte[] HeaderEnd = "\r\n\r\n"u8.ToArray();
     private static readonly byte[] DocumentNotification = "\"textDocument/did"u8.ToArray();
     private static readonly HashSet<string> Changes = ["textDocument/didOpen", "textDocument/didChange", "textDocument/didClose"];
+    private const string FilesChanged = "workspace/didChangeWatchedFiles";
+    private static readonly byte[] FilesNotification = "\"workspace/didChangeWatchedFiles\""u8.ToArray();
 
     // what has been read of the message being read: its header, then its body.
     private readonly MemoryStream _message = new();
@@ -105,10 +107,10 @@ internal sealed class DocumentChangeTap(Stream inner, IncomingDocumentChanges ch
         return -1;
     }
 
-    // a notification that changes a document says which, as it arrives.
+    // a notification that changes a document says which, as it arrives; one that says files changed says which.
     private void Seen(ReadOnlySpan<byte> body)
     {
-        if (body.IndexOf(DocumentNotification) < 0)
+        if (body.IndexOf(DocumentNotification) < 0 && body.IndexOf(FilesNotification) < 0)
         {
             return;
         }
@@ -117,15 +119,31 @@ internal sealed class DocumentChangeTap(Stream inner, IncomingDocumentChanges ch
         {
             using var message = JsonDocument.Parse(body.ToArray());
             var root = message.RootElement;
-            if (root.ValueKind == JsonValueKind.Object
-                && !root.TryGetProperty("id", out _)
-                && root.TryGetProperty("method", out var method) && method.GetString() is { } name && Changes.Contains(name)
-                && root.TryGetProperty("params", out var parameters) && parameters.ValueKind == JsonValueKind.Object
+            if (root.ValueKind != JsonValueKind.Object
+                || root.TryGetProperty("id", out _)
+                || !root.TryGetProperty("method", out var method) || method.GetString() is not { } name
+                || !root.TryGetProperty("params", out var parameters) || parameters.ValueKind != JsonValueKind.Object)
+            {
+                return;
+            }
+
+            if (Changes.Contains(name)
                 && parameters.TryGetProperty("textDocument", out var document) && document.ValueKind == JsonValueKind.Object
                 && document.TryGetProperty("uri", out var uri) && uri.GetString() is { } text
                 && IncomingDocumentChanges.DocumentOf(text) is { } documentUri)
             {
                 changes.Arrived(documentUri);
+            }
+            else if (name == FilesChanged && parameters.TryGetProperty("changes", out var files) && files.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var file in files.EnumerateArray())
+                {
+                    if (file.ValueKind == JsonValueKind.Object && file.TryGetProperty("uri", out var fileUri) && fileUri.GetString() is { } fileText
+                        && IncomingDocumentChanges.DocumentOf(fileText) is { } fileDocument)
+                    {
+                        changes.FileChangeArrived(fileDocument);
+                    }
+                }
             }
         }
         catch (JsonException)

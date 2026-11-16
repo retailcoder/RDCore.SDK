@@ -24,6 +24,10 @@ namespace RDCore.SDK.Server.Services;
 /// pause sent before a run is not a pause of that run. A <c>$/cancelRequest</c> does not reach a request handled here: OmniSharp knows of the requests it
 /// schedules.
 /// </para>
+/// <para>
+/// A notification is marked by its handlers' classes, every one of them: the parameters of a notification of the protocol are OmniSharp's. A marked
+/// notification is handled in the same order as the marked requests.
+/// </para>
 /// </remarks>
 internal sealed class ArrivalRequests(IServiceProvider services, ILogger<ArrivalRequests> logger)
 {
@@ -64,6 +68,39 @@ internal sealed class ArrivalRequests(IServiceProvider services, ILogger<Arrival
         return true;
     }
 
+    /// <summary>
+    /// Handles <paramref name="notification"/> if every handler of it is marked (<see cref="HandledOnArrivalAttribute"/> on the handler's class).
+    /// </summary>
+    /// <param name="notification">A notification the server received.</param>
+    /// <returns>Whether the notification is marked, and so is handled here rather than scheduled.</returns>
+    public bool TryHandle(Notification notification)
+    {
+        // a notification of the protocol has parameters OmniSharp declares: its handler is what is marked.
+        var handlers = _handlers.Value.Descriptors.Where(handler => handler.Method == notification.Method).ToList();
+        if (handlers.Count == 0 || !handlers.All(handler => handler.ImplementationType.IsDefined(typeof(HandledOnArrivalAttribute), inherit: true)))
+        {
+            return false;
+        }
+
+        IRequestDescriptor<IHandlerDescriptor?> descriptor;
+        try
+        {
+            descriptor = _router.Value.GetDescriptors(notification);
+        }
+        catch (Exception exception)
+        {
+            logger.LogWarning("The parameters of {Method} can't be read ({Reason}); the notification is left to OmniSharp.", notification.Method, exception.Message);
+            return false;
+        }
+
+        lock (_gate)
+        {
+            _last = HandleAfterAsync(_last, descriptor, notification);
+        }
+
+        return true;
+    }
+
     // a delegating handler's parameters are the request it delegates, which is the one that is marked.
     private bool IsMarked(string method)
         => _handlers.Value.Descriptors.FirstOrDefault(handler => handler.Method == method) is { Params: { } parameters } handler
@@ -74,6 +111,20 @@ internal sealed class ArrivalRequests(IServiceProvider services, ILogger<Arrival
     {
         await previous;
         await AnswerAsync(descriptor, request);
+    }
+
+    // a notification is answered nothing; one whose handler fails is logged, and never faults, so that what arrived after it is handled.
+    private async Task HandleAfterAsync(Task previous, IRequestDescriptor<IHandlerDescriptor?> descriptor, Notification notification)
+    {
+        await previous;
+        try
+        {
+            await _router.Value.RouteNotification(descriptor, notification, CancellationToken.None);
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(exception, "❌ The notification {Method} failed.", notification.Method);
+        }
     }
 
     // answered as OmniSharp answers a request it schedules; never faults, so that the requests after it are handled.
