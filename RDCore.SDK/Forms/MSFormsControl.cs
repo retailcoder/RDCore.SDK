@@ -105,8 +105,8 @@ public enum MSFormsControlKind
 /// control (<c>i</c> and the ID in at least two digits); <c>0</c> for the form itself.</param>
 /// <param name="Kind">The kind of control.</param>
 /// <param name="ClassId">The class identifier of an <see cref="MSFormsControlKind.Other"/> control, from the form's class
-/// table ([MS-OFORMS] 2.2.10.10); <c>null</c> for a Microsoft Forms control.</param>
-/// <param name="Site">The control's site in its parent ([MS-OFORMS] 2.2.10.12); <c>null</c> for the form itself.</param>
+/// table ([MS-OFORMS] 2.2.10.10); <see langword="null"/> for a Microsoft Forms control.</param>
+/// <param name="Site">The control's site in its parent ([MS-OFORMS] 2.2.10.12); <see langword="null"/> for the form itself.</param>
 /// <param name="Properties">The properties the control's own structure stores, with the file format's defaults for those
 /// it does not.</param>
 /// <param name="Children">The controls a <see cref="MSFormsControlKind.Frame"/> or a <see cref="MSFormsControlKind.Page"/>
@@ -125,6 +125,7 @@ public sealed record class MSFormsControl(
     /// The control and every control it contains, at any depth, in the order of <see cref="Children"/> (the control
     /// first).
     /// </summary>
+    /// <returns>The control, then each of its children and their descendants, depth first.</returns>
     public IEnumerable<MSFormsControl> DescendantsAndSelf()
     {
         yield return this;
