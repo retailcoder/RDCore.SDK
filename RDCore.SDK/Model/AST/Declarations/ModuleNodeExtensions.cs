@@ -157,7 +157,8 @@ public static class ModuleNodeExtensions
 
     /// <summary>
     /// Whether a class module is accessible within the projects that reference its project, per its <c>Attribute VB_Exposed</c> directive
-    /// (<strong>MS-VBAL §5.2.4.1.1</strong>). Defaults to <c>false</c>, the <em>Private</em> instancing mode, for a module that declares no such attribute.
+    /// (<strong>MS-VBAL §5.2.4.1.1</strong>). Defaults to <see langword="false"/>, the <em>Private</em> instancing mode, for a module that declares no
+    /// such attribute.
     /// </summary>
     /// <param name="module">The module.</param>
     public static bool IsExposed(this ModuleNode module)

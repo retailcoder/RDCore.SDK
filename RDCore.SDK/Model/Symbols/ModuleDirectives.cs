@@ -53,8 +53,8 @@
 /// </param>
 /// <param name="Exposed">
 /// Whether a class module declares <c>Attribute VB_Exposed = True</c> (<strong>MS-VBAL §5.2.4.1.1</strong>): the class is accessible within the projects
-/// that reference its project, as well as within its own. <c>False</c> for a module that declares no such attribute (the <em>Private</em> instancing
-/// mode), and for one that is not a class module.
+/// that reference its project, as well as within its own. <see langword="false"/> for a module that declares no such attribute (the <em>Private</em>
+/// instancing mode), and for one that is not a class module.
 /// </param>
 public readonly record struct ModuleDirectives(
     bool Explicit = false, bool Strict = false, OptionCompare Compare = OptionCompare.Binary, int Base = 0, bool PrivateModule = false,
