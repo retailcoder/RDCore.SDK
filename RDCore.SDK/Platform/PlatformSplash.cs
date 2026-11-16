@@ -24,8 +24,8 @@ namespace RDCore.SDK.Platform;
 /// its own, drawn with these lines, or none at all.
 /// </para>
 /// <para>
-/// The version line and the copyright notice are in the language of the user interface; the logo and the slogan are in none. The year and the company the notice names are those
-/// of the SDK's own assembly (<see cref="CopyrightYear"/>, <see cref="Company"/>), which its package's copyright says too.
+/// The version line and the copyright notice are in the language of the user interface; the logo and the slogan are in none. The year and the company
+/// the notice names are those of the SDK's own assembly (<see cref="CopyrightYear"/>, <see cref="Company"/>), which its package's copyright says too.
 /// </para>
 /// </remarks>
 public static class PlatformSplash
@@ -80,12 +80,16 @@ public static class PlatformSplash
     /// </summary>
     /// <remarks>
     /// The application is named by the product of its assembly (<see cref="AssemblyProductAttribute"/>), or by the assembly's name when it says none, and its
-    /// version is the assembly's informational version (<see cref="AssemblyDisplayVersion"/>). The build metadata of a version, the commit it was built
-    /// from, is shown by its first 7 characters.
+    /// version is the assembly's informational version (<see cref="AssemblyDisplayVersion"/>). The build metadata of a version (the commit it was built
+    /// from) is shown by its first 7 characters.
     /// </remarks>
-    /// <param name="application">The application's assembly; the process's entry assembly (<see cref="Assembly.GetEntryAssembly"/>) when it is not said.</param>
+    /// <param name="application">
+    /// The application's assembly; the process's entry assembly (<see cref="Assembly.GetEntryAssembly"/>) when it is not said.
+    /// </param>
     /// <param name="culture">The language of the user interface; the current one (<see cref="CultureInfo.CurrentUICulture"/>) when it is not said.</param>
-    /// <returns>The line in that language, or in English when the platform has none in it.</returns>
+    /// <returns>
+    /// The line in that language, or in English when the platform has none in it.
+    /// </returns>
     public static string VersionLine(Assembly? application = null, CultureInfo? culture = null)
     {
         culture ??= CultureInfo.CurrentUICulture;

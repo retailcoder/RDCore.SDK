@@ -113,9 +113,9 @@ public abstract class AppHost<TApp>() : IDisposable
     /// </para>
     /// <para>
     /// <strong>What the base implementation draws.</strong> The platform's splash (<see cref="PlatformSplash"/>): the logo, the slogan, the version line and
-    /// the copyright notice, in the language of the user interface, as plain text (<see cref="PlatformSplash.WriteTo"/>). It writes it to the standard output of an
-    /// application that writes to its console (<see cref="WritesToConsole"/>), and only when that output is a console: output redirected to a file or a pipe
-    /// is a program's, and gets no splash in it. A server never shows one.
+    /// the copyright notice, in the language of the user interface, as plain text (<see cref="PlatformSplash.WriteTo"/>). It writes it to the standard output
+    /// of an application that writes to its console (<see cref="WritesToConsole"/>), and only when that output is a console: output redirected to a file or a
+    /// pipe is a program's, and gets no splash in it. A server never shows one.
     /// </para>
     /// <para>
     /// <strong>Your own splash.</strong> An override replaces the base implementation: what it draws is the one splash the application shows, and the
