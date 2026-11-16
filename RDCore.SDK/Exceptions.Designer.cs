@@ -329,6 +329,15 @@ namespace RDCore.SDK {
                 return ResourceManager.GetString("FormDesigner_InvalidControl", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   Looks up a localized string similar to The form&apos;s designer data has an object stream (o) that does not hold exactly the controls its sites describe..
+        /// </summary>
+        internal static string FormDesigner_InvalidObjectStream {
+            get {
+                return ResourceManager.GetString("FormDesigner_InvalidObjectStream", resourceCulture);
+            }
+        }
         
         /// <summary>
         ///   Looks up a localized string similar to The project file &apos;{0}&apos; is not valid JSON, at line {1}, position {2}: {3}.

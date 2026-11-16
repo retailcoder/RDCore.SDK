@@ -75,6 +75,11 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>AssistantMessages.resx</DependentUpon>
     </Compile>
+    <Compile Update="Forms\MSFormsMessages.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>MSFormsMessages.resx</DependentUpon>
+    </Compile>
   </ItemGroup>
 
   <ItemGroup>
@@ -93,6 +98,10 @@
     <EmbeddedResource Update="Server\Assistant\AssistantMessages.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>AssistantMessages.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Update="Forms\MSFormsMessages.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>MSFormsMessages.Designer.cs</LastGenOutput>
     </EmbeddedResource>
   </ItemGroup>
 

@@ -2,6 +2,7 @@
 using System.Globalization;
 using System.Text;
 using System.IO.Abstractions.TestingHelpers;
+using RDCore.SDK.Forms;
 using RDCore.SDK.Workspace.Forms;
 
 namespace RDCore.Tests.Workspace.Forms;
@@ -362,21 +363,49 @@ public sealed class FormDesignerTests
         return file.Read(file.Find(file.Root, "f")!);
     }
 
+    // the storage with bytes of its root form stream changed in place: each 64 bytes of the stream are a mini sector,
+    // which is contiguous in the file, so the mini sector holding the offset is patched where it is found
+    private static byte[] WithFormStreamPatched(int offset, Func<byte, byte> patch)
+    {
+        var storage = Fixture("AllControls.storage");
+        var start = offset / 64 * 64;
+        var sector = FormStreamOf(storage)[start..(start + 64)];
+        var at = storage.AsSpan().IndexOf(sector);
+        storage[at + offset - start] = patch(storage[at + offset - start]);
+        return storage;
+    }
+
     [TestMethod]
     public void FormStream_Truncated_Throws()
     {
-        var stream = FormStreamOf(Fixture("AllControls.storage"));
+        // a cbForm past the stream's end
+        var storage = WithFormStreamPatched(3, _ => 0xFF);
 
-        Assert.AreEqual(FormDesignerFormatProblem.Truncated, ProblemOf(() => MSFormsFormStream.Read(stream.AsSpan(0, stream.Length / 2))));
+        Assert.AreEqual(FormDesignerFormatProblem.Truncated, ProblemOf(() => FormDesigner.Read(AllControlsModule, AsFrx(storage))));
     }
 
     [TestMethod]
     public void FormStream_UnknownVersion_Throws()
     {
-        var stream = FormStreamOf(Fixture("AllControls.storage"));
-        stream[1] = 5;
+        var storage = WithFormStreamPatched(1, _ => 5);
 
-        Assert.AreEqual(FormDesignerFormatProblem.UnsupportedVersion, ProblemOf(() => MSFormsFormStream.Read(stream)));
+        Assert.AreEqual(FormDesignerFormatProblem.UnsupportedVersion, ProblemOf(() => FormDesigner.Read(AllControlsModule, AsFrx(storage))));
+    }
+
+    [TestMethod]
+    public void ObjectStreamProblem_IsTheFormDesignersOwn_WithTheReadersExceptionInside()
+    {
+        // the first site's ObjectStreamSize (28, the Label's) one byte larger: the sites no longer add up to o's length
+        var storage = WithFormStreamPatched(0x5E, size =>
+        {
+            Assert.AreEqual(28, size);
+            return (byte)(size + 1);
+        });
+
+        var exception = Assert.ThrowsExactly<FormDesignerFormatException>(() => FormDesigner.Read(AllControlsModule, AsFrx(storage)));
+
+        Assert.AreEqual(FormDesignerFormatProblem.InvalidObjectStream, exception.Problem);
+        Assert.AreEqual(MSFormsFormatProblem.InvalidObjectStream, Assert.IsInstanceOfType<MSFormsFormatException>(exception.InnerException).Problem);
     }
 
     [TestMethod]
