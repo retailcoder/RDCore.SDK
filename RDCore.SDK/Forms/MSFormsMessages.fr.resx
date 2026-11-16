@@ -130,7 +130,7 @@
     <value>Les données de concepteur ont été écrites par une version de Microsoft Forms qui n&apos;est pas prise en charge.</value>
   </data>
   <data name="Truncated" xml:space="preserve">
-    <value>Les données de concepteur se terminent avant l&apos;une de leurs structures.</value>
+    <value>Les données de concepteur se terminent avant la fin de l&apos;une de leurs structures.</value>
   </data>
   <data name="InvalidControl" xml:space="preserve">
     <value>Un contrôle des données de concepteur ne nomme aucune classe que le formulaire décrit, ou il est imbriqué plus profondément que les contrôles qui le précèdent ne le permettent.</value>

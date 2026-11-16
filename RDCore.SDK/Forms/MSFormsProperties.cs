@@ -70,9 +70,11 @@ public sealed class MSFormsProperties
     /// Gets the value of the property named <paramref name="name"/>: the stored one, or the file format's default.
     /// </summary>
     /// <param name="name">The property's name.</param>
-    /// <param name="value">The property's value; <c>null</c> when it has none.</param>
-    /// <returns><c>true</c> when the property has a value; <c>false</c> when it is neither stored nor has a default for
-    /// this kind of control.</returns>
+    /// <param name="value">The property's value; <see langword="null"/> when it has none.</param>
+    /// <returns>
+    /// <see langword="true"/> when the property has a value; <see langword="false"/> when it is neither stored nor has a
+    /// default for this kind of control.
+    /// </returns>
     public bool TryGet(string name, [NotNullWhen(true)] out object? value)
         => _stored.TryGetValue(name, out value) || _defaults.TryGetValue(name, out value);
 
@@ -83,8 +85,10 @@ public sealed class MSFormsProperties
     /// <typeparam name="T">The property's type (see <see cref="MSFormsProperties"/>).</typeparam>
     /// <param name="name">The property's name.</param>
     /// <param name="value">The property's value; the type's default when it has none.</param>
-    /// <returns><c>true</c> when the property has a value of type <typeparamref name="T"/>; <c>false</c> when it has none,
-    /// or one of another type.</returns>
+    /// <returns>
+    /// <see langword="true"/> when the property has a value of type <typeparamref name="T"/>; <see langword="false"/> when
+    /// it has none, or one of another type.
+    /// </returns>
     public bool TryGet<T>(string name, [MaybeNullWhen(false)] out T value)
     {
         if (TryGet(name, out var found) && found is T typed)
@@ -103,6 +107,7 @@ public sealed class MSFormsProperties
     /// </summary>
     /// <typeparam name="T">The property's type (see <see cref="MSFormsProperties"/>).</typeparam>
     /// <param name="name">The property's name.</param>
+    /// <returns>The property's value.</returns>
     /// <exception cref="KeyNotFoundException">The property is neither stored nor has a default for this kind of
     /// control.</exception>
     /// <exception cref="InvalidCastException">The property's value is not a <typeparamref name="T"/>.</exception>
