@@ -2,6 +2,7 @@ using RDCore.SDK.Model;
 using RDCore.SDK.Model.Source;
 using RDCore.SDK.Model.Symbols;
 using RDCore.SDK.Model.Symbols.Abstract;
+using RDCore.SDK.Runtime;
 using System.Collections.Immutable;
 
 namespace RDCore.SDK.Semantics;
@@ -292,6 +293,19 @@ public sealed record class DeclarationFact(
     /// (<strong>MS-VBAL §5.4.3.3</strong>). <see cref="TypeKind"/> is then the kind of its elements' type. A <c>Variant</c> that holds an array is not one.
     /// </summary>
     public bool IsArray { get; init; }
+
+    /// <summary>
+    /// For a procedure declared by a <c>Declare</c> statement (<strong>MS-VBAL §5.2.3.5</strong>), the platforms it is declared on: those whose predefined
+    /// conditional-compilation constants make live the <c>#If</c> branch the statement is written in (<strong>MS-VBAL §3.4.2</strong>).
+    /// <see cref="CompiledPlatforms.All"/> for one outside any <c>#If</c> block, which calls its library whatever the platform.
+    /// </summary>
+    /// <remarks>
+    /// The host finds it by evaluating the module's <c>#If</c> and <c>#ElseIf</c> conditions once for each platform of
+    /// <see cref="CompiledPlatformProfiles.Each"/>, with the predefined constants of that platform (<see cref="PredefinedConditionalConstants.Of(RDCore.SDK.Runtime.Abstract.Execution.IRuntimeEnvironmentProfile)"/>) and
+    /// every other constant as the session has it: not only under the constants of the session that analyzed the code, which are those of the one platform it
+    /// runs on. <see langword="null"/> for any other declaration, and where a condition the statement depends on cannot be evaluated.
+    /// </remarks>
+    public CompiledPlatforms? CompiledOn { get; init; }
 }
 
 /// <summary>
