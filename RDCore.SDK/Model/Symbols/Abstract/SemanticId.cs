@@ -52,12 +52,26 @@ public readonly record struct SemanticId : IEquatable<SemanticId>
     /// <param name="Uri">The identified symbol's <see cref="Symbol.Uri"/>.</param>
     public void Deconstruct(out Uri Uri) => Uri = _uri;
 
+    /// <summary>
+    /// Whether two identities identify the same symbol: the same <see cref="System.Uri"/> instance, or addresses
+    /// (<see cref="System.Uri.AbsoluteUri"/>) that are equal ordinally, fragment included.
+    /// </summary>
+    /// <param name="other">The other identity.</param>
+    /// <returns><see langword="true"/> when both identify the same symbol.</returns>
     public bool Equals(SemanticId other)
         => ReferenceEquals(_uri, other._uri)
             || (_hash == other._hash && string.Equals(_uri?.AbsoluteUri, other._uri?.AbsoluteUri, StringComparison.Ordinal));
 
+    /// <summary>
+    /// The ordinal hash of the address, computed when the identity was made.
+    /// </summary>
+    /// <returns>The hash; <c>0</c> for the <see langword="default"/> identity.</returns>
     public override int GetHashCode() => _hash;
 
+    /// <summary>
+    /// The address of the identified symbol.
+    /// </summary>
+    /// <returns>The <see cref="System.Uri.AbsoluteUri"/>; an empty string for the <see langword="default"/> identity.</returns>
     public override string ToString() => _uri?.AbsoluteUri ?? string.Empty;
 
     private static int HashOf(Uri? uri) => uri is null ? 0 : StringComparer.Ordinal.GetHashCode(uri.AbsoluteUri);
