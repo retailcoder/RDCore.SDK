@@ -4,8 +4,8 @@ using RDCore.SDK.Semantics.Refactoring;
 namespace RDCore.SDK.Tests.Semantics;
 
 /// <summary>
-/// What a rename of a <c>Public</c> procedure of a standard module asks, and how it labels its edits, why a rename is refused, and what is said of references
-/// that may be incomplete, in each language of the user interface.
+/// What a rename of a <c>Public</c> procedure of a standard module asks, how it labels its edits, and why a rename is refused, in each language of the user
+/// interface.
 /// </summary>
 [TestClass]
 public sealed class RefactoringTitlesTests
@@ -47,10 +47,4 @@ public sealed class RefactoringTitlesTests
     [DataRow("fr", "« Foo » désigne déjà Module1.Foo à Module2 4:12 : le renommage changerait ce à quoi le code fait référence.")]
     public void ARefusedRename_NamesTheNameWhatElseItMeans_AndWhere(string language, string expected)
         => Assert.AreEqual(expected, RefactoringTitles.RenameRefusal(RenameRefusalKind.Conflict, "Foo", "Module1.Foo", "Module2 4:12", CultureInfo.GetCultureInfo(language)));
-
-    [TestMethod]
-    public void IncompleteReferences_NameTheSymbol_AndWhereItsBindingIsNotKnown()
-        => Assert.AreEqual(
-            "The references of 'Foo' may be incomplete: what 'Foo' refers to at Module1 4:12 is not known.",
-            RefactoringTitles.ReferencesIncomplete("Foo", "Module1 4:12", CultureInfo.GetCultureInfo("en")));
 }

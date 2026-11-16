@@ -4,8 +4,8 @@ using System.Resources;
 namespace RDCore.SDK.Model.Symbols;
 
 /// <summary>
-/// What the platform says of a symbol where an editor shows it to the reader (a hover, or the documentation of a completion item), in the language of the
-/// reader. Each text is formatted with the reader's culture; a culture the platform has no texts for gets the English texts.
+/// What the platform says of a symbol where an editor shows it to the reader (a hover, the documentation of a completion item, or the answer to a request for
+/// its references), in the language of the reader. Each text is formatted with the reader's culture; a culture the platform has no texts for gets the English texts.
 /// </summary>
 public static class SymbolTexts
 {
@@ -36,6 +36,16 @@ public static class SymbolTexts
     /// <param name="culture">The language of the reader; the current UI culture by default.</param>
     /// <returns>The text, formatted with <paramref name="culture"/>.</returns>
     public static string LibraryAddition(string library, CultureInfo? culture = null) => Say("Symbol_LibraryAddition", culture, library);
+
+    /// <summary>
+    /// What a client is told of the references of a symbol where a name is written whose binding cannot be told, which may be the symbol:
+    /// <c>The references of 'Foo' may be incomplete: what 'Foo' refers to at Module1 4:12 is not known.</c>
+    /// </summary>
+    /// <param name="name">The name the symbol is declared with.</param>
+    /// <param name="where">Where the first such name is written, as the client names a position.</param>
+    /// <param name="culture">The language of the reader; the current UI culture by default.</param>
+    /// <returns>The text, formatted with <paramref name="culture"/>.</returns>
+    public static string ReferencesIncomplete(string name, string where, CultureInfo? culture = null) => Say("References_Incomplete", culture, name, where);
 
     private static string Say(string key, CultureInfo? culture, params object[] arguments)
     {

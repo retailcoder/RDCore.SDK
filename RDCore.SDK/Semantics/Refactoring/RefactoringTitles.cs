@@ -4,7 +4,8 @@ using System.Resources;
 namespace RDCore.SDK.Semantics.Refactoring;
 
 /// <summary>
-/// What the platform's code actions are called, in the language of the reader.
+/// The titles and the messages of the platform's refactorings, in the language of the reader: what its code actions and code lenses are called, what a
+/// rename asks its user and how it labels the edits it asks about, and why a rename is refused.
 /// </summary>
 public static class RefactoringTitles
 {
@@ -185,16 +186,6 @@ public static class RefactoringTitles
         culture ??= CultureInfo.CurrentUICulture;
         return string.Format(culture, Messages.GetString($"Rename_{kind}", culture) ?? kind.ToString(), name, other ?? string.Empty, where ?? string.Empty);
     }
-
-    /// <summary>
-    /// What a client is told of the references of a symbol where a name is written whose binding cannot be told, which may be the symbol:
-    /// <c>The references of 'Foo' may be incomplete: what 'Foo' refers to at Module1 4:12 is not known.</c>
-    /// </summary>
-    /// <param name="name">The name the symbol is declared with.</param>
-    /// <param name="where">Where the first such name is written, as the client names a position.</param>
-    /// <param name="culture">The language of the reader; the current UI culture by default.</param>
-    /// <returns>The text, formatted with <paramref name="culture"/>.</returns>
-    public static string ReferencesIncomplete(string name, string where, CultureInfo? culture = null) => Say("References_Incomplete", culture, name, where);
 
     private static string Say(string key, CultureInfo? culture, params object[] arguments)
     {

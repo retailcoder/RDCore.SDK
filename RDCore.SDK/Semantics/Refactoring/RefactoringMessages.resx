@@ -121,7 +121,7 @@
   <data name="Rename_OutsideCallers_Cancel" xml:space="preserve">
     <value>Cancel the rename</value>
   </data>
-  <!-- What a client is told of the references of a symbol (SymbolNavigationTarget.Unresolved): {0} is its name, {1} where the first such name is written. -->
+  <!-- What a client is told of the references of a symbol (SymbolTexts.ReferencesIncomplete): {0} is its name, {1} where the first such name is written. -->
   <data name="References_Incomplete" xml:space="preserve">
     <value>The references of '{0}' may be incomplete: what '{0}' refers to at {1} is not known.</value>
   </data>

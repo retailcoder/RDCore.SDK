@@ -25,6 +25,12 @@ public sealed class SymbolTextsTests
         => Assert.AreEqual(expected, SymbolTexts.ControlArrayOf("VB.CommandButton", CultureInfo.GetCultureInfo(language)));
 
     [TestMethod]
+    [DataRow("en", "The references of 'Foo' may be incomplete: what 'Foo' refers to at Module1 4:12 is not known.")]
+    [DataRow("fr", "Les références de « Foo » peuvent être incomplètes : ce que « Foo » désigne à Module1 4:12 n'est pas connu.")]
+    public void IncompleteReferences_NameTheSymbol_AndWhereItsBindingIsNotKnown(string language, string expected)
+        => Assert.AreEqual(expected, SymbolTexts.ReferencesIncomplete("Foo", "Module1 4:12", CultureInfo.GetCultureInfo(language)));
+
+    [TestMethod]
     public void TheTexts_AreInTheCurrentUICulture_WhenNoCultureIsGiven()
     {
         var current = CultureInfo.CurrentUICulture;
