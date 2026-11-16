@@ -620,42 +620,49 @@ public sealed class FormattingTabSizeTests
         Assert.IsFalse(client.Asked.Contains(FormattingTabSize.EditorSection), string.Join(", ", client.Asked));
     }
 
-    // a client that answers no workspace/configuration, but says its configuration changed, pushes its settings as it starts, and answers what it is asked
-    // after that: with nothing, or with an error. It is not asked, so no answer of its own sets its settings over the ones it pushed.
+    // a client that answers no workspace/configuration, but says its configuration changed, pushes its settings as it starts - once it sent initialized,
+    // while what the server does as it starts still runs - and answers what it is asked after that: with nothing, or with an error. It is not asked, so no
+    // answer of its own sets its settings over the ones it pushed.
     [TestMethod]
     [Timeout(60_000, CooperativeCancellation = true)]
     [DataRow(false, DisplayName = "answered with nothing")]
     [DataRow(true, DisplayName = "answered with an error")]
     public async Task AClientThatDeclaresWorkspaceConfigurationFalse_KeepsWhatItPushedAsItStarts_WhateverItAnswers(bool withAnError)
     {
-        await using var client = new RawClient(new JObject { ["workspace"] = new JObject { ["configuration"] = false, ["didChangeConfiguration"] = new JObject() } }, holdsWhatItIsAsked: true);
+        await using var client = new RawClient(new JObject { ["workspace"] = new JObject { ["configuration"] = false, ["didChangeConfiguration"] = new JObject() } }, holdsWhatItIsAsked: true, holdsTheStart: true);
         await client.StartAsync();
         await client.FollowingAsync();
 
         await client.PushSettingsAsync(new JObject { [LiveSettingsProtocol.Section] = new JObject { ["Formatting"] = new JObject { ["IndentSpaces"] = "5" } } });
-        await client.AnswerWhatItHeldAsync(withAnError);
-        var server = await client.StartedAsync();
         while (client.Options.Formatting.IndentSpaces != 5)
         {
             Assert.IsTrue(await client.FollowedAsync(),
-                $"the settings it pushed are followed; seen: [{client.Seen}], asked: [{string.Join(", ", client.Asked)}], "
-                + $"server: {server.Configuration[$"{LiveSettingsProtocol.Section}:Formatting:IndentSpaces"] ?? "null"}");
+                $"the settings it pushed as the server starts are followed; seen: [{client.Seen}], asked: [{string.Join(", ", client.Asked)}], "
+                + $"server: {client.ServerSays($"{LiveSettingsProtocol.Section}:Formatting:IndentSpaces") ?? "null"}");
         }
 
+        client.LetItStart();
+        await client.AnswerWhatItHeldAsync(withAnError);
+        var server = await client.StartedAsync();
+
         Assert.AreEqual("5", server.Configuration[$"{LiveSettingsProtocol.Section}:Formatting:IndentSpaces"]);
+        Assert.AreEqual(5, client.Options.Formatting.IndentSpaces, "and kept once the server started");
         Assert.IsEmpty(client.Asked, string.Join(", ", client.Asked));
     }
 
     // a client that is not OmniSharp's: it says the capabilities it is given, as they are - OmniSharp's own fills in what the handlers it has can answer - and
     // answers workspace/configuration with the settings it pushed last (nothing before it pushes any), saying which sections it was asked for.
-    // A client that holds what it is asked answers none of it until it is told to.
-    private sealed class RawClient(JObject capabilities, bool holdsWhatItIsAsked = false) : IAsyncDisposable
+    // A client that holds what it is asked answers none of it until it is told to. One that holds the start keeps the server starting - OmniSharp says it
+    // started once every OnStarted delegate and handler is done - until it lets it start.
+    private sealed class RawClient(JObject capabilities, bool holdsWhatItIsAsked = false, bool holdsTheStart = false) : IAsyncDisposable
     {
         private readonly Pipe _toServer = new();
         private readonly Pipe _toClient = new();
         private readonly SemaphoreSlim _followed = new(0);
         private readonly TaskCompletionSource _initialized = new(TaskCreationOptions.RunContinuationsAsynchronously);
         private readonly TaskCompletionSource _following = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource _started = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private ILanguageServer? _starting;
         private readonly List<(JToken Id, int Sections)> _heldAsks = [];
         private readonly List<int> _seen = [];
         private bool _holding = holdsWhatItIsAsked;
@@ -705,6 +712,7 @@ public sealed class FormattingTabSizeTests
                 .WithClientConfiguration(LiveSettingsProtocol.Section)
                 .OnStarted((ILanguageServer started, CancellationToken _) =>
                 {
+                    _starting = started;
                     _follower = ClientConfigurationFollower.StartFollowing(services, started, () =>
                     {
                         lock (_asked)
@@ -717,7 +725,9 @@ public sealed class FormattingTabSizeTests
                     }, _ => { });
                     _following.TrySetResult();
                     return Task.CompletedTask;
-                }), _lifetime.Token);
+                })
+                // the rest of what a server does as it starts, which a client that holds the start keeps going.
+                .OnStarted((ILanguageServer _, CancellationToken token) => holdsTheStart ? _started.Task.WaitAsync(token) : Task.CompletedTask), _lifetime.Token);
             _serving = serving;
 
             _reading = ReadAsync(_lifetime.Token);
@@ -739,6 +749,12 @@ public sealed class FormattingTabSizeTests
 
         // the server is following the client's settings: what the client pushes from then on is followed.
         public Task FollowingAsync() => _following.Task.WaitAsync(_lifetime.Token);
+
+        // a client that holds the start lets the server start: what else it does as it starts is done.
+        public void LetItStart() => _started.TrySetResult();
+
+        // what the server's configuration says of a key, while it starts and after.
+        public string? ServerSays(string key) => _starting?.Configuration[key];
 
         // what the client held is answered at last, and what it is asked from then on as it is asked: with a null for each section, or with the error a
         // client that answers no workspace/configuration sends.
@@ -866,6 +882,7 @@ public sealed class FormattingTabSizeTests
 
         public async ValueTask DisposeAsync()
         {
+            _started.TrySetResult();
             _follower?.Dispose();
             _server?.Dispose();
             await _lifetime.CancelAsync();
