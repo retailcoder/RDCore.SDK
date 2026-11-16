@@ -11,7 +11,8 @@ namespace RDCore.Tests.Runtime.Libraries;
 
 /// <summary>
 /// What RD-VBA adds to a library that its type library does not declare (<see cref="MemberDescription.IsAddition"/>): read from the file, written back only
-/// where it is true, refused in a format that states none, carried by each symbol as <see cref="SymbolProperties.LibraryAddition"/>, and said by its completion item.
+/// where it is true, refused in a format that states none, carried by each symbol as <see cref="SymbolProperties.LibraryAddition"/>, and said by its
+/// completion item.
 /// </summary>
 [TestClass]
 public sealed class LibraryAdditionTests
