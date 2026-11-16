@@ -21,7 +21,7 @@ public enum RenameRefusalKind
     Type,
 
     /// <summary>
-    /// The name is a procedure's that is named after the event it handles or the interface member it implements (MS-VBAL §5.2.3.1.2, §5.3.1.1).
+    /// The name is a procedure's that is named after the event it handles or the interface member it implements (MS-VBAL §5.3.1.3, §5.3.1.8).
     /// </summary>
     NamedByConvention,
 

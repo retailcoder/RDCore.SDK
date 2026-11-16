@@ -187,7 +187,8 @@ public static class RefactoringTitles
     }
 
     /// <summary>
-    /// What a client is told of the references of a symbol where a name is written whose binding cannot be told, which may be the symbol: <c>The references of 'Foo' may be incomplete: what 'Foo' refers to at Module1 4:12 is not known.</c>
+    /// What a client is told of the references of a symbol where a name is written whose binding cannot be told, which may be the symbol:
+    /// <c>The references of 'Foo' may be incomplete: what 'Foo' refers to at Module1 4:12 is not known.</c>
     /// </summary>
     /// <param name="name">The name the symbol is declared with.</param>
     /// <param name="where">Where the first such name is written, as the client names a position.</param>
