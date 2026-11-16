@@ -47,6 +47,7 @@ public sealed class CompositeLibrarySource(params IReadOnlyList<ILibrarySource> 
     /// The descriptions of the libraries of a name, from the first source that has any: a later source's descriptions of that name are not given.
     /// </summary>
     /// <param name="name">The name of the libraries.</param>
+    /// <returns>The descriptions of the first source that has any of that name; none when no source has one.</returns>
     /// <exception cref="InvalidDataException">The first source that has one cannot read it.</exception>
     public IEnumerable<LibraryDescription> DescriptionsOf(string name)
     {
