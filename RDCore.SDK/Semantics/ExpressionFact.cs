@@ -131,8 +131,8 @@ public sealed record class ExpressionFact(
 
     /// <summary>
     /// For an expression bound to a procedure declared by a <c>Declare</c> statement (<strong>MS-VBAL §5.2.3.5</strong>), the platforms the expression is
-    /// compiled on and those the procedure is declared on (<see cref="DeclarationFact.CompiledOn"/>): what an analyzer of the module the call is in needs, which
-    /// is given neither the module the procedure is declared in nor its <c>#If</c> blocks.
+    /// compiled on and those the procedure is declared on (<see cref="DeclarationFact.CompiledOn"/>). An analyzer of the module the call is in needs both,
+    /// and is given neither the module the procedure is declared in nor its <c>#If</c> blocks.
     /// </summary>
     /// <remarks>
     /// The host finds both as it finds <see cref="DeclarationFact.CompiledOn"/>: by evaluating the <c>#If</c> and <c>#ElseIf</c> conditions of each module

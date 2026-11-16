@@ -301,8 +301,8 @@ public sealed record class DeclarationFact(
     /// </summary>
     /// <remarks>
     /// The host finds it by evaluating the module's <c>#If</c> and <c>#ElseIf</c> conditions once for each platform of
-    /// <see cref="CompiledPlatformProfiles.Each"/>, with the predefined constants of that platform (<see cref="PredefinedConditionalConstants.Of(RDCore.SDK.Runtime.Abstract.Execution.IRuntimeEnvironmentProfile)"/>) and
-    /// every other constant as the session has it: not only under the constants of the session that analyzed the code, which are those of the one platform it
+    /// <see cref="CompiledPlatformProfiles.Each"/>, with the predefined constants of that platform
+    /// (<see cref="PredefinedConditionalConstants.Of(RDCore.SDK.Runtime.Abstract.Execution.IRuntimeEnvironmentProfile)"/>) and every other constant as the session has it: not only under the constants of the session that analyzed the code, which are those of the one platform it
     /// runs on. <see langword="null"/> for any other declaration, and where a condition the statement depends on cannot be evaluated.
     /// </remarks>
     public CompiledPlatforms? CompiledOn { get; init; }

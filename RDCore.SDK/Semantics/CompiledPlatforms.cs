@@ -10,10 +10,10 @@ namespace RDCore.SDK.Semantics;
 /// <remarks>
 /// <para>
 /// A platform is an operating system and a bitness, the two things that decide the values of <c>Win32</c>, <c>Win64</c>, <c>Mac</c>, <c>Linux</c> and
-/// <c>Linux64</c> (<see cref="PredefinedConditionalConstants.Of(IRuntimeEnvironmentProfile)"/>). Code outside any <c>#If</c> block is compiled on <see cref="All"/> of them; code in a
-/// branch is compiled on those where the conditions before it are false and its own is true. A constant that no platform decides (a project
-/// <c>#Const</c>, a module's own, <c>DEBUG</c>, <c>VBA7</c>) has the value it has in the session, on every platform; one that overrides a predefined
-/// constant overrides it on every platform too.
+/// <c>Linux64</c> (<see cref="PredefinedConditionalConstants.Of(IRuntimeEnvironmentProfile)"/>). Code outside any <c>#If</c> block is compiled on
+/// <see cref="All"/> of them; code in a branch is compiled on those where the conditions before it are false and its own is true. A constant that no
+/// platform decides (a project <c>#Const</c>, a module's own, <c>DEBUG</c>, <c>VBA7</c>) has the value it has in the session, on every platform; one
+/// that overrides a predefined constant overrides it on every platform too.
 /// </para>
 /// <para>
 /// <c>Linux</c> and <c>Linux64</c> are RD-VBA additions, and so are the platforms they decide: MS-VBA runs on Windows and macOS only.
@@ -87,7 +87,7 @@ public static class CompiledPlatformProfiles
 /// </summary>
 /// <remarks>
 /// A call that is compiled on a platform its procedure is not declared on refers to nothing there; one compiled on every platform, of a procedure declared
-/// on every platform, calls a library whatever the platform, which is there on one of them at most.
+/// on every platform, calls the same library whatever the platform, and no library is on every platform.
 /// </remarks>
 /// <param name="Call">The platforms the call is compiled on: those that make live the <c>#If</c> branch the call is written in.</param>
 /// <param name="Declared">The platforms the procedure is declared on (<see cref="DeclarationFact.CompiledOn"/> of its <c>Declare</c> statement).</param>
