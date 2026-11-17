@@ -184,6 +184,24 @@ public sealed record class FormDescriptor(
     public string? DesignerText { get; init; }
 
     /// <summary>
+    /// The base class the form's class is built on, when it has one: the class whose members the form's code names unqualified, and which are not members
+    /// of the form's own class. That is a Visual Basic 6.0 <c>VB.UserControl</c>, <c>VB.PropertyPage</c> or <c>VB.UserDocument</c>: in a UserControl's code,
+    /// <c>BackColor</c> and <c>UserControl.BackColor</c> are the base class's, and <c>Me.BackColor</c> is a member the UserControl declares or none. A
+    /// declaration of the module's own of the same name shadows the base class's member. <c>null</c> for any other form: the members of a
+    /// <c>VB.Form</c>, a <c>VB.MDIForm</c> and an <c>MSForms.UserForm</c> are members of the form's own class.
+    /// </summary>
+    public FormControlClass? BaseClass
+        => Kind == FormDesignerKind.VisualBasic6 && Class is { Library: { } library, Name: { } name }
+           && string.Equals(library, VisualBasicLibrary, StringComparison.OrdinalIgnoreCase)
+           && BaseClassNames.Contains(name, StringComparer.OrdinalIgnoreCase)
+            ? Class
+            : null;
+
+    private const string VisualBasicLibrary = "VB";
+
+    private static readonly string[] BaseClassNames = ["UserControl", "PropertyPage", "UserDocument"];
+
+    /// <summary>
     /// Every control of the form, at any depth, in the order the designer persisted them.
     /// </summary>
     public IEnumerable<FormControlDescriptor> AllControls() => Controls.SelectMany(control => control.DescendantsAndSelf());

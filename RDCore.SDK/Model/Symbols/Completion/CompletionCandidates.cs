@@ -560,23 +560,59 @@ public static class CompletionCandidates
 
     /// <summary>
     /// The names that can be written as a simple name expression where <paramref name="origin"/> is: what the procedure, the module, the project, the libraries
-    /// and the language declare, nearest first. The keywords are not names; which of them can be written where is <see cref="CompletionRules"/>' to say.
+    /// and the language declare, nearest first. A class module's names are followed by the members of the library's class it names as its own: a document
+    /// module's host class (<see cref="VBClassModuleSymbol.HostClass"/>), and the base class a designed root's class is built on
+    /// (<see cref="VBClassModuleSymbol.BaseClass"/>). The keywords are not names; which of them can be written where is <see cref="CompletionRules"/>' to say.
     /// </summary>
     /// <param name="tree">The scope tree of the composed workspace.</param>
     /// <param name="origin">Where the lookup originates (<see cref="OriginAt"/>).</param>
     public static IReadOnlyList<CompletionCandidate> Names(ScopeTree tree, Uri origin)
     {
         var candidates = new Candidates();
-        foreach (var scope in tree.ScopeFor(origin).SelfAndAncestors())
+        var scopes = tree.ScopeFor(origin).SelfAndAncestors().ToList();
+        foreach (var scope in scopes)
         {
             var rank = RankOf(scope.Kind);
             foreach (var symbol in scope.Declarations.Where(symbol => IsValueName(symbol, scope.Kind)))
             {
                 candidates.Add(Describe(symbol), rank);
             }
+
+            if (scope.Kind == LexicalScopeKind.Module)
+            {
+                foreach (var member in LibraryClassMembersOf(scopes, scope).Where(member => IsValueName(member, scope.Kind)))
+                {
+                    candidates.Add(Describe(member), rank);
+                }
+            }
         }
 
         return candidates.ToList();
+    }
+
+    // the members of the library classes a class module names as its own (its host class, its base class), found among the classes the scopes declare by
+    // their library's name and their own; events are left out, as an event names no value.
+    private static IEnumerable<VBTypeMemberSymbol> LibraryClassMembersOf(IReadOnlyList<LexicalScope> scopes, LexicalScope moduleScope)
+    {
+        var module = scopes.SelectMany(scope => scope.DeclaredAs(SymbolUri.ModuleNameOf(moduleScope.Uri))).OfType<VBClassModuleSymbol>()
+            .FirstOrDefault(candidate => candidate.Uri.AbsoluteUri == moduleScope.Uri.AbsoluteUri);
+        (string? Library, string? Name)[] named = module is null
+            ? []
+            : [(module.HostClass?.Library, module.HostClass?.ClassName), (module.BaseClass?.Library, module.BaseClass?.Name)];
+        foreach (var (library, name) in named)
+        {
+            if (library is null || name is null)
+            {
+                continue;
+            }
+
+            var found = scopes.SelectMany(scope => scope.DeclaredAs(name)).OfType<VBClassModuleSymbol>()
+                .FirstOrDefault(candidate => string.Equals(candidate.GetProperty(SymbolProperties.Library), library, StringComparison.OrdinalIgnoreCase));
+            foreach (var member in found?.DefaultInterfaceMembers.Where(member => member is not VBEventMemberSymbol) ?? [])
+            {
+                yield return member;
+            }
+        }
     }
 
     /// <summary>

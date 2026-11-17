@@ -241,6 +241,18 @@ public record class VBClassModuleSymbol : VBModuleSymbol
     public Workspace.DocumentHostClass? HostClass { get; init; }
 
     /// <summary>
+    /// The base class of a library that this module's class is built on, when its designer has one (<see cref="Workspace.Forms.FormDescriptor.BaseClass"/>):
+    /// <c>VB.UserControl</c> for a Visual Basic 6.0 UserControl's. Its members are names of this module's code, after the module's own: an unqualified
+    /// <c>BackColor</c> in a UserControl's is <c>VB.UserControl.BackColor</c> (<see cref="VBProjectSymbol.ResolveBaseClass"/>). <see langword="null"/>
+    /// for any other class.
+    /// </summary>
+    /// <remarks>
+    /// Unlike a <see cref="HostClass"/>'s, the base class's members are not members of this class: <c>Me</c>, early- or late-bound, has only the members the
+    /// module declares (<see cref="VBProjectSymbol.InterfaceMembersOf"/>). They are found through the library's class, not declared again as this module's.
+    /// </remarks>
+    public Workspace.Forms.FormControlClass? BaseClass { get; init; }
+
+    /// <summary>
     /// Whether this is a document module: the code of a host's document, as the project says (<see cref="Workspace.ModuleKinds.Of(Workspace.RDCoreModule?, string?)"/>),
     /// whether or not RD-VBA knows the host (<see cref="HostClass"/>). Only the host makes its documents, so no program creates an object of this class: a
     /// <c>New</c> of it is <em>Invalid use of New keyword</em> (<c>VBC09368</c>), the error MS-VBA gives for <c>New</c> of a worksheet's class.

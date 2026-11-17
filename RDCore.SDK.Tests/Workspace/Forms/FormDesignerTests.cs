@@ -417,6 +417,27 @@ public sealed class FormDesignerTests
         Assert.AreEqual(FormDesignerFormatProblem.MissingFormStream, exception.Problem);
     }
 
+    [TestMethod]
+    [DataRow("VB.UserControl", "VB.UserControl")]
+    [DataRow("VB.PropertyPage", "VB.PropertyPage")]
+    [DataRow("VB.UserDocument", "VB.UserDocument")]
+    [DataRow("VB.Form", null)]
+    [DataRow("VB.MDIForm", null)]
+    public void BaseClass_OfAVisualBasic6Root_IsItsClass_OnlyForAUserControlAPropertyPageOrAUserDocument(string root, string? expected)
+    {
+        var form = FormDesigner.Read($"VERSION 5.00\r\nBegin {root} Root1 \r\nEnd\r\nAttribute VB_Name = \"Root1\"\r\n")!;
+
+        Assert.AreEqual(expected, form.BaseClass?.ToString());
+    }
+
+    [TestMethod]
+    public void BaseClass_OfAUserForm_IsNone()
+    {
+        var form = FormDesigner.Read(Text("ExampleView.frm"), Fixture("ExampleView.frx"))!;
+
+        Assert.IsNull(form.BaseClass);
+    }
+
     // a VB6 form's designer block, which needs no companion file, with the client area's properties the row gives.
     private static FormDescriptor FormWith(string clientProperties)
         => FormDesigner.Read("VERSION 5.00\r\nBegin VB.Form Form1 \r\n   Caption         =   \"Form1\"\r\n" + clientProperties + "End\r\nAttribute VB_Name = \"Form1\"\r\n")!;
