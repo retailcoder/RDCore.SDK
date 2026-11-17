@@ -39,6 +39,12 @@ namespace RDCore.SDK.Server.Serialization;
 /// OmniSharp's fix is in its <c>v0.19.10</c> tag, which is not published to NuGet.
 /// </para>
 /// <para>
+/// A code action's <c>kind</c> is written as it is. OmniSharp 0.19.9 writes a kind that is not exactly one of the client's
+/// <c>codeActionLiteralSupport.codeActionKind.valueSet</c> as the first kind of that set, and as <c>""</c> when the client gives none: a
+/// <c>refactor.rename</c> becomes the client's <c>quickfix</c>. LSP 3.17 has the client handle a kind outside its value set, so the server
+/// sends each action's own.
+/// </para>
+/// <para>
 /// <b>The contract resolver is put back at the point of use.</b>
 /// <c>LspSerializer.Reset</c> assigns a brand new <c>LspContractResolver</c> straight onto
 /// <c>Settings</c>, bypassing <c>CreateSerializerSettings</c> entirely, and every <c>With*</c> method and
@@ -126,7 +132,21 @@ public sealed class PullDiagnosticsLspSerializer
         {
             var contract = inner.ResolveContract(type);
             if (IsReport(type)) contract.Converter = null;
+            if (type == typeof(CodeAction) && contract is JsonObjectContract action)
+            {
+                WithItsOwnKind(action);
+            }
+
             return contract;
+        }
+
+        // OmniSharp's value provider of CodeAction.Kind writes a kind outside the client's value set as the first of that set: a plain one writes it as it is.
+        private static void WithItsOwnKind(JsonObjectContract action)
+        {
+            if (action.Properties.FirstOrDefault(property => property.UnderlyingName == nameof(CodeAction.Kind)) is { ValueProvider: not ReflectionValueProvider } kind)
+            {
+                kind.ValueProvider = new ReflectionValueProvider(typeof(CodeAction).GetProperty(nameof(CodeAction.Kind))!);
+            }
         }
 
         /// <summary>

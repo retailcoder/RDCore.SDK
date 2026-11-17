@@ -213,6 +213,11 @@ public static class SymbolProperties
     /// </summary>
     public static readonly SymbolProperty<string> ProgId = new(nameof(ProgId));
     /// <summary>
+    /// Whether RD-VBA adds a class, member, event, enumeration or constant to a referenced library: the type library it was exported from does not declare it
+    /// (<see cref="RDCore.SDK.Runtime.Libraries.MemberDescription.IsAddition"/>). Hover and completion can show it as such. <see langword="false"/> when unset.
+    /// </summary>
+    public static readonly SymbolProperty<bool> LibraryAddition = new(nameof(LibraryAddition));
+    /// <summary>
     /// Whether the <c>Property Get</c> of a library class is that of a property a form's designer sets and a program can only read
     /// (<see cref="RDCore.SDK.Runtime.Libraries.MemberDescription.IsDesignTimeOnly"/>): assigned while the program runs, late-bound, it raises run-time error
     /// 382, "'<em>name</em>' property cannot be set at run time", where another property the library declares with a <c>Property Get</c> alone raises run-time

@@ -71,9 +71,10 @@ public static class PlatformSplash
     }
 
     /// <summary>
-    /// The version of the SDK the application runs on: the informational version of the SDK's own assembly (<see cref="AssemblyDisplayVersion"/>).
+    /// The version of the SDK the application runs on: the version of the SDK as a component of the platform
+    /// (<see cref="PlatformComponents.VersionOf(string)"/>), the informational version of the SDK's own assembly.
     /// </summary>
-    public static string SdkVersion => AssemblyDisplayVersion.Get(typeof(PlatformSplash).Assembly);
+    public static string SdkVersion => PlatformComponents.VersionOf(PlatformComponents.Sdk)!;
 
     /// <summary>
     /// The line of the splash that says which versions run, in a language: <c>RDCore 0.1.0+3cab50a, built on RDCore.SDK 0.1.5-alpha+30d43d6</c>.

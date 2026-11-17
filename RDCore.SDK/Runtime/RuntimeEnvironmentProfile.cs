@@ -91,7 +91,46 @@ public sealed record class RuntimeEnvironmentProfile(
             environment.ErlAfterErrClear, environment.OperatingSystem);
 
     /// <inheritdoc/>
-    public CultureInfo Culture => Lcid == 0 ? CultureInfo.InvariantCulture : CultureInfo.GetCultureInfo(Lcid);
+    /// <remarks>
+    /// <para>
+    /// Not how a value is Let-coerced to or from a <c>String</c>: a number or a date is written and read by <see cref="Regional"/>
+    /// (<see cref="IRuntimeEnvironmentProfile.Culture"/>).
+    /// </para>
+    /// <para>
+    /// The culture is found on the first read and held: the profile's <see cref="Lcid"/> never changes, so every read gives the culture of that
+    /// <see cref="Lcid"/>, and <see cref="CultureInfo.InvariantCulture"/> for <c>0</c>. A copy made with another <see cref="Lcid"/> (a <c>with</c>
+    /// expression) holds its own. An <see cref="Lcid"/> that names no culture throws on each read, as <see cref="CultureInfo.GetCultureInfo(int)"/>
+    /// does, and nothing is held for it. What is held takes no part in the record's equality.
+    /// </para>
+    /// </remarks>
+    public CultureInfo Culture => _culture.Of(Lcid);
+
+    // the culture of the profile's Lcid, held from the first read. A copy of the record (with) shares the holder, which is why it is keyed by the Lcid.
+    private readonly HeldCulture _culture = new();
+
+    private sealed class HeldCulture
+    {
+        private Held? _held;
+
+        public CultureInfo Of(int lcid)
+        {
+            var held = _held;
+            if (held is null || held.Lcid != lcid)
+            {
+                held = new Held(lcid, lcid == 0 ? CultureInfo.InvariantCulture : CultureInfo.GetCultureInfo(lcid));
+                _held = held;
+            }
+
+            return held.Culture;
+        }
+
+        // the culture follows from the Lcid, which the record compares: every profile has a holder, and holders are equal whatever they hold.
+        public override bool Equals(object? obj) => obj is HeldCulture;
+
+        public override int GetHashCode() => 0;
+
+        private sealed record Held(int Lcid, CultureInfo Culture);
+    }
 
     /// <inheritdoc/>
     /// <remarks>

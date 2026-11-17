@@ -22,9 +22,6 @@
   <data name="Rename_Type" xml:space="preserve">
     <value>« {0} » est un module de document, dont le nom est donné par son document : il n'est pas renommé.</value>
   </data>
-  <data name="Rename_ModuleNameTooLong" xml:space="preserve">
-    <value>« {0} » est trop long pour le nom d'un module, qui compte au plus {1} caractères.</value>
-  </data>
   <data name="Rename_NamedByConvention" xml:space="preserve">
     <value>« {0} » est nommé d'après l'événement ou le membre d'interface qu'il gère ou implémente : renommé, il ne serait ni l'un ni l'autre.</value>
   </data>
@@ -124,7 +121,7 @@
   <data name="Rename_OutsideCallers_Cancel" xml:space="preserve">
     <value>Annuler le renommage</value>
   </data>
-  <!-- What a client is told of the references of a symbol (SymbolNavigationTarget.Unresolved): {0} is its name, {1} where the first such name is written. -->
+  <!-- What a client is told of the references of a symbol (SymbolTexts.ReferencesIncomplete): {0} is its name, {1} where the first such name is written. -->
   <data name="References_Incomplete" xml:space="preserve">
     <value>Les références de « {0} » peuvent être incomplètes : ce que « {0} » désigne à {1} n'est pas connu.</value>
   </data>
@@ -154,12 +151,17 @@
   <data name="CodeLens_References_Many" xml:space="preserve">
     <value>{0} références</value>
   </data>
-  <!-- What a hover says declares a symbol (SymbolHover): {0} is its module, procedure, Enum or Type. -->
+  <!-- What a hover says declares a symbol (SymbolTexts.MemberOf): {0} is its module, procedure, Enum or Type. -->
   <data name="Hover_MemberOf" xml:space="preserve">
     <value>Membre de {0}</value>
   </data>
-  <!-- What a hover says a Visual Basic 6.0 control array is (SymbolHover.ControlArrayOf): {0} is the class of its controls, VB.CommandButton. -->
+  <!-- What a hover says a Visual Basic 6.0 control array is (SymbolTexts.ControlArrayOf): {0} is the class of its controls, VB.CommandButton. -->
   <data name="Hover_ControlArrayOf" xml:space="preserve">
     <value>Groupe de contrôles de type {0}</value>
+  </data>
+  <!-- What a completion item or a hover says of a member RD-VBA adds to a library (SymbolTexts.LibraryAddition, SymbolProperties.LibraryAddition):
+       {0} is the library, VB. -->
+  <data name="Symbol_LibraryAddition" xml:space="preserve">
+    <value>Ajout de RD-VBA : la bibliothèque de types de {0} ne le déclare pas.</value>
   </data>
 </root>

@@ -4,7 +4,8 @@ using RDCore.SDK.Semantics.Refactoring;
 namespace RDCore.SDK.Tests.Semantics;
 
 /// <summary>
-/// What a rename of a <c>Public</c> procedure of a standard module asks, and how it labels its edits, in each language of the user interface.
+/// What a rename of a <c>Public</c> procedure of a standard module asks, how it labels its edits, and why a rename is refused, in each language of the user
+/// interface.
 /// </summary>
 [TestClass]
 public sealed class RefactoringTitlesTests
@@ -27,4 +28,23 @@ public sealed class RefactoringTitlesTests
         => Assert.AreNotEqual(
             RefactoringTitles.RenameOutsideCallersQuestion("DoIt", CultureInfo.GetCultureInfo("en")),
             RefactoringTitles.RenameOutsideCallersQuestion("DoIt", CultureInfo.GetCultureInfo("fr")));
+
+    [TestMethod]
+    public void EveryRefusalOfARename_HasItsOwnText_InEachLanguage()
+    {
+        foreach (var kind in Enum.GetValues<RenameRefusalKind>())
+        {
+            var english = RefactoringTitles.RenameRefusal(kind, "Foo", culture: CultureInfo.GetCultureInfo("en"));
+            var french = RefactoringTitles.RenameRefusal(kind, "Foo", culture: CultureInfo.GetCultureInfo("fr"));
+
+            Assert.AreNotEqual(kind.ToString(), english, $"{kind} has no English text.");
+            Assert.AreNotEqual(english, french, $"{kind} has no French text.");
+        }
+    }
+
+    [TestMethod]
+    [DataRow("en", "'Foo' already means Module1.Foo at Module2 4:12: the rename would change what the code refers to.")]
+    [DataRow("fr", "« Foo » désigne déjà Module1.Foo à Module2 4:12 : le renommage changerait ce à quoi le code fait référence.")]
+    public void ARefusedRename_NamesTheNameWhatElseItMeans_AndWhere(string language, string expected)
+        => Assert.AreEqual(expected, RefactoringTitles.RenameRefusal(RenameRefusalKind.Conflict, "Foo", "Module1.Foo", "Module2 4:12", CultureInfo.GetCultureInfo(language)));
 }
