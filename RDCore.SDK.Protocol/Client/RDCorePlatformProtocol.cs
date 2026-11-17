@@ -163,6 +163,19 @@ public static class RDCorePlatformProtocol
     public const string ToolsCall = "rdcore/tools/call";
 
     /// <summary>
+    /// The key under <c>experimental</c> of the <c>initialize</c> result that a language server serving assistant tools declares them with:
+    /// <c>hexide.chatTools</c>, which HexIDE's chat reads. Its value names the methods that list and call the tools (<see cref="ToolsList"/>,
+    /// <see cref="ToolsCall"/>) as <c>list</c> and <c>call</c>.
+    /// </summary>
+    public const string ChatToolsCapability = "hexide.chatTools";
+
+    /// <summary>
+    /// The key of a tool's annotations that says the tool runs the user's code (<see cref="Assistant.ToolAnnotations.RunsCodeHint"/>):
+    /// <c>hexide.runsCode</c>, which HexIDE's chat reads.
+    /// </summary>
+    public const string RunsCodeAnnotation = "hexide.runsCode";
+
+    /// <summary>
     /// Asks the language server what the name or expression written at a position of a document is: the symbol it binds to, and the facts of the
     /// expression. See <see cref="Platform.Protocol.SemanticsDescribeParams"/>.
     /// </summary>
