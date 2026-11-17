@@ -29,6 +29,19 @@ public record class HostProjectReloadParams : IRequest, IRequest<HostProjectRelo
     /// The root of the workspace: the folder the project file is in.
     /// </summary>
     public Uri WorkspaceRoot { get; init; } = default!;
+
+    /// <summary>
+    /// The identifier of the language the project is written in now (<see cref="Workspace.SupportedLanguage.Id"/>), as the language server decides it on
+    /// reload by the same rule as at start-up: the language the client names wins, and otherwise the project's file says it
+    /// (<see cref="Workspace.SupportedLanguages.OfProject"/>). The session is composed again in that language. <see langword="null"/> keeps the project's
+    /// current language.
+    /// </summary>
+    /// <remarks>
+    /// The language server is the one place that decides a project's language: at start-up it hands the component its decision as a setting, and on reload
+    /// it hands it here. A project imported from a Visual Basic 6 project once the workspace is open (<c>rdcore.importProject</c>) is written in VB6 from
+    /// its reload on.
+    /// </remarks>
+    public string? Language { get; init; }
 }
 
 /// <summary>
