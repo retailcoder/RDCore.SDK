@@ -48,6 +48,12 @@ public interface IProjectFileLoader
     /// is the module, and the other is not in the project. The project is named after the folder when its name is an identifier, and <c>VBAProject</c>
     /// otherwise, as the VBE names a new one.
     /// </para>
+    /// <para>
+    /// A folder that holds exactly one Visual Basic 6 project (a <c>.vbp</c>) directly under it, and no project group (a <c>.vbg</c>), is that project's: its
+    /// <see cref="RDCoreProject.SourceProject"/> is the <c>.vbp</c>'s file name, as an import of it writes, so the project's file says it is written in
+    /// <see cref="SupportedLanguages.VB6"/> (<see cref="SupportedLanguages.OfProject"/>) and keeps saying so once it is first written. A folder with several
+    /// <c>.vbp</c> files, or with a <c>.vbg</c>, names no source project, and no language.
+    /// </para>
     /// </remarks>
     /// <param name="workspaceRoot">The absolute path of the workspace root directory.</param>
     /// <param name="language">The language the workspace is written in, whose <see cref="SupportedLanguage.FileTypes"/> are its source files.</param>
@@ -131,10 +137,30 @@ public sealed class ProjectFileLoader(IFileSystem fileSystem) : IProjectFileLoad
             Name = ProjectNameOf(fileSystem.Path.GetFileName(fileSystem.Path.TrimEndingDirectorySeparator(workspaceRoot))),
             Modules = [.. modules],
             Folders = [.. folders.Order(StringComparer.Ordinal)],
+            SourceProject = SourceProjectOf(workspaceRoot),
         };
 
         return new ProjectFile(workspaceRoot, project) { IsSynthesized = true };
     }
+
+    // the one Visual Basic 6 project directly under the folder, by its file name; none when there are several, or a project group says which go together.
+    private string? SourceProjectOf(string workspaceRoot)
+    {
+        string[] files;
+        try
+        {
+            files = [.. fileSystem.Directory.EnumerateFiles(workspaceRoot)];
+        }
+        catch (Exception exception) when (exception is UnauthorizedAccessException or IOException)
+        {
+            return null;
+        }
+
+        var projects = files.Where(file => HasExtension(file, ".vbp")).ToArray();
+        return projects is [var project] && !files.Any(file => HasExtension(file, ".vbg")) ? fileSystem.Path.GetFileName(project) : null;
+    }
+
+    private bool HasExtension(string path, string extension) => string.Equals(fileSystem.Path.GetExtension(path), extension, StringComparison.OrdinalIgnoreCase);
 
     private async Task ScanAsync(string root, string directory, SupportedLanguage language,
         List<RDCoreModule> modules, HashSet<string> names, List<string> folders, CancellationToken token)
