@@ -134,7 +134,7 @@ public static class ModuleBlocks
             return [.. edits.Select(edit => Edit(edit, 0))];
         }
 
-        // the closer after the new line, as the opener is indented now: the text with it in it is parsed and indented again, the closer's line with the others.
+        // the closer after the new line, as the opener is indented: the text with it in it is parsed and indented again, the closer's line with the others.
         // That text is the procedure the line is in, from its first line to its closer, when nothing outside it reaches into it; the whole module otherwise.
         var ends = ModuleIndenter.LineEndsIn(text);
         var written = lines[opener][..(lines[opener].Length - lines[opener].TrimStart().Length)] + block.Closer;
