@@ -384,9 +384,9 @@ public sealed class RDCorePlatformJsonWireTests
     }
 
     /// <summary>
-    /// The name on the wire of each method a client sends or answers, and of each key a client reads, as a client that has only the Protocol package must send,
-    /// answer or read it: what a change of a value of <see cref="RDCorePlatformProtocol"/> would change, and a client and a language server built from the same
-    /// source would not see.
+    /// The name on the wire of each method a client sends or answers, and of each key a client reads, as a client that has only the Protocol package must
+    /// send, answer or read it: what a change of a value of <see cref="RDCorePlatformProtocol"/> would change, and a client and a language server built from
+    /// the same source would not see.
     /// </summary>
     private static readonly (string Constant, string Method)[] MethodGoldens =
     [
