@@ -71,8 +71,8 @@ public static class PlatformSplash
     }
 
     /// <summary>
-    /// The version of the SDK the application runs on: the version of the SDK as a component of the platform (<see cref="PlatformComponents.VersionOf"/>), the
-    /// informational version of the SDK's own assembly.
+    /// The version of the SDK the application runs on: the version of the SDK as a component of the platform
+    /// (<see cref="PlatformComponents.VersionOf(string)"/>), the informational version of the SDK's own assembly.
     /// </summary>
     public static string SdkVersion => PlatformComponents.VersionOf(PlatformComponents.Sdk)!;
 

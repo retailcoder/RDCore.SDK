@@ -13,9 +13,10 @@ namespace RDCore.SDK.Platform;
 /// <c>0.1.6-alpha+30d43d6…</c>, prerelease suffix and build metadata included, as <see cref="AssemblyDisplayVersion"/> reports it.
 /// </para>
 /// <para>
-/// It is read from the component's assembly file in the folder the SDK's own assembly is in, without loading it: the platform's folder that the
-/// environment host and the external host both run from, or a built program's folder, which holds the assemblies the program runs on. Every process of
-/// one installation reads the same version, whether or not it has loaded the component, and a component whose file is not there is not part of it.
+/// The SDK's version is that of its own assembly. Each other component's is read from its assembly file in the folder the SDK's own assembly is in,
+/// without loading it: the platform's folder that the environment host and the external host both run from, or a built program's folder, which holds
+/// the assemblies the program runs on. Every process of one installation reads the same version, whether or not it has loaded the component, and a
+/// component whose file is not there is not part of that installation.
 /// </para>
 /// </remarks>
 public static class PlatformComponents
