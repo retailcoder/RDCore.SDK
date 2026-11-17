@@ -31,8 +31,8 @@ public record class HostProjectReloadParams : IRequest, IRequest<HostProjectRelo
     public Uri WorkspaceRoot { get; init; } = default!;
 
     /// <summary>
-    /// The identifier of the language the project is written in now (<see cref="Workspace.SupportedLanguage.Id"/>), as the language server decides it on
-    /// reload by the same rule as at start-up: the language the client names wins, and otherwise the project's file says it
+    /// The identifier of the language the project is written in from this reload on (<see cref="Workspace.SupportedLanguage.Id"/>). The language server
+    /// decides it by the same rule as at start-up: the language the client names wins, and otherwise the project's file says it
     /// (<see cref="Workspace.SupportedLanguages.OfProject"/>). The session is composed again in that language. <see langword="null"/> keeps the project's
     /// current language.
     /// </summary>
