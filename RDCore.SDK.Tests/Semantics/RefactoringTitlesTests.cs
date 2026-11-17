@@ -47,4 +47,11 @@ public sealed class RefactoringTitlesTests
     [DataRow("fr", "« Foo » désigne déjà Module1.Foo à Module2 4:12 : le renommage changerait ce à quoi le code fait référence.")]
     public void ARefusedRename_NamesTheNameWhatElseItMeans_AndWhere(string language, string expected)
         => Assert.AreEqual(expected, RefactoringTitles.RenameRefusal(RenameRefusalKind.Conflict, "Foo", "Module1.Foo", "Module2 4:12", CultureInfo.GetCultureInfo(language)));
+
+    [TestMethod]
+    [DataRow("en", "'AModuleNameOfMoreThanThirtyOneCharacters' is too long for the name of a module, which is at most 31 characters long.")]
+    [DataRow("fr", "« AModuleNameOfMoreThanThirtyOneCharacters » est trop long pour le nom d'un module, qui compte au plus 31 caractères.")]
+    public void AModuleNameTooLong_NamesTheNewName_AndTheMostCharactersAModuleNameHas(string language, string expected)
+        => Assert.AreEqual(expected,
+            RefactoringTitles.RenameRefusal(RenameRefusalKind.ModuleNameTooLong, "AModuleNameOfMoreThanThirtyOneCharacters", "31", culture: CultureInfo.GetCultureInfo(language)));
 }

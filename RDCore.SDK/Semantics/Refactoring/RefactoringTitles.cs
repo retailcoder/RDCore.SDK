@@ -174,9 +174,10 @@ public static class RefactoringTitles
     /// <param name="kind">Why the rename is refused.</param>
     /// <param name="name">The name the rename is asked for: the symbol's for a refused symbol, the new name for a refused name
     /// (<see cref="RenameRefusalKind.Empty"/>, <see cref="RenameRefusalKind.NotAnIdentifier"/>, <see cref="RenameRefusalKind.Reserved"/>,
-    /// <see cref="RenameRefusalKind.Conflict"/>).</param>
+    /// <see cref="RenameRefusalKind.Conflict"/>, <see cref="RenameRefusalKind.ModuleNameTooLong"/>).</param>
     /// <param name="other">What else the refusal names: the interface of a <see cref="RenameRefusalKind.InterfaceMember"/>, what the new name already means for
-    /// a <see cref="RenameRefusalKind.Conflict"/>. Unused by the other kinds.</param>
+    /// a <see cref="RenameRefusalKind.Conflict"/>, the most characters a module's name has for a <see cref="RenameRefusalKind.ModuleNameTooLong"/>. Unused by
+    /// the other kinds.</param>
     /// <param name="where">Where the refusal is, as the client names a position: the conflict of a <see cref="RenameRefusalKind.Conflict"/>, the name of an
     /// <see cref="RenameRefusalKind.Unresolved"/>. Unused by the other kinds.</param>
     /// <param name="culture">The language of the reader; the current UI culture by default.</param>

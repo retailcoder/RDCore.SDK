@@ -22,6 +22,9 @@
   <data name="Rename_Type" xml:space="preserve">
     <value>« {0} » est un module de document, dont le nom est donné par son document : il n'est pas renommé.</value>
   </data>
+  <data name="Rename_ModuleNameTooLong" xml:space="preserve">
+    <value>« {0} » est trop long pour le nom d'un module, qui compte au plus {1} caractères.</value>
+  </data>
   <data name="Rename_NamedByConvention" xml:space="preserve">
     <value>« {0} » est nommé d'après l'événement ou le membre d'interface qu'il gère ou implémente : renommé, il ne serait ni l'un ni l'autre.</value>
   </data>

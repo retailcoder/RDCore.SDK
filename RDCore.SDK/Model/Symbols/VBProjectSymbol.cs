@@ -86,6 +86,18 @@ public sealed record class VBProjectSymbol(Uri WorkspaceRoot, string Name)
             : null;
 
     /// <summary>
+    /// Gets the class of a referenced library that a class module's class is built on (<see cref="VBClassModuleSymbol.BaseClass"/>), by the name of its
+    /// library and its own.
+    /// </summary>
+    /// <param name="resolver">The resolver names are bound by.</param>
+    /// <param name="module">The class module.</param>
+    /// <returns>The base class, or <see langword="null"/> for a module whose class has none, and when the project does not reference its library.</returns>
+    public static VBClassModuleSymbol? ResolveBaseClass(ISymbolResolver resolver, VBClassModuleSymbol module)
+        => module.BaseClass is { Library: { } library, Name: { } name }
+            ? ResolveQualifiedType(resolver, library, name, StaticSymbol.GlobalUri).Symbol as VBClassModuleSymbol
+            : null;
+
+    /// <summary>
     /// The members of the interface of a class, as its declaration is now: its default interface, and, for a document module, the members of its host's class
     /// that it does not declare itself (<see cref="ResolveHostClass"/>) - an event is no member a name reaches.
     /// </summary>

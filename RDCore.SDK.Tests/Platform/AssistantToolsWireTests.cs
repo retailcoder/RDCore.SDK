@@ -90,6 +90,33 @@ public sealed class AssistantToolsWireTests
     }
 
     [TestMethod]
+    public void AToolThatRunsCode_SaysSoAsHexIDEsChatReadsIt_AndBackOverEveryWire()
+    {
+        var listed = new ToolsListResult { Tools = [Listed().Tools[0] with { Annotations = new ToolAnnotations { RunsCodeHint = true } }] };
+        const string annotations = """{"readOnlyHint":false,"destructiveHint":false,"idempotentHint":false,"openWorldHint":false,"hexide.runsCode":true}""";
+
+        var written = JsonSerializer.Serialize(listed, RDCorePlatformJson.Options);
+        AssertSameJson(annotations, JsonNode.Parse(written)!["tools"]![0]!["annotations"]!.ToJsonString(), "Protocol options");
+        Assert.IsTrue(JsonSerializer.Deserialize<ToolsListResult>(written, RDCorePlatformJson.Options)!.Tools[0].Annotations.RunsCodeHint, "Protocol options, read back");
+        foreach (var serializer in PlatformSerializers())
+        {
+            var onTheWire = serializer.SerializeObject(new ToolsListReply(listed));
+            AssertSameJson(annotations, JsonNode.Parse(onTheWire)!["tools"]![0]!["annotations"]!.ToJsonString(), serializer.GetType().Name);
+            var read = (ToolsListReply)serializer.DeserializeObject(onTheWire, typeof(ToolsListReply))!;
+            Assert.IsTrue(read.Tools[0].Annotations.RunsCodeHint, $"{serializer.GetType().Name}, read back");
+        }
+    }
+
+    [TestMethod]
+    public void AToolThatRunsNoCode_LeavesTheKeyOut()
+    {
+        var written = JsonNode.Parse(JsonSerializer.Serialize(Listed(), RDCorePlatformJson.Options))!["tools"]![0]!["annotations"]!.AsObject();
+
+        Assert.IsFalse(written.ContainsKey("hexide.runsCode"), written.ToJsonString());
+        Assert.IsFalse(JsonSerializer.Deserialize<ToolsListResult>(ListedJson, RDCorePlatformJson.Options)!.Tools[0].Annotations.RunsCodeHint);
+    }
+
+    [TestMethod]
     public void ACall_RoundTripsThePlatformsWire_WithItsArguments()
     {
         var read = Wire.RoundTrip(new ToolCallRequest(Call()));

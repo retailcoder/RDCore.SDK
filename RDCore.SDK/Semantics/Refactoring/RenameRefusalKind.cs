@@ -74,4 +74,9 @@ public enum RenameRefusalKind
     /// What a name is bound to cannot be told where it is written, so the rename could miss it.
     /// </summary>
     Unresolved,
+
+    /// <summary>
+    /// The new name of a module is longer than a module's name can be (MS-VBAL §4.2).
+    /// </summary>
+    ModuleNameTooLong,
 }

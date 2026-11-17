@@ -624,6 +624,12 @@ public abstract class RDCoreServerApp(
     private async Task HandleLanguageServerInitializedAsync(ILanguageServer server, InitializeParams request, InitializeResult response, CancellationToken cancellationToken)
     {
         ServerStateProvider.OnInitialized();
+        // a server that serves assistant tools says so in its answer, whatever the application adds to it.
+        if (Assistant.AssistantToolsCapability.Declare(response.Capabilities, server.Services.GetService<Assistant.AssistantToolCatalog>() ?? ExternalServices?.GetService<Assistant.AssistantToolCatalog>()))
+        {
+            LogIfEnabled(LogLevel.Information, $"The server declares its assistant tools ({RDCorePlatformProtocol.ChatToolsCapability}).");
+        }
+
         await OnLanguageServerInitializedAsync(server, request, response, cancellationToken);
     }
     /// <summary>
