@@ -247,7 +247,7 @@ public record class VBClassModuleSymbol : VBModuleSymbol
     /// for any other class.
     /// </summary>
     /// <remarks>
-    /// Unlike a <see cref="HostClass"/>'s, the base class's members are no members of this class: <c>Me</c>, early- or late-bound, has only the members the
+    /// Unlike a <see cref="HostClass"/>'s, the base class's members are not members of this class: <c>Me</c>, early- or late-bound, has only the members the
     /// module declares (<see cref="VBProjectSymbol.InterfaceMembersOf"/>). They are found through the library's class, not declared again as this module's.
     /// </remarks>
     public Workspace.Forms.FormControlClass? BaseClass { get; init; }

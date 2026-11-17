@@ -184,7 +184,7 @@ public sealed record class FormDescriptor(
     public string? DesignerText { get; init; }
 
     /// <summary>
-    /// The base class the form's class is built on, when it has one: the class whose members the form's code names unqualified, and which are no members
+    /// The base class the form's class is built on, when it has one: the class whose members the form's code names unqualified, and which are not members
     /// of the form's own class. That is a Visual Basic 6.0 <c>VB.UserControl</c>, <c>VB.PropertyPage</c> or <c>VB.UserDocument</c>: in a UserControl's code,
     /// <c>BackColor</c> and <c>UserControl.BackColor</c> are the base class's, and <c>Me.BackColor</c> is a member the UserControl declares or none. A
     /// declaration of the module's own of the same name shadows the base class's member. <c>null</c> for any other form: the members of a

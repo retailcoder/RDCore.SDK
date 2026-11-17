@@ -591,7 +591,7 @@ public static class CompletionCandidates
     }
 
     // the members of the library classes a class module names as its own (its host class, its base class), found among the classes the scopes declare by
-    // their library's name and their own; no event, which is no name a value is.
+    // their library's name and their own; events are left out, as an event names no value.
     private static IEnumerable<VBTypeMemberSymbol> LibraryClassMembersOf(IReadOnlyList<LexicalScope> scopes, LexicalScope moduleScope)
     {
         var module = scopes.SelectMany(scope => scope.DeclaredAs(SymbolUri.ModuleNameOf(moduleScope.Uri))).OfType<VBClassModuleSymbol>()
