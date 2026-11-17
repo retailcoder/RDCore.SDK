@@ -9,7 +9,7 @@ namespace RDCore.Tests.Platform;
 [TestClass]
 public sealed class HostProjectReloadParamsTests
 {
-    private static readonly Uri Root = new("file:///C:/Dev/Probe/");
+    private static readonly Uri Root = new("file:///C:/Projects/Probe/");
 
     [TestMethod]
     public void TheLanguage_IsReadBackFromTheWire()
@@ -24,5 +24,5 @@ public sealed class HostProjectReloadParamsTests
 
     [TestMethod]
     public void ARequestOfNoLanguage_KeepsTheCurrentOne()
-        => Assert.IsNull(JObject.Parse("{ \"workspaceRoot\": \"file:///C:/Dev/Probe/\" }").ToObject<HostProjectReloadParams>()!.Language);
+        => Assert.IsNull(JObject.Parse("{ \"workspaceRoot\": \"file:///C:/Projects/Probe/\" }").ToObject<HostProjectReloadParams>()!.Language);
 }
