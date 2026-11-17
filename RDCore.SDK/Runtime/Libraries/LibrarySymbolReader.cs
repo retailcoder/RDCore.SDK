@@ -176,13 +176,18 @@ public sealed class LibrarySymbolReader(Uri workspaceRoot, bool is64Bit = true)
             VBUnknownType.TypeInfo, SourceRange.Empty, SourceRange.Empty, AccessModifier.Public);
 
         var constants = description.Members
-            .Select(member => (VBEnumConstMemberSymbol)new VBEnumConstMemberSymbol(
+            .Select(member => Added((VBEnumConstMemberSymbol)new VBEnumConstMemberSymbol(
                 workspaceRoot, symbol.Uri, member.Name, ScopeKind.Module, SymbolKindExt.EnumMember, SourceRange.Empty, SourceRange.Empty)
-                .With(SymbolProperties.EnumValue, member.Value))
+                .With(SymbolProperties.EnumValue, member.Value), member.IsAddition))
             .ToArray();
 
-        return (VBEnumMemberSymbol)(symbol with { ResolvedType = new VBEnumType(symbol, constants, description.IsHidden) }).With(SymbolProperties.Library, library.Name);
+        return Added((VBEnumMemberSymbol)(symbol with { ResolvedType = new VBEnumType(symbol, constants, description.IsHidden) }).With(SymbolProperties.Library, library.Name),
+            description.IsAddition);
     }
+
+    // what RD-VBA adds to a library, which hover and completion can show as such.
+    private static T Added<T>(T symbol, bool isAddition) where T : Symbol
+        => isAddition ? (T)symbol.With(SymbolProperties.LibraryAddition, true) : symbol;
 
     private VBClassModuleSymbol ReadClass(LibraryDescription library, ClassDescription description, TypeNames types)
     {
@@ -203,6 +208,8 @@ public sealed class LibrarySymbolReader(Uri workspaceRoot, bool is64Bit = true)
         {
             symbol = (VBClassModuleSymbol)symbol.With(SymbolProperties.ReportedTypeName, typeName);
         }
+
+        symbol = Added(symbol, description.IsAddition);
 
         ImmutableArray<VBTypeMemberSymbol> members =
         [
@@ -283,6 +290,7 @@ public sealed class LibrarySymbolReader(Uri workspaceRoot, bool is64Bit = true)
             member = member.With(SymbolProperties.DesignTimeOnly, true);
         }
 
+        member = Added(member, description.IsAddition);
         return (VBTypeMemberSymbol)(description.IsHidden
             ? member.With(SymbolProperties.MemberFlags, member.GetProperty(SymbolProperties.MemberFlags) | SymbolProperties.HiddenMemberFlag)
             : member);
@@ -308,6 +316,7 @@ public sealed class LibrarySymbolReader(Uri workspaceRoot, bool is64Bit = true)
             constant = constant.With(SymbolProperties.DocString, docString);
         }
 
+        constant = Added(constant, description.IsAddition);
         return (VBConstantMemberSymbol)(description.IsHidden
             ? constant.With(SymbolProperties.MemberFlags, constant.GetProperty(SymbolProperties.MemberFlags) | SymbolProperties.HiddenMemberFlag)
             : constant);
@@ -344,8 +353,8 @@ public sealed class LibrarySymbolReader(Uri workspaceRoot, bool is64Bit = true)
         var declaredEvent = new VBEventMemberSymbol(
             workspaceRoot, ownerUri, description.Name, ScopeKind.Instance, SourceRange.Empty, SourceRange.Empty, AccessModifier.Public);
 
-        return (VBTypeMemberSymbol)(declaredEvent with { Parameters = ReadParameters(library, description.Parameters, declaredEvent.Uri, withMe: false, types) })
-            .With(SymbolProperties.Library, library.Name);
+        return Added((VBTypeMemberSymbol)(declaredEvent with { Parameters = ReadParameters(library, description.Parameters, declaredEvent.Uri, withMe: false, types) })
+            .With(SymbolProperties.Library, library.Name), description.IsAddition);
     }
 
     /// <summary>
