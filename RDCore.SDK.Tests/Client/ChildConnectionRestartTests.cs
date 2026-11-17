@@ -471,7 +471,7 @@ public sealed class ChildConnectionRestartTests
             await pipe.WaitForConnectionAsync();
             var made = await OmniSharpLanguageServer.From(server => server
                 .WithInput(PipeReader.Create(pipe))
-                .WithOutput(PipeWriter.Create(pipe))
+                .WithOutput(new ConnectionOutput(PipeWriter.Create(pipe)))
                 .WithSerializer(new PullDiagnosticsLspSerializer())
                 .OnInitialize((_, _, _) =>
                 {

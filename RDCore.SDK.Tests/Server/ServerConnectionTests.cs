@@ -97,7 +97,7 @@ public sealed class ServerConnectionTests
         var loop = new ProbedReader(input);
         var serving = OmniSharpLanguageServer.From(server => server
             .WithInput(loop)
-            .WithOutput(ServerOutput.Over(serverPipe))
+            .WithOutput(ConnectionOutput.Over(serverPipe))
             .WithUnhandledExceptionHandler(exception => reported.TrySetResult(exception)), timeout.Token);
         var connecting = LanguageClient.From(client => client.WithInput(clientPipe).WithOutput(clientPipe), timeout.Token);
         await Task.WhenAll(serving, connecting);
@@ -119,7 +119,7 @@ public sealed class ServerConnectionTests
     public async Task AServerOutputOverAStream_LeavesItOpen_AsItIsCompleted()
     {
         using var stream = new MemoryStream();
-        var output = ServerOutput.Over(stream);
+        var output = ConnectionOutput.Over(stream);
         await output.WriteAsync("{}"u8.ToArray());
 
         await output.CompleteAsync().AsTask().WaitAsync(Hung);
@@ -132,7 +132,7 @@ public sealed class ServerConnectionTests
     public async Task AServerOutputThatIsCompleted_WritesNothingMore_AndSaysTheWritingIsOver()
     {
         using var stream = new MemoryStream();
-        var output = ServerOutput.Over(stream);
+        var output = ConnectionOutput.Over(stream);
         await output.CompleteAsync().AsTask().WaitAsync(Hung);
 
         var written = await output.WriteAsync("{}"u8.ToArray());
@@ -224,7 +224,7 @@ public sealed class ServerConnectionTests
     public async Task AServerStoppedWhileAMessageIsWritten_StopsWithoutFault()
     {
         var stream = new WriteWaitsUntilCancelled();
-        var output = new ServerOutput(PipeWriter.Create(stream));
+        var output = new ConnectionOutput(PipeWriter.Create(stream));
         var handler = new OmniSharp.Extensions.JsonRpc.OutputHandler(output, new OmniSharp.Extensions.JsonRpc.Serialization.JsonRpcSerializer(), [],
             System.Reactive.Concurrency.Scheduler.Default, Microsoft.Extensions.Logging.Abstractions.NullLogger<OmniSharp.Extensions.JsonRpc.OutputHandler>.Instance);
         handler.Initialized();
@@ -233,6 +233,35 @@ public sealed class ServerConnectionTests
         await stream.Writing.WaitAsync(Hung);
 
         await handler.StopAsync().WaitAsync(Hung);
+    }
+
+    // OmniSharp stops its output as its input ends, when the other end closes the connection: it completes the writer while a message may still be
+    // written, and the server or client is disposed after that, which cancels the write again. A stream's own writer cancels it with the token source it
+    // disposed as it was completed.
+    [TestMethod]
+    [DataRow(true, DisplayName = "completed, then disposed")]
+    [DataRow(false, DisplayName = "disposed, then completed")]
+    public async Task AnOutputCompletedWhileAMessageIsWritten_IsDisposedWithoutFault_InEitherOrder(bool completedFirst)
+    {
+        var stream = new WriteWaitsUntilCancelled();
+        var output = new ConnectionOutput(PipeWriter.Create(stream));
+        var handler = new OmniSharp.Extensions.JsonRpc.OutputHandler(output, new OmniSharp.Extensions.JsonRpc.Serialization.JsonRpcSerializer(), [],
+            System.Reactive.Concurrency.Scheduler.Default, Microsoft.Extensions.Logging.Abstractions.NullLogger<OmniSharp.Extensions.JsonRpc.OutputHandler>.Instance);
+        handler.Initialized();
+
+        handler.Send(new OmniSharp.Extensions.JsonRpc.Client.OutgoingNotification { Method = "rdcore/test/written" });
+        await stream.Writing.WaitAsync(Hung);
+
+        if (completedFirst)
+        {
+            await output.CompleteAsync().AsTask().WaitAsync(Hung);
+            handler.Dispose();
+        }
+        else
+        {
+            handler.Dispose();
+            await output.CompleteAsync().AsTask().WaitAsync(Hung);
+        }
     }
 
     // a stream whose reader has stopped reading: a write waits until it is cancelled.
