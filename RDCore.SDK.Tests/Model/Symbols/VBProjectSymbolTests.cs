@@ -7,6 +7,7 @@ using RDCore.SDK.Model.Source;
 using RDCore.SDK.Model.Types;
 using RDCore.SDK.Runtime.Abstract.Execution;
 using RDCore.SDK.Runtime.Shared;
+using RDCore.SDK.Workspace.Forms;
 
 namespace RDCore.Tests.Model.Symbols;
 
@@ -98,5 +99,38 @@ public sealed class VBProjectSymbolTests
         var result = VBProjectSymbol.ResolveQualifiedType(resolver, "Unknown", "ClassName", Root);
 
         Assert.IsTrue(result.IsUnbound);
+    }
+
+    [TestMethod]
+    public void TheBaseClassOfAModule_IsTheClassOfItsLibrary_ByTheLibrarysName()
+    {
+        var library = new VBProjectSymbol(Root, "VB");
+        var userControl = new VBClassModuleSymbol(Root, library.Uri, "UserControl");
+        var module = new VBClassModuleSymbol(Root, Root, "UserControl1") { BaseClass = new FormControlClass("VB", "UserControl") };
+        var resolver = Substitute.For<ISymbolResolver>();
+        resolver.ResolveQualifier("VB", ScopeKind.Global, StaticSymbol.GlobalUri).Returns(SymbolResolutionResult.Resolved(library));
+        resolver.ResolveProjectType(library, "UserControl").Returns(SymbolResolutionResult.Resolved(userControl));
+
+        Assert.AreSame(userControl, VBProjectSymbol.ResolveBaseClass(resolver, module));
+    }
+
+    [TestMethod]
+    public void AModuleWithNoBaseClass_HasNone_AndNothingIsLookedUp()
+    {
+        var resolver = Substitute.For<ISymbolResolver>();
+
+        Assert.IsNull(VBProjectSymbol.ResolveBaseClass(resolver, new VBClassModuleSymbol(Root, Root, "Class1")));
+        Assert.IsNull(VBProjectSymbol.ResolveBaseClass(resolver, new VBClassModuleSymbol(Root, Root, "Class2") { BaseClass = new FormControlClass(null, "UserControl") }));
+        Assert.IsEmpty(resolver.ReceivedCalls());
+    }
+
+    [TestMethod]
+    public void TheBaseClassOfALibraryTheProjectDoesNotReference_IsNone()
+    {
+        var module = new VBClassModuleSymbol(Root, Root, "UserControl1") { BaseClass = new FormControlClass("VB", "UserControl") };
+        var resolver = Substitute.For<ISymbolResolver>();
+        resolver.ResolveQualifier("VB", ScopeKind.Global, StaticSymbol.GlobalUri).Returns(SymbolResolutionResult.Unbound);
+
+        Assert.IsNull(VBProjectSymbol.ResolveBaseClass(resolver, module));
     }
 }
