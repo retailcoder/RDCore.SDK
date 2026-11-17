@@ -92,12 +92,16 @@ public sealed record class RuntimeEnvironmentProfile(
 
     /// <inheritdoc/>
     /// <remarks>
-    /// The culture is found on the first read and held by the profile, because the profile's <see cref="Lcid"/> never changes: what a member reads
-    /// is always the culture of the profile's <see cref="Lcid"/> at the time of the call. A copy made with another <see cref="Lcid"/> (a <c>with</c>
-    /// expression) finds and holds its own, and a session that is given another profile reads that profile's. <c>0</c> is
-    /// <see cref="CultureInfo.InvariantCulture"/>. An <see cref="Lcid"/> that names no culture throws on each read, as
-    /// <see cref="CultureInfo.GetCultureInfo(int)"/> does, and nothing is held for it. Two profiles that are equal have the same culture, held or not:
-    /// what is held takes no part in the record's equality.
+    /// <para>
+    /// Not how a value is Let-coerced to or from a <c>String</c>: a number or a date is written and read by <see cref="Regional"/>
+    /// (<see cref="IRuntimeEnvironmentProfile.Culture"/>).
+    /// </para>
+    /// <para>
+    /// The culture is found on the first read and held: the profile's <see cref="Lcid"/> never changes, so every read gives the culture of that
+    /// <see cref="Lcid"/>, and <see cref="CultureInfo.InvariantCulture"/> for <c>0</c>. A copy made with another <see cref="Lcid"/> (a <c>with</c>
+    /// expression) holds its own. An <see cref="Lcid"/> that names no culture throws on each read, as <see cref="CultureInfo.GetCultureInfo(int)"/>
+    /// does, and nothing is held for it. What is held takes no part in the record's equality.
+    /// </para>
     /// </remarks>
     public CultureInfo Culture => _culture.Of(Lcid);
 
