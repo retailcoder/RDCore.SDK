@@ -219,7 +219,8 @@ public sealed class CallChannelTests
         Assert.ThrowsExactly<CallChannelException>(() => ends.Calling.Call<int, int>("stall", 2));
     }
 
-    // the answer of a whole column of a worksheet is 115 MB, more than a busy system can lock for one write to a pipe: a frame is written in pieces a pipe takes.
+    // the answer of a whole column of a worksheet is 115 MB, more than a busy system can lock for one write to a pipe: a frame is written in pieces a
+    // pipe takes.
     [TestMethod]
     public async Task AnAnswerLongerThanAPipeTakesAtOnce_GoesInWritesItTakes()
     {
