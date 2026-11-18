@@ -22,9 +22,8 @@ public static class ProjectReferenceCycles
     /// <remarks>
     /// <para>
     /// A reference to a project is resolved by its name, in any letter case, among <paramref name="projects"/> (<see cref="ProjectReferences.Resolve"/>).
-    /// A reference to a library, and one to a
-    /// name that no project has, are on no cycle. A name that two projects have resolves to neither: the projects that share it cannot be referenced until
-    /// one is renamed.
+    /// A reference to a library, and one to a name that no project has, are on no cycle. A name that two projects have resolves to neither: the projects
+    /// that share it cannot be referenced until one is renamed.
     /// </para>
     /// <para>
     /// Each cycle starts at its project that comes first in <paramref name="projects"/>, and the cycles are in that order, then in the order of the
