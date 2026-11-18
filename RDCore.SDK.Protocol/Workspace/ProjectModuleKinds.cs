@@ -33,8 +33,9 @@ public static class ProjectModuleKinds
     /// The extension of the file that holds the code of an RDForms form: <c>.rdform</c>.
     /// </summary>
     /// <remarks>
-    /// An RDForms form is two files of one base name, in one folder: its code, a class module whose text is its <c>Attribute VB_*</c> lines and its code,
-    /// with no <c>VERSION</c> header and no designer block; and its RDForms document, a <c>.xaml</c> beside it, which holds its controls.
+    /// An RDForms form is two files of one base name, in one folder: its code, a class module whose text is its <c>Attribute VB_*</c> lines and then its
+    /// declarations and procedures, with no <c>VERSION</c> header and no designer block; and its RDForms document, a <c>.xaml</c> beside it, which holds
+    /// its controls.
     /// </remarks>
     public const string RDFormsModuleExtension = ".rdform";
 

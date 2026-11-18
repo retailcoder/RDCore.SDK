@@ -72,6 +72,7 @@ public static partial class FormDesigner
         ArgumentNullException.ThrowIfNull(reader);
         DocumentReaders[reader.DocumentExtension] = reader;
     }
+
     /// <summary>
     /// The class identifier of the Microsoft Forms 2.0 designer, which names a VBA UserForm's designer block.
     /// </summary>

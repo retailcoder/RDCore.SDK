@@ -268,7 +268,7 @@ namespace RDCore.SDK {
         }
 
         /// <summary>
-        ///   Looks up a localized string similar to The form keeps its controls in its RDForms document, the .xaml file of the same name beside its .rdform module, which is not there..
+        ///   Looks up a localized string similar to The form&apos;s RDForms document is missing: the .xaml file of the same name beside its .rdform module holds its controls..
         /// </summary>
         internal static string FormDesigner_MissingDocument {
             get {

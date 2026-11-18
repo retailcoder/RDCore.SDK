@@ -10,9 +10,9 @@ namespace RDCore.SDK.Workspace;
 /// <remarks>
 /// A document module is the code of a host's document (<strong>MS-VBAL §4.2.1</strong>): Excel's worksheets and workbook, Word's documents, Access's forms and
 /// reports. Its export (a <c>.doccls</c>, or a <c>.cls</c> from the VBE) says nothing of what it is, so the project says it: a module whose entry has a
-/// <see cref="RDCoreModule.Super"/> is one, whatever its text and its file name, and nothing else is: no name and no event handler makes a module one. The code
-/// of an RDForms form (<see cref="ProjectModuleKinds.RDFormsModuleExtension"/>) is a class module. Any other module is a class module when its text has a
-/// <c>VERSION</c> header (<see cref="ModuleHeader.IsClassModule"/>), and a standard module otherwise.
+/// <see cref="RDCoreModule.Super"/> is one, whatever its text and its file name, and nothing else is: no name and no event handler makes a module one.
+/// The code of an RDForms form (<see cref="ProjectModuleKinds.RDFormsModuleExtension"/>) is a class module. Any other module is a class module when its
+/// text has a <c>VERSION</c> header (<see cref="ModuleHeader.IsClassModule"/>), and a standard module otherwise.
 /// <para>
 /// RD-VBA hosts no document: a document module is analyzed - its code binds, the members of its host's class among its names - and never run. Code that is to
 /// handle a document's events holds the document in a <c>WithEvents</c> variable of the host's class, from an application the program automates.

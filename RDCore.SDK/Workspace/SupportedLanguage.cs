@@ -116,8 +116,8 @@ public static class SupportedLanguages
     /// RD-VBA: the platform's own implementation of <strong>MS-VBAL</strong>, and the default.
     /// </summary>
     /// <remarks>
-    /// Its modules are standard modules (<c>.bas</c>), class modules (<c>.cls</c>), UserForms (<c>.frm</c>), document modules (<c>.doccls</c>), and the code of
-    /// RDForms forms (<c>.rdform</c>, <see cref="ProjectModuleKinds.RDFormsModuleExtension"/>), whose RDForms document (<c>.xaml</c>) is not a module.
+    /// Its modules are standard modules (<c>.bas</c>), class modules (<c>.cls</c>), UserForms (<c>.frm</c>), document modules (<c>.doccls</c>), and the code
+    /// of RDForms forms (<c>.rdform</c>, <see cref="ProjectModuleKinds.RDFormsModuleExtension"/>), whose RDForms document (<c>.xaml</c>) is not a module.
     /// </remarks>
     public static SupportedLanguage RDVBA { get; } = new(
         "vba", "Microsoft Visual Basic for Applications", "*.bas", "*.cls", "*.frm", "*.doccls", "*.rdform");

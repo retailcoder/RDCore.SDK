@@ -1,8 +1,8 @@
 namespace RDCore.SDK.Workspace.Forms;
 
 /// <summary>
-/// Reads a form's document: the file beside a form's code module that holds the form's controls, in a format a library of its own owns, such as the RDForms
-/// document (<see cref="FormDesigner.RDFormsDocumentExtension"/>) of an RDForms form's <c>.rdform</c> module.
+/// Reads a form's document: the file beside a form's code module that holds the form's controls, in a format that a library outside the SDK owns, such as
+/// the RDForms document (<see cref="FormDesigner.RDFormsDocumentExtension"/>) of an RDForms form's <c>.rdform</c> module.
 /// </summary>
 /// <remarks>
 /// The SDK says which document a module pairs with (<see cref="FormDesigner.RDFormsDocumentOf"/>) and what a form declares (<see cref="FormDescriptor"/>);

@@ -211,7 +211,7 @@
     <value>Les données de concepteur du formulaire ont un flux d&apos;objets (o) qui ne contient pas exactement les contrôles que décrivent ses sites.</value>
   </data>
   <data name="FormDesigner_MissingDocument" xml:space="preserve">
-    <value>Le formulaire garde ses contrôles dans son document RDForms, le fichier .xaml du même nom à côté de son module .rdform, qui est absent.</value>
+    <value>Le document RDForms du formulaire est absent : le fichier .xaml du même nom, à côté de son module .rdform, contient ses contrôles.</value>
   </data>
   <data name="FormDesigner_NoDocumentReader" xml:space="preserve">
     <value>Aucun lecteur de documents RDForms (.xaml) n&apos;est inscrit : les contrôles du formulaire ne peuvent être lus.</value>

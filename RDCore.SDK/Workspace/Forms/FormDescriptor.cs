@@ -100,8 +100,8 @@ public sealed record class FormControlDescriptor(
 /// <param name="Kind">The designer that wrote the form.</param>
 /// <param name="Class">The class of the form itself (<c>MSForms.UserForm</c>, <c>VB.Form</c>).</param>
 /// <param name="Properties">The form's own designer properties, by name (case-insensitive), as written in the module's
-/// designer block: a string value without its quotes, any other value as written, without its trailing comment. An RDForms form's are as its document writes
-/// them, its lengths in device-independent pixels.</param>
+/// designer block: a string value without its quotes, any other value as written, without its trailing comment. An RDForms form's properties are as its
+/// document writes them, its lengths in device-independent pixels.</param>
 /// <param name="Controls">The form's controls, in the order the designer persisted them; a container's controls are its
 /// <see cref="FormControlDescriptor.Children"/>.</param>
 public sealed record class FormDescriptor(
@@ -165,7 +165,7 @@ public sealed record class FormDescriptor(
 
     /// <summary>
     /// How many points one unit of the form's length properties (<see cref="Properties"/>) is: a designer block writes lengths in twips, 20 to a point
-    /// (0.05); an RDForms document in device-independent pixels, 96 to an inch and so 4 to 3 points (0.75).
+    /// (0.05); an RDForms document in device-independent pixels, 96 to an inch, so a pixel is three quarters of a point (0.75).
     /// </summary>
     public double PointsPerUnit => Kind == FormDesignerKind.RDForms ? 0.75 : 0.05;
 
