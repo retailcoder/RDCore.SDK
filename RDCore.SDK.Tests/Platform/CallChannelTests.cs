@@ -57,8 +57,8 @@ public sealed class CallChannelTests
         }
     }
 
-    // an end of a pipe that takes no write longer than `most` bytes, as a pipe takes none longer than the system can lock for it, and that breaks for good once
-    // it has taken `breaksAfter` bytes, in the middle of a write.
+    // an end of a pipe that takes no write longer than `most` bytes, as a pipe takes none longer than the system can lock for it, and that breaks for good
+    // once it has taken `breaksAfter` bytes, in the middle of a write.
     private sealed class Narrow(Stream pipe, int most, long breaksAfter = long.MaxValue) : Stream
     {
         private long _taken;
@@ -219,7 +219,7 @@ public sealed class CallChannelTests
         Assert.ThrowsExactly<CallChannelException>(() => ends.Calling.Call<int, int>("stall", 2));
     }
 
-    // the answer of a whole column of a worksheet is 115 MB, more than a busy system can lock for one write to a pipe: a frame goes in writes a pipe takes.
+    // the answer of a whole column of a worksheet is 115 MB, more than a busy system can lock for one write to a pipe: a frame is written in pieces a pipe takes.
     [TestMethod]
     public async Task AnAnswerLongerThanAPipeTakesAtOnce_GoesInWritesItTakes()
     {
@@ -232,8 +232,8 @@ public sealed class CallChannelTests
         Assert.AreEqual(4 * 1024 * 1024, answer.Length);
     }
 
-    // a frame that a failed write cut short leaves the other end waiting for the rest of it: the end that failed to write it closes the pipe, and the call that
-    // waits for the answer fails.
+    // a frame that a failed write cut short leaves the other end waiting for the rest of it: the end that failed to write it closes the pipe, and the call
+    // that waits for the answer fails.
     [TestMethod]
     public async Task AnAnswerCutShort_FailsTheCall_AndClosesBothEnds()
     {

@@ -37,8 +37,9 @@ public sealed class CallChannel : IDisposable
     private const byte AnswerFrame = 2;
     private const byte FailureFrame = 3;
 
-    // the most a frame puts in the stream at once. A pipe takes no write longer than the system can lock for it: one of 600 MB fails ("Insufficient system
-    // resources exist to complete the requested service"), and a busy system locks less - the answer of a whole column of a worksheet, 115 MB, can be too much.
+    // the most a frame puts in the stream at once. A pipe takes no write longer than the system can lock for it: one of 600 MB fails ("Insufficient
+    // system resources exist to complete the requested service"), and a busy system locks less: the answer of a whole column of a worksheet, 115 MB, can
+    // be too much.
     private const int Slice = 1024 * 1024;
 
     // how long a caller looks for its answer before it sleeps: about what a call costs that the other end answers at once. A thread that sleeps has to be woken,
@@ -72,8 +73,8 @@ public sealed class CallChannel : IDisposable
     }
 
     /// <summary>
-    /// Completes when the channel is closed: the other end closed it or went away, a frame failed to be written, or this end was disposed. The stream closes with
-    /// the channel, so that the other end is told.
+    /// Completes when the channel is closed: the other end closed it or went away, a frame failed to be written, or this end was disposed. The stream
+    /// closes with the channel, so that the other end is told.
     /// </summary>
     public Task Closed => _closed.Task;
 
@@ -326,8 +327,8 @@ public sealed class CallChannel : IDisposable
         // the threads that wait for their turn to read have nothing left to read, and go.
         _ = _followers.Release(Math.Max(1, Volatile.Read(ref _idle)));
 
-        // the other end reads what this one writes: a frame that a failed write cut short would keep it waiting for the rest, and its caller for an answer that
-        // never comes. The stream closes with the channel, which tells the other end there is no more.
+        // the other end reads what this one writes: a frame that a failed write cut short would keep it waiting for the rest, and its caller for an answer
+        // that never comes. The stream closes with the channel, which tells the other end there is no more.
         _stream.Dispose();
     }
 
