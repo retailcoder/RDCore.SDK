@@ -77,9 +77,9 @@ public sealed class LibrarySymbolProvider : ISymbolProvider
     /// <see cref="Load(ILibrarySource, RDCoreProject, SupportedLanguage?)"/> loads them.
     /// </summary>
     /// <remarks>
-    /// A reference to the standard library in the project file (<see cref="RDCoreReference.IsStandardLibrary"/>: by its name or by its type library's
-    /// identifier), or a second reference to a library already in the list, is left out, as
-    /// <see cref="Load(ILibrarySource, RDCoreProject, SupportedLanguage?)"/> leaves it out. A reference that does not load keeps its position.
+    /// A second reference to a library already in the list is left out, as <see cref="Load(ILibrarySource, RDCoreProject, SupportedLanguage?)"/> leaves
+    /// it out, and so is a reference to the standard library in the project file (<see cref="RDCoreReference.IsStandardLibrary"/>: by its name or by its
+    /// type library's identifier). A reference that does not load keeps its position.
     /// </remarks>
     /// <param name="project">
     /// The project: its references (<see cref="RDCoreProject.References"/>) and its modules (<see cref="RDCoreProject.Modules"/>).
