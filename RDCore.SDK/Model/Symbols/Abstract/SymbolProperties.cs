@@ -100,7 +100,8 @@ public static class SymbolProperties
     public static readonly SymbolProperty<int> LibraryPriority = new(nameof(LibraryPriority));
     /// <summary>
     /// Whether a symbol of a <see cref="Library"/> is of a <em>source project</em> (<strong>MS-VBAL §4.1</strong>): a project of VBA modules that the
-    /// enclosing project references, whose code is loaded and runs in the session as the enclosing project's own code does. <c>false</c> when unset.
+    /// enclosing project references, whose code is loaded and runs in the session as the enclosing project's own code does.
+    /// <see langword="false"/> when unset.
     /// </summary>
     /// <remarks>
     /// A symbol that carries a <see cref="Library"/> and not this fact is of a <em>library project</em> (<strong>MS-VBAL §4.1</strong>): the standard
