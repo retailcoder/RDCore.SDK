@@ -87,4 +87,17 @@ public enum RenameRefusalKind
     /// the procedure for cannot be told, so none of its procedures is renamed, whatever its name.
     /// </summary>
     UnknownDocumentHost,
+
+    /// <summary>
+    /// The name is a control's of a VBA UserForm, whose designer keeps its controls' names in the form's companion <c>.frx</c> file, and the rename cannot
+    /// read or write that file.
+    /// </summary>
+    UserFormControl,
+
+    /// <summary>
+    /// The name is a control's that a string property of its form, or of another of its controls, holds as its whole value
+    /// (<see cref="Workspace.Forms.FormDesigner.PropertiesNaming"/>): the property may name the control, as an UpDown's <c>BuddyControl</c> names its buddy.
+    /// The property is the refusal's other name, as <c>UpDown1.BuddyControl</c>.
+    /// </summary>
+    ControlNamedByProperty,
 }

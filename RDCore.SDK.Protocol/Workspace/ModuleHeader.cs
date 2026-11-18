@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using RDCore.SDK.Model.Source;
 
 namespace RDCore.SDK.Workspace;
 
@@ -26,6 +27,86 @@ public static partial class ModuleHeader
     /// <param name="source">The raw module source, or <c>null</c> when it could not be read.</param>
     public static bool? IsClassModule(string? source)
         => string.IsNullOrEmpty(source) ? null : VersionHeader().IsMatch(source);
+
+    /// <summary>
+    /// Where the first <c>Attribute VB_Name</c> line of <paramref name="source"/> writes the module's name: the range between its quotes.
+    /// </summary>
+    /// <remarks>
+    /// Lines are the text's, split at each line feed; a carriage return before one is part of its line. The range is zero-based, on one line.
+    /// </remarks>
+    /// <param name="source">The module file's text, or <c>null</c> when it could not be read.</param>
+    /// <returns>The name's range, which is empty for <c>Attribute VB_Name = ""</c>; or <c>null</c> when no line of the text is an
+    /// <c>Attribute VB_Name</c> line.</returns>
+    public static SourceRange? NameRangeOf(string? source)
+    {
+        var lines = LinesOf(source);
+        for (var line = 0; line < lines.Length; line++)
+        {
+            if (VBNameLine().Match(lines[line]) is { Success: true } match)
+            {
+                var name = match.Groups["name"];
+                return new SourceRange(line, name.Index, line, name.Index + name.Length);
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// The line of <paramref name="source"/> a module's first attribute goes on, which is where an edit inserts its <c>Attribute VB_Name</c>
+    /// when its source writes none. A module's name is its <c>VB_Name</c> (<strong>MS-VBAL §4.2</strong>); a module whose source writes none is named
+    /// by its file.
+    /// </summary>
+    /// <remarks>
+    /// The line follows the header: after the <c>VERSION</c> line, the <c>Object</c> lines of the controls the module uses, and the header's
+    /// <c>Begin</c> … <c>End</c> block, at the <c>End</c> of its own <c>Begin</c> (a designer's block holds its controls' blocks). A module
+    /// without a <c>VERSION</c> first line has no header: its attributes go on its first line. A block whose <c>End</c> the text never writes
+    /// ends with the text, and the attributes go on its last line. Lines are split as <see cref="NameRangeOf"/> splits them.
+    /// </remarks>
+    /// <param name="source">The module file's text, or <c>null</c> when it could not be read.</param>
+    /// <returns>The zero-based line; <c>0</c> for no text.</returns>
+    public static int AttributesLineOf(string? source)
+    {
+        var lines = LinesOf(source);
+        if (lines.Length == 0 || !lines[0].TrimStart().StartsWith("VERSION ", StringComparison.OrdinalIgnoreCase))
+        {
+            return 0;
+        }
+
+        var line = 1;
+        while (line < lines.Length - 1 && lines[line].TrimStart().StartsWith("Object ", StringComparison.OrdinalIgnoreCase))
+        {
+            line++;
+        }
+
+        if (line < lines.Length && IsBegin(lines[line]))
+        {
+            for (var depth = 0; line < lines.Length; line++)
+            {
+                depth += IsBegin(lines[line]) ? 1 : lines[line].Trim().Equals("End", StringComparison.OrdinalIgnoreCase) ? -1 : 0;
+                if (depth == 0)
+                {
+                    break;
+                }
+            }
+
+            line = Math.Min(line + 1, lines.Length - 1);
+        }
+
+        return Math.Min(line, lines.Length - 1);
+    }
+
+    private static string[] LinesOf(string? source) => string.IsNullOrEmpty(source) ? [] : source.Split('\n');
+
+    // a line that opens a block of the header: BEGIN, or Begin and what it describes; BeginProperty opens a property group inside a block
+    private static bool IsBegin(string line)
+    {
+        var trimmed = line.Trim();
+        return trimmed.StartsWith("Begin", StringComparison.OrdinalIgnoreCase) && (trimmed.Length == 5 || char.IsWhiteSpace(trimmed[5]));
+    }
+
+    [GeneratedRegex(@"^\s*Attribute\s+VB_Name\s*=\s*""(?<name>[^""]*)""", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    private static partial Regex VBNameLine();
 
     // the `VERSION <n>[.<n>][ CLASS]` line VBA writes as the first physical line of a class or
     // designer module, on its own line. `\r?` so a CRLF ending does not defeat the end anchor; the

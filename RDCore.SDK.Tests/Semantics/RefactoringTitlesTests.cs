@@ -78,4 +78,11 @@ public sealed class RefactoringTitlesTests
     public void AModuleNameTooLong_NamesTheNewName_AndTheMostCharactersAModuleNameHas(string language, string expected)
         => Assert.AreEqual(expected,
             RefactoringTitles.RenameRefusal(RenameRefusalKind.ModuleNameTooLong, "AModuleNameOfMoreThanThirtyOneCharacters", "31", culture: CultureInfo.GetCultureInfo(language)));
+
+    [TestMethod]
+    [DataRow("en", "'Text1' is the value of UpDown1.BuddyControl, which may name the control: renaming a control that a property of its form names is not supported yet.")]
+    [DataRow("fr", "« Text1 » est la valeur de UpDown1.BuddyControl, qui peut nommer le contrôle : renommer un contrôle que nomme une propriété de son formulaire n'est pas encore pris en charge.")]
+    public void AControlNamedByAProperty_NamesTheControl_AndTheProperty(string language, string expected)
+        => Assert.AreEqual(expected,
+            RefactoringTitles.RenameRefusal(RenameRefusalKind.ControlNamedByProperty, "Text1", "UpDown1.BuddyControl", culture: CultureInfo.GetCultureInfo(language)));
 }
