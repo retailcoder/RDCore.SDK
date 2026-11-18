@@ -298,6 +298,22 @@ public interface ISessionSymbols
         System.Collections.Immutable.ImmutableArray<RDCore.SDK.Model.Source.SourceRange> implementedInterfaceRanges = default);
 
     /// <summary>
+    /// Composes the class module whose <see cref="Symbol.Uri"/> is <paramref name="moduleUri"/>, as the overload that takes a module name
+    /// composes one by its name: its members, its default interface, and the interfaces it implements (<strong>MS-VBAL §5.2.4.2</strong>).
+    /// </summary>
+    /// <remarks>
+    /// A name does not always say which class it is: a session defines the exposed classes of the projects its project references
+    /// (<see cref="SymbolProperties.Library"/>) beside its own, and a class of each may have the same name. Its identity does.
+    /// </remarks>
+    /// <param name="moduleUri">The <see cref="Symbol.Uri"/> of the class module, which has been defined with its members.</param>
+    /// <param name="implementedInterfaceNames">The names of the interfaces its <c>Implements</c> directives name, as written.</param>
+    /// <param name="implementedInterfaceRanges">Where each directive is written, one for each name, or empty when that is not known.</param>
+    /// <returns><c>false</c> if the session has no class module of that identity.</returns>
+    bool TryComposeClassModule(
+        Uri moduleUri, System.Collections.Immutable.ImmutableArray<string> implementedInterfaceNames,
+        System.Collections.Immutable.ImmutableArray<RDCore.SDK.Model.Source.SourceRange> implementedInterfaceRanges = default);
+
+    /// <summary>
     /// What the storage of a declared variable starts as, or <see langword="null"/> while nothing can reduce the constant
     /// expressions of an array's bounds yet - a session whose symbols are only being defined. Set by whatever composes the
     /// execution pipeline, as <see cref="IRuntimeSession.Lifecycle"/> is.
