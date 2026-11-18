@@ -84,9 +84,10 @@ public static partial class FormDesigner
     public const string MSFormsLibrary = "MSForms";
 
     /// <summary>
-    /// The extension of the companion file of each kind of designer file of VBA and Visual Basic 6.0, keyed by the designer file's extension: a
-    /// form's <c>.frx</c> (<c>.frm</c>), a user control's <c>.ctx</c> (<c>.ctl</c>), a designer's <c>.dsx</c> (<c>.dsr</c>), a property page's
-    /// <c>.pgx</c> (<c>.pag</c>), a user document's <c>.dox</c> (<c>.dob</c>).
+    /// The extension of the companion file of each kind of designer file, keyed by the designer file's extension: a form's <c>.frx</c>
+    /// (<c>.frm</c>), a user control's <c>.ctx</c> (<c>.ctl</c>), a designer's <c>.dsx</c> (<c>.dsr</c>), a property page's <c>.pgx</c>
+    /// (<c>.pag</c>), a user document's <c>.dox</c> (<c>.dob</c>), and an RDForms form's document, <see cref="RDFormsDocumentExtension"/>
+    /// (<see cref="ProjectModuleKinds.RDFormsModuleExtension"/>).
     /// </summary>
     /// <remarks>
     /// Each extension has its dot; a key is looked up ignoring case.
@@ -98,6 +99,7 @@ public static partial class FormDesigner
         [".dsr"] = ".dsx",
         [".pag"] = ".pgx",
         [".dob"] = ".dox",
+        [ProjectModuleKinds.RDFormsModuleExtension] = RDFormsDocumentExtension,
     };
 
     private const int BlobHeaderSize = 24;
@@ -132,16 +134,21 @@ public static partial class FormDesigner
 
     /// <summary>
     /// The path of the companion file of the form module at <paramref name="modulePath"/>: the file its source names (<see cref="CompanionOf(string)"/>),
-    /// beside the module's own file, as <see cref="ReadCompanion"/> reads it.
+    /// beside the module's own file, or an RDForms form's document (<see cref="RDFormsDocumentOf"/>), as <see cref="ReadCompanion"/> reads it.
     /// </summary>
     /// <param name="modulePath">The path of the form module's file.</param>
-    /// <param name="source">The form module's source.</param>
+    /// <param name="source">The form module's source, which an RDForms form's path does not depend on.</param>
     /// <returns>
     /// The path, whether or not the file is there; <see langword="null"/> when the module names no companion file, or its designer block is not
     /// terminated.
     /// </returns>
     public static string? CompanionPathOf(string modulePath, string? source)
     {
+        if (ProjectModuleKinds.IsRDFormsModule(modulePath))
+        {
+            return RDFormsDocumentOf(modulePath);
+        }
+
         try
         {
             return CompanionOf(source) is { } reference ? Path.Combine(Path.GetDirectoryName(modulePath) ?? string.Empty, reference.FileName) : null;

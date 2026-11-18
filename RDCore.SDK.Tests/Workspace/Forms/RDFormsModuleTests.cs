@@ -154,6 +154,18 @@ public sealed class RDFormsModuleTests
     }
 
     [TestMethod]
+    [DataRow("Form1.rdform")]
+    [DataRow("FORM1.RDFORM")]
+    public void AnRDFormsModulesCompanion_IsItsDocument_AsItsExtensionSays_ThoughItsTextNamesNone(string fileName)
+    {
+        var modulePath = Path.Combine(Path.GetTempPath(), "rdcore-forms", fileName);
+
+        Assert.AreEqual(".xaml", FormDesigner.CompanionExtensions[Path.GetExtension(fileName)]);
+        Assert.AreEqual(Path.ChangeExtension(modulePath, ".xaml"), FormDesigner.CompanionPathOf(modulePath, Code));
+        Assert.AreEqual(Path.ChangeExtension(modulePath, ".xaml"), FormDesigner.CompanionPathOf(modulePath, null), "with no text");
+    }
+
+    [TestMethod]
     public void Register_TakesAReader() => Assert.ThrowsExactly<ArgumentNullException>(() => FormDesigner.Register(null!));
 
     [TestMethod]
