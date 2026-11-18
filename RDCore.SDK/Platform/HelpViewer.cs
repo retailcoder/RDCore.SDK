@@ -16,7 +16,7 @@ public interface IHelpViewer
     /// Opens a help file, at a topic when one is given. A file that does not exist opens nothing, and so does one that nothing can open: the caller's dialog
     /// or form stays as it was.
     /// </summary>
-    /// <param name="file">The help file, in full.</param>
+    /// <param name="file">The full path of the help file.</param>
     /// <param name="context">The context number of the topic; <see langword="null"/> when none is given.</param>
     void Open(string file, int? context);
 }
@@ -27,8 +27,8 @@ public interface IHelpViewer
 /// type is associated with, at no topic.
 /// </summary>
 /// <remarks>
-/// What is started is <see cref="StartOf"/>, given to the start the viewer was made with: a test makes the viewer with a start of its own, which launches
-/// nothing, and checks what was asked for.
+/// <see cref="Open"/> gives what <see cref="StartOf"/> returns to the start the viewer was made with. A caller that must launch nothing, such as a test,
+/// makes the viewer with a start of its own and checks what it is given.
 /// </remarks>
 public sealed class ShellHelpViewer : IHelpViewer
 {
@@ -75,7 +75,7 @@ public sealed class ShellHelpViewer : IHelpViewer
     /// <summary>
     /// What <see cref="Open"/> starts to open a help file at a topic.
     /// </summary>
-    /// <param name="file">The help file, in full.</param>
+    /// <param name="file">The full path of the help file.</param>
     /// <param name="context">The context number of the topic; <see langword="null"/> when none is given.</param>
     /// <returns>
     /// <c>hh.exe -mapid</c> <paramref name="context"/> <paramref name="file"/> for a compiled help file named with a topic on Windows; the file itself, opened
