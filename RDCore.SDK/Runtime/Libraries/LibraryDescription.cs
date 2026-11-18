@@ -249,7 +249,7 @@ public sealed record class ClassDescription
     /// <para>
     /// <see cref="LibrarySymbolReader"/> reads each as one of the class symbol's <see cref="Model.Symbols.VBClassModuleSymbol.ImplementedInterfaces"/>,
     /// after its <see cref="DefaultInterface"/>, once every library it is given is read: the class named can be of a library listed after this one. A name
-    /// that is no class of the libraries read, the class itself, and a class named twice are left out.
+    /// that names none of the classes read, the class itself, and a class named twice are left out.
     /// </para>
     /// <para>
     /// A type library states the interfaces a class implements, not the classes its objects are, so a description exported from one has none. A file states

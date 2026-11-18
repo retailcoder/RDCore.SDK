@@ -185,9 +185,9 @@ public sealed class LibrarySymbolReader(Uri workspaceRoot, bool is64Bit = true)
                 return;
             }
 
-            // a qualified name is a class of the library it names, and one that is not is a class of this library. A name that is no class of the libraries
-            // read (an unknown class, or a class of a library that is not in the list) is left out, as a workspace class's Implements of a name that is no
-            // class is, and so is the class itself.
+            // a qualified name is a class of the library it names, and one that is not is a class of this library. A name that names none of the classes read
+            // (an unknown class, or a class of a library that is not in the list) is left out, as a workspace class's Implements of a name that resolves to
+            // no class is, and so is the class itself.
             var named = entry.description.Implements
                 .Select(name => name.Trim())
                 .Select(name => name.IndexOf('.') is var split and > 0 ? (name[..split], name[(split + 1)..]) : (entry.library.Name, name))
