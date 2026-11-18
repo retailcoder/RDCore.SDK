@@ -4,13 +4,13 @@ using System.Text.Json.Serialization;
 namespace RDCore.SDK.Workspace;
 
 /// <summary>
-/// What a project builds into: a program, or a library (<strong>RD-VBAL §2.2.3.1</strong>).
+/// What a project builds into: a program, a console program, or a library (<strong>RD-VBAL §2.2.3.1</strong>).
 /// </summary>
 public enum ProjectOutputType
 {
     /// <summary>
-    /// A program, which <c>rdc run</c> and <c>rdc build</c> start at its entry point (<see cref="ProjectBuild.EntryPoint"/>). A project file with no
-    /// <c>build</c> section, or a section with no <c>outputType</c>, is one.
+    /// A program, which <c>rdc run</c> and <c>rdc build</c> start at its entry point (<see cref="ProjectBuild.EntryPoint"/>), and whose forms and dialogs
+    /// are windows. A project file with no <c>build</c> section, or a section with no <c>outputType</c>, is one.
     /// </summary>
     Application,
 
@@ -18,6 +18,16 @@ public enum ProjectOutputType
     /// A library: code that other projects and hosts call into, which has no entry point and is not run.
     /// </summary>
     Library,
+
+    /// <summary>
+    /// A console program, started at its entry point as an <see cref="Application"/> is: its run gets the console's user interface, where
+    /// <c>InputBox</c> prompts and <c>MsgBox</c> shows its message in the console, as the shell does.
+    /// </summary>
+    /// <remarks>
+    /// It is written <c>ConsoleApplication</c>, and is in the format 1.2 (<see cref="ProjectFile.SchemaVersion"/>). A platform of the format 1.1 knows
+    /// <c>outputType</c> but not this value: it reads the project as an <see cref="Application"/>, and writes it as one.
+    /// </remarks>
+    ConsoleApplication,
 }
 
 /// <summary>
@@ -27,19 +37,20 @@ public enum ProjectOutputType
 /// <remarks>
 /// <para>
 /// Its members are written <c>outputType</c> and <c>entryPoint</c>, as files have them: <c>"build": { "outputType": "Library" }</c>,
-/// <c>"build": { "entryPoint": "Module1.Main" }</c>.
+/// <c>"build": { "outputType": "ConsoleApplication" }</c>, <c>"build": { "entryPoint": "Module1.Main" }</c>.
 /// </para>
 /// <para>
-/// It is read as a project file written by hand may have it, and never makes a project file unreadable. An <c>outputType</c> other than <c>Library</c>,
-/// whatever its case, is <see cref="ProjectOutputType.Application"/>, and an <c>entryPoint</c> that is no string, or is empty or blank, is none. What is written
-/// back is what was read, not the text it was read from: a program's <c>outputType</c>, and an entry point that is none, are left out. A <c>build</c> that
-/// is no object is no section, and is not written back.
+/// It is read as a project file written by hand may have it, and never makes a project file unreadable. An <c>outputType</c> other than <c>Library</c> or
+/// <c>ConsoleApplication</c>, whatever its case, is <see cref="ProjectOutputType.Application"/>, and an <c>entryPoint</c> that is not a string, or is
+/// empty or blank, is none. What is written back is what was read, not the text it was read from: the <c>outputType</c> of an
+/// <see cref="ProjectOutputType.Application"/>, and an entry point that is none, are left out. A <c>build</c> that is not an object reads as no section,
+/// and is not written back.
 /// </para>
 /// </remarks>
 public sealed record class ProjectBuild
 {
     /// <summary>
-    /// What the project builds into. <see cref="ProjectOutputType.Application"/> unless the section says <c>Library</c>.
+    /// What the project builds into. <see cref="ProjectOutputType.Application"/> unless the section says <c>Library</c> or <c>ConsoleApplication</c>.
     /// </summary>
     [JsonPropertyName("outputType")]
     [JsonConverter(typeof(ProjectOutputTypeJsonConverter))]
@@ -66,6 +77,12 @@ public sealed record class ProjectBuild
     /// </summary>
     [JsonIgnore]
     public bool IsLibrary => OutputType is ProjectOutputType.Library;
+
+    /// <summary>
+    /// Whether the project's program runs in the console, whose user interface its run gets (<see cref="ProjectOutputType.ConsoleApplication"/>).
+    /// </summary>
+    [JsonIgnore]
+    public bool IsConsoleApplication => OutputType is ProjectOutputType.ConsoleApplication;
 }
 
 // the section as RDCoreProject reads it: an object is the section; anything else, such as a string, is no section.
@@ -96,14 +113,18 @@ internal sealed class ProjectBuildJsonConverter : JsonConverter<ProjectBuild?>
     }
 }
 
-// Library, whatever its case, is a library; anything else is a program, so that a section written by hand always reads.
+// Library and ConsoleApplication, whatever their case, are what they name; anything else is a program, so that a section written by hand always reads.
 internal sealed class ProjectOutputTypeJsonConverter : JsonConverter<ProjectOutputType>
 {
     public override ProjectOutputType Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
-        var library = reader.TokenType is JsonTokenType.String && string.Equals(reader.GetString(), nameof(ProjectOutputType.Library), StringComparison.OrdinalIgnoreCase);
+        var named = reader.TokenType is JsonTokenType.String ? reader.GetString() : null;
         reader.Skip();
-        return library ? ProjectOutputType.Library : ProjectOutputType.Application;
+        return Names(ProjectOutputType.Library) ? ProjectOutputType.Library
+            : Names(ProjectOutputType.ConsoleApplication) ? ProjectOutputType.ConsoleApplication
+            : ProjectOutputType.Application;
+
+        bool Names(ProjectOutputType type) => string.Equals(named, type.ToString(), StringComparison.OrdinalIgnoreCase);
     }
 
     public override void Write(Utf8JsonWriter writer, ProjectOutputType value, JsonSerializerOptions options) => writer.WriteStringValue(value.ToString());

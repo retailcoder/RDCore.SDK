@@ -27,7 +27,7 @@ public sealed record class CompletionCandidate(string Label, CompletionItemKind 
 {
     /// <summary>
     /// What is inserted in place of the word when it is not the label: the name alone of a named argument whose <c>:=</c> is written already
-    /// (<c>Send "a", Cop|:=2</c>); <see langword="null"/> for the label.
+    /// (<c>Send "a", Cop|:=2</c>), or the snippet of the block a keyword starts (<see cref="IsSnippet"/>); <see langword="null"/> for the label.
     /// </summary>
     public string? InsertText { get; init; }
 
@@ -36,6 +36,19 @@ public sealed record class CompletionCandidate(string Label, CompletionItemKind 
     /// named argument (<c>Send "a", Co|pies:=2</c>), so that no part of the name is written twice; 0 for a candidate written at the cursor.
     /// </summary>
     public int ReplacedAfter { get; init; }
+
+    /// <summary>
+    /// Whether <see cref="InsertText"/> is a snippet (<strong>LSP 3.17</strong> §Snippet Syntax), with tab stops and placeholders, rather than plain text
+    /// (<see cref="CompletionSnippets"/>).
+    /// </summary>
+    public bool IsSnippet { get; init; }
+
+    /// <summary>
+    /// How the client treats the whitespace of what the candidate inserts (<strong>LSP 3.17</strong> <c>InsertTextMode</c>):
+    /// <see cref="InsertTextMode.AdjustIndentation"/> for a snippet whose lines are indented relative to its first; <see langword="null"/> for the client's
+    /// default.
+    /// </summary>
+    public InsertTextMode? InsertTextMode { get; init; }
 
     /// <summary>
     /// The candidate as an item of an LSP completion list (<strong>LSP 3.17</strong> §Completion Request).
@@ -50,17 +63,31 @@ public sealed record class CompletionCandidate(string Label, CompletionItemKind 
     /// <see cref="Rank"/>, then by the label in any case: by the name it writes, so a name in brackets (<c>[My Field]</c>) sorts among the others by
     /// <c>My Field</c>.
     /// </para>
+    /// <para>
+    /// A snippet's item says <c>insertTextFormat</c> <c>Snippet</c>, and its <see cref="InsertTextMode"/> when it has one; a plain item says neither, as plain
+    /// text is what a client inserts when nothing says otherwise.
+    /// </para>
     /// </remarks>
     /// <param name="match">How the label matches the word typed (<see cref="CompletionCandidates.MatchOf"/>).</param>
-    public CompletionItem ToCompletionItem(CompletionMatch match = CompletionMatch.Prefix) => new()
+    public CompletionItem ToCompletionItem(CompletionMatch match = CompletionMatch.Prefix)
     {
-        Label = Label,
-        Kind = Kind,
-        InsertText = InsertText,
-        Detail = Detail,
-        Documentation = Documentation is { Length: > 0 } documentation ? new StringOrMarkupContent(documentation) : null,
-        SortText = $"{TierOf(match)}{Rank:D2}{CompletionCandidates.NameOf(Label).ToString().ToLowerInvariant()}",
-    };
+        var item = new CompletionItem
+        {
+            Label = Label,
+            Kind = Kind,
+            InsertText = InsertText,
+            Detail = Detail,
+            Documentation = Documentation is { Length: > 0 } documentation ? new StringOrMarkupContent(documentation) : null,
+            SortText = $"{TierOf(match)}{Rank:D2}{CompletionCandidates.NameOf(Label).ToString().ToLowerInvariant()}",
+        };
+
+        if (IsSnippet)
+        {
+            item = item with { InsertTextFormat = InsertTextFormat.Snippet };
+        }
+
+        return InsertTextMode is { } mode ? item with { InsertTextMode = mode } : item;
+    }
 
     internal static char TierOf(CompletionMatch match) => match switch
     {
