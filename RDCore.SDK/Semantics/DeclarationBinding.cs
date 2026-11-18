@@ -10,7 +10,7 @@ namespace RDCore.SDK.Semantics;
 /// <remarks>
 /// The name of a bound member is the name of its <paramref name="Source"/>'s part, an underscore, and the name of <paramref name="Bound"/>: the source and
 /// the event or interface member name it, so renaming either renames the member's part of that name, and nothing that is not bound to them. A member whose
-/// name only looks like one (<c>Form_Foo</c> in a class that is no form, <c>watched_Spun</c> where the class of <c>watched</c> has no <c>Spun</c> event) has
+/// name only looks like one (<c>Form_Foo</c> in a class that is not a form, <c>watched_Spun</c> where the class of <c>watched</c> has no <c>Spun</c> event) has
 /// no binding.
 /// </remarks>
 /// <param name="Member">The identity of the member: the handler, or the implementation.</param>
