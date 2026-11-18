@@ -81,6 +81,17 @@ public sealed class ImplicitReferenceTests
     }
 
     [TestMethod]
+    public void TheRanksOfAProjectsReferences_LeaveOutTheStandardLibrary_ByItsTypeLibrary()
+    {
+        var project = Project(WithNoForm, "Scripting") with
+        {
+            References = [new RDCoreReference { Name = "VBA6", Guid = RDCoreReference.StandardLibraryGuid }, new RDCoreReference { Name = "Scripting" }],
+        };
+
+        CollectionAssert.AreEqual(new[] { new ReferencePriorityInfo("VBA", 0), new("Scripting", 1) }, LibrarySymbolProvider.ReferencePriorities(project).ToArray());
+    }
+
+    [TestMethod]
     public void TheRanksOfAProjectsReferences_AreTheOrderItsLibrariesLoadIn()
     {
         var project = Project(WithAForm, "Scripting");

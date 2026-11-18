@@ -75,7 +75,8 @@ public sealed class LibrarySymbolProvider : ISymbolProvider
     /// <see cref="Load(ILibrarySource, RDCoreProject, SupportedLanguage?)"/> loads them.
     /// </summary>
     /// <remarks>
-    /// A reference to the standard library in the project file, or a second reference to a library already in the list, is left out, as
+    /// A reference to the standard library in the project file (<see cref="RDCoreReference.IsStandardLibrary"/>: by its name or by its type library's
+    /// identifier), or a second reference to a library already in the list, is left out, as
     /// <see cref="Load(ILibrarySource, RDCoreProject, SupportedLanguage?)"/> leaves it out. A reference that does not load keeps its position.
     /// </remarks>
     /// <param name="project">
@@ -85,7 +86,7 @@ public sealed class LibrarySymbolProvider : ISymbolProvider
     /// <returns>The references, the standard library first.</returns>
     public static IReadOnlyList<ReferencePriorityInfo> ReferencePriorities(RDCoreProject project, SupportedLanguage? language = null)
         => [new ReferencePriorityInfo(StandardLibrary.LibraryName, 0),
-            .. Referenced(project.References ?? [], ImplicitReferencesOf(project, language))
+            .. Referenced((project.References ?? []).Where(reference => !reference.IsStandardLibrary), ImplicitReferencesOf(project, language))
                 .Select(reference => reference.Name)
                 .Where(name => !string.Equals(name, StandardLibrary.LibraryName, StringComparison.OrdinalIgnoreCase))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
