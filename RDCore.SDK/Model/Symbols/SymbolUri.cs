@@ -230,12 +230,14 @@ public static class SymbolUri
     // nothing.
     private const char SuffixDelimiter = ']';
 
-    // the reserved words a symbol's address has after its name, when the name alone is a namesake's (Symbol.UriSuffix).
+    // the reserved words a symbol's address has after its name, when the name alone is a namesake's (Symbol.UriSuffix), and after the name of the default
+    // instance of a referenced project's class (ReferencedProjectSymbols.DefaultInstanceOf).
     internal const string LetSuffix = "Let";
     internal const string SetSuffix = "Set";
     internal const string EnumSuffix = "Enum";
     internal const string TypeSuffix = "Type";
     internal const string EventSuffix = "Event";
+    internal const string InstanceSuffix = "Instance";
 
     // a name of a path, without the suffix after it: what follows the first ']' that closes no '['.
     private static string WithoutSuffix(string name)

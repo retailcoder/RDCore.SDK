@@ -25,7 +25,13 @@ namespace RDCore.SDK.Runtime.Libraries;
 /// <item>a constant or a user-defined type: in a procedural module that is not a private module.</item>
 /// </list>
 /// <para>
-/// A <c>Friend</c> member is accessible within its project only, and a class's default instance (<c>VB_PredeclaredId</c>) is a name of its own project only.
+/// A <c>Friend</c> member is accessible within its project only.
+/// </para>
+/// <para>
+/// The default instance of an accessible class whose <c>VB_PredeclaredId</c> attribute is <c>True</c> (<strong>MS-VBAL §5.2.4.1.2</strong>) is a name of
+/// the projects that reference its project as well (<see cref="DefaultInstanceOf"/>), as it is of its own: <c>Board.Reset</c> calls <c>Reset</c> on the
+/// default instance of a class <c>Board</c> of a referenced project. <strong>MS-VBAL §5.6.10</strong> lists no default instance among the names of a
+/// referenced project, and only the members of a global class module's.
 /// </para>
 /// </remarks>
 public static class ReferencedProjectSymbols
@@ -71,14 +77,17 @@ public static class ReferencedProjectSymbols
     }
 
     /// <summary>
-    /// The names of a referenced project, as the referencing project binds them: the project itself, its accessible modules, their accessible members, and
-    /// the members of its accessible <c>Enum</c> types, each a name of that project at its precedence.
+    /// The names of a referenced project, as the referencing project binds them: the project itself, its accessible modules, the default instances of its
+    /// accessible predeclared classes, their accessible members, and the members of its accessible <c>Enum</c> types, each a name of that project at its
+    /// precedence.
     /// </summary>
     /// <remarks>
     /// Each symbol is the referenced project's own, addressed under its workspace root, and carries <see cref="SymbolProperties.Library"/> (the project's
     /// name) and <see cref="SymbolProperties.LibraryPriority"/>, which the referencing project's name resolver ranks it by among the libraries. The project
-    /// symbol is addressed under the referencing project's root, as a library's is. Any other symbol of <paramref name="symbols"/> (the standard library's,
-    /// the libraries the referenced project references itself, its own project symbol, a class's default instance) is left out.
+    /// symbol is addressed under the referencing project's root, as a library's is. A default instance is made for each class module whose
+    /// <see cref="SymbolProperties.PredeclaredId"/> is <see langword="true"/> (<see cref="DefaultInstanceOf"/>). Any other symbol of
+    /// <paramref name="symbols"/> (the standard library's, the libraries the referenced project references itself, its own project symbol, the default
+    /// instances of its own project) is left out.
     /// </remarks>
     /// <param name="workspaceRoot">The workspace root of the referencing project.</param>
     /// <param name="projectName">The name of the referenced project, as the reference names it.</param>
@@ -101,7 +110,11 @@ public static class ReferencedProjectSymbols
 
         var names = ImmutableArray.CreateBuilder<Symbol>();
         names.Add(Tagged(new VBProjectSymbol(workspaceRoot, projectName)));
-        names.AddRange(modules.Values.Where(IsAccessible).Select(Tagged));
+        var accessible = modules.Values.Where(IsAccessible).Select(Tagged).ToArray();
+        names.AddRange(accessible);
+        names.AddRange(accessible.OfType<VBClassModuleSymbol>()
+            .Where(module => module.GetProperty(SymbolProperties.PredeclaredId))
+            .Select(DefaultInstanceOf));
 
         // an enum's members parent to the enum, which parents to its module: they are accessible where it is.
         var enums = new HashSet<string>(StringComparer.Ordinal);
@@ -122,5 +135,38 @@ public static class ReferencedProjectSymbols
         return names.ToImmutable();
 
         Symbol Tagged(Symbol symbol) => symbol.With(SymbolProperties.Library, projectName).With(SymbolProperties.LibraryPriority, priority);
+    }
+
+    /// <summary>
+    /// The default instance of a predeclared class of a referenced project (<strong>MS-VBAL §5.2.4.1.2</strong>), as the projects that reference it bind
+    /// it: a global variable named after the class, declared as the class, a name of that project at its precedence.
+    /// </summary>
+    /// <remarks>
+    /// The variable is addressed under its class module, after a suffix no name has (<c>Board.Board]Instance</c>): the default instance of a class of the
+    /// same name, of the referencing project or of another project it references, is another variable at another address. Its
+    /// <see cref="Symbol.ParentUri"/> is the global one, as the default instance of a class of the project is.
+    /// </remarks>
+    /// <param name="classModule">
+    /// The class module, as <see cref="Of"/> gives it: with the <see cref="SymbolProperties.Library"/> and the <see cref="SymbolProperties.LibraryPriority"/>
+    /// of the referenced project.
+    /// </param>
+    /// <returns>The default instance, with the library and the precedence of <paramref name="classModule"/>.</returns>
+    /// <exception cref="ArgumentException"><paramref name="classModule"/> has no <see cref="SymbolProperties.Library"/>.</exception>
+    public static VBPredeclaredInstanceSymbol DefaultInstanceOf(VBClassModuleSymbol classModule)
+    {
+        ArgumentNullException.ThrowIfNull(classModule);
+        if (classModule.GetProperty(SymbolProperties.Library) is not { Length: > 0 } library)
+        {
+            throw new ArgumentException("The class module is of no referenced project: it has no library.", nameof(classModule));
+        }
+
+        var instance = new VBPredeclaredInstanceSymbol(classModule)
+        {
+            Uri = SymbolUri.Member(classModule.Uri, classModule.Name, SymbolUri.InstanceSuffix),
+        };
+
+        return (VBPredeclaredInstanceSymbol)instance
+            .With(SymbolProperties.Library, library)
+            .With(SymbolProperties.LibraryPriority, classModule.GetProperty(SymbolProperties.LibraryPriority));
     }
 }
