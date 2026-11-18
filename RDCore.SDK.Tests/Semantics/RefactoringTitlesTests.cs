@@ -61,4 +61,11 @@ public sealed class RefactoringTitlesTests
     public void AControlNamedByAProperty_NamesTheControl_AndTheProperty(string language, string expected)
         => Assert.AreEqual(expected,
             RefactoringTitles.RenameRefusal(RenameRefusalKind.ControlNamedByProperty, "Text1", "UpDown1.BuddyControl", culture: CultureInfo.GetCultureInfo(language)));
+
+    [TestMethod]
+    [DataRow("en", "'OkButton' cannot be renamed in its form's .frx file: the reason.")]
+    [DataRow("fr", "« OkButton » ne peut être renommé dans le fichier .frx de son formulaire : the reason.")]
+    public void AUserFormControlTheWriterDoesNotRename_NamesTheControl_AndTheWritersReason(string language, string expected)
+        => Assert.AreEqual(expected,
+            RefactoringTitles.RenameRefusal(RenameRefusalKind.UserFormControlNotWritten, "OkButton", "the reason.", culture: CultureInfo.GetCultureInfo(language)));
 }

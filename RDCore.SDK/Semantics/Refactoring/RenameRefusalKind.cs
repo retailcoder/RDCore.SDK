@@ -81,8 +81,8 @@ public enum RenameRefusalKind
     ModuleNameTooLong,
 
     /// <summary>
-    /// The name is a control's of a VBA UserForm, whose designer keeps its controls' names in the form's companion <c>.frx</c> file, and the rename cannot
-    /// read or write that file.
+    /// The name is a control's of a VBA UserForm, whose designer keeps its controls' names in the form's companion <c>.frx</c> file, and the server
+    /// could not read that file as it is on disk: the form names none, the file is not there or cannot be read, or it changed since the server read it.
     /// </summary>
     UserFormControl,
 
@@ -92,4 +92,17 @@ public enum RenameRefusalKind
     /// The property is the refusal's other name, as <c>UpDown1.BuddyControl</c>.
     /// </summary>
     ControlNamedByProperty,
+
+    /// <summary>
+    /// The name is a control's of a VBA UserForm, which <c>MSFormsWriter.RenameControl</c> does not rename in the form's <c>.frx</c> file.
+    /// Its reason is the refusal's other name.
+    /// </summary>
+    UserFormControlNotWritten,
+
+    /// <summary>
+    /// The name is a control's of a VBA UserForm, whose rename replaces the form's <c>.frx</c> file, and the client cannot undo a file change when the
+    /// rename's edit fails (<c>WorkspaceEditExtensions.TakesFileReplacement</c>): the code would name the control by its
+    /// new name, and the file by its old one.
+    /// </summary>
+    FileChangeNotUndoable,
 }

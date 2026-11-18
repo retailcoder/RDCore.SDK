@@ -38,10 +38,16 @@
     <value>« {0} » est un contrôle, que le concepteur de son formulaire nomme : renommer un contrôle n'est pas encore pris en charge.</value>
   </data>
   <data name="Rename_UserFormControl" xml:space="preserve">
-    <value>« {0} » est un contrôle d'un UserForm, dont le nom est gardé dans le fichier .frx du formulaire, que le renommage ne peut ni lire ni écrire : le contrôle n'est pas renommé.</value>
+    <value>« {0} » est un contrôle d'un UserForm, dont le nom est gardé dans le fichier .frx du formulaire, que le serveur n'a pu lire tel qu'il est sur le disque : le contrôle n'est pas renommé.</value>
   </data>
   <data name="Rename_ControlNamedByProperty" xml:space="preserve">
     <value>« {0} » est la valeur de {1}, qui peut nommer le contrôle : renommer un contrôle que nomme une propriété de son formulaire n'est pas encore pris en charge.</value>
+  </data>
+  <data name="Rename_UserFormControlNotWritten" xml:space="preserve">
+    <value>« {0} » ne peut être renommé dans le fichier .frx de son formulaire : {1}</value>
+  </data>
+  <data name="Rename_FileChangeNotUndoable" xml:space="preserve">
+    <value>Renommer « {0} » remplace le fichier .frx de son formulaire, et cet éditeur ne peut annuler un changement de fichier si le renommage échoue : le contrôle n'est pas renommé.</value>
   </data>
   <data name="Rename_ExternalProcedure" xml:space="preserve">
     <value>« {0} » est une procédure externe, que sa bibliothèque nomme : elle ne peut pas être renommée.</value>
