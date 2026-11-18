@@ -105,14 +105,18 @@ public sealed partial class StagedFiles(IFileSystem fileSystem) : IDisposable
     /// Writes the new content of a file beside it, for a workspace edit to put in its place.
     /// </summary>
     /// <remarks>
-    /// The files staged before it are deleted, if they are still there.
+    /// The files staged before it are deleted, if they are still there. Nothing is staged for a file that is not on disk as <paramref name="original"/> is:
+    /// content made of what the server read would replace what the file is now.
     /// </remarks>
     /// <param name="target">The file to replace, as the client spells its URI.</param>
     /// <param name="original">The content the new one was made of: the file as the server read it.</param>
     /// <param name="content">The new content.</param>
-    /// <returns>The staged file, and the URIs the edit names, spelled as <paramref name="target"/> is.</returns>
+    /// <returns>
+    /// The staged file, and the URIs the edit names, spelled as <paramref name="target"/> is; <see langword="null"/> when the file is not there, cannot be
+    /// read, or is not <paramref name="original"/>.
+    /// </returns>
     /// <exception cref="IOException">The staged file could not be written.</exception>
-    public StagedFile Stage(DocumentUri target, ReadOnlySpan<byte> original, ReadOnlySpan<byte> content)
+    public StagedFile? Stage(DocumentUri target, ReadOnlySpan<byte> original, ReadOnlySpan<byte> content)
     {
         var path = target.GetFileSystemPath();
         var id = Guid.NewGuid().ToString("N");
@@ -122,6 +126,11 @@ public sealed partial class StagedFiles(IFileSystem fileSystem) : IDisposable
         lock (_lock)
         {
             DiscardAll();
+            if (!IsAsStaged(entry, path))
+            {
+                return null;
+            }
+
             fileSystem.File.WriteAllBytes(entry.Staged, content.ToArray());
             _staged.Add(entry);
         }
@@ -213,14 +222,18 @@ public sealed partial class StagedFiles(IFileSystem fileSystem) : IDisposable
         _staged.Clear();
     }
 
+    // a file that cannot be read (another program holds it) is not known to be what it was: its staged file does not replace it.
     private bool IsAsStaged(Entry entry, string path)
     {
-        if (!fileSystem.File.Exists(path) || fileSystem.FileInfo.New(path).Length != entry.Length)
+        try
+        {
+            return fileSystem.File.Exists(path) && fileSystem.FileInfo.New(path).Length == entry.Length
+                && SHA256.HashData(fileSystem.File.ReadAllBytes(path)).AsSpan().SequenceEqual(entry.Hash);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
             return false;
         }
-
-        return SHA256.HashData(fileSystem.File.ReadAllBytes(path)).AsSpan().SequenceEqual(entry.Hash);
     }
 
     // a staged file is only ever deleted by its name: one that is not a staged file's is left as it is.

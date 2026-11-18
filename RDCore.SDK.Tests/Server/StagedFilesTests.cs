@@ -55,7 +55,7 @@ public sealed class StagedFilesTests
     public void Stage_WritesTheContentBesideTheFile_NamedForItsEdit()
     {
         var files = Files();
-        var staged = new StagedFiles(files).Stage(Target, Original, Content);
+        var staged = new StagedFiles(files).Stage(Target, Original, Content)!;
 
         CollectionAssert.AreEqual(Content, files.File.ReadAllBytes(staged.Staged.GetFileSystemPath()));
         Assert.IsTrue(StagedFiles.IsStaged(staged.Staged.GetFileSystemPath()));
@@ -65,11 +65,23 @@ public sealed class StagedFilesTests
     }
 
     [TestMethod]
+    public void AFileThatIsNotWhatTheServerRead_IsNotStaged()
+    {
+        var files = Files();
+        files.File.WriteAllBytes(Frx, [1, 2, 3, 0]);
+        var stagedFiles = new StagedFiles(files);
+
+        Assert.IsNull(stagedFiles.Stage(Target, Original, Content));
+        Assert.IsNull(stagedFiles.Stage(DocumentUri.FromFileSystemPath(Path.Combine(Folder, "Missing.frx")), Original, Content));
+        CollectionAssert.AreEqual(new[] { "Dialog.frm", "Dialog.frx" }, FilesIn(files));
+    }
+
+    [TestMethod]
     public async Task TheEdit_PutsTheContentInPlace_AndLeavesNothingBeside()
     {
         var files = Files();
         var stagedFiles = new StagedFiles(files);
-        var staged = stagedFiles.Stage(Target, Original, Content);
+        var staged = stagedFiles.Stage(Target, Original, Content)!;
 
         var result = await ApplyAsync(files, Replacing(staged));
 
@@ -85,7 +97,7 @@ public sealed class StagedFilesTests
     {
         var files = Files();
         var stagedFiles = new StagedFiles(files);
-        var staged = stagedFiles.Stage(Target, Original, Content);
+        var staged = stagedFiles.Stage(Target, Original, Content)!;
         files.File.WriteAllBytes(Frx, [1, 2, 3, 0]);
 
         Assert.IsFalse(stagedFiles.Verify(Target));
@@ -102,7 +114,7 @@ public sealed class StagedFilesTests
     {
         var files = Files();
         var stagedFiles = new StagedFiles(files);
-        var staged = stagedFiles.Stage(Target, Original, Content);
+        var staged = stagedFiles.Stage(Target, Original, Content)!;
         files.File.WriteAllBytes(Frx, [1, 2, 3, 4, 5]);
 
         Assert.IsFalse(stagedFiles.Verify(staged.Staged));
@@ -114,7 +126,7 @@ public sealed class StagedFilesTests
     {
         var files = Files();
         var stagedFiles = new StagedFiles(files);
-        var staged = stagedFiles.Stage(Target, Original, Content);
+        var staged = stagedFiles.Stage(Target, Original, Content)!;
 
         Assert.IsTrue(stagedFiles.Verify(Target));
         files.File.Move(Frx, staged.Backup.GetFileSystemPath());
@@ -128,7 +140,7 @@ public sealed class StagedFilesTests
     {
         var files = Files();
         var stagedFiles = new StagedFiles(files);
-        var staged = stagedFiles.Stage(Target, Original, Content);
+        var staged = stagedFiles.Stage(Target, Original, Content)!;
         files.File.WriteAllText(Frm, "changed");
 
         Assert.IsTrue(stagedFiles.Verify(DocumentUri.FromFileSystemPath(Frm)));
@@ -140,8 +152,8 @@ public sealed class StagedFilesTests
     {
         var files = Files();
         var stagedFiles = new StagedFiles(files);
-        var first = stagedFiles.Stage(Target, Original, Content);
-        var second = stagedFiles.Stage(Target, Original, [9]);
+        var first = stagedFiles.Stage(Target, Original, Content)!;
+        var second = stagedFiles.Stage(Target, Original, [9])!;
 
         Assert.IsFalse(files.File.Exists(first.Staged.GetFileSystemPath()));
         Assert.IsTrue(files.File.Exists(second.Staged.GetFileSystemPath()));
@@ -169,7 +181,7 @@ public sealed class StagedFilesTests
         files.AddFile(Path.Combine(Folder, "Other.frx.0123456789abcdef0123456789abcdef.rdcore"), new MockFileData([1]));
         files.AddFile(Path.Combine(Folder, "Dialog.frx.0123456789abcdef0123456789abcdef.bak"), new MockFileData([1]));
         var stagedFiles = new StagedFiles(files);
-        var waiting = stagedFiles.Stage(Target, Original, Content);
+        var waiting = stagedFiles.Stage(Target, Original, Content)!;
 
         Assert.AreEqual(1, stagedFiles.Sweep(Target));
 
@@ -192,7 +204,7 @@ public sealed class StagedFilesTests
     [TestMethod]
     public void WillRename_IsAskedOfEveryStagedFile()
     {
-        var pattern = StagedFiles.WillRename.Filters.Single().Pattern;
+        var pattern = StagedFiles.WillRename.Filters.Single().Pattern!;
 
         Assert.AreEqual(("**/*.rdcore", FileOperationPatternKind.File, true), (pattern.Glob, pattern.Matches, pattern.Options?.IgnoreCase));
     }
