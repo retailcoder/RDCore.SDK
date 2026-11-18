@@ -29,10 +29,10 @@
     <value>« {0} » existe déjà : la modification ne renomme pas « {1} » par-dessus, et n'est pas appliquée.</value>
   </data>
   <data name="NotRenamed" xml:space="preserve">
-    <value>« {0} » n'a pas pu être renommé en « {1} » : {2} Ce que la modification avait fait est annulé.</value>
+    <value>« {0} » n'a pas pu être renommé en « {1} » : {2}</value>
   </data>
   <data name="NotDeleted" xml:space="preserve">
-    <value>« {0} » n'a pas pu être supprimé : {1} Ce que la modification avait fait est annulé.</value>
+    <value>« {0} » n'a pas pu être supprimé : {1}</value>
   </data>
   <data name="Stale" xml:space="preserve">
     <value>« {0} » a changé depuis que la modification a été faite; elle n'est pas appliquée.</value>
@@ -41,12 +41,18 @@
     <value>Il n'y a aucun fichier « {0} ».</value>
   </data>
   <data name="NotWritten" xml:space="preserve">
-    <value>« {0} » n'a pas pu être écrit : {1} Ce que la modification avait fait est annulé.</value>
+    <value>« {0} » n'a pas pu être écrit : {1}</value>
   </data>
   <data name="EditDoesNotFit" xml:space="preserve">
     <value>La modification de « {0} » ne correspond pas à son texte : {1}</value>
   </data>
   <data name="NotRead" xml:space="preserve">
     <value>« {0} » n'a pas pu être lu : {1}</value>
+  </data>
+  <data name="Undone" xml:space="preserve">
+    <value>Ce que la modification avait fait est annulé.</value>
+  </data>
+  <data name="NotUndone" xml:space="preserve">
+    <value>Ce que la modification avait fait est annulé, sauf dans ces fichiers, qui n'ont pas pu être remis comme ils étaient : {0}</value>
   </data>
 </root>

@@ -229,7 +229,9 @@ public sealed class WorkspaceEditFiles(IFileSystem fileSystem, int ansiCodePage)
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
-            return Refused(failure(exception.Message), change, Undo(undo));
+            var left = Undo(undo);
+            var undone = left.Count == 0 ? Message("Undone") : Message("NotUndone", string.Join(", ", left));
+            return Refused($"{failure(exception.Message)} {undone}", change, left);
         }
 
         // every change was made: what was set aside is deleted for good, and one that cannot be is left where it was set.

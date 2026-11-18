@@ -1,7 +1,10 @@
+using NSubstitute;
 using OmniSharp.Extensions.LanguageServer.Protocol;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
 using RDCore.SDK.Client;
 using RDCore.SDK.Workspace;
+using System.Globalization;
+using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
 using System.Text;
 using Range = OmniSharp.Extensions.LanguageServer.Protocol.Models.Range;
@@ -118,6 +121,42 @@ public sealed class WorkspaceEditFilesTests
         CollectionAssert.AreEqual(AnsiBytes, files.File.ReadAllBytes(Ansi));
         CollectionAssert.AreEqual(Utf8Bytes, files.File.ReadAllBytes(Utf8));
         CollectionAssert.AreEqual(new[] { "Class1.cls", "Module1.bas" }, FilesIn(files));
+    }
+
+    [TestMethod]
+    public async Task AFailureWhoseUndoFails_SaysWhichFilesWereNotPutBack()
+    {
+        CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("en-US");
+        var third = Path.Combine(Folder, "Module3.bas");
+        var files = Substitute.For<IFileSystem>();
+        files.File.Exists(Ansi).Returns(true);
+        files.File.When(file => file.Move(Renamed, third)).Throw(new IOException("The disk is full."));
+        files.File.When(file => file.Move(Renamed, Ansi)).Throw(new IOException("The file is in use."));
+
+        var result = await new WorkspaceEditFiles(files, ModuleFileText.DefaultAnsiCodePage)
+            .ApplyAsync(Of(Rename(Ansi, Renamed), Rename(Renamed, third)), NoneOpen, CancellationToken.None);
+
+        Assert.IsFalse(result.Applied);
+        Assert.AreEqual(1, result.FailedChange);
+        CollectionAssert.AreEqual(new[] { Ansi }, result.Written.ToArray());
+        Assert.AreEqual(
+            $"'{Renamed}' could not be renamed to '{third}': The disk is full. "
+            + $"What the edit had done is undone, except in these files, which could not be put back as they were: {Ansi}",
+            result.FailureReason);
+    }
+
+    [TestMethod]
+    public async Task AFailureWhoseUndoIsMade_SaysTheEditIsUndone()
+    {
+        CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("en-US");
+        var files = Files();
+        files.File.SetAttributes(Utf8, FileAttributes.ReadOnly);
+
+        var result = await Applier(files).ApplyAsync(Of(EditOf(Utf8, null, 1, 7, 10, "Café")), NoneOpen, CancellationToken.None);
+
+        Assert.IsFalse(result.Applied);
+        StringAssert.StartsWith(result.FailureReason, $"'{Utf8}' could not be written: ");
+        StringAssert.EndsWith(result.FailureReason, " What the edit had done is undone.");
     }
 
     // a file is deleted for good only once every change was made: undoing the edit never loses it.
