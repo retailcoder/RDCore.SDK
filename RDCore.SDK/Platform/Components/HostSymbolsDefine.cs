@@ -2,6 +2,7 @@
 using OmniSharp.Extensions.JsonRpc;
 using RDCore.SDK.Client;
 using RDCore.SDK.Model;
+using RDCore.SDK.Model.AST.Declarations;
 using RDCore.SDK.Model.Source;
 using RDCore.SDK.Model.Symbols;
 using RDCore.SDK.Model.Symbols.Abstract;
@@ -17,7 +18,9 @@ namespace RDCore.SDK.Platform.Components;
 /// defines it in the session symbol table.
 /// </summary>
 /// <remarks>
-/// Module symbols are <em>not</em> carried here: the host already has them from the <c>.rdproj</c>.
+/// Module symbols are <em>not</em> carried here: the host already has them from the <c>.rdproj</c>. A module of another project of the workspace, which
+/// the session's project references, is the one the host makes itself, from <see cref="DefineSymbolsParams.Library"/> and
+/// <see cref="DefineSymbolsParams.ModuleType"/>.
 /// The descriptors are the transport form of what the language server's <c>SyntaxTreeSymbolProvider</c>
 /// produces. A name declared in several conditional-compilation branches arrives as one descriptor
 /// carrying every branch in <see cref="SymbolDescriptor.Definitions"/>; the host defines the single
@@ -38,8 +41,10 @@ public record class DefineSymbolsParams : IRequest, IRequest<DefineSymbolsResult
     public Uri? WorkspaceRoot { get; init; }
 
     /// <summary>
-    /// The <c>Uri</c> of the module these symbols belong to. Informational: the host re-derives the
-    /// parent module symbol from <see cref="WorkspaceRoot"/> and <see cref="ModuleName"/>.
+    /// The <c>Uri</c> of the module these symbols belong to. Informational for a module of the session's own project: the host re-derives the
+    /// parent module symbol from <see cref="WorkspaceRoot"/> and <see cref="ModuleName"/>. For a module of a referenced project (<see cref="Library"/>),
+    /// the address of the module symbol the host makes, a member of that project's root (<see cref="Model.Symbols.SymbolUri.Member(Uri, string)"/>): its
+    /// symbols are addressed under that root (<see cref="Protocol.SymbolDescriptorReader.LibraryModuleOf"/>).
     /// </summary>
     public Uri? ModuleUri { get; init; }
 
@@ -184,6 +189,42 @@ public record class DefineSymbolsParams : IRequest, IRequest<DefineSymbolsResult
     /// no module, and the module is not found.
     /// </summary>
     public bool SessionModule { get; init; }
+
+    /// <summary>
+    /// The name of the project of the workspace whose module this is, when it is a module of a project that the session's project references
+    /// (<see cref="Workspace.RDCoreReference.IsProject"/>); <see langword="null"/> for a module of the session's own project.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// With a name, the module's symbols are names of that project in the session, as a library's are (<strong>MS-VBAL §4.1</strong>). The host makes
+    /// the module symbol (<see cref="ModuleType"/>, <see cref="Directives"/>) at <see cref="ModuleUri"/>, which is under the referenced project's root, and
+    /// <see cref="WorkspaceRoot"/> still names the session. It defines what <see cref="Runtime.Libraries.ReferencedProjectSymbols.Of"/> keeps of the
+    /// module and its members, each tagged with this name (<see cref="SymbolProperties.Library"/>) and <see cref="LibraryPriority"/>
+    /// (<see cref="SymbolProperties.LibraryPriority"/>).
+    /// </para>
+    /// <para>
+    /// What the host does by the module's name for a module of its own project is not done for it: a referenced project's <c>Module1</c> stands beside the
+    /// session's own <c>Module1</c>, which keeps the name. Its directives are not applied to a module of the session, no class module is composed of it,
+    /// and its code is not loaded (<see cref="CodeOnly"/> and <see cref="ParseResultJson"/> are not read): a session runs its own project's code.
+    /// </para>
+    /// </remarks>
+    public string? Library { get; init; }
+
+    /// <summary>
+    /// The reference precedence of the project that <see cref="Library"/> names among the session's references
+    /// (<see cref="Runtime.Libraries.ReferencedLibraries.Priorities"/>): of two libraries that declare a name, the one with the lower number is the one
+    /// the name means. Ignored when <see cref="Library"/> is <see langword="null"/>.
+    /// </summary>
+    public int LibraryPriority { get; init; }
+
+    /// <summary>
+    /// What kind of module the module of <see cref="Library"/> is: the host makes its module symbol, a class module's or a standard module's, from it.
+    /// Ignored when <see cref="Library"/> is <see langword="null"/>: the host has the module symbols of its own project from the <c>.rdproj</c>.
+    /// </summary>
+    /// <remarks>
+    /// A document module is a class module (<see cref="Model.AST.Declarations.ModuleType.DocumentModule"/>).
+    /// </remarks>
+    public ModuleType ModuleType { get; init; }
 }
 
 /// <summary>
