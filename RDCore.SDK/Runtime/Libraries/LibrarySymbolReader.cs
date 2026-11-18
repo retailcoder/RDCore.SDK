@@ -68,7 +68,7 @@ public sealed class LibrarySymbolReader(Uri workspaceRoot, bool is64Bit = true)
     /// </summary>
     /// <param name="libraries">
     /// The libraries (<see cref="ReferencedLibraries.Libraries"/>), in the order the symbols are returned in. Each is read after those of the list it depends
-    /// on, wherever it is listed.
+    /// on or names a class of (<see cref="ClassDescription.Implements"/>), wherever it is listed.
     /// </param>
     /// <param name="priorities">
     /// The reference precedence of each library (<see cref="ReferencedLibraries.Priorities"/>), which every symbol that is a name of the project carries
