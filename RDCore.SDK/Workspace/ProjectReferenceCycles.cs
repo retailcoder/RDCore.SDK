@@ -21,7 +21,8 @@ public static class ProjectReferenceCycles
     /// </summary>
     /// <remarks>
     /// <para>
-    /// A reference to a project is resolved by its name, in any letter case, among <paramref name="projects"/>. A reference to a library, and one to a
+    /// A reference to a project is resolved by its name, in any letter case, among <paramref name="projects"/> (<see cref="ProjectReferences.Resolve"/>).
+    /// A reference to a library, and one to a
     /// name that no project has, are on no cycle. A name that two projects have resolves to neither: the projects that share it cannot be referenced until
     /// one is renamed.
     /// </para>
@@ -37,20 +38,10 @@ public static class ProjectReferenceCycles
         ArgumentNullException.ThrowIfNull(projects);
 
         var all = projects.ToArray();
-        var named = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-        var shared = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        for (var index = 0; index < all.Length; index++)
-        {
-            if (!named.TryAdd(all[index].Name, index))
-            {
-                shared.Add(all[index].Name);
-            }
-        }
-
         var references = all
-            .Select(project => project.ProjectReferences
-                .Where(reference => !shared.Contains(reference.Name) && named.ContainsKey(reference.Name))
-                .Select(reference => named[reference.Name])
+            .Select(project => ProjectReferences.Of(project, all)
+                .Where(resolution => resolution.IsResolved)
+                .Select(resolution => resolution.Index)
                 .Distinct()
                 .ToArray())
             .ToArray();
