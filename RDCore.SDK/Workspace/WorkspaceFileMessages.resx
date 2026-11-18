@@ -22,7 +22,23 @@
     <comment>{0} is the encoding's name.</comment>
   </data>
   <data name="ResourceOperation" xml:space="preserve">
-    <value>Creating, renaming and deleting files is not supported; the edit is not applied.</value>
+    <value>Creating a file is not supported; the edit is not applied.</value>
+  </data>
+  <data name="Folder" xml:space="preserve">
+    <value>'{0}' is a folder: deleting a folder is not supported; the edit is not applied.</value>
+    <comment>{0} is the folder's path.</comment>
+  </data>
+  <data name="Exists" xml:space="preserve">
+    <value>'{0}' exists already: the edit does not rename '{1}' over it, and is not applied.</value>
+    <comment>{0} is the path a file is renamed to, {1} the file's path.</comment>
+  </data>
+  <data name="NotRenamed" xml:space="preserve">
+    <value>'{0}' could not be renamed to '{1}': {2} What the edit had done is undone.</value>
+    <comment>{0} is the file's path, {1} the path it is renamed to, {2} why.</comment>
+  </data>
+  <data name="NotDeleted" xml:space="preserve">
+    <value>'{0}' could not be deleted: {1} What the edit had done is undone.</value>
+    <comment>{0} is the file's path, {1} why.</comment>
   </data>
   <data name="Stale" xml:space="preserve">
     <value>'{0}' changed after the edit was made; the edit is not applied.</value>
@@ -33,7 +49,7 @@
     <comment>{0} is the file's path.</comment>
   </data>
   <data name="NotWritten" xml:space="preserve">
-    <value>'{0}' could not be written: {1}</value>
+    <value>'{0}' could not be written: {1} What the edit had done is undone.</value>
     <comment>{0} is the file's path, {1} why.</comment>
   </data>
   <data name="EditDoesNotFit" xml:space="preserve">
