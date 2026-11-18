@@ -6,7 +6,7 @@ namespace RDCore.SDK.Model.Symbols;
 
 /// <summary>
 /// The keywords a procedure is declared with, after its access modifier: <c>Sub</c>, <c>Function</c>, <c>Property Get</c>, <c>Property Let</c> or
-/// <c>Property Set</c> (<strong>MS-VBAL §5.3.1</strong>). They are VBA keywords, written as code writes them in every language of the reader.
+/// <c>Property Set</c> (<strong>MS-VBAL §5.3.1</strong>). They are VBA keywords, written as code writes them and never translated.
 /// </summary>
 /// <remarks>
 /// The three accessors of a property share its name and its <see cref="SymbolKindExt.Property"/> kind: their keywords are what tell them apart.
@@ -22,8 +22,8 @@ public static class ProcedureKeywords
     /// </summary>
     /// <param name="kind">The kind of member.</param>
     /// <returns>
-    /// The keywords, as in <c>Property Let</c>; <see langword="null"/> for a member that is not a procedure, and for a <c>Declare</c> statement, which is
-    /// written with or without <c>PtrSafe</c>.
+    /// The keywords, as in <c>Property Let</c>; <see langword="null"/> for a member that is not a procedure, and for a <c>Declare</c> statement, whose
+    /// keywords the kind does not give: it is written with or without <c>PtrSafe</c>.
     /// </returns>
     public static string? Of(MemberKind kind) => kind switch
     {

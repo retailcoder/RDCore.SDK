@@ -10,8 +10,8 @@ using RDCore.SDK.Model.Types.Complex;
 namespace RDCore.Tests.Model.Symbols;
 
 /// <summary>
-/// A procedure is declared with its keywords: the three accessors of a property, which share its name and its kind, by <c>Property Get</c>, <c>Property Let</c>
-/// and <c>Property Set</c>.
+/// A procedure is declared with its keywords: the three accessors of a property, which share its name and its kind, by <c>Property Get</c>,
+/// <c>Property Let</c> and <c>Property Set</c>.
 /// </summary>
 [TestClass]
 public sealed class ProcedureKeywordsTests
