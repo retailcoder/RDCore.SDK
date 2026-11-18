@@ -59,7 +59,9 @@ public sealed class LibrarySymbolProvider : ISymbolProvider
     /// (<see cref="SupportedLanguage.ImplicitReferencesOf"/>), then the ones its project file lists.
     /// </summary>
     /// <param name="source">Where the descriptions are.</param>
-    /// <param name="project">The project: its references (<see cref="RDCoreProject.References"/>) and its modules (<see cref="RDCoreProject.Modules"/>).</param>
+    /// <param name="project">
+    /// The project: its references (<see cref="RDCoreProject.References"/>) and its modules (<see cref="RDCoreProject.Modules"/>).
+    /// </param>
     /// <param name="language">
     /// The language the project is written in; RD-VBA, whose only implicit reference is RDForms, for a project with an RDForms form, when it is not given.
     /// </param>
@@ -76,7 +78,9 @@ public sealed class LibrarySymbolProvider : ISymbolProvider
     /// A reference to the standard library in the project file, or a second reference to a library already in the list, is left out, as
     /// <see cref="Load(ILibrarySource, RDCoreProject, SupportedLanguage?)"/> leaves it out. A reference that does not load keeps its position.
     /// </remarks>
-    /// <param name="project">The project: its references (<see cref="RDCoreProject.References"/>) and its modules (<see cref="RDCoreProject.Modules"/>).</param>
+    /// <param name="project">
+    /// The project: its references (<see cref="RDCoreProject.References"/>) and its modules (<see cref="RDCoreProject.Modules"/>).
+    /// </param>
     /// <param name="language">The language the project is written in; RD-VBA when it is not given.</param>
     /// <returns>The references, the standard library first.</returns>
     public static IReadOnlyList<ReferencePriorityInfo> ReferencePriorities(RDCoreProject project, SupportedLanguage? language = null)
