@@ -63,6 +63,26 @@ public sealed class ImplicitReferenceTests
             libraries.Priorities.OrderBy(priority => priority.Value).Select(priority => (priority.Key, priority.Value)).ToArray());
     }
 
+    // a reference to another project of the workspace keeps its place after the implicit references, RDForms among them, and is not loaded: the source
+    // has a library of its name, which is not the project's.
+    [TestMethod]
+    public void AReferenceToAProject_KeepsItsPlaceAfterRDForms_AndIsNotLoaded()
+    {
+        var project = Project(WithAForm) with
+        {
+            References = [new RDCoreReference { Name = "Scripting", IsProject = true }, new RDCoreReference { Name = "VB" }],
+        };
+
+        var libraries = LibrarySymbolProvider.Load(Source(), project, SupportedLanguages.RDVBA);
+
+        Assert.IsEmpty(libraries.Problems);
+        CollectionAssert.AreEquivalent(new[] { "RDForms", "VB" }, libraries.Libraries.Select(library => library.Name).ToArray());
+        CollectionAssert.AreEqual(new[] { ("RDForms", 1), ("Scripting", 2), ("VB", 3) },
+            libraries.Priorities.OrderBy(priority => priority.Value).Select(priority => (priority.Key, priority.Value)).ToArray());
+        CollectionAssert.AreEqual(new[] { new ReferencePriorityInfo("VBA", 0), new("RDForms", 1), new("Scripting", 2), new("VB", 3) },
+            LibrarySymbolProvider.ReferencePriorities(project, SupportedLanguages.RDVBA).ToArray());
+    }
+
     [TestMethod]
     public void AProjectWithNoRDFormsForm_DoesNotLoadRDForms()
     {

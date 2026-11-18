@@ -45,14 +45,16 @@ public sealed class LibrarySymbolProvider : ISymbolProvider
     /// <param name="references">
     /// The references of the project. A reference that gives the identifier of a type library (<see cref="RDCoreReference.Guid"/>) is to the description made from
     /// it, of its <see cref="RDCoreReference.Major"/> version and of exactly its <see cref="RDCoreReference.Minor"/> one, or else the highest above it
-    /// (<see cref="LibraryIdentity"/>); one that gives none is to the library of its name.
+    /// (<see cref="LibraryIdentity"/>); one that gives none is to the library of its name. A reference to another project of the workspace
+    /// (<see cref="RDCoreReference.IsProject"/>) is not loaded, and keeps its place in the order: its number in
+    /// <see cref="ReferencedLibraries.Priorities"/> is the precedence of the project's members.
     /// </param>
     /// <param name="language">
     /// The language the project is written in, whose implicit references (<see cref="SupportedLanguage.ImplicitReferences"/>) come before the ones the project lists;
     /// RD-VBA, which has none, when it is not given.
     /// </param>
     public static ReferencedLibraries Load(ILibrarySource source, IEnumerable<RDCoreReference> references, SupportedLanguage? language = null)
-        => ReferencedLibraries.Load(source, Referenced(references, language?.ImplicitReferences ?? []), [StandardLibrary.LibraryName]);
+        => Load(source, references, language?.ImplicitReferences ?? []);
 
     /// <summary>
     /// Loads the libraries a project references: the ones its language and its modules reference implicitly
@@ -60,7 +62,8 @@ public sealed class LibrarySymbolProvider : ISymbolProvider
     /// </summary>
     /// <param name="source">Where the descriptions are.</param>
     /// <param name="project">
-    /// The project: its references (<see cref="RDCoreProject.References"/>) and its modules (<see cref="RDCoreProject.Modules"/>).
+    /// The project: its references (<see cref="RDCoreProject.References"/>) and its modules (<see cref="RDCoreProject.Modules"/>). A reference to another
+    /// project of the workspace (<see cref="RDCoreReference.IsProject"/>) is not loaded, and keeps its place in the order, after the implicit references.
     /// </param>
     /// <param name="language">
     /// The language the project is written in; RD-VBA when it is not given. RD-VBA has no implicit reference of its own, so a project written in it
@@ -68,7 +71,7 @@ public sealed class LibrarySymbolProvider : ISymbolProvider
     /// </param>
     /// <returns>The libraries, and the ones that could not be loaded.</returns>
     public static ReferencedLibraries Load(ILibrarySource source, RDCoreProject project, SupportedLanguage? language = null)
-        => ReferencedLibraries.Load(source, Referenced(project.References ?? [], ImplicitReferencesOf(project, language)), [StandardLibrary.LibraryName]);
+        => Load(source, project.References ?? [], ImplicitReferencesOf(project, language));
 
     /// <summary>
     /// The libraries a project references, by name, each at its position in the list of its references, as a session ranks them
@@ -79,7 +82,8 @@ public sealed class LibrarySymbolProvider : ISymbolProvider
     /// <remarks>
     /// A second reference to a library already in the list is left out, as <see cref="Load(ILibrarySource, RDCoreProject, SupportedLanguage?)"/> leaves
     /// it out, and so is a reference to the standard library in the project file (<see cref="RDCoreReference.IsStandardLibrary"/>: by its name or by its
-    /// type library's identifier). A reference that does not load keeps its position.
+    /// type library's identifier). A reference that does not load keeps its position, and so does a reference to another project of the workspace
+    /// (<see cref="RDCoreReference.IsProject"/>), which is not loaded.
     /// </remarks>
     /// <param name="project">
     /// The project: its references (<see cref="RDCoreProject.References"/>) and its modules (<see cref="RDCoreProject.Modules"/>).
@@ -97,11 +101,25 @@ public sealed class LibrarySymbolProvider : ISymbolProvider
     private static IReadOnlyList<string> ImplicitReferencesOf(RDCoreProject project, SupportedLanguage? language)
         => (language ?? SupportedLanguages.RDVBA).ImplicitReferencesOf((project.Modules ?? []).Select(module => module?.RelativeUri));
 
-    // the implicit references come before the ones the project lists (RD-VBAL §2.3.1.3).
+    // the references to other projects are told to the loader by their positions in the whole list, after the implicit references.
+    private static ReferencedLibraries Load(ILibrarySource source, IEnumerable<RDCoreReference> references, IReadOnlyList<string> implicitReferences)
+    {
+        var listed = references.ToArray();
+        return ReferencedLibraries.Load(
+            source,
+            Referenced(listed, implicitReferences),
+            [StandardLibrary.LibraryName],
+            listed.Select((reference, position) => (reference, position)).Where(entry => entry.reference.IsProject)
+                .Select(entry => implicitReferences.Count + entry.position).ToHashSet());
+    }
+
+    // the implicit references come before the ones the project lists (RD-VBAL §2.3.1.3); a project is identified by its name alone.
     private static IEnumerable<LibraryIdentity> Referenced(IEnumerable<RDCoreReference> references, IEnumerable<string> implicitReferences)
         => [
             .. implicitReferences.Select(name => new LibraryIdentity(name)),
-            .. references.Select(reference => new LibraryIdentity(reference.Name, reference.Guid, reference.Major, reference.Minor)),
+            .. references.Select(reference => reference.IsProject
+                ? new LibraryIdentity(reference.Name)
+                : new LibraryIdentity(reference.Name, reference.Guid, reference.Major, reference.Minor)),
         ];
 
     /// <summary>
