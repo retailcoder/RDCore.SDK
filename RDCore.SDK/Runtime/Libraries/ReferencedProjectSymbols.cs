@@ -30,8 +30,8 @@ namespace RDCore.SDK.Runtime.Libraries;
 /// <para>
 /// The default instance of an accessible class whose <c>VB_PredeclaredId</c> attribute is <c>True</c> (<strong>MS-VBAL §5.2.4.1.2</strong>) is a name of
 /// the projects that reference its project as well (<see cref="DefaultInstanceOf"/>), as it is of its own: <c>Board.Reset</c> calls <c>Reset</c> on the
-/// default instance of a class <c>Board</c> of a referenced project. <strong>MS-VBAL §5.6.10</strong> lists no default instance among the names of a
-/// referenced project, and only the members of a global class module's.
+/// default instance of a class <c>Board</c> of a referenced project. This is an RD-VBA addition: among the names of a referenced project,
+/// <strong>MS-VBAL §5.6.10</strong> lists the members of the default instance of a global class module, and no default instance itself.
 /// </para>
 /// </remarks>
 public static class ReferencedProjectSymbols
@@ -151,6 +151,7 @@ public static class ReferencedProjectSymbols
     /// of the referenced project.
     /// </param>
     /// <returns>The default instance, with the library and the precedence of <paramref name="classModule"/>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="classModule"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException"><paramref name="classModule"/> has no <see cref="SymbolProperties.Library"/>.</exception>
     public static VBPredeclaredInstanceSymbol DefaultInstanceOf(VBClassModuleSymbol classModule)
     {
