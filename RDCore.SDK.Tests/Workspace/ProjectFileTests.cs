@@ -26,7 +26,7 @@ public sealed class ProjectFileTests
 
         // assert
         Assert.AreEqual(string.Empty, sut.Version);
-        Assert.AreEqual("1.3", written.Version);
+        Assert.AreEqual("1.2", written.Version);
     }
 
     [TestMethod]

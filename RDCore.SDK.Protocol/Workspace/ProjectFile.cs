@@ -27,11 +27,11 @@ public sealed record class ProjectFile : IEquatable<ProjectFile>
     /// Before the format had a version of its own, a project file was stamped with the version of the platform that wrote it: <c>1.0.0</c> by the first builds,
     /// <c>0.1.x</c> by the next. They read as the format 1.0 and an older one (<see cref="SchemaOf"/>), and are both the format 1.0. The format 1.1 adds the
     /// project's <c>build</c> section (<see cref="RDCoreProject.Build"/>), and the format 1.2 the project's <c>KeepSystemTheme</c>
-    /// (<see cref="RDCoreProject.KeepSystemTheme"/>), its <c>Make</c> section (<see cref="RDCoreProject.Make"/>), and the <c>build</c> section's
-    /// <c>ConsoleApplication</c> output type (<see cref="ProjectOutputType.ConsoleApplication"/>). The format 1.3 adds the references to other projects
-    /// of the workspace (<see cref="RDCoreReference.IsProject"/>).
+    /// (<see cref="RDCoreProject.KeepSystemTheme"/>), its <c>Make</c> section (<see cref="RDCoreProject.Make"/>), the <c>build</c> section's
+    /// <c>ConsoleApplication</c> output type (<see cref="ProjectOutputType.ConsoleApplication"/>), and the references to other projects of the workspace
+    /// (<see cref="RDCoreReference.IsProject"/>).
     /// </remarks>
-    public const string SchemaVersion = "1.3";
+    public const string SchemaVersion = "1.2";
 
     /// <summary>
     /// Where the text of a project file writes the project's name (<see cref="RDCoreProject.Name"/>): the value of its <c>Name</c> member, between its quotes.
@@ -579,8 +579,8 @@ public sealed record class RDCoreReference : IEquatable<RDCoreReference>
     /// <para>
     /// It is <see langword="false"/> for a reference that does not have it, and for one whose value is anything but the JSON <c>true</c>, such as
     /// <c>"true"</c> or <c>1</c>: a project file is never refused for it. It is written only when it is <see langword="true"/>, so a reference to a
-    /// library is written as it was before the format 1.3. A platform of the format 1.2 reads it as a member of the reference it does not know, and
-    /// writes it back as it was read (<see cref="ExtensionData"/>); to that platform, the reference is to a library of the project's name.
+    /// library is written as it was before the references to projects. A platform from before them reads it as a member of the reference it does not
+    /// know, and writes it back as it was read (<see cref="ExtensionData"/>); to that platform, the reference is to a library of the project's name.
     /// </para>
     /// </remarks>
     [JsonConverter(typeof(ProjectFlagJsonConverter))]
