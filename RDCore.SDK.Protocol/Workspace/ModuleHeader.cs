@@ -54,7 +54,8 @@ public static partial class ModuleHeader
 
     /// <summary>
     /// The line of <paramref name="source"/> a module's first attribute goes on, which is where an edit inserts its <c>Attribute VB_Name</c>
-    /// when its source writes none (MS-VBAL §4.2 names such a module by its file).
+    /// when its source writes none. A module's name is its <c>VB_Name</c> (<strong>MS-VBAL §4.2</strong>); a module whose source writes none is named
+    /// by its file.
     /// </summary>
     /// <remarks>
     /// The line follows the header: after the <c>VERSION</c> line, the <c>Object</c> lines of the controls the module uses, and the header's
