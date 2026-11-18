@@ -9,7 +9,6 @@ using RDCore.SDK.Model.Types;
 using RDCore.SDK.Model.Types.Abstract;
 using RDCore.SDK.Platform.Protocol;
 using RDCore.SDK.Platform.Components;
-using RDCore.SDK.Runtime.Libraries;
 
 namespace RDCore.Tests.Platform;
 
@@ -244,7 +243,7 @@ public sealed class SymbolDescriptorReaderTests
         Assert.IsInstanceOfType(module, expected);
         Assert.AreEqual(SymbolUri.Member(LibraryRoot, "Module1"), module.Uri);
         Assert.AreEqual(directives, module.Directives);
-        Assert.IsNull(module.GetProperty(SymbolProperties.Library), "ReferencedProjectSymbols.Of tags it");
+        Assert.IsNull(module.GetProperty(SymbolProperties.Library), "the host tags it");
         if (module is VBClassModuleSymbol)
         {
             Assert.IsTrue(module.GetProperty(SymbolProperties.PredeclaredId));
@@ -262,18 +261,5 @@ public sealed class SymbolDescriptorReaderTests
 
         Assert.ThrowsExactly<ArgumentException>(() => SymbolDescriptorReader.Read(request, Intrinsic));
         Assert.ThrowsExactly<ArgumentException>(() => SymbolDescriptorReader.LibraryModuleOf(request));
-    }
-
-    // what the host defines of a module of a referenced project: the module and its members as the reader makes them, and what of them the project gives.
-    [TestMethod]
-    public void AnExposedClassOfAReferencedProject_AndItsPublicMembers_AreNamesOfThatProject()
-    {
-        var request = LibraryRequest(ModuleType.ClassModule, new ModuleDirectives(Exposed: true), PublicProcedure("PlaceShip"));
-        var module = SymbolDescriptorReader.LibraryModuleOf(request)!;
-
-        var names = ReferencedProjectSymbols.Of(WorkspaceRoot, "NavalLib", [module, .. SymbolDescriptorReader.Read(request, Intrinsic)], 1);
-
-        CollectionAssert.AreEqual(new[] { "NavalLib", "Module1", "PlaceShip" }, names.Select(name => name.Name).ToArray());
-        Assert.IsTrue(names.All(name => name.GetProperty(SymbolProperties.Library) == "NavalLib"));
     }
 }

@@ -202,4 +202,17 @@ public sealed class SymbolUriTests
         StringAssert.Contains(Assert.Throws<ArgumentException>(() => SymbolUri.ProjectRootOf(relative)).Message, "Module1#Modèle");
         Assert.Throws<ArgumentException>(() => SymbolUri.SameRoot(relative, Root));
     }
+
+    [TestMethod]
+    public void TheDefaultInstanceOfAReferencedProjectsClass_IsAMemberOfItsModule_NamedAfterTheClass()
+    {
+        var classModule = SymbolUri.Module(Root, "Board");
+
+        var instance = SymbolUri.DefaultInstance(classModule);
+
+        Assert.AreEqual("Board.Board]Instance", SymbolUri.PathOf(instance));
+        Assert.AreEqual("Board", SymbolUri.NameOf(instance));
+        Assert.AreEqual("Board", SymbolUri.ModuleNameOf(instance));
+        Assert.AreNotEqual(SymbolUri.Member(classModule, "Board").AbsoluteUri, instance.AbsoluteUri);
+    }
 }

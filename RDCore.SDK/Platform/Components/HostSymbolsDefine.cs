@@ -198,9 +198,9 @@ public record class DefineSymbolsParams : IRequest, IRequest<DefineSymbolsResult
     /// <para>
     /// With a name, the module's symbols are names of that project in the session, as a library's are (<strong>MS-VBAL §4.1</strong>). The host makes
     /// the module symbol (<see cref="ModuleType"/>, <see cref="Directives"/>) at <see cref="ModuleUri"/>, which is under the referenced project's root, and
-    /// <see cref="WorkspaceRoot"/> still names the session. It defines what <see cref="Runtime.Libraries.ReferencedProjectSymbols.Of"/> keeps of the
-    /// module and its members, each tagged with this name (<see cref="SymbolProperties.Library"/>) and <see cref="LibraryPriority"/>
-    /// (<see cref="SymbolProperties.LibraryPriority"/>).
+    /// <see cref="WorkspaceRoot"/> still names the session. It defines what the referenced project makes accessible of the module and its members
+    /// (<strong>MS-VBAL §5.2.3</strong>, and <strong>§5.3.1</strong> for procedures), each tagged with this name (<see cref="SymbolProperties.Library"/>)
+    /// and <see cref="LibraryPriority"/> (<see cref="SymbolProperties.LibraryPriority"/>).
     /// </para>
     /// <para>
     /// What the host does by the module's name for a module of its own project is not done for it: a referenced project's <c>Module1</c> stands beside the
