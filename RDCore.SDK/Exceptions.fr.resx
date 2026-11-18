@@ -210,6 +210,15 @@
   <data name="FormDesigner_InvalidObjectStream" xml:space="preserve">
     <value>Les données de concepteur du formulaire ont un flux d&apos;objets (o) qui ne contient pas exactement les contrôles que décrivent ses sites.</value>
   </data>
+  <data name="FormDesigner_MissingDocument" xml:space="preserve">
+    <value>Le document RDForms du formulaire est absent : le fichier .xaml du même nom, à côté de son module .rdform, contient ses contrôles.</value>
+  </data>
+  <data name="FormDesigner_NoDocumentReader" xml:space="preserve">
+    <value>Aucun lecteur de documents RDForms (.xaml) n&apos;est inscrit : les contrôles du formulaire ne peuvent être lus.</value>
+  </data>
+  <data name="FormDesigner_InvalidDocument" xml:space="preserve">
+    <value>Le document RDForms (.xaml) du formulaire ne contient aucun formulaire.</value>
+  </data>
   <data name="ProjectFile_InvalidJson" xml:space="preserve">
     <value>Le fichier de projet &apos;{0}&apos; n&apos;est pas du JSON valide, à la ligne {1}, position {2} : {3}</value>
   </data>
