@@ -188,6 +188,78 @@ public static class RefactoringTitles
         return string.Format(culture, Messages.GetString($"Rename_{kind}", culture) ?? kind.ToString(), name, other ?? string.Empty, where ?? string.Empty);
     }
 
+    /// <summary>
+    /// The title of the code action that removes a parameter: <c>Remove parameter 'value'</c>.
+    /// </summary>
+    /// <param name="parameter">The name of the parameter.</param>
+    /// <param name="culture">The language of the reader; the current UI culture by default.</param>
+    public static string RemoveParameter(string parameter, CultureInfo? culture = null) => Say("RemoveParameter_Title", culture, parameter);
+
+    /// <summary>
+    /// Why the removal of a parameter is refused, as the user is told: <c>'value' is used at Module1 4:12: without the parameter, that name would refer to
+    /// nothing.</c>
+    /// </summary>
+    /// <param name="kind">Why the removal is refused.</param>
+    /// <param name="name">The parameter, or the procedure for a refusal of the procedure (<see cref="ParameterRemovalRefusalKind.Handler"/>,
+    /// <see cref="ParameterRemovalRefusalKind.UnknownDocumentHost"/>).</param>
+    /// <param name="other">The procedure the parameter is of, for <see cref="ParameterRemovalRefusalKind.Value"/>, <see cref="ParameterRemovalRefusalKind.Event"/>,
+    /// <see cref="ParameterRemovalRefusalKind.ExternalProcedure"/>, <see cref="ParameterRemovalRefusalKind.LateBound"/> and
+    /// <see cref="ParameterRemovalRefusalKind.CalledByName"/>. Unused by the other kinds.</param>
+    /// <param name="where">Where the refusal is, as the client names a position: the use, the argument, the call or the name. Unused by the kinds that name
+    /// no position.</param>
+    /// <param name="culture">The language of the reader; the current UI culture by default.</param>
+    /// <returns>The text, formatted with <paramref name="culture"/>; the name of <paramref name="kind"/> for a kind the platform has no text for.</returns>
+    public static string ParameterRemovalRefusal(
+        ParameterRemovalRefusalKind kind, string name, string? other = null, string? where = null, CultureInfo? culture = null)
+    {
+        culture ??= CultureInfo.CurrentUICulture;
+        return string.Format(culture, Messages.GetString($"RemoveParameter_{kind}", culture) ?? kind.ToString(), name, other ?? string.Empty, where ?? string.Empty);
+    }
+
+    /// <summary>
+    /// The title of the code action that reorders the parameters of a procedure: <c>Reorder the parameters of 'DoIt'</c>.
+    /// </summary>
+    /// <param name="procedure">The name of the procedure.</param>
+    /// <param name="culture">The language of the reader; the current UI culture by default.</param>
+    public static string ReorderParameters(string procedure, CultureInfo? culture = null) => Say("ReorderParameters_Title", culture, procedure);
+
+    /// <summary>
+    /// The label of the choice of the new order of the parameters, which the user is asked for.
+    /// </summary>
+    /// <param name="culture">The language of the reader; the current UI culture by default.</param>
+    public static string ReorderParametersChoice(CultureInfo? culture = null) => Say("ReorderParameters_Choice", culture);
+
+    /// <summary>
+    /// What the choice of <see cref="ReorderParametersChoice"/> is: the order of the parameters, in which every call passes its arguments.
+    /// </summary>
+    /// <param name="culture">The language of the reader; the current UI culture by default.</param>
+    public static string ReorderParametersChoiceDescription(CultureInfo? culture = null) => Say("ReorderParameters_ChoiceDescription", culture);
+
+    /// <summary>
+    /// What the user is told of an order they chose that is refused: <c>The change is not accepted: </c> and why.
+    /// </summary>
+    /// <param name="reason">Why the order is refused (<see cref="ParameterReorderRefusal"/>).</param>
+    /// <param name="culture">The language of the reader; the current UI culture by default.</param>
+    public static string ReorderParametersNotAccepted(string reason, CultureInfo? culture = null) => Say("ReorderParameters_NotAccepted", culture, reason);
+
+    /// <summary>
+    /// Why the reordering of a procedure's parameters is refused, as the user is told: <c>'ParamArray' is a ParamArray: it stays the last parameter.</c>
+    /// </summary>
+    /// <param name="kind">Why the reordering is refused.</param>
+    /// <param name="name">The procedure, or the parameter for a refusal of a parameter (<see cref="ParameterReorderRefusalKind.Optional"/>,
+    /// <see cref="ParameterReorderRefusalKind.ParamArray"/>).</param>
+    /// <param name="other">What else the refusal names: the optional parameter of <see cref="ParameterReorderRefusalKind.Optional"/>, the procedure of
+    /// <see cref="ParameterReorderRefusalKind.Mismatched"/>. Unused by the other kinds.</param>
+    /// <param name="where">Where the refusal is, as the client names a position: the call or the name. Unused by the kinds that name no position.</param>
+    /// <param name="culture">The language of the reader; the current UI culture by default.</param>
+    /// <returns>The text, formatted with <paramref name="culture"/>; the name of <paramref name="kind"/> for a kind the platform has no text for.</returns>
+    public static string ParameterReorderRefusal(
+        ParameterReorderRefusalKind kind, string name, string? other = null, string? where = null, CultureInfo? culture = null)
+    {
+        culture ??= CultureInfo.CurrentUICulture;
+        return string.Format(culture, Messages.GetString($"ReorderParameters_{kind}", culture) ?? kind.ToString(), name, other ?? string.Empty, where ?? string.Empty);
+    }
+
     private static string Say(string key, CultureInfo? culture, params object[] arguments)
     {
         culture ??= CultureInfo.CurrentUICulture;
