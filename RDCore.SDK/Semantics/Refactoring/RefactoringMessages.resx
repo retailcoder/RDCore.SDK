@@ -41,10 +41,16 @@
     <value>'{0}' is a control, which its form's designer names: renaming a control is not supported yet.</value>
   </data>
   <data name="Rename_UserFormControl" xml:space="preserve">
-    <value>'{0}' is a control of a UserForm, whose name is kept in the form's .frx file, which the rename cannot read or write: the control is not renamed.</value>
+    <value>'{0}' is a control of a UserForm, whose name is kept in the form's .frx file, which the server could not read as it is on disk: the control is not renamed.</value>
   </data>
   <data name="Rename_ControlNamedByProperty" xml:space="preserve">
     <value>'{0}' is the value of {1}, which may name the control: renaming a control that a property of its form names is not supported yet.</value>
+  </data>
+  <data name="Rename_UserFormControlNotWritten" xml:space="preserve">
+    <value>'{0}' cannot be renamed in its form's .frx file: {1}</value>
+  </data>
+  <data name="Rename_FileChangeNotUndoable" xml:space="preserve">
+    <value>Renaming '{0}' replaces its form's .frx file, and this editor cannot undo a file change if the rename fails: the control is not renamed.</value>
   </data>
   <data name="Rename_ExternalProcedure" xml:space="preserve">
     <value>'{0}' is an external procedure, which its library names: it cannot be renamed.</value>
