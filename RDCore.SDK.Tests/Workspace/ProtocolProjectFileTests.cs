@@ -95,20 +95,21 @@ public sealed class ProtocolProjectFileTests
     }
 
     // a project file's version is the version of its format, major.minor; what follows them is not compared. The first builds stamped 1.0.0, the next 0.1.x,
-    // and the format 1.0 came before 1.1, which adds the build section, and 1.2, which adds KeepSystemTheme, the Make section and the references to
-    // projects.
+    // and the format 1.0 came before 1.1, which adds the build section, 1.2, which adds KeepSystemTheme and the Make section, and 1.3, which adds the
+    // references to projects.
     [TestMethod]
     [DataRow(null, ProjectFileSchemaMatch.Unstamped)]
     [DataRow("", ProjectFileSchemaMatch.Unstamped)]
-    [DataRow("1.2", ProjectFileSchemaMatch.Same)]
-    [DataRow("1.2.0-rc3", ProjectFileSchemaMatch.Same)]
-    [DataRow("1.1",ProjectFileSchemaMatch.Older, DisplayName = "1.1, the format before KeepSystemTheme and the Make section")]
+    [DataRow("1.3", ProjectFileSchemaMatch.Same)]
+    [DataRow("1.3.0-rc3", ProjectFileSchemaMatch.Same)]
+    [DataRow("1.2", ProjectFileSchemaMatch.Older, DisplayName = "1.2, the format before the references to projects")]
+    [DataRow("1.1", ProjectFileSchemaMatch.Older, DisplayName = "1.1, the format before KeepSystemTheme and the Make section")]
     [DataRow("1.0", ProjectFileSchemaMatch.Older, DisplayName = "1.0, the format before the build section")]
     [DataRow("1.0.0", ProjectFileSchemaMatch.Older, DisplayName = "1.0.0, as the first builds stamped it")]
     [DataRow("0.1.3", ProjectFileSchemaMatch.Older, DisplayName = "0.1.3, as the next builds stamped it")]
     [DataRow("0.87.2-rc3", ProjectFileSchemaMatch.Older)]
-    [DataRow("1.3", ProjectFileSchemaMatch.NewerMinor)]
-    [DataRow("1.3.0+abc", ProjectFileSchemaMatch.NewerMinor)]
+    [DataRow("1.4", ProjectFileSchemaMatch.NewerMinor)]
+    [DataRow("1.4.0+abc", ProjectFileSchemaMatch.NewerMinor)]
     [DataRow("2.0", ProjectFileSchemaMatch.NewerMajor)]
     [DataRow("2", ProjectFileSchemaMatch.NewerMajor, DisplayName = "a lone number is a major")]
     [DataRow("v1.0", ProjectFileSchemaMatch.Unparseable)]
@@ -246,12 +247,13 @@ public sealed class ProtocolProjectFileTests
 
     // a file in an older format, or no format, is in this one once it is written: only a newer one keeps its stamp.
     [TestMethod]
-    [DataRow("1.1", "1.2")]
-    [DataRow("1.0", "1.2")]
-    [DataRow("1.0.0", "1.2")]
-    [DataRow("0.1.3", "1.2")]
-    [DataRow("v1", "1.2")]
-    [DataRow("", "1.2")]
+    [DataRow("1.2", "1.3")]
+    [DataRow("1.1", "1.3")]
+    [DataRow("1.0", "1.3")]
+    [DataRow("1.0.0", "1.3")]
+    [DataRow("0.1.3", "1.3")]
+    [DataRow("v1", "1.3")]
+    [DataRow("", "1.3")]
     [DataRow("1.4", "1.4")]
     [DataRow("3.0", "3.0")]
     public void AWrittenFile_IsStampedWithThisPlatformsFormat_UnlessItIsInANewerOne(string version, string stamped)
@@ -445,7 +447,7 @@ public sealed class ProtocolProjectFileTests
     [DataRow("""{ "Name": "NavalLib", "IsProject": [ true ] }""", false, DisplayName = "an array")]
     public async Task AReferenceToAProject_IsReadAsFilesHaveIt(string reference, bool isProject)
     {
-        var project = await ReadAsync($$"""{ "Version": "1.2", "ProjectInfo": { "Name": "P", "References": [ {{reference}} ] } }""");
+        var project = await ReadAsync($$"""{ "Version": "1.3", "ProjectInfo": { "Name": "P", "References": [ {{reference}} ] } }""");
 
         var read = project.ProjectInfo.References.Single();
         Assert.AreEqual("NavalLib", read.Name);
@@ -491,21 +493,20 @@ public sealed class ProtocolProjectFileTests
         CollectionAssert.AreEqual(new[] { "NavalLib", "NavalShared" }, project.ProjectReferences.Select(reference => reference.Name).ToArray());
     }
 
-    // a platform from before the references to projects, whose model of a reference has no IsProject, keeps it as a member it does not know, and writes
-    // it back as it was read.
+    // a platform of the format 1.2, whose model of a reference has no IsProject, keeps it as a member it does not know, and writes it back as it was read.
     [TestMethod]
     public void AReferenceToAProject_IsKeptAsRead_ByAModelThatDoesNotKnowIt()
     {
         const string json = """{"Name":"NavalLib","IsProject":true}""";
 
-        var older = JsonSerializer.Deserialize<ReferenceBeforeProjects>(json)!;
+        var older = JsonSerializer.Deserialize<ReferenceOfTheFormat12>(json)!;
 
         Assert.IsTrue(older.ExtensionData!.ContainsKey(nameof(RDCoreReference.IsProject)));
         Assert.AreEqual(json, JsonSerializer.Serialize(older));
     }
 
-    // what a platform from before the references to projects has of a reference: its name, and the members it keeps as they were read.
-    private sealed record class ReferenceBeforeProjects
+    // what a platform of the format 1.2 has of a reference, for what it does not know: its name, and the members it keeps as they were read.
+    private sealed record class ReferenceOfTheFormat12
     {
         public string Name { get; init; } = string.Empty;
 
