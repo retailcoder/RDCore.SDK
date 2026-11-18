@@ -248,7 +248,8 @@ public sealed record class ClassDescription
     /// <remarks>
     /// <para>
     /// <see cref="LibrarySymbolReader"/> reads each as one of the class symbol's <see cref="Model.Symbols.VBClassModuleSymbol.ImplementedInterfaces"/>,
-    /// after its <see cref="DefaultInterface"/>, once every library it is given is read: the class named can be of a library listed after this one. A name
+    /// after its <see cref="DefaultInterface"/>, and the class's type has the type of each among its
+    /// <see cref="Model.Types.Complex.VBClassType.Supertypes"/>, whatever the order of the libraries it is given: the classes named are read first. A name
     /// that names none of the classes read, the class itself, and a class named twice are left out.
     /// </para>
     /// <para>

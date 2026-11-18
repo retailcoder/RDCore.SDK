@@ -40,7 +40,15 @@ namespace RDCore.SDK.Runtime.Libraries;
 /// <para>
 /// An object of a class is of the class's default interface (<see cref="ClassDescription.DefaultInterface"/>) and of each class its description names
 /// (<see cref="ClassDescription.Implements"/>): each is one of the class symbol's <see cref="VBClassModuleSymbol.ImplementedInterfaces"/>, the default
-/// interface first. The classes named are given to the symbol once every library is read, as a class can name one of a library listed after its own.
+/// interface first, and the class's type has the type of each among its <see cref="VBClassType.Supertypes"/>. They are given to the symbol when it is
+/// created, as its default interface is: the classes of a library are read after those of the libraries it depends on or names a class of, whatever the
+/// order of the list, and a class after the classes of its own library it names.
+/// </para>
+/// <para>
+/// Classes that name one another as classes their objects are as well cannot each be created after the other. The one created first is created again once
+/// the others are, with the classes it names, and until then a type that names it is resolved by its name when it is used (<see cref="VBUnresolvedType"/>).
+/// The class that closes such a cycle holds the symbols the others had before it was created, which lack it: a walk of the interfaces that starts at it
+/// reaches every class of the cycle all the same, since it is where the walk starts.
 /// </para>
 /// <para>
 /// An application object (<see cref="ClassDescription.IsApplication"/>) is a class like any other, except the Visual Basic 6.0 library's (<c>VB.Global</c>,
@@ -58,7 +66,10 @@ public sealed class LibrarySymbolReader(Uri workspaceRoot, bool is64Bit = true)
     /// <summary>
     /// Reads the symbols of libraries.
     /// </summary>
-    /// <param name="libraries">The libraries, each after those it depends on (<see cref="ReferencedLibraries.Libraries"/>).</param>
+    /// <param name="libraries">
+    /// The libraries (<see cref="ReferencedLibraries.Libraries"/>), in the order the symbols are returned in. Each is read after those of the list it depends
+    /// on, wherever it is listed.
+    /// </param>
     /// <param name="priorities">
     /// The reference precedence of each library (<see cref="ReferencedLibraries.Priorities"/>), which every symbol that is a name of the project carries
     /// (<see cref="SymbolProperties.LibraryPriority"/>). The position of a library among the others when omitted, from <c>1</c>: the first ranks highest.
@@ -86,15 +97,20 @@ public sealed class LibrarySymbolReader(Uri workspaceRoot, bool is64Bit = true)
             }
         }
 
-        var types = new TypeNames(declared, enums, classes, is64Bit);
-        foreach (var library in libraries)
+        // the classes and modules of each library, read in the order of their dependencies and returned in the order of the list.
+        var read = libraries.ToDictionary(library => library.Name, _ => ImmutableArray.CreateBuilder<Symbol>(), StringComparer.OrdinalIgnoreCase);
+        var implemented = new ImplementedClasses(libraries, classes, read);
+        var types = new TypeNames(declared, enums, classes, implemented, is64Bit);
+        foreach (var library in InDependencyOrder(libraries, declared))
         {
+            var own = read[library.Name];
             var reading = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var byName = library.Classes
                 .GroupBy(description => description.Name, StringComparer.OrdinalIgnoreCase)
                 .ToDictionary(group => group.Key, group => group.First(), StringComparer.OrdinalIgnoreCase);
 
-            // a class is read after the classes of the library it names; a class that is being read already is a cycle, and names no type until it is used.
+            // a class is read after the classes of the library it names, as types and as classes its objects are as well; a class that is being read already
+            // is a cycle, and names no type until it is used.
             void ReadAfterDependencies(ClassDescription description)
             {
                 if (classes.ContainsKey((library.Name, description.Name)) || !reading.Add(description.Name))
@@ -102,7 +118,10 @@ public sealed class LibrarySymbolReader(Uri workspaceRoot, bool is64Bit = true)
                     return;
                 }
 
-                foreach (var named in ClassesNamedBy(description).Where(name => byName.ContainsKey(name)))
+                var namedClasses = ClassesNamedBy(description).Concat(ImplementedClasses.NamesOf(library, description)
+                    .Where(key => key.Library.Equals(library.Name, StringComparison.OrdinalIgnoreCase))
+                    .Select(key => key.Name));
+                foreach (var named in namedClasses.Where(name => byName.ContainsKey(name)))
                 {
                     ReadAfterDependencies(byName[named]);
                 }
@@ -112,8 +131,8 @@ public sealed class LibrarySymbolReader(Uri workspaceRoot, bool is64Bit = true)
                 {
                     var module = new VBStandardModuleSymbol(workspaceRoot, new VBProjectSymbol(workspaceRoot, library.Name).Uri, description.Name)
                         .With(SymbolProperties.Library, library.Name);
-                    symbols.Add(module);
-                    symbols.AddRange(description.Members.Select(member => ReadMember(library, description.Name, member, module.Uri, types, ScopeKind.Module)));
+                    own.Add(module);
+                    own.AddRange(description.Members.Select(member => ReadMember(library, description.Name, member, module.Uri, types, ScopeKind.Module)));
                     return;
                 }
 
@@ -125,12 +144,15 @@ public sealed class LibrarySymbolReader(Uri workspaceRoot, bool is64Bit = true)
                 {
                     var defaultInterface = InterfaceOf(library, symbol, interfaceName);
                     classes[(library.Name, interfaceName)] = VBClassType.FromClassModule(defaultInterface);
-                    symbols.Add(defaultInterface);
+                    own.Add(defaultInterface);
                     symbol = symbol with { ImplementedInterfaces = [defaultInterface] };
+                    implemented.Created((library.Name, interfaceName));
                 }
 
+                symbol = implemented.Give(library, description, symbol);
                 classes[(library.Name, description.Name)] = VBClassType.FromClassModule(symbol);
-                symbols.Add(symbol);
+                own.Add(symbol);
+                implemented.Created((library.Name, description.Name));
             }
 
             foreach (var description in library.Classes)
@@ -144,13 +166,16 @@ public sealed class LibrarySymbolReader(Uri workspaceRoot, bool is64Bit = true)
             {
                 var module = new VBStandardModuleSymbol(workspaceRoot, new VBProjectSymbol(workspaceRoot, library.Name).Uri, description.Name)
                     .With(SymbolProperties.Library, library.Name);
-                symbols.Add(module);
-                symbols.AddRange(description.Members.Select(member => ReadMember(library, description.Name, member, module.Uri, types, ScopeKind.Module)));
-                symbols.AddRange(description.Constants.Select(constant => ReadConstant(library, constant, module.Uri, types)).OfType<Symbol>());
+                own.Add(module);
+                own.AddRange(description.Members.Select(member => ReadMember(library, description.Name, member, module.Uri, types, ScopeKind.Module)));
+                own.AddRange(description.Constants.Select(constant => ReadConstant(library, constant, module.Uri, types)).OfType<Symbol>());
             }
         }
 
-        ReadImplements(libraries, classes, symbols);
+        foreach (var library in libraries)
+        {
+            symbols.AddRange(read[library.Name]);
+        }
 
         // what shadows what is read off the symbols that are names of the project - the library's project, its module of enumerations, the enumerations and their
         // constants, the classes, the library's modules and their procedures, and the Visual Basic 6.0 library's Global module and its members. The members of a class are reached through an object, and no
@@ -161,70 +186,162 @@ public sealed class LibrarySymbolReader(Uri workspaceRoot, bool is64Bit = true)
             : symbol)];
     }
 
-    // the classes an object of a class is as well (ClassDescription.Implements), read once every library is: a library names a class of one that can be listed
-    // after it. Each is one of the class's implemented interfaces, after its default interface, and the class's symbol is replaced with the one that has them.
-    private static void ReadImplements(
+    // the libraries, each after those of the list it depends on or names a class of (ClassDescription.Implements), and in the order of the list otherwise.
+    // Where libraries depend on one another, the one listed first is read after those it depends on.
+    private static List<LibraryDescription> InDependencyOrder(IReadOnlyList<LibraryDescription> libraries, Dictionary<string, LibraryDescription> declared)
+    {
+        var order = new List<LibraryDescription>(libraries.Count);
+        var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        void Visit(LibraryDescription library)
+        {
+            if (!visited.Add(library.Name))
+            {
+                return;
+            }
+
+            var dependencies = library.DependsOn.Select(dependency => dependency.Name)
+                .Concat(library.Classes.SelectMany(description => ImplementedClasses.NamesOf(library, description)).Select(key => key.Library));
+            foreach (var name in dependencies)
+            {
+                if (declared.TryGetValue(name, out var dependency))
+                {
+                    Visit(dependency);
+                }
+            }
+
+            order.Add(library);
+        }
+
+        foreach (var library in libraries)
+        {
+            Visit(library);
+        }
+
+        return order;
+    }
+
+    // the classes an object of a class is as well (ClassDescription.Implements), given to the class's symbol when it is created: each is one of its
+    // implemented interfaces, after its default interface. A class named that is not created yet, but is a class of the libraries read, is one the class
+    // waits for: classes that name one another, or classes of libraries that depend on one another. The class is created again, with the classes it names,
+    // once every class it waits for is created, and until then a type that names it is resolved by its name when it is used.
+    private sealed class ImplementedClasses(
         IReadOnlyList<LibraryDescription> libraries,
         Dictionary<(string Library, string Name), VBClassType> classes,
-        ImmutableArray<Symbol>.Builder symbols)
+        Dictionary<string, ImmutableArray<Symbol>.Builder> read)
     {
-        var implementing = libraries
-            .SelectMany(library => library.Classes.Where(description => !description.Implements.IsDefaultOrEmpty)
-                .Select(description => (library, description)))
-            .GroupBy(entry => (entry.library.Name, entry.description.Name), TypeKeyComparer.Instance)
-            .ToDictionary(group => group.Key, group => group.First(), TypeKeyComparer.Instance);
-        var done = new HashSet<(string Library, string Name)>(TypeKeyComparer.Instance);
+        // what each library creates a class symbol of: its classes, except the Visual Basic 6.0 library's application object, and their default interfaces.
+        private readonly HashSet<(string Library, string Name)> _declared = new(
+            libraries.SelectMany(library => library.Classes
+                .Where(description => !(description.IsApplication && IsVisualBasic(library)))
+                .SelectMany(description => description.DefaultInterface is { Length: > 0 } interfaceName
+                    ? [(library.Name, description.Name), (library.Name, interfaceName)]
+                    : new[] { (library.Name, description.Name) })),
+            TypeKeyComparer.Instance);
 
-        // a class is given its classes after each of them is given its own, so that a class names the symbol that has them; where two name each other, the
-        // one that is given its classes first names the other's symbol as it was, which has the same Uri and so is the same class.
-        void Read((string Library, string Name) key)
+        private readonly List<Waiting> _waiting = [];
+
+        private sealed class Waiting(
+            (string Library, string Name) key,
+            VBClassModuleSymbol created,
+            (string Library, string Name)[] named,
+            HashSet<(string Library, string Name)> awaited)
         {
-            if (!done.Add(key) || !implementing.TryGetValue(key, out var entry)
-                || !classes.TryGetValue(key, out var classType))
-            {
-                return;
-            }
+            public (string Library, string Name) Key { get; } = key;
+            public VBClassModuleSymbol Created { get; } = created;
+            public (string Library, string Name)[] Named { get; } = named;
+            public HashSet<(string Library, string Name)> Awaited { get; } = awaited;
+        }
 
-            // a qualified name is a class of the library it names, and one that is not is a class of this library. A name that names none of the classes read
-            // (an unknown class, or a class of a library that is not in the list) is left out, as a workspace class's Implements of a name that resolves to
-            // no class is, and so is the class itself.
-            var named = entry.description.Implements
+        // a qualified name is a class of the library it names, and one that is not is a class of this library; the class itself is left out.
+        public static IEnumerable<(string Library, string Name)> NamesOf(LibraryDescription library, ClassDescription description)
+            => description.Implements
                 .Select(name => name.Trim())
-                .Select(name => name.IndexOf('.') is var split and > 0 ? (name[..split], name[(split + 1)..]) : (entry.library.Name, name))
-                .Where(classes.ContainsKey)
-                .ToArray();
-            foreach (var other in named)
+                .Select(name => name.IndexOf('.') is var split and > 0 ? (name[..split], name[(split + 1)..]) : (library.Name, name))
+                .Where(key => !TypeKeyComparer.Instance.Equals(key, (library.Name, description.Name)));
+
+        public bool IsWaiting((string Library, string Name) key) => _waiting.Any(waiting => TypeKeyComparer.Instance.Equals(waiting.Key, key));
+
+        public VBClassModuleSymbol Give(LibraryDescription library, ClassDescription description, VBClassModuleSymbol symbol)
+        {
+            var key = (library.Name, description.Name);
+            var named = NamesOf(library, description).ToArray();
+            if (named.Length == 0)
             {
-                Read(other);
+                return symbol;
             }
 
-            var symbol = classType.Symbol;
-            var seen = new HashSet<string>(StringComparer.Ordinal) { symbol.Uri.AbsoluteUri };
-            ImmutableArray<VBClassModuleSymbol> interfaces =
-            [
-                .. symbol.ImplementedInterfaces.Where(implemented => seen.Add(implemented.Uri.AbsoluteUri)),
-                .. named.Select(other => classes[other].Symbol).Where(implemented => seen.Add(implemented.Uri.AbsoluteUri)),
-            ];
-            if (interfaces.Length == symbol.ImplementedInterfaces.Length)
+            // a class named that is created already, and waits for others, has an earlier symbol of theirs, so this one waits for them too.
+            var awaited = new HashSet<(string Library, string Name)>(TypeKeyComparer.Instance);
+            foreach (var name in named)
+            {
+                if (!classes.ContainsKey(name))
+                {
+                    if (_declared.Contains(name))
+                    {
+                        awaited.Add(name);
+                    }
+                }
+                else if (_waiting.FirstOrDefault(waiting => TypeKeyComparer.Instance.Equals(waiting.Key, name)) is { } other)
+                {
+                    awaited.UnionWith(other.Awaited);
+                }
+            }
+
+            awaited.Remove(key);
+            if (awaited.Count > 0)
+            {
+                _waiting.Add(new Waiting(key, symbol, named, awaited));
+            }
+
+            return With(symbol, named);
+        }
+
+        // each class that waits for no other once this one is created is created again, in the order they were first created, so that one that names another
+        // that waited has the symbol it is created again as.
+        public void Created((string Library, string Name) created)
+        {
+            if (_waiting.Count == 0)
             {
                 return;
             }
 
-            var replaced = symbol with { ImplementedInterfaces = interfaces };
-            classes[key] = VBClassType.FromClassModule(replaced);
-            for (var index = 0; index < symbols.Count; index++)
+            foreach (var waiting in _waiting)
             {
-                if (ReferenceEquals(symbols[index], symbol))
+                waiting.Awaited.Remove(created);
+            }
+
+            var ready = _waiting.Where(waiting => waiting.Awaited.Count == 0).ToArray();
+            _waiting.RemoveAll(waiting => waiting.Awaited.Count == 0);
+            foreach (var waiting in ready)
+            {
+                var earlier = classes[waiting.Key].Symbol;
+                var again = With(waiting.Created, waiting.Named);
+                classes[waiting.Key] = VBClassType.FromClassModule(again);
+
+                var own = read[waiting.Key.Library];
+                for (var index = 0; index < own.Count; index++)
                 {
-                    symbols[index] = replaced;
-                    break;
+                    if (ReferenceEquals(own[index], earlier))
+                    {
+                        own[index] = again;
+                        break;
+                    }
                 }
             }
         }
 
-        foreach (var key in implementing.Keys)
+        // a name that names none of the classes created (an unknown class, or a class of a library that is not in the list) is left out, as a workspace
+        // class's Implements of a name that resolves to no class is; a class named twice is there once.
+        private VBClassModuleSymbol With(VBClassModuleSymbol symbol, (string Library, string Name)[] named)
         {
-            Read(key);
+            var seen = new HashSet<string>(StringComparer.Ordinal) { symbol.Uri.AbsoluteUri };
+            ImmutableArray<VBClassModuleSymbol> interfaces =
+            [
+                .. symbol.ImplementedInterfaces.Where(implemented => seen.Add(implemented.Uri.AbsoluteUri)),
+                .. named.Where(classes.ContainsKey).Select(name => classes[name].Symbol).Where(implemented => seen.Add(implemented.Uri.AbsoluteUri)),
+            ];
+            return interfaces.Length == symbol.ImplementedInterfaces.Length ? symbol : symbol with { ImplementedInterfaces = interfaces };
         }
     }
 
@@ -534,6 +651,7 @@ public sealed class LibrarySymbolReader(Uri workspaceRoot, bool is64Bit = true)
         Dictionary<string, LibraryDescription> libraries,
         Dictionary<(string Library, string Name), VBEnumType> enums,
         Dictionary<(string Library, string Name), VBClassType> classes,
+        ImplementedClasses implemented,
         bool is64Bit)
     {
         public VBType Resolve(string name, LibraryDescription from)
@@ -578,8 +696,10 @@ public sealed class LibrarySymbolReader(Uri workspaceRoot, bool is64Bit = true)
                 : text);
         }
 
+        // a class that waits for the classes its objects are as well is created again once they are, so a type that names it now is resolved by its name.
         private VBType? Find(string library, string name)
             => enums.TryGetValue((library, name), out var enumType) ? enumType
+                : implemented.IsWaiting((library, name)) ? new VBUnresolvedType($"{library}.{name}")
                 : classes.TryGetValue((library, name), out var classType) ? classType
                 : null;
     }
