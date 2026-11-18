@@ -99,6 +99,24 @@ public static class SymbolProperties
     /// </summary>
     public static readonly SymbolProperty<int> LibraryPriority = new(nameof(LibraryPriority));
     /// <summary>
+    /// Whether a symbol of a <see cref="Library"/> is of a <em>source project</em> (<strong>MS-VBAL §4.1</strong>): a project of VBA modules that the
+    /// enclosing project references, whose code is loaded and runs in the session as the enclosing project's own code does. <c>false</c> when unset.
+    /// </summary>
+    /// <remarks>
+    /// A symbol that carries a <see cref="Library"/> and not this fact is of a <em>library project</em> (<strong>MS-VBAL §4.1</strong>): the standard
+    /// library, or a type library, whose members are implemented outside the session and are not VBA source the session runs. A symbol of the enclosing
+    /// project carries neither. This fact is unrelated to <see cref="Workspace.RDCoreProject.SourceProject"/>, which names the <c>.vbp</c> file a project
+    /// was imported from.
+    /// </remarks>
+    public static readonly SymbolProperty<bool> OfSourceProject = new(nameof(OfSourceProject));
+    /// <summary>
+    /// Whether a symbol is of a <em>library project</em> (<strong>MS-VBAL §4.1</strong>): it carries a <see cref="Library"/>, and is not
+    /// <see cref="OfSourceProject"/>. Its members are implemented outside the session.
+    /// </summary>
+    /// <param name="symbol">The symbol.</param>
+    /// <returns><see langword="false"/> for a symbol of the enclosing project, and for one of a source project it references.</returns>
+    public static bool IsOfALibraryProject(Symbol symbol) => symbol.GetProperty(Library) is not null && !symbol.GetProperty(OfSourceProject);
+    /// <summary>
     /// The value of the <c>VB_Exposed</c> attribute of a <see cref="VBClassModuleSymbol"/>
     /// </summary>
     public static readonly SymbolProperty<bool> Exposed = new(nameof(Exposed));
