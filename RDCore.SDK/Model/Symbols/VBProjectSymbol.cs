@@ -15,7 +15,7 @@ namespace RDCore.SDK.Model.Symbols;
 /// The enclosing project's symbol has no <see cref="SymbolProperties.Library"/>. A referenced library is a project symbol of its own, named for
 /// the library, with <see cref="SymbolProperties.Library"/> set to that name, as are the symbols it declares (<c>LibrarySymbolReader</c>, and
 /// the standard library's symbol provider). The property is what tells a library's types from those of the enclosing project, and from
-/// those of another library (<see cref="ISymbolResolver.ResolveProjectType"/>).
+/// those of another library (<see cref="ISymbolResolver.ResolveProjectType(VBProjectSymbol, string)"/>).
 /// </remarks>
 /// <param name="WorkspaceRoot">A <c>Uri</c> representing the absolute path to the workspace.</param>
 /// <param name="Name">The project's own name (its <c>.rdproj</c>/VBA project name).</param>
@@ -34,8 +34,9 @@ public sealed record class VBProjectSymbol(Uri WorkspaceRoot, string Name)
     /// candidate, since neither can contain a type. A <c>Type</c> of the enclosing module that shares the project's
     /// name therefore does not stand in for the project in <c>Project.ClassName</c>, though it is still what the bare
     /// name <c>Project</c> means. When the qualifier is a project, the enclosing one or a referenced library,
-    /// <paramref name="name"/> is looked up among that project's types (<see cref="ISymbolResolver.ResolveProjectType"/>), not from
-    /// <paramref name="handle"/>, so nothing declared in the enclosing module can hide the project's module or type it names. When the qualifier
+    /// <paramref name="name"/> is looked up among that project's types as the code at <paramref name="handle"/> sees them
+    /// (<see cref="ISymbolResolver.ResolveProjectType(VBProjectSymbol, string, Uri)"/>), and not in the scope of <paramref name="handle"/>, so nothing
+    /// declared in the enclosing module can hide the project's module or type it names. When the qualifier
     /// is a module, <paramref name="name"/> is a <c>Type</c> or an <c>Enum</c> of that module (<strong>MS-VBAL §5.6.12</strong>): any of the module's own
     /// from within the module, and from outside it one that <paramref name="visibility"/> says <paramref name="originProject"/> sees. A qualifier that
     /// resolves to neither a project nor a module stays unbound.
@@ -60,7 +61,7 @@ public sealed record class VBProjectSymbol(Uri WorkspaceRoot, string Name)
 
         return resolver.ResolveQualifier(qualifier, ScopeKind.Global, handle).Symbol switch
         {
-            VBProjectSymbol project => resolver.ResolveProjectType(project, name),
+            VBProjectSymbol project => resolver.ResolveProjectType(project, name, handle),
             VBModuleSymbol module => ResolveTypeOfModule(resolver, module, name, handle, visibility, originProject),
             _ => SymbolResolutionResult.Unbound,
         };
