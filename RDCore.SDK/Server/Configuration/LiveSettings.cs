@@ -200,6 +200,17 @@ public sealed class LiveSettings(IEnumerable<LiveSettingsTarget> targets, Settin
     /// <inheritdoc/>
     public event EventHandler? Changed;
 
+    /// <summary>
+    /// What the component's workspace sets (<see cref="WorkspaceSettingsStore.Values"/>), by the keys under <see cref="SettingsSchema.Root"/>, separated by
+    /// <c>:</c>; none unless said otherwise.
+    /// </summary>
+    /// <remarks>
+    /// The workspace's settings are a layer above the user's (<see cref="WorkspaceSettingsConfiguration.AddWorkspaceSettings"/>), and what a client says is
+    /// what its user set: a live setting the workspace sets keeps the workspace's value, whatever the client says, and a list the client says is the client's
+    /// items followed by the workspace's own that are not among them.
+    /// </remarks>
+    public IReadOnlyDictionary<string, string> Workspace { get; init; } = new Dictionary<string, string>();
+
     /// <inheritdoc/>
     public IReadOnlyDictionary<string, string> Current => _snapshot?.Received ?? UserLiveSettings();
 
@@ -321,17 +332,29 @@ public sealed class LiveSettings(IEnumerable<LiveSettingsTarget> targets, Settin
         }
     }
 
-    // every live setting of the component takes the value it is said to have, or the one it started with.
+    // every live setting of the component takes the value it is said to have, under what its workspace sets, or the one it started with, which the workspace's
+    // settings are already a layer of.
     private void Set(IReadOnlyDictionary<string, string> settings)
     {
         foreach (var target in _targets)
         {
             foreach (var (setting, property, owner, started) in target.Settings)
             {
-                property.SetValue(owner, ValueOf(setting, settings, property.PropertyType) is { } value ? value : started);
+                property.SetValue(owner, ValueOf(setting, settings, property.PropertyType) is { } value
+                    ? Layered(value, ValueOf(setting, Workspace, property.PropertyType))
+                    : started);
             }
         }
     }
+
+    // a value the workspace sets takes the place of the one said; a list the workspace sets adds its items to the one said.
+    private static object Layered(object said, object? workspace) => (said, workspace) switch
+    {
+        (_, null) => said,
+        (string[] items, IEnumerable<string> added) => items.Union(added, StringComparer.OrdinalIgnoreCase).ToArray(),
+        (List<string> items, IEnumerable<string> added) => new List<string>(items.Union(added, StringComparer.OrdinalIgnoreCase)),
+        _ => workspace,
+    };
 
     // a value the setting can be, as the type of its property has it; nothing when it is said to have none, or one it cannot be.
     private static object? ValueOf(SettingDescriptor setting, IReadOnlyDictionary<string, string> settings, Type type)

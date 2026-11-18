@@ -433,7 +433,7 @@ public static class UserSettingsConfiguration
         return builder;
     }
 
-    private sealed class UserSettingsConfigurationSource(SettingsSchema schema) : JsonConfigurationSource
+    internal sealed class UserSettingsConfigurationSource(SettingsSchema schema) : JsonConfigurationSource
     {
         public override IConfigurationProvider Build(IConfigurationBuilder builder)
         {
