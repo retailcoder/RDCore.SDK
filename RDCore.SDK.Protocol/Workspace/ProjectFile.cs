@@ -28,9 +28,10 @@ public sealed record class ProjectFile : IEquatable<ProjectFile>
     /// <c>0.1.x</c> by the next. They read as the format 1.0 and an older one (<see cref="SchemaOf"/>), and are both the format 1.0. The format 1.1 adds the
     /// project's <c>build</c> section (<see cref="RDCoreProject.Build"/>), and the format 1.2 the project's <c>KeepSystemTheme</c>
     /// (<see cref="RDCoreProject.KeepSystemTheme"/>), its <c>Make</c> section (<see cref="RDCoreProject.Make"/>), and the <c>build</c> section's
-    /// <c>ConsoleApplication</c> output type (<see cref="ProjectOutputType.ConsoleApplication"/>).
+    /// <c>ConsoleApplication</c> output type (<see cref="ProjectOutputType.ConsoleApplication"/>). The format 1.3 adds the references to other projects
+    /// of the workspace (<see cref="RDCoreReference.IsProject"/>).
     /// </remarks>
-    public const string SchemaVersion = "1.2";
+    public const string SchemaVersion = "1.3";
 
     /// <summary>
     /// Where the text of a project file writes the project's name (<see cref="RDCoreProject.Name"/>): the value of its <c>Name</c> member, between its quotes.
@@ -370,6 +371,12 @@ public record class RDCoreProject
     public RDCoreReference[] References { get; init; } = [];
 
     /// <summary>
+    /// The project's references to other projects of the workspace, in their priority order (<see cref="RDCoreReference.IsProject"/>).
+    /// </summary>
+    [JsonIgnore]
+    public IEnumerable<RDCoreReference> ProjectReferences => References.Where(reference => reference.IsProject);
+
+    /// <summary>
     /// The project's modules: its source files, by their paths relative to the workspace root (<strong>RD-VBAL §2.2.3.3</strong>).
     /// </summary>
     public RDCoreModule[] Modules { get; init; } = [];
@@ -558,6 +565,27 @@ public sealed record class RDCoreReference : IEquatable<RDCoreReference>
     /// Whether the reference cannot be removed from the project.
     /// </summary>
     public bool IsUnremovable { get; init; } = false;
+
+    /// <summary>
+    /// Whether the reference is to another project of the workspace, which its <see cref="Name"/> names, instead of a library
+    /// (<strong>RD-VBAL §2.2.3.2</strong>).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A project is referenced by its name alone, resolved among the projects of the workspace. The reference has no path, and the members that find a
+    /// library (<see cref="AbsolutePath"/>, <see cref="Guid"/>, <see cref="Major"/>, <see cref="Minor"/>, <see cref="TypeLibInfoPath"/>) are not read
+    /// for it. It is written <c>"IsProject": true</c>: <c>{ "Name": "NavalLib", "IsProject": true }</c>.
+    /// </para>
+    /// <para>
+    /// It is <see langword="false"/> for a reference that does not have it, and for one whose value is anything but the JSON <c>true</c>, such as
+    /// <c>"true"</c> or <c>1</c>: a project file is never refused for it. It is written only when it is <see langword="true"/>, so a reference to a
+    /// library is written as it was before the format 1.3. A platform of the format 1.2 reads it as a member of the reference it does not know, and
+    /// writes it back as it was read (<see cref="ExtensionData"/>); to that platform, the reference is to a library of the project's name.
+    /// </para>
+    /// </remarks>
+    [JsonConverter(typeof(ProjectFlagJsonConverter))]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public bool IsProject { get; init; }
 
     /// <summary>
     /// The members of the reference this model does not know, as they were read, which are written back (<see cref="ProjectFile.ExtensionData"/>).

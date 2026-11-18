@@ -44,20 +44,30 @@ public sealed class LibrarySymbolProvider : ISymbolProvider
     /// <param name="references">
     /// The references of the project. A reference that gives the identifier of a type library (<see cref="RDCoreReference.Guid"/>) is to the description made from
     /// it, of its <see cref="RDCoreReference.Major"/> version and of exactly its <see cref="RDCoreReference.Minor"/> one, or else the highest above it
-    /// (<see cref="LibraryIdentity"/>); one that gives none is to the library of its name.
+    /// (<see cref="LibraryIdentity"/>); one that gives none is to the library of its name. A reference to another project of the workspace
+    /// (<see cref="RDCoreReference.IsProject"/>) is not loaded, and keeps its place in the order: its number in
+    /// <see cref="ReferencedLibraries.Priorities"/> is the precedence of the project's members.
     /// </param>
     /// <param name="language">
     /// The language the project is written in, whose implicit references (<see cref="SupportedLanguage.ImplicitReferences"/>) come before the ones the project lists;
     /// RD-VBA, which has none, when it is not given.
     /// </param>
     public static ReferencedLibraries Load(ILibrarySource source, IEnumerable<RDCoreReference> references, SupportedLanguage? language = null)
-        => ReferencedLibraries.Load(
+    {
+        var implicitReferences = language?.ImplicitReferences ?? [];
+        var listed = references.ToArray();
+        return ReferencedLibraries.Load(
             source,
             [
-                .. (language?.ImplicitReferences ?? []).Select(name => new LibraryIdentity(name)),
-                .. references.Select(reference => new LibraryIdentity(reference.Name, reference.Guid, reference.Major, reference.Minor)),
+                .. implicitReferences.Select(name => new LibraryIdentity(name)),
+                .. listed.Select(reference => reference.IsProject
+                    ? new LibraryIdentity(reference.Name)
+                    : new LibraryIdentity(reference.Name, reference.Guid, reference.Major, reference.Minor)),
             ],
-            [StandardLibrary.LibraryName]);
+            [StandardLibrary.LibraryName],
+            listed.Select((reference, position) => (reference, position)).Where(entry => entry.reference.IsProject)
+                .Select(entry => implicitReferences.Count + entry.position).ToHashSet());
+    }
 
     /// <summary>
     /// Reads the symbols of a library whether or not the project references it, and of the libraries it depends on: what tooling knows of the class of an object
