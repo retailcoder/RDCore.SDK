@@ -3,7 +3,7 @@ using RDCore.SDK.Workspace;
 namespace RDCore.Tests.Workspace;
 
 /// <summary>
-/// A project can't reference itself, or a project that references it, directly or through other projects: the finder reports each such cycle once, with
+/// A project cannot reference itself, or a project that references it, directly or through other projects: the finder reports each such cycle once, with
 /// its path (<strong>RD-VBAL §2.2.3.2</strong>).
 /// </summary>
 [TestClass]
@@ -79,7 +79,7 @@ public sealed class ProjectReferenceCyclesTests
         AssertPaths([["NavalLib", "NavalWindow", "NavalLib"]], Paths(Project("NavalLib", "NAVALWINDOW"), Project("NavalWindow", "navallib")));
     }
 
-    // two projects named NavalLib: a reference to that name resolves to neither, so the cycle it would close isn't one.
+    // two projects named NavalLib: a reference to that name resolves to neither, so the cycle it would close is not one.
     [TestMethod]
     public void AReferenceToANameTwoProjectsHave_IsOnNoCycle()
     {

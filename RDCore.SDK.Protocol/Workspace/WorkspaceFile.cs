@@ -13,7 +13,7 @@ namespace RDCore.SDK.Workspace;
 /// projects. It is written <c>{ "Folders": [ "NavalLib", "NavalConsole" ], "Files": [ "README.md" ] }</c>.
 /// </para>
 /// <para>
-/// It is read as a file written by hand may have it, and is never refused for what a member holds: a list that is <c>null</c>, or not a list, reads as
+/// It is read leniently, as a file written by hand needs, and is never refused for what a member holds: a list that is <c>null</c>, or not a list, reads as
 /// empty, and an item that is not a string, or is empty or blank, is left out. The members this model does not know are written back as they were read
 /// (<see cref="ExtensionData"/>).
 /// </para>
@@ -32,7 +32,7 @@ public sealed record class WorkspaceFile
     public string[] Folders { get; init; } = [];
 
     /// <summary>
-    /// The files of the workspace root that are in the workspace, by their names, in the order the file lists them: a <c>README.md</c>, a licence.
+    /// The files of the workspace root that are in the workspace, by their names, in the order the file lists them, such as a <c>README.md</c> or a license.
     /// </summary>
     [JsonConverter(typeof(WorkspaceNamesJsonConverter))]
     public string[] Files { get; init; } = [];
@@ -44,14 +44,14 @@ public sealed record class WorkspaceFile
     public Dictionary<string, JsonElement>? ExtensionData { get; init; }
 
     /// <summary>
-    /// The workspace with <paramref name="folder"/> added last to its folders, unless it lists it already, in any case.
+    /// The workspace with <paramref name="folder"/> added last to its folders, unless it already lists it in any letter case.
     /// </summary>
     /// <param name="folder">The name of the folder, directly under the workspace root.</param>
     public WorkspaceFile WithFolder(string folder)
         => Folders.Contains(folder, StringComparer.OrdinalIgnoreCase) ? this : this with { Folders = [.. Folders, folder] };
 
     /// <summary>
-    /// The workspace without <paramref name="folder"/>, in any case.
+    /// The workspace without <paramref name="folder"/>, listed in any letter case.
     /// </summary>
     /// <param name="folder">The name of the folder.</param>
     public WorkspaceFile WithoutFolder(string folder)

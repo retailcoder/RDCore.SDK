@@ -6,7 +6,7 @@ using RDCore.SDK.Workspace;
 namespace RDCore.Tests.Workspace;
 
 /// <summary>
-/// A <c>.rdworkspace</c> lists the folders of a workspace's projects and the files of its root, and is read as a file written by hand may have it
+/// A <c>.rdworkspace</c> lists the folders of a workspace's projects and the files of its root, and is read leniently, as a file written by hand needs
 /// (<strong>RD-VBAL §2.2.2</strong>).
 /// </summary>
 [TestClass]

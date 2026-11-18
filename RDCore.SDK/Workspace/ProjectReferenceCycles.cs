@@ -11,7 +11,7 @@ namespace RDCore.SDK.Workspace;
 public sealed record class ProjectReferenceCycle(ImmutableArray<string> Path);
 
 /// <summary>
-/// Finds the circular references among the projects of a workspace. A project can't reference itself, or a project that references it, directly or through
+/// Finds the circular references among the projects of a workspace. A project cannot reference itself, or a project that references it, directly or through
 /// other projects (<strong>RD-VBAL §2.2.3.2</strong>).
 /// </summary>
 public static class ProjectReferenceCycles
@@ -21,8 +21,9 @@ public static class ProjectReferenceCycles
     /// </summary>
     /// <remarks>
     /// <para>
-    /// A reference to a project is resolved by its name, in any case, among <paramref name="projects"/>. A reference to a library, and one to a name that no
-    /// project has, are on no cycle. A name that two projects have resolves to neither: the projects that share it can't be referenced until one is renamed.
+    /// A reference to a project is resolved by its name, in any letter case, among <paramref name="projects"/>. A reference to a library, and one to a
+    /// name that no project has, are on no cycle. A name that two projects have resolves to neither: the projects that share it cannot be referenced until
+    /// one is renamed.
     /// </para>
     /// <para>
     /// Each cycle starts at its project that comes first in <paramref name="projects"/>, and the cycles are in that order, then in the order of the
