@@ -25,8 +25,8 @@
   <data name="Rename_ModuleNameTooLong" xml:space="preserve">
     <value>'{0}' is too long for the name of a module, which is at most {1} characters long.</value>
   </data>
-  <data name="Rename_NamedByConvention" xml:space="preserve">
-    <value>'{0}' is named after an event or an interface member that it handles or implements: renamed, it would be neither.</value>
+  <data name="Rename_BoundHandlerOrImplementation" xml:space="preserve">
+    <value>'{0}' handles an event or implements an interface member: renamed, it would do neither. Rename its source, or the event or member it is bound to, and it is renamed with them.</value>
   </data>
   <data name="Rename_Event" xml:space="preserve">
     <value>'{0}' is an event, and its handlers are named after it: renaming an event is not supported yet.</value>

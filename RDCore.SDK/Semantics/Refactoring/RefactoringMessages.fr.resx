@@ -25,8 +25,8 @@
   <data name="Rename_ModuleNameTooLong" xml:space="preserve">
     <value>« {0} » est trop long pour le nom d'un module, qui compte au plus {1} caractères.</value>
   </data>
-  <data name="Rename_NamedByConvention" xml:space="preserve">
-    <value>« {0} » est nommé d'après l'événement ou le membre d'interface qu'il gère ou implémente : renommé, il ne serait ni l'un ni l'autre.</value>
+  <data name="Rename_BoundHandlerOrImplementation" xml:space="preserve">
+    <value>« {0} » gère un événement ou implémente un membre d'interface : renommé, il ne ferait ni l'un ni l'autre. Renommez sa source, ou l'événement ou le membre auquel il est lié, et il est renommé avec eux.</value>
   </data>
   <data name="Rename_Event" xml:space="preserve">
     <value>« {0} » est un événement, et ses gestionnaires sont nommés d'après lui : renommer un événement n'est pas encore pris en charge.</value>

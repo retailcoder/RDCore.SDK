@@ -220,7 +220,8 @@ public enum DeclarationRole
 /// <list type="bullet">
 /// <item>a declaration that the projects referencing this one can refer to: a <c>Public</c> member of a standard module without
 /// <c>Option Private Module</c>, or of a class that another project can use;</item>
-/// <item>a declaration called by convention or through the object it is a member of: an event handler, a member that implements an interface;</item>
+/// <item>a declaration called through what it is bound to (<see cref="Binding"/>) or through the object it is a member of: an event handler, a member that
+/// implements an interface;</item>
 /// <item>a declaration named in a string, or reached by a member access that is bound only when the code runs.</item>
 /// </list>
 /// <para>
@@ -252,6 +253,14 @@ public sealed record class DeclarationFact(
     /// <see cref="DeclarationRole.None"/> is not a statement that it has none otherwise.
     /// </summary>
     public DeclarationRole Role { get; init; }
+
+    /// <summary>
+    /// The event and its source, or the interface member and its interface, that the declaration is bound to by its <see cref="Role"/>
+    /// (<strong>MS-VBAL §5.3.1.8</strong>, <strong>§5.3.1.9</strong>, <strong>§5.3.1.10</strong>). Stated with <see cref="DeclarationRole.EventHandler"/>,
+    /// <see cref="DeclarationRole.UnmatchedEventHandler"/> and <see cref="DeclarationRole.InterfaceImplementation"/>; <see langword="null"/> for any other
+    /// role.
+    /// </summary>
+    public DeclarationBinding? Binding { get; init; }
 
     /// <summary>
     /// How a local variable came to be declared: a <c>Dim</c> or a <c>Static</c> statement, a <c>ReDim</c> statement whose name matched nothing

@@ -42,6 +42,24 @@ public sealed class RefactoringTitlesTests
         }
     }
 
+    // a rename is refused for what the resolver bound, never for what a name looks like: no refusal speaks of a naming convention.
+    [TestMethod]
+    public void NoRefusalOfARename_SpeaksOfAConvention()
+    {
+        var conventional = Enum.GetValues<RenameRefusalKind>()
+            .SelectMany(kind => new[] { "en", "fr" }.Select(language => RefactoringTitles.RenameRefusal(kind, "Foo", culture: CultureInfo.GetCultureInfo(language))))
+            .Where(text => text.Contains("convention", StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+
+        Assert.IsEmpty(conventional, string.Join(Environment.NewLine, conventional));
+    }
+
+    [TestMethod]
+    [DataRow("en", "'Class1_Foo' handles an event or implements an interface member: renamed, it would do neither. Rename its source, or the event or member it is bound to, and it is renamed with them.")]
+    [DataRow("fr", "« Class1_Foo » gère un événement ou implémente un membre d'interface : renommé, il ne ferait ni l'un ni l'autre. Renommez sa source, ou l'événement ou le membre auquel il est lié, et il est renommé avec eux.")]
+    public void ABoundHandlerOrImplementation_SaysWhatItIsBoundTo_AndWhatToRenameInstead(string language, string expected)
+        => Assert.AreEqual(expected, RefactoringTitles.RenameRefusal(RenameRefusalKind.BoundHandlerOrImplementation, "Class1_Foo", culture: CultureInfo.GetCultureInfo(language)));
+
     [TestMethod]
     [DataRow("en", "'Foo' already means Module1.Foo at Module2 4:12: the rename would change what the code refers to.")]
     [DataRow("fr", "« Foo » désigne déjà Module1.Foo à Module2 4:12 : le renommage changerait ce à quoi le code fait référence.")]
