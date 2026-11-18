@@ -10,8 +10,9 @@ namespace RDCore.SDK.Workspace;
 /// <remarks>
 /// A document module is the code of a host's document (<strong>MS-VBAL §4.2.1</strong>): Excel's worksheets and workbook, Word's documents, Access's forms and
 /// reports. Its export (a <c>.doccls</c>, or a <c>.cls</c> from the VBE) says nothing of what it is, so the project says it: a module whose entry has a
-/// <see cref="RDCoreModule.Super"/> is one, whatever its text and its file name, and nothing else is - no name and no event handler makes a module one. Any other
-/// module is a class module when its text has a <c>VERSION</c> header (<see cref="ModuleHeader.IsClassModule"/>), and a standard module otherwise.
+/// <see cref="RDCoreModule.Super"/> is one, whatever its text and its file name, and nothing else is: no name and no event handler makes a module one. The code
+/// of an RDForms form (<see cref="ProjectModuleKinds.RDFormsModuleExtension"/>) is a class module. Any other module is a class module when its text has a
+/// <c>VERSION</c> header (<see cref="ModuleHeader.IsClassModule"/>), and a standard module otherwise.
 /// <para>
 /// RD-VBA hosts no document: a document module is analyzed - its code binds, the members of its host's class among its names - and never run. Code that is to
 /// handle a document's events holds the document in a <c>WithEvents</c> variable of the host's class, from an application the program automates.
@@ -39,14 +40,27 @@ public static class ModuleKinds
     /// </summary>
     /// <param name="module">The module's entry in the project, or <see langword="null"/> when the project does not list it (a shell's program).</param>
     /// <param name="source">The module's text, or <see langword="null"/> when it could not be read.</param>
-    public static ModuleType Of(RDCoreModule? module, string? source) => Of(module?.Super, source);
+    public static ModuleType Of(RDCoreModule? module, string? source) => Of(module?.Super, source, module?.RelativeUri);
 
     /// <summary>
     /// The kind of a module that the project says is the document of <paramref name="super"/>, or of no host when it is <see langword="null"/>.
     /// </summary>
+    /// <remarks>
+    /// This overload has no file to go by, so the code of an RDForms form is a standard module here: <see cref="Of(DocClassType?, string?, string?)"/> takes
+    /// its path.
+    /// </remarks>
     /// <param name="super">What the project says the module's document is (<see cref="RDCoreModule.Super"/>).</param>
     /// <param name="source">The module's text, or <see langword="null"/> when it could not be read.</param>
-    public static ModuleType Of(DocClassType? super, string? source) => ProjectModuleKinds.Of(super, source) switch
+    public static ModuleType Of(DocClassType? super, string? source) => Of(super, source, path: null);
+
+    /// <summary>
+    /// The kind of a module that the project says is the document of <paramref name="super"/>, or of no host when it is <see langword="null"/>, in the file at
+    /// <paramref name="path"/>: the code of an RDForms form (<see cref="ProjectModuleKinds.RDFormsModuleExtension"/>) is a class module.
+    /// </summary>
+    /// <param name="super">What the project says the module's document is (<see cref="RDCoreModule.Super"/>).</param>
+    /// <param name="source">The module's text, or <see langword="null"/> when it could not be read.</param>
+    /// <param name="path">The module's file path or relative URI, or <see langword="null"/> for a module that has no file.</param>
+    public static ModuleType Of(DocClassType? super, string? source, string? path) => ProjectModuleKinds.Of(super, source, path) switch
     {
         ProjectModuleKind.Document => ModuleType.DocumentModule,
         ProjectModuleKind.Class => ModuleType.ClassModule,
@@ -56,6 +70,7 @@ public static class ModuleKinds
     /// <summary>
     /// Whether a module of this kind is a class module: its members are of each object of it, and <c>Me</c> is one of them. A document module is.
     /// </summary>
+    /// <param name="type">The module's kind.</param>
     public static bool IsClass(this ModuleType type) => type is ModuleType.ClassModule or ModuleType.DocumentModule;
 
     /// <summary>

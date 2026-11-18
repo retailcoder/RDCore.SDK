@@ -115,8 +115,12 @@ public static class SupportedLanguages
     /// <summary>
     /// RD-VBA: the platform's own implementation of <strong>MS-VBAL</strong>, and the default.
     /// </summary>
+    /// <remarks>
+    /// Its modules are standard modules (<c>.bas</c>), class modules (<c>.cls</c>), UserForms (<c>.frm</c>), document modules (<c>.doccls</c>), and the code of
+    /// RDForms forms (<c>.rdform</c>, <see cref="ProjectModuleKinds.RDFormsModuleExtension"/>), whose RDForms document (<c>.xaml</c>) is not a module.
+    /// </remarks>
     public static SupportedLanguage RDVBA { get; } = new(
-        "vba", "Microsoft Visual Basic for Applications", "*.bas", "*.cls", "*.frm", "*.doccls");
+        "vba", "Microsoft Visual Basic for Applications", "*.bas", "*.cls", "*.frm", "*.doccls", "*.rdform");
 
     /// <summary>
     /// VB6.
@@ -125,9 +129,10 @@ public static class SupportedLanguages
     /// Its modules are standard modules (<c>.bas</c>), class modules (<c>.cls</c>), and designed modules: forms (<c>.frm</c>), UserControls (<c>.ctl</c>),
     /// PropertyPages (<c>.pag</c>) and UserDocuments (<c>.dob</c>). The code of a UserControl, a PropertyPage or a UserDocument is built on the class its
     /// designer block names (<see cref="Forms.FormDescriptor.BaseClass"/>). A Designer (<c>.dsr</c>) is not a module: its designer's objects are in its
-    /// binary <c>.dsx</c>.
+    /// binary <c>.dsx</c>. A form ported to RDForms is the code of an RDForms form (<c>.rdform</c>, <see cref="ProjectModuleKinds.RDFormsModuleExtension"/>),
+    /// whose RDForms document (<c>.xaml</c>) is not a module.
     /// </remarks>
-    public static SupportedLanguage VB6 { get; } = new("vb6", "Microsoft Visual Basic 6.0", "*.bas", "*.cls", "*.frm", "*.ctl", "*.pag", "*.dob")
+    public static SupportedLanguage VB6 { get; } = new("vb6", "Microsoft Visual Basic 6.0", "*.bas", "*.cls", "*.frm", "*.ctl", "*.pag", "*.dob", "*.rdform")
     {
         ImplicitReferences = ["VBRUN", "VB"],
     };

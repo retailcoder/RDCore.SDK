@@ -210,6 +210,15 @@
   <data name="FormDesigner_InvalidObjectStream" xml:space="preserve">
     <value>The form&apos;s designer data has an object stream (o) that does not hold exactly the controls its sites describe.</value>
   </data>
+  <data name="FormDesigner_MissingDocument" xml:space="preserve">
+    <value>The form keeps its controls in its RDForms document, the .xaml file of the same name beside its .rdform module, which is not there.</value>
+  </data>
+  <data name="FormDesigner_NoDocumentReader" xml:space="preserve">
+    <value>No reader of RDForms documents (.xaml) is registered, so the form&apos;s controls cannot be read.</value>
+  </data>
+  <data name="FormDesigner_InvalidDocument" xml:space="preserve">
+    <value>The form&apos;s RDForms document (.xaml) holds no form.</value>
+  </data>
   <data name="ProjectFile_InvalidJson" xml:space="preserve">
     <value>The project file &apos;{0}&apos; is not valid JSON, at line {1}, position {2}: {3}</value>
   </data>

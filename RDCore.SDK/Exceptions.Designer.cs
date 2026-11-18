@@ -266,7 +266,34 @@ namespace RDCore.SDK {
                 return ResourceManager.GetString("FormDesigner_MissingCompanion", resourceCulture);
             }
         }
-        
+
+        /// <summary>
+        ///   Looks up a localized string similar to The form keeps its controls in its RDForms document, the .xaml file of the same name beside its .rdform module, which is not there..
+        /// </summary>
+        internal static string FormDesigner_MissingDocument {
+            get {
+                return ResourceManager.GetString("FormDesigner_MissingDocument", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to No reader of RDForms documents (.xaml) is registered, so the form&apos;s controls cannot be read..
+        /// </summary>
+        internal static string FormDesigner_NoDocumentReader {
+            get {
+                return ResourceManager.GetString("FormDesigner_NoDocumentReader", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to The form&apos;s RDForms document (.xaml) holds no form..
+        /// </summary>
+        internal static string FormDesigner_InvalidDocument {
+            get {
+                return ResourceManager.GetString("FormDesigner_InvalidDocument", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   Looks up a localized string similar to The form&apos;s designer data is not where its module says it is in its .frx file..
         /// </summary>

@@ -32,12 +32,46 @@ public sealed record class FormDesignerReference(string FileName, long Offset);
 /// properties (a <c>Font</c>). Its <c>.frx</c> file holds binary property values (pictures, lists), which a property
 /// cites as <c>"Form1.frx":0000</c>. The controls' declarations do not need it; the library that hosts the form reads it
 /// with the designer block's text (<see cref="FormDescriptor.DesignerText"/>).</item>
+/// <item>An <b>RDForms</b> form is a <c>.rdform</c> module (<see cref="ProjectModuleKinds.RDFormsModuleExtension"/>) with no designer block: its
+/// controls are in the RDForms document of the same base name beside it (<see cref="RDFormsDocumentOf"/>), which the <see cref="IFormDocumentReader"/>
+/// registered for its extension reads (<see cref="Register"/>).</item>
 /// </list>
 /// The reader takes the companion file's content from its caller, which owns the file system:
-/// <see cref="CompanionOf(string)"/> says which file and where.
+/// <see cref="CompanionOf(string)"/> says which file and where, and <see cref="ReadCompanion"/> reads it.
 /// </remarks>
 public static partial class FormDesigner
 {
+    /// <summary>
+    /// The extension of an RDForms form's document, which holds its controls: <c>.xaml</c>.
+    /// </summary>
+    public const string RDFormsDocumentExtension = ".xaml";
+
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, IFormDocumentReader> DocumentReaders = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// The path of the RDForms document of the RDForms form whose code is at <paramref name="modulePath"/>: the file of the same base name in the same folder,
+    /// with the <see cref="RDFormsDocumentExtension"/> extension (<c>Forms/Form1.rdform</c> pairs with <c>Forms/Form1.xaml</c>).
+    /// </summary>
+    /// <param name="modulePath">The path or relative URI of the form's <c>.rdform</c> module.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="modulePath"/> is <see langword="null"/>.</exception>
+    public static string RDFormsDocumentOf(string modulePath)
+    {
+        ArgumentNullException.ThrowIfNull(modulePath);
+        return Path.ChangeExtension(modulePath, RDFormsDocumentExtension);
+    }
+
+    /// <summary>
+    /// Registers the reader of the form documents of its <see cref="IFormDocumentReader.DocumentExtension"/>, in place of any registered for it before: every
+    /// read of this process that takes a module's path
+    /// (<see cref="Read(string?, string?, ReadOnlyMemory{byte}, out FormDesignerFormatException?)"/>) reads such a form's document with it.
+    /// </summary>
+    /// <param name="reader">The reader.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="reader"/> is <see langword="null"/>.</exception>
+    public static void Register(IFormDocumentReader reader)
+    {
+        ArgumentNullException.ThrowIfNull(reader);
+        DocumentReaders[reader.DocumentExtension] = reader;
+    }
     /// <summary>
     /// The class identifier of the Microsoft Forms 2.0 designer, which names a VBA UserForm's designer block.
     /// </summary>
@@ -87,6 +121,10 @@ public static partial class FormDesigner
     /// <see cref="Read(string, ReadOnlyMemory{byte}, out FormDesignerFormatException)"/>. A module whose companion is not read is still loaded. A VBA
     /// UserForm's controls are in its companion, so without it the read gives the problem and the form declares no controls. A Visual Basic 6.0 form's
     /// controls are in its text, so it declares them, with an empty <see cref="FormDescriptor.State"/>.
+    /// <para>
+    /// An RDForms form's companion is its RDForms document (<see cref="RDFormsDocumentOf"/>), which its text does not name: a missing document is the problem
+    /// <see cref="FormDesignerFormatProblem.MissingDocument"/>, and the module is still loaded, with no controls.
+    /// </para>
     /// </remarks>
     /// <param name="fileSystem">The file system the module is on.</param>
     /// <param name="modulePath">The path of the form module's file.</param>
@@ -97,14 +135,24 @@ public static partial class FormDesigner
     /// </param>
     /// <returns>
     /// The content of the companion file. Empty, with no problem, when the module names no companion file or the file is not there; empty, with the problem,
-    /// when the designer block or the file cannot be read.
+    /// when the designer block or the file cannot be read, and when an RDForms form's document is not there.
     /// </returns>
     public static ReadOnlyMemory<byte> ReadCompanion(System.IO.Abstractions.IFileSystem fileSystem, string modulePath, string? source, out Exception? problem)
     {
         problem = null;
         try
         {
-            if (CompanionOf(source) is { } reference
+            if (ProjectModuleKinds.IsRDFormsModule(modulePath))
+            {
+                var document = RDFormsDocumentOf(modulePath);
+                if (fileSystem.File.Exists(document))
+                {
+                    return fileSystem.File.ReadAllBytes(document);
+                }
+
+                problem = new FormDesignerFormatException(FormDesignerFormatProblem.MissingDocument);
+            }
+            else if (CompanionOf(source) is { } reference
                 && fileSystem.Path.Combine(fileSystem.Path.GetDirectoryName(modulePath) ?? string.Empty, reference.FileName) is var path
                 && fileSystem.File.Exists(path))
             {
@@ -133,17 +181,67 @@ public static partial class FormDesigner
     /// form module.
     /// </param>
     public static FormDescriptor? Read(string? source, ReadOnlyMemory<byte> companion, out FormDesignerFormatException? problem)
+        => Read(modulePath: null, source, companion, out problem);
+
+    /// <summary>
+    /// What the form module at <paramref name="modulePath"/> declares, as <see cref="Read(string?, string?, ReadOnlyMemory{byte})"/> reads it, or <c>null</c>
+    /// when it is not a form module or its designer data cannot be read, which <paramref name="problem"/> then says.
+    /// </summary>
+    /// <remarks>
+    /// A form whose designer data cannot be read declares nothing, so its module is loaded as one whose form has no controls.
+    /// </remarks>
+    /// <param name="modulePath">The path or relative URI of the module's file, or <see langword="null"/> for a module that has no file.</param>
+    /// <param name="source">The form module's source.</param>
+    /// <param name="companion">The content of the module's companion file (<see cref="ReadCompanion"/>).</param>
+    /// <param name="problem">
+    /// Why the designer data cannot be read (<see cref="FormDesignerFormatException.Problem"/>); <c>null</c> when it was read, and for a module that is not a
+    /// form module.
+    /// </param>
+    public static FormDescriptor? Read(string? modulePath, string? source, ReadOnlyMemory<byte> companion, out FormDesignerFormatException? problem)
     {
         problem = null;
         try
         {
-            return Read(source, companion);
+            return Read(modulePath, source, companion);
         }
         catch (FormDesignerFormatException exception)
         {
             problem = exception;
             return null;
         }
+    }
+
+    /// <summary>
+    /// What the form module at <paramref name="modulePath"/> declares, or <c>null</c> when it is not a form module.
+    /// </summary>
+    /// <remarks>
+    /// The code of an RDForms form (<see cref="ProjectModuleKinds.IsRDFormsModule"/>) declares what its RDForms document does, as the
+    /// <see cref="IFormDocumentReader"/> registered for <see cref="RDFormsDocumentExtension"/> reads it (<see cref="Register"/>). Any other module is read as
+    /// <see cref="Read(string?, ReadOnlyMemory{byte})"/> reads it.
+    /// </remarks>
+    /// <param name="modulePath">The path or relative URI of the module's file, or <see langword="null"/> for a module that has no file.</param>
+    /// <param name="source">The form module's source.</param>
+    /// <param name="companion">The content of the module's companion file (<see cref="ReadCompanion"/>): an RDForms form's document.</param>
+    /// <exception cref="FormDesignerFormatException">
+    /// The designer data cannot be read, as <see cref="Read(string?, ReadOnlyMemory{byte})"/> says; or, for an RDForms form, <paramref name="companion"/> is
+    /// empty (<see cref="FormDesignerFormatProblem.MissingDocument"/>), no reader is registered for its document
+    /// (<see cref="FormDesignerFormatProblem.NoDocumentReader"/>), or its document holds no form (<see cref="FormDesignerFormatProblem.InvalidDocument"/>).
+    /// </exception>
+    public static FormDescriptor? Read(string? modulePath, string? source, ReadOnlyMemory<byte> companion)
+    {
+        if (!ProjectModuleKinds.IsRDFormsModule(modulePath))
+        {
+            return Read(source, companion);
+        }
+
+        if (companion.IsEmpty)
+        {
+            throw new FormDesignerFormatException(FormDesignerFormatProblem.MissingDocument);
+        }
+
+        return DocumentReaders.TryGetValue(RDFormsDocumentExtension, out var reader)
+            ? reader.Read(companion)
+            : throw new FormDesignerFormatException(FormDesignerFormatProblem.NoDocumentReader);
     }
 
     /// <summary>
