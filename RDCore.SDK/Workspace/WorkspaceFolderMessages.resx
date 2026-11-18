@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- Why an entry of a .rdworkspace's folders is not loaded (RefusedWorkspaceFolder): WorkspaceFolder_ and the WorkspaceFolderRefusal. {0} is the entry, as the file writes it; {1} is the path of the .rdworkspace. -->
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="WorkspaceFolder_Absolute" xml:space="preserve">
+    <value>The folder '{0}' that {1} lists is not loaded: it is an absolute path, and a workspace lists only folders directly under its own root.</value>
+  </data>
+  <data name="WorkspaceFolder_OutsideRoot" xml:space="preserve">
+    <value>The folder '{0}' that {1} lists is not loaded: it climbs out of the workspace root with '..'.</value>
+  </data>
+  <data name="WorkspaceFolder_NotDirectlyUnderRoot" xml:space="preserve">
+    <value>The folder '{0}' that {1} lists is not loaded: a workspace lists the folders directly under its root, by their names.</value>
+  </data>
+  <data name="WorkspaceFolder_Duplicate" xml:space="preserve">
+    <value>The folder '{0}' that {1} lists is not loaded again: the file lists it before.</value>
+  </data>
+  <data name="WorkspaceFolder_Missing" xml:space="preserve">
+    <value>The folder '{0}' that {1} lists is not loaded: there is no such folder under the workspace root.</value>
+  </data>
+</root>
