@@ -147,7 +147,7 @@ public static class ScopeTreeBuilder
         };
 
         // MS-VBAL §5.6.10: each project is a namespace of its own. A project scope per workspace root its modules are under surfaces a standard module's
-        // non-Private members to the modules of that project; a set with no modules has none.
+        // members that the visibility says its project sees to the modules of that project; a set with no modules has none.
         var projectOfModule = new Dictionary<string, LexicalScope>(StringComparer.Ordinal);
         var projectOfRoot = new Dictionary<string, LexicalScope>(StringComparer.Ordinal);
         foreach (var root in modules.GroupBy(module => module.Value.WorkspaceRoot.AbsoluteUri, StringComparer.Ordinal))
