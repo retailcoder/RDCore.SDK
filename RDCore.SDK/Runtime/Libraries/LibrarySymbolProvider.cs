@@ -63,8 +63,10 @@ public sealed class LibrarySymbolProvider : ISymbolProvider
     /// The project: its references (<see cref="RDCoreProject.References"/>) and its modules (<see cref="RDCoreProject.Modules"/>).
     /// </param>
     /// <param name="language">
-    /// The language the project is written in; RD-VBA, whose only implicit reference is RDForms, for a project with an RDForms form, when it is not given.
+    /// The language the project is written in; RD-VBA when it is not given. RD-VBA has no implicit reference of its own, so a project written in it
+    /// references RDForms implicitly only when it has an RDForms form.
     /// </param>
+    /// <returns>The libraries, and the ones that could not be loaded.</returns>
     public static ReferencedLibraries Load(ILibrarySource source, RDCoreProject project, SupportedLanguage? language = null)
         => ReferencedLibraries.Load(source, Referenced(project.References ?? [], ImplicitReferencesOf(project, language)), [StandardLibrary.LibraryName]);
 
