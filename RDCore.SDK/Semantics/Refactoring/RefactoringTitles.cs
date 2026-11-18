@@ -202,9 +202,9 @@ public static class RefactoringTitles
     /// <param name="kind">Why the removal is refused.</param>
     /// <param name="name">The parameter, or the procedure for a refusal of the procedure (<see cref="ParameterRemovalRefusalKind.Handler"/>,
     /// <see cref="ParameterRemovalRefusalKind.UnknownDocumentHost"/>).</param>
-    /// <param name="other">The procedure the parameter is of, for <see cref="ParameterRemovalRefusalKind.Value"/>, <see cref="ParameterRemovalRefusalKind.Event"/>,
-    /// <see cref="ParameterRemovalRefusalKind.ExternalProcedure"/>, <see cref="ParameterRemovalRefusalKind.LateBound"/> and
-    /// <see cref="ParameterRemovalRefusalKind.CalledByName"/>. Unused by the other kinds.</param>
+    /// <param name="other">The procedure the parameter is of, for <see cref="ParameterRemovalRefusalKind.Value"/>,
+    /// <see cref="ParameterRemovalRefusalKind.Event"/>, <see cref="ParameterRemovalRefusalKind.ExternalProcedure"/>,
+    /// <see cref="ParameterRemovalRefusalKind.LateBound"/> and <see cref="ParameterRemovalRefusalKind.CalledByName"/>. Unused by the other kinds.</param>
     /// <param name="where">Where the refusal is, as the client names a position: the use, the argument, the call or the name. Unused by the kinds that name
     /// no position.</param>
     /// <param name="culture">The language of the reader; the current UI culture by default.</param>

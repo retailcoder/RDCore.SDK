@@ -36,7 +36,8 @@ public enum ParameterRemovalRefusalKind
     Event,
 
     /// <summary>
-    /// The procedure is bound to an event it handles, and takes the parameters of the event (<strong>MS-VBAL §5.3.1.8</strong>, <see cref="DeclarationBinding"/>).
+    /// The procedure is bound to an event it handles, and takes the parameters of the event (<strong>MS-VBAL §5.3.1.8</strong>,
+    /// <see cref="DeclarationBinding"/>).
     /// </summary>
     Handler,
 
