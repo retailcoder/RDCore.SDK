@@ -110,6 +110,17 @@ public class SupportedLanguage
             ? [.. ImplicitReferences, ProjectModuleKinds.RDFormsLibraryName]
             : ImplicitReferences;
 
+    /// <summary>
+    /// Whether a file is written in the language: whether its extension is the extension of one of its <see cref="FileTypes"/>.
+    /// </summary>
+    /// <param name="path">The file's path, or its name.</param>
+    /// <returns><see langword="true"/> when the extension is one of the language's, compared without regard to case.</returns>
+    public bool IsSourceFile(string path)
+    {
+        var extension = Path.GetExtension(path);
+        return extension.Length > 0 && FileTypes.Any(fileType => string.Equals(fileType.TrimStart('*'), extension, StringComparison.OrdinalIgnoreCase));
+    }
+
     /// <summary>The patterns of the files written in the language, as a document filter pattern.</summary>
     public string FilterString => string.Join(";", FileTypes.Select(fileType => $"**/{fileType}").ToArray());
 
