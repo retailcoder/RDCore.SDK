@@ -390,11 +390,25 @@ public record class ProcedureSemanticsDto(
 /// For a procedure a <c>Declare</c> statement declares, the platforms each of its statements is compiled on, in the order they are written
 /// (<see cref="DeclarationFact.StatementsCompiledOn"/>); <see langword="null"/> for any other declaration.
 /// </param>
+/// <param name="Binding">
+/// What it is bound to, for a handler or an implementation (<see cref="DeclarationFact.Binding"/>); <see langword="null"/> for any other declaration.
+/// </param>
 public record class DeclarationFactDto(
     Uri Symbol, string Name, DeclarationKind Kind, AccessModifier Access, bool IsImplicit, SourceLocation Location, DeclarationReferences? References,
     DeclarationRole Role = DeclarationRole.None, LocalDeclarationKind? DeclaredBy = null, HiddenDeclaration? Hides = null,
     ImmutableArray<DeclarationReference>? ReferencedFrom = null, DeclaredTypeKind? TypeKind = null, bool IsArray = false, Uri? AutoInstantiates = null,
-    CompiledPlatforms? CompiledOn = null, ImmutableArray<CompiledPlatforms>? StatementsCompiledOn = null);
+    CompiledPlatforms? CompiledOn = null, ImmutableArray<CompiledPlatforms>? StatementsCompiledOn = null, DeclarationBindingDto? Binding = null);
+
+/// <summary>
+/// A <see cref="DeclarationBinding"/>, as it travels: the member it binds is the declaration it is the binding of, and its role is the declaration's
+/// (<see cref="DeclarationFactDto.Role"/>).
+/// </summary>
+/// <param name="Source">The address of what the part of the member's name before the underscore names (<see cref="DeclarationBinding.Source"/>).</param>
+/// <param name="Bound">
+/// The address of the event the member handles or the interface member it implements (<see cref="DeclarationBinding.Bound"/>); <see langword="null"/> for an
+/// <see cref="DeclarationRole.UnmatchedEventHandler"/>.
+/// </param>
+public record class DeclarationBindingDto(Uri Source, Uri? Bound);
 
 /// <summary>
 /// A <see cref="ModuleSemanticModel"/>, as it travels.
@@ -446,7 +460,8 @@ public record class ModuleSemanticsDto(
         [.. model.Declarations.Select(declaration => new DeclarationFactDto(
             declaration.Symbol.Uri, declaration.Name, declaration.Kind, declaration.Access, declaration.IsImplicit, declaration.Location, declaration.References, declaration.Role,
             declaration.DeclaredBy, declaration.Hides, declaration.ReferencedFrom, declaration.TypeKind, declaration.IsArray,
-            declaration.AutoInstantiates?.Uri, declaration.CompiledOn, declaration.StatementsCompiledOn.IsDefault ? null : declaration.StatementsCompiledOn))],
+            declaration.AutoInstantiates?.Uri, declaration.CompiledOn, declaration.StatementsCompiledOn.IsDefault ? null : declaration.StatementsCompiledOn,
+            declaration.Binding is { } binding ? new DeclarationBindingDto(binding.Source.Uri, binding.Bound?.Uri) : null))],
         model.Language,
         model.Class,
         model.Document,

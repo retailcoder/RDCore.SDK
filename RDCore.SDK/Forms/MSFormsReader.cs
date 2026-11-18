@@ -59,18 +59,19 @@ public static class MSFormsReader
     /// (<see cref="MSFormsFormatException.Problem"/>).</exception>
     public static MSFormsDesign Read(ReadOnlySpan<byte> frx)
     {
-        var file = CompoundFile.Open(CompoundFileOf(frx).ToArray());
+        var (start, length) = CompoundFileRange(frx);
+        var file = CompoundFile.Open(frx.Slice(start, length).ToArray());
         var (properties, children) = ReadParent(file, file.Root, MSFormsControlKind.Form, visited: []);
         return new MSFormsDesign(new MSFormsControl(string.Empty, 0, MSFormsControlKind.Form, null, null, properties, children));
     }
 
-    // the compound file, after the blob header the VBE writes before it (undocumented: its bytes 4 to 7 are the length of
-    // what follows it)
-    private static ReadOnlySpan<byte> CompoundFileOf(ReadOnlySpan<byte> frx)
+    // where the compound file is: after the blob header the VBE writes before it (undocumented: its bytes 4 to 7 are the
+    // length of what follows it), or all of the data
+    internal static (int Start, int Length) CompoundFileRange(ReadOnlySpan<byte> frx)
     {
         if (frx.StartsWith(Signature))
         {
-            return frx;
+            return (0, frx.Length);
         }
 
         if (frx.Length < BlobHeaderSize + Signature.Length || !frx[BlobHeaderSize..].StartsWith(Signature))
@@ -81,7 +82,7 @@ public static class MSFormsReader
         var length = BinaryPrimitives.ReadUInt32LittleEndian(frx[4..]);
         return length > frx.Length - BlobHeaderSize
             ? throw new MSFormsFormatException(MSFormsFormatProblem.Truncated)
-            : frx.Slice(BlobHeaderSize, (int)length);
+            : (BlobHeaderSize, (int)length);
     }
 
     /// <summary>
@@ -174,14 +175,14 @@ public static class MSFormsReader
             : (form.PropertiesOf(kind), [.. roots.Select(node => node.ToControl())]);
     }
 
-    private static bool IsParent(MSFormsControlKind kind)
+    internal static bool IsParent(MSFormsControlKind kind)
         => kind is MSFormsControlKind.Form or MSFormsControlKind.Frame or MSFormsControlKind.MultiPage or MSFormsControlKind.Page;
 
     private static MSFormsProperties Empty(MSFormsControlKind kind) => new(kind, new Dictionary<string, object>(), new Dictionary<string, object>());
 
     // a site's kind by its ClsidCacheIndex ([MS-OFORMS] 2.5.13): a Microsoft Forms control's below 0x7FFF (2.4.5), a class
     // table entry's above 0x8000
-    private static (MSFormsControlKind Kind, Guid? ClassId, bool IsGenericMorphData) KindOf(RawSite site, IReadOnlyList<Guid?> classTable, MSFormsControlKind parentKind)
+    internal static (MSFormsControlKind Kind, Guid? ClassId, bool IsGenericMorphData) KindOf(RawSite site, IReadOnlyList<Guid?> classTable, MSFormsControlKind parentKind)
     {
         var index = site.ClsidCacheIndex;
         if (index >= ClassTableIndex)

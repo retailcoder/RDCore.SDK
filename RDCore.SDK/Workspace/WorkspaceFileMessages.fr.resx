@@ -20,7 +20,19 @@
     <value>Le fichier n'est pas du {0} valide : le modifier y écrirait un caractère de remplacement pour chaque octet qui ne se décode pas.</value>
   </data>
   <data name="ResourceOperation" xml:space="preserve">
-    <value>La création, le renommage et la suppression de fichiers ne sont pas pris en charge; la modification n'est pas appliquée.</value>
+    <value>La création d'un fichier n'est pas prise en charge; la modification n'est pas appliquée.</value>
+  </data>
+  <data name="Folder" xml:space="preserve">
+    <value>« {0} » est un dossier : la suppression d'un dossier n'est pas prise en charge; la modification n'est pas appliquée.</value>
+  </data>
+  <data name="Exists" xml:space="preserve">
+    <value>« {0} » existe déjà : la modification ne renomme pas « {1} » par-dessus, et n'est pas appliquée.</value>
+  </data>
+  <data name="NotRenamed" xml:space="preserve">
+    <value>« {0} » n'a pas pu être renommé en « {1} » : {2}</value>
+  </data>
+  <data name="NotDeleted" xml:space="preserve">
+    <value>« {0} » n'a pas pu être supprimé : {1}</value>
   </data>
   <data name="Stale" xml:space="preserve">
     <value>« {0} » a changé depuis que la modification a été faite; elle n'est pas appliquée.</value>
@@ -36,5 +48,11 @@
   </data>
   <data name="NotRead" xml:space="preserve">
     <value>« {0} » n'a pas pu être lu : {1}</value>
+  </data>
+  <data name="Undone" xml:space="preserve">
+    <value>Ce que la modification avait fait est annulé.</value>
+  </data>
+  <data name="NotUndone" xml:space="preserve">
+    <value>Ce que la modification avait fait est annulé, sauf dans ces fichiers, qui n'ont pas pu être remis comme ils étaient : {0}</value>
   </data>
 </root>

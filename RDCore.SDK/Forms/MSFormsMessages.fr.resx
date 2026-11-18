@@ -138,4 +138,22 @@
   <data name="InvalidObjectStream" xml:space="preserve">
     <value>Le flux d&apos;objets (o) d&apos;un stockage des données de concepteur ne contient pas exactement les contrôles que décrivent ses sites.</value>
   </data>
+  <data name="ControlNotFound" xml:space="preserve">
+    <value>Les données de concepteur n&apos;ont aucun contrôle nommé « {0} ».</value>
+  </data>
+  <data name="ControlNotUnique" xml:space="preserve">
+    <value>Plus d&apos;un contrôle des données de concepteur est nommé « {0} ».</value>
+  </data>
+  <data name="NameTaken" xml:space="preserve">
+    <value>Un contrôle des données de concepteur est déjà nommé « {0} ».</value>
+  </data>
+  <data name="SiteTooLarge" xml:space="preserve">
+    <value>Le site de « {0} » ne peut pas contenir le nom « {1} » : un site contient au plus 65 535 octets.</value>
+  </data>
+  <data name="FileTooLarge" xml:space="preserve">
+    <value>Les données de concepteur ne peuvent pas grandir : leur fichier composé aurait besoin de plus de secteurs FAT que n&apos;en liste son en-tête.</value>
+  </data>
+  <data name="DataAfterForm" xml:space="preserve">
+    <value>Le fichier .frx contient des données après les données de concepteur du formulaire, que des données de concepteur d&apos;une autre longueur déplaceraient.</value>
+  </data>
 </root>

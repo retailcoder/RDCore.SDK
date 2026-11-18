@@ -138,4 +138,26 @@
   <data name="InvalidObjectStream" xml:space="preserve">
     <value>The object stream (o) of a storage of the designer data does not hold exactly the controls its sites describe.</value>
   </data>
+  <data name="ControlNotFound" xml:space="preserve">
+    <value>The designer data has no control named '{0}'.</value>
+    <comment>{0} is the control's name.</comment>
+  </data>
+  <data name="ControlNotUnique" xml:space="preserve">
+    <value>More than one control of the designer data is named '{0}'.</value>
+    <comment>{0} is the control's name.</comment>
+  </data>
+  <data name="NameTaken" xml:space="preserve">
+    <value>A control of the designer data is named '{0}' already.</value>
+    <comment>{0} is the new name.</comment>
+  </data>
+  <data name="SiteTooLarge" xml:space="preserve">
+    <value>The site of '{0}' cannot hold the name '{1}': a site holds at most 65,535 bytes.</value>
+    <comment>{0} is the control's name, {1} the new name.</comment>
+  </data>
+  <data name="FileTooLarge" xml:space="preserve">
+    <value>The designer data cannot grow: its compound file would need more FAT sectors than its header lists.</value>
+  </data>
+  <data name="DataAfterForm" xml:space="preserve">
+    <value>The .frx file holds data after the form's designer data, which designer data of another length would move.</value>
+  </data>
 </root>

@@ -1,3 +1,4 @@
+using RDCore.SDK.Model.Source;
 using RDCore.SDK.Workspace;
 
 namespace RDCore.Tests.Workspace;
@@ -35,4 +36,46 @@ public sealed class ModuleHeaderTests
     [DataRow("")]
     public void IsClassModule_Null_WhenThereIsNoSource(string? source)
         => Assert.IsNull(ModuleHeader.IsClassModule(source));
+
+    private static string Lines(params string[] lines) => string.Join("\r\n", lines) + "\r\n";
+
+    private const string Form = "VERSION 5.00\r\nObject = \"{831FDD16-0C5C-11D2-A9FC-0000F8754DA1}#2.0#0\"; \"MSCOMCTL.OCX\"\r\n" +
+        "Begin VB.Form Picker \r\n   Caption = \"Pick\"\r\n   Begin VB.CommandButton Ok \r\n      Caption = \"OK\"\r\n" +
+        "      BeginProperty Font \r\n         Name = \"Tahoma\"\r\n      EndProperty\r\n   End\r\nEnd\r\n";
+
+    [TestMethod]
+    [DataRow(StandardModule, 0, 21, 23, DisplayName = "a standard module")]
+    [DataRow(ClassModule, 4, 21, 23, DisplayName = "a class module, after its header")]
+    [DataRow(DesignerModule, 3, 21, 26, DisplayName = "a designer module")]
+    [DataRow("Option Explicit\r\n  attribute  vb_name=\"Late\"\r\n", 1, 22, 26, DisplayName = "any case and spacing, on a later line")]
+    [DataRow("Attribute VB_Name = \"\"\r\n", 0, 21, 21, DisplayName = "an empty name")]
+    public void NameRangeOf_IsBetweenTheQuotesOfTheFirstVBNameLine(string source, int line, int start, int end)
+        => Assert.AreEqual(new SourceRange(line, start, line, end), ModuleHeader.NameRangeOf(source));
+
+    [TestMethod]
+    [DataRow(null, DisplayName = "no source")]
+    [DataRow("Option Explicit\r\nPublic X As Long\r\n", DisplayName = "no VB_Name line")]
+    [DataRow("' Attribute VB_Name = \"Commented\"\r\n", DisplayName = "a comment that writes one")]
+    [DataRow("Attribute VB_Description = \"VB_Name\"\r\n", DisplayName = "another attribute")]
+    public void NameRangeOf_IsNull_WithoutAVBNameLine(string? source)
+        => Assert.IsNull(ModuleHeader.NameRangeOf(source));
+
+    [TestMethod]
+    [DataRow("Option Explicit\r\nPublic Sub Go()\r\nEnd Sub\r\n", 0, DisplayName = "no header: its first line")]
+    [DataRow(null, 0, DisplayName = "no source")]
+    [DataRow("VERSION 1.0 CLASS\r\nBEGIN\r\n  MultiUse = -1  'True\r\nEND\r\nOption Explicit\r\n", 4, DisplayName = "a class: after its BEGIN block")]
+    [DataRow(Form + "Option Explicit\r\n", 11, DisplayName = "a form: after its Object lines and its block, the blocks of its controls included")]
+    [DataRow("VERSION 5.00\r\nObject = \"{X}#1.0#0\"; \"A.OCX\"\r\nObject = \"{Y}#1.0#0\"; \"B.OCX\"\r\nOption Explicit\r\n", 3,
+        DisplayName = "Object lines and no block: after them")]
+    [DataRow("VERSION 5.00\r\nBegin VB.Form Picker \r\n   Begin VB.Label L \r\n   End\r\n", 4, DisplayName = "a block never ended: its last line")]
+    public void AttributesLineOf_IsTheLineAfterTheHeader(string? source, int line)
+        => Assert.AreEqual(line, ModuleHeader.AttributesLineOf(source));
+
+    [TestMethod]
+    public void AttributesLineOf_AModuleThatHasAVBName_IsTheLineOfIt()
+    {
+        var source = Form + "Attribute VB_Name = \"Picker\"\r\nOption Explicit\r\n";
+
+        Assert.AreEqual(ModuleHeader.NameRangeOf(source)?.Start.Line, ModuleHeader.AttributesLineOf(source));
+    }
 }

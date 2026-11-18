@@ -21,9 +21,11 @@ public enum RenameRefusalKind
     Type,
 
     /// <summary>
-    /// The name is a procedure's that is named after the event it handles or the interface member it implements (MS-VBAL §5.3.1.3, §5.3.1.8).
+    /// The name is a procedure's that is bound to the event it handles or the interface member it implements (<see cref="DeclarationBinding"/>,
+    /// <strong>MS-VBAL §5.3.1.8</strong>, <strong>§5.3.1.9</strong>, <strong>§5.3.1.10</strong>): renamed whole, it would be bound to neither. Its source
+    /// and what it is bound to are renamed instead, and it with them.
     /// </summary>
-    NamedByConvention,
+    BoundHandlerOrImplementation,
 
     /// <summary>
     /// The name is an event's, which its handlers are named after.
@@ -79,4 +81,36 @@ public enum RenameRefusalKind
     /// The new name of a module is longer than a module's name can be (MS-VBAL §4.2).
     /// </summary>
     ModuleNameTooLong,
+
+    /// <summary>
+    /// The name is a procedure's of a document module whose host is not known, or whose host's class the project does not resolve: what the host calls
+    /// the procedure for cannot be told, so none of its procedures is renamed, whatever its name.
+    /// </summary>
+    UnknownDocumentHost,
+
+    /// <summary>
+    /// The name is a control's of a VBA UserForm, whose designer keeps its controls' names in the form's companion <c>.frx</c> file, and the server
+    /// could not read that file as it is on disk: the form names none, the file is not there or cannot be read, or it changed since the server read it.
+    /// </summary>
+    UserFormControl,
+
+    /// <summary>
+    /// The name is a control's that a string property of its form, or of another of its controls, holds as its whole value
+    /// (<see cref="Workspace.Forms.FormDesigner.PropertiesNaming"/>): the property may name the control, as an UpDown's <c>BuddyControl</c> names its buddy.
+    /// The property is the refusal's other name, as <c>UpDown1.BuddyControl</c>.
+    /// </summary>
+    ControlNamedByProperty,
+
+    /// <summary>
+    /// The name is a control's of a VBA UserForm, which <c>MSFormsWriter.RenameControl</c> does not rename in the form's <c>.frx</c> file.
+    /// Its reason is the refusal's other name.
+    /// </summary>
+    UserFormControlNotWritten,
+
+    /// <summary>
+    /// The name is a control's of a VBA UserForm, whose rename replaces the form's <c>.frx</c> file, and the client cannot undo a file change when the
+    /// rename's edit fails (<c>WorkspaceEditExtensions.TakesFileReplacement</c>): the code would name the control by its
+    /// new name, and the file by its old one.
+    /// </summary>
+    FileChangeNotUndoable,
 }

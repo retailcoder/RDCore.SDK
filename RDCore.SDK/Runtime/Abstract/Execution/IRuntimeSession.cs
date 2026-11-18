@@ -287,14 +287,31 @@ public interface ISessionSymbols
     /// under its own identity: nothing links the symbol of a class to what it declares, which is what an object of the class
     /// needs to find the members it is called on, the events it raises and handles, and the interfaces it implements. This
     /// is the step that does, and it is one for the whole session rather than for the module: an interface defined after the
-    /// class that implements it, or defined again since, leaves the class holding it as it was.
+    /// class that implements it, or defined again since, leaves the class holding it as it was. When a class of a referenced
+    /// project has the same name, the session's own class is the one composed.
     /// </remarks>
     /// <param name="moduleName">The name of the class module, which has been defined with its members.</param>
     /// <param name="implementedInterfaceNames">The names of the interfaces its <c>Implements</c> directives name, as written.</param>
-    /// <returns><c>false</c> if the session has no class module of that name.</returns>
+    /// <returns><see langword="false"/> if the session has no class module of that name.</returns>
     /// <param name="implementedInterfaceRanges">Where each directive is written, one for each name, or empty when that is not known.</param>
     bool TryComposeClassModule(
         string moduleName, System.Collections.Immutable.ImmutableArray<string> implementedInterfaceNames,
+        System.Collections.Immutable.ImmutableArray<RDCore.SDK.Model.Source.SourceRange> implementedInterfaceRanges = default);
+
+    /// <summary>
+    /// Composes the class module whose <see cref="Symbol.Uri"/> is <paramref name="moduleUri"/>, as the overload that takes a module name
+    /// composes one by its name: its members, its default interface, and the interfaces it implements (<strong>MS-VBAL §5.2.4.2</strong>).
+    /// </summary>
+    /// <remarks>
+    /// A name does not always say which class it is: a session defines the exposed classes of the projects its project references
+    /// (<see cref="SymbolProperties.Library"/>) beside its own, and a class of each may have the same name. Its identity does.
+    /// </remarks>
+    /// <param name="moduleUri">The <see cref="Symbol.Uri"/> of the class module, which has been defined with its members.</param>
+    /// <param name="implementedInterfaceNames">The names of the interfaces its <c>Implements</c> directives name, as written.</param>
+    /// <param name="implementedInterfaceRanges">Where each directive is written, one for each name, or empty when that is not known.</param>
+    /// <returns><see langword="false"/> if the session has no class module of that identity.</returns>
+    bool TryComposeClassModule(
+        Uri moduleUri, System.Collections.Immutable.ImmutableArray<string> implementedInterfaceNames,
         System.Collections.Immutable.ImmutableArray<RDCore.SDK.Model.Source.SourceRange> implementedInterfaceRanges = default);
 
     /// <summary>

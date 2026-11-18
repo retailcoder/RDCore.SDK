@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Text;
 using System.IO.Abstractions.TestingHelpers;
 using RDCore.SDK.Forms;
+using RDCore.SDK.Model.Source;
 using RDCore.SDK.Workspace.Forms;
 
 namespace RDCore.Tests.Workspace.Forms;
@@ -199,6 +200,25 @@ public sealed class FormDesignerTests
     }
 
     [TestMethod]
+    public void CompanionPathOf_IsTheFileTheModuleNames_BesideIt()
+    {
+        var folder = Path.Combine(Path.GetTempPath(), "rdcore-forms");
+
+        Assert.AreEqual(Path.Combine(folder, "ExampleView.frx"), FormDesigner.CompanionPathOf(Path.Combine(folder, "Renamed.frm"), Text("ExampleView.frm")));
+        Assert.IsNull(FormDesigner.CompanionPathOf(Path.Combine(folder, "Form1.frm"), VisualBasic6Module), "a module that names none");
+        Assert.IsNull(FormDesigner.CompanionPathOf(Path.Combine(folder, "Module1.bas"), "Attribute VB_Name = \"Module1\"\r\n"), "a module that is not a form");
+    }
+
+    [TestMethod]
+    [DataRow(".frm", ".frx")]
+    [DataRow(".CTL", ".ctx")]
+    [DataRow(".dsr", ".dsx")]
+    [DataRow(".pag", ".pgx")]
+    [DataRow(".dob", ".dox")]
+    public void CompanionExtensions_AreTheBinaryFilesOfEachDesigner(string designer, string companion)
+        => Assert.AreEqual(companion, FormDesigner.CompanionExtensions[designer]);
+
+    [TestMethod]
     public void CompanionOf_VisualBasic6FormThatCitesNoFrx_IsNone()
         => Assert.IsNull(FormDesigner.CompanionOf(VisualBasic6Module));
 
@@ -277,6 +297,92 @@ public sealed class FormDesignerTests
             "Label1 : VB.Label []\n",
             Tree(form.Controls));
     }
+
+    // the name on each line the control is named on, as "line:start-end", zero-based
+    private static string NameRanges(string? source, string name)
+        => string.Join(", ", FormDesigner.ControlNameRangesOf(source, name).Select(range => $"{range.Start.Line}:{range.Start.Character}-{range.End.Character}"));
+
+    [TestMethod]
+    [DataRow("Label1", "27:18-24",DisplayName = "a control")]
+    [DataRow("command1", "9:29-37, 14:29-37", DisplayName = "every element of a control array, in a container, whatever the case")]
+    [DataRow("Frame1", "6:18-24", DisplayName = "a container")]
+    [DataRow("Tahoma", "", DisplayName = "a grouped property's value names no control")]
+    [DataRow("Form1", "", DisplayName = "the form names no control")]
+    public void ControlNameRangesOf_VisualBasic6Form_IsTheNameOnEachBeginLineOfTheControl(string name, string expected)
+    {
+        Assert.AreEqual(expected, NameRanges(VisualBasic6Module, name));
+        Assert.AreEqual(expected, NameRanges(VisualBasic6Module.Replace("\r\n", "\n"), name));
+    }
+
+    [TestMethod]
+    public void ControlNameRangesOf_NameOnItsLine_IsTheControlsName()
+    {
+        var lines = VisualBasic6Module.Split("\r\n");
+
+        foreach (var range in FormDesigner.ControlNameRangesOf(VisualBasic6Module, "Command1"))
+        {
+            Assert.AreEqual("Command1", lines[range.Start.Line][range.Start.Character..range.End.Character]);
+        }
+    }
+
+    [TestMethod]
+    public void ControlNameRangesOf_UserForm_IsNone_ItsControlsNamesAreInItsFrx()
+        => Assert.AreEqual(0, FormDesigner.ControlNameRangesOf(Text("ExampleView.frm"), "SomeTextBox").Count);
+
+    [TestMethod]
+    [DataRow(null)]
+    [DataRow("Attribute VB_Name = \"Module1\"\r\nOption Explicit\r\n")]
+    public void ControlNameRangesOf_NotAFormModule_IsNone(string? source)
+        => Assert.AreEqual(0, FormDesigner.ControlNameRangesOf(source, "Label1").Count);
+
+    // a control another one names (an UpDown's buddy), its own Caption that is its name, and a grouped property's value that is too
+    private const string BuddyModule =
+        "VERSION 5.00\r\n" +
+        "Object = \"{86CF1D34-0C5F-11D2-A9FC-0000F8754DA1}#2.0#0\"; \"MSCOMCT2.OCX\"\r\n" +
+        "Begin VB.Form Form1 \r\n" +
+        "   Caption         =   \"Form1\"\r\n" +
+        "   Begin MSComCtl2.UpDown UpDown1 \r\n" +
+        "      BuddyControl    =   \"Text1\"\r\n" +
+        "      BeginProperty Font {0BE35203-8F91-11CE-9DE3-00AA004BB851} \r\n" +
+        "         Name            =   \"Text1\"\r\n" +
+        "      EndProperty\r\n" +
+        "   End\r\n" +
+        "   Begin VB.TextBox Text1 \r\n" +
+        "      Text            =   \"Text1\"\r\n" +
+        "      Tag             =   \"text1 \"\r\n" +
+        "   End\r\n" +
+        "End\r\n" +
+        "Attribute VB_Name = \"Form1\"\r\n";
+
+    [TestMethod]
+    public void PropertiesNaming_IsEveryStringPropertyOfAnotherControl_WhoseWholeValueIsTheName()
+    {
+        var naming = FormDesigner.PropertiesNaming(BuddyModule, "TEXT1").Single();
+
+        Assert.AreEqual("UpDown1", naming.Owner);
+        Assert.AreEqual("BuddyControl", naming.Property);
+        Assert.AreEqual("Text1", BuddyModule.Split("\r\n")[naming.Range.Start.Line][naming.Range.Start.Character..naming.Range.End.Character]);
+    }
+
+    [TestMethod]
+    public void PropertiesNaming_UserFormOrNoForm_IsNone()
+    {
+        Assert.AreEqual(0, FormDesigner.PropertiesNaming(Text("ExampleView.frm"), "SomeTextBox").Count);
+        Assert.AreEqual(0, FormDesigner.PropertiesNaming("Attribute VB_Name = \"Module1\"\r\n", "Text1").Count);
+    }
+
+    [TestMethod]
+    public void FormNameRangeOf_IsTheNameOnTheFormsOwnBeginLine_WhicheverDesignerWroteIt()
+    {
+        Assert.AreEqual(new SourceRange(new SourcePosition(2, 14), new SourcePosition(2, 19)), FormDesigner.FormNameRangeOf(VisualBasic6Module));
+        Assert.AreEqual(new SourceRange(new SourcePosition(1, 45), new SourcePosition(1, 56)), FormDesigner.FormNameRangeOf(AllControlsModule));
+    }
+
+    [TestMethod]
+    [DataRow(null)]
+    [DataRow("VERSION 1.0 CLASS\r\nBEGIN\r\n  MultiUse = -1  'True\r\nEND\r\nAttribute VB_Name = \"Class1\"\r\n")]
+    public void FormNameRangeOf_NotAFormModule_IsNull(string? source)
+        => Assert.IsNull(FormDesigner.FormNameRangeOf(source));
 
     [TestMethod]
     public void Read_OtherDesigner_IsNamedByItsClassId()
