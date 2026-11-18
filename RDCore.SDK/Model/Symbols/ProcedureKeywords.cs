@@ -9,7 +9,7 @@ namespace RDCore.SDK.Model.Symbols;
 /// <c>Property Set</c> (<strong>MS-VBAL §5.3.1</strong>). They are VBA keywords, written as code writes them and never translated.
 /// </summary>
 /// <remarks>
-/// The three accessors of a property share its name and its <see cref="SymbolKindExt.Property"/> kind: their keywords are what tell them apart.
+/// The three accessors of a property share its name and its <see cref="Source.SymbolKindExt.Property"/> kind: their keywords are what tell them apart.
 /// </remarks>
 public static class ProcedureKeywords
 {
