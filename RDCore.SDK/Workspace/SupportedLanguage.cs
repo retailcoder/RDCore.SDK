@@ -92,6 +92,24 @@ public class SupportedLanguage
     /// </remarks>
     public IReadOnlyList<string> ImplicitReferences { get; init; } = [];
 
+    /// <summary>
+    /// The libraries a project of the language with these modules references without its project file listing them, by name, in their order of reference
+    /// precedence: the language's (<see cref="ImplicitReferences"/>), then RDForms (<see cref="ProjectModuleKinds.RDFormsLibraryName"/>) when a module is
+    /// the code of an RDForms form (<see cref="ProjectModuleKinds.IsRDFormsModule"/>).
+    /// </summary>
+    /// <remarks>
+    /// A project sees the forms and controls of its forms the way a VB6 project sees VB's: a project that has an RDForms form references RDForms, and its
+    /// project file does not list it. RDForms comes after the language's own, so in a VB6 project a name both <c>VB</c> and RDForms declare is
+    /// <c>VB</c>'s.
+    /// </remarks>
+    /// <param name="modulePaths">The paths or relative URIs of the project's modules (<see cref="RDCoreFile.RelativeUri"/>).</param>
+    /// <returns>The names; <see cref="ImplicitReferences"/> when no module is the code of an RDForms form, or when the language already has RDForms.</returns>
+    public IReadOnlyList<string> ImplicitReferencesOf(IEnumerable<string?> modulePaths)
+        => modulePaths.Any(ProjectModuleKinds.IsRDFormsModule)
+           && !ImplicitReferences.Contains(ProjectModuleKinds.RDFormsLibraryName, StringComparer.OrdinalIgnoreCase)
+            ? [.. ImplicitReferences, ProjectModuleKinds.RDFormsLibraryName]
+            : ImplicitReferences;
+
     /// <summary>The patterns of the files written in the language, as a document filter pattern.</summary>
     public string FilterString => string.Join(";", FileTypes.Select(fileType => $"**/{fileType}").ToArray());
 

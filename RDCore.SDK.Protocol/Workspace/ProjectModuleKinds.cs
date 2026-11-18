@@ -48,6 +48,15 @@ public static class ProjectModuleKinds
         => path is not null && path.EndsWith(RDFormsModuleExtension, StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
+    /// The name of the library that describes RDForms' forms and controls: <c>RDForms</c>.
+    /// </summary>
+    /// <remarks>
+    /// A project that has the code of an RDForms form (<see cref="IsRDFormsModule"/>) references it without its project file listing it, as a VB6 project
+    /// references <c>VB</c> (<c>SupportedLanguage.ImplicitReferencesOf</c>).
+    /// </remarks>
+    public const string RDFormsLibraryName = "RDForms";
+
+    /// <summary>
     /// The kind of a module that the project says is the code of <paramref name="super"/>, or of no document when it is <see langword="null"/>.
     /// </summary>
     /// <remarks>

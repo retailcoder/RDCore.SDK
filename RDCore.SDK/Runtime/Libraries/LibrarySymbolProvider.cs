@@ -1,4 +1,5 @@
-﻿using RDCore.SDK.Model.Symbols.Abstract;
+﻿using RDCore.SDK.Model.Symbols;
+using RDCore.SDK.Model.Symbols.Abstract;
 using RDCore.SDK.Runtime.Abstract.Execution;
 using RDCore.SDK.Runtime.StdLib;
 using RDCore.SDK.Workspace;
@@ -23,7 +24,7 @@ public sealed class LibrarySymbolProvider : ISymbolProvider
     /// Creates the provider for libraries that are loaded.
     /// </summary>
     /// <param name="workspaceRoot">The workspace the symbols are addressed under.</param>
-    /// <param name="libraries">The libraries (<see cref="Load"/>).</param>
+    /// <param name="libraries">The libraries (<see cref="Load(ILibrarySource, RDCoreProject, SupportedLanguage?)"/>).</param>
     /// <param name="is64Bit">The pointer width of the environment.</param>
     public LibrarySymbolProvider(Uri workspaceRoot, ReferencedLibraries libraries, bool is64Bit = true)
     {
@@ -51,13 +52,50 @@ public sealed class LibrarySymbolProvider : ISymbolProvider
     /// RD-VBA, which has none, when it is not given.
     /// </param>
     public static ReferencedLibraries Load(ILibrarySource source, IEnumerable<RDCoreReference> references, SupportedLanguage? language = null)
-        => ReferencedLibraries.Load(
-            source,
-            [
-                .. (language?.ImplicitReferences ?? []).Select(name => new LibraryIdentity(name)),
-                .. references.Select(reference => new LibraryIdentity(reference.Name, reference.Guid, reference.Major, reference.Minor)),
-            ],
-            [StandardLibrary.LibraryName]);
+        => ReferencedLibraries.Load(source, Referenced(references, language?.ImplicitReferences ?? []), [StandardLibrary.LibraryName]);
+
+    /// <summary>
+    /// Loads the libraries a project references: the ones its language and its modules reference implicitly
+    /// (<see cref="SupportedLanguage.ImplicitReferencesOf"/>), then the ones its project file lists.
+    /// </summary>
+    /// <param name="source">Where the descriptions are.</param>
+    /// <param name="project">The project: its references (<see cref="RDCoreProject.References"/>) and its modules (<see cref="RDCoreProject.Modules"/>).</param>
+    /// <param name="language">
+    /// The language the project is written in; RD-VBA, whose only implicit reference is RDForms, for a project with an RDForms form, when it is not given.
+    /// </param>
+    public static ReferencedLibraries Load(ILibrarySource source, RDCoreProject project, SupportedLanguage? language = null)
+        => ReferencedLibraries.Load(source, Referenced(project.References ?? [], ImplicitReferencesOf(project, language)), [StandardLibrary.LibraryName]);
+
+    /// <summary>
+    /// The libraries a project references, by name, each at its position in the list of its references, as a session ranks them
+    /// (<see cref="IRuntimeSession.References"/>): the standard library at <c>0</c>, then the ones its language and its modules reference implicitly
+    /// (<see cref="SupportedLanguage.ImplicitReferencesOf"/>), then the ones its project file lists, in the order
+    /// <see cref="Load(ILibrarySource, RDCoreProject, SupportedLanguage?)"/> loads them.
+    /// </summary>
+    /// <remarks>
+    /// A reference to the standard library in the project file, or a second reference to a library already in the list, is left out, as
+    /// <see cref="Load(ILibrarySource, RDCoreProject, SupportedLanguage?)"/> leaves it out. A reference that does not load keeps its position.
+    /// </remarks>
+    /// <param name="project">The project: its references (<see cref="RDCoreProject.References"/>) and its modules (<see cref="RDCoreProject.Modules"/>).</param>
+    /// <param name="language">The language the project is written in; RD-VBA when it is not given.</param>
+    /// <returns>The references, the standard library first.</returns>
+    public static IReadOnlyList<ReferencePriorityInfo> ReferencePriorities(RDCoreProject project, SupportedLanguage? language = null)
+        => [new ReferencePriorityInfo(StandardLibrary.LibraryName, 0),
+            .. Referenced(project.References ?? [], ImplicitReferencesOf(project, language))
+                .Select(reference => reference.Name)
+                .Where(name => !string.Equals(name, StandardLibrary.LibraryName, StringComparison.OrdinalIgnoreCase))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Select((name, rank) => new ReferencePriorityInfo(name, rank + 1))];
+
+    private static IReadOnlyList<string> ImplicitReferencesOf(RDCoreProject project, SupportedLanguage? language)
+        => (language ?? SupportedLanguages.RDVBA).ImplicitReferencesOf((project.Modules ?? []).Select(module => module?.RelativeUri));
+
+    // the implicit references come before the ones the project lists (RD-VBAL §2.3.1.3).
+    private static IEnumerable<LibraryIdentity> Referenced(IEnumerable<RDCoreReference> references, IEnumerable<string> implicitReferences)
+        => [
+            .. implicitReferences.Select(name => new LibraryIdentity(name)),
+            .. references.Select(reference => new LibraryIdentity(reference.Name, reference.Guid, reference.Major, reference.Minor)),
+        ];
 
     /// <summary>
     /// Reads the symbols of a library whether or not the project references it, and of the libraries it depends on: what tooling knows of the class of an object
