@@ -80,8 +80,8 @@ public sealed record class RefusedWorkspaceFolder(WorkspaceFolderRefusal Reason,
 /// </summary>
 /// <remarks>
 /// <para>
-/// A workspace lists only folders directly under its own root, by their names. An entry that is an absolute path, that has a <c>..</c> or a path separator in
-/// it, that names a folder listed before it, or a folder that is not there, is not loaded, and is in <see cref="Refused"/>.
+/// A workspace lists only folders directly under its own root, by their names. An entry that is an absolute path, that is <c>.</c>, that has a <c>..</c> or a
+/// path separator in it, that names a folder listed before it, or that names a folder that is not there, is not loaded, and is in <see cref="Refused"/>.
 /// </para>
 /// <para>
 /// The <see cref="Folders"/> keep the order of the file, which decides what each folder is to the others. The <see cref="Primary"/> folder is the project a
@@ -125,7 +125,8 @@ public sealed record class WorkspaceFolderList
     /// The workspace; <see langword="null"/> when neither <paramref name="folder"/> nor its parent has a <c>.rdworkspace</c> that can be read, and when
     /// its parent's does not list it. The folder is then opened on its own.
     /// </returns>
-    /// <exception cref="ArgumentException"><paramref name="folder"/> is empty.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="fileSystem"/> or <paramref name="folder"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="folder"/> is empty or only white space.</exception>
     /// <exception cref="IOException">A <c>.rdworkspace</c> is there but could not be read.</exception>
     public static WorkspaceFolderList? Read(IFileSystem fileSystem, string folder)
     {

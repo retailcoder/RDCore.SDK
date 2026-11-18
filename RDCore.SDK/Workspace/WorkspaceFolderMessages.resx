@@ -23,7 +23,7 @@
     <value>The folder '{0}' that {1} lists is not loaded: a workspace lists the folders directly under its root, by their names.</value>
   </data>
   <data name="WorkspaceFolder_Duplicate" xml:space="preserve">
-    <value>The folder '{0}' that {1} lists is not loaded again: the file lists it before.</value>
+    <value>The folder '{0}' that {1} lists is not loaded again: the file lists it earlier.</value>
   </data>
   <data name="WorkspaceFolder_Missing" xml:space="preserve">
     <value>The folder '{0}' that {1} lists is not loaded: there is no such folder under the workspace root.</value>
