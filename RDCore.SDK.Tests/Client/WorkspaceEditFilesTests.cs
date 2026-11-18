@@ -50,6 +50,9 @@ public sealed class WorkspaceEditFilesTests
 
     private static WorkspaceEditDocumentChange Delete(string path) => new(new DeleteFile { Uri = DocumentUri.FromFileSystemPath(path) });
 
+    // a path as the applier reads it from a document URI.
+    private static string OnDisk(string path) => DocumentUri.FromFileSystemPath(path).GetFileSystemPath();
+
     // the files there are: none set aside, none written beside one.
     private static string[] FilesIn(MockFileSystem files) => [.. files.AllFiles.Select(path => Path.GetFileName(path)).Order(StringComparer.Ordinal)];
 
@@ -128,20 +131,21 @@ public sealed class WorkspaceEditFilesTests
     {
         CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("en-US");
         var third = Path.Combine(Folder, "Module3.bas");
+        var (from, to, last) = (OnDisk(Ansi), OnDisk(Renamed), OnDisk(third));
         var files = Substitute.For<IFileSystem>();
-        files.File.Exists(Ansi).Returns(true);
-        files.File.When(file => file.Move(Renamed, third)).Throw(new IOException("The disk is full."));
-        files.File.When(file => file.Move(Renamed, Ansi)).Throw(new IOException("The file is in use."));
+        files.File.Exists(from).Returns(true);
+        files.File.When(file => file.Move(to, last)).Throw(new IOException("The disk is full."));
+        files.File.When(file => file.Move(to, from)).Throw(new IOException("The file is in use."));
 
         var result = await new WorkspaceEditFiles(files, ModuleFileText.DefaultAnsiCodePage)
             .ApplyAsync(Of(Rename(Ansi, Renamed), Rename(Renamed, third)), NoneOpen, CancellationToken.None);
 
         Assert.IsFalse(result.Applied);
         Assert.AreEqual(1, result.FailedChange);
-        CollectionAssert.AreEqual(new[] { Ansi }, result.Written.ToArray());
+        CollectionAssert.AreEqual(new[] { from }, result.Written.ToArray());
         Assert.AreEqual(
-            $"'{Renamed}' could not be renamed to '{third}': The disk is full. "
-            + $"What the edit had done is undone, except in these files, which could not be put back as they were: {Ansi}",
+            $"'{to}' could not be renamed to '{last}': The disk is full. "
+            + $"What the edit had done is undone, except in these files, which could not be put back as they were: {from}",
             result.FailureReason);
     }
 
@@ -155,7 +159,7 @@ public sealed class WorkspaceEditFilesTests
         var result = await Applier(files).ApplyAsync(Of(EditOf(Utf8, null, 1, 7, 10, "Café")), NoneOpen, CancellationToken.None);
 
         Assert.IsFalse(result.Applied);
-        StringAssert.StartsWith(result.FailureReason, $"'{Utf8}' could not be written: ");
+        StringAssert.StartsWith(result.FailureReason, $"'{OnDisk(Utf8)}' could not be written: ");
         StringAssert.EndsWith(result.FailureReason, " What the edit had done is undone.");
     }
 
