@@ -61,7 +61,7 @@ public static class SymbolDescriptorReader
     /// <see cref="SymbolProperties.Creatable"/>, <see cref="SymbolProperties.Extensible"/>).
     /// </summary>
     /// <remarks>
-    /// The module is untagged: <see cref="Runtime.Libraries.ReferencedProjectSymbols.Of"/> tags it, with the members <see cref="Read"/> reconstructs.
+    /// The module is untagged: the host tags it as the referenced project's, with the members <see cref="Read"/> reconstructs.
     /// </remarks>
     /// <param name="request">The define-symbols request.</param>
     /// <returns>The module symbol; <see langword="null"/> when the request is for a module of the session's own project.</returns>
