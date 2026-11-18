@@ -51,7 +51,9 @@ internal sealed class CompoundFile
     private readonly int _sectorSize;
     private readonly int _miniSectorSize;
     private readonly uint _miniStreamCutoff;
+    private readonly ushort _majorVersion;
     private readonly uint[] _fat;
+    private readonly List<uint> _fatSectors;
     private readonly uint[] _miniFat;
     private readonly IReadOnlyList<CompoundFileEntry> _entries;
     private readonly byte[] _miniStream;
@@ -73,6 +75,7 @@ internal sealed class CompoundFile
             throw new MSFormsFormatException(MSFormsFormatProblem.NotACompoundFile);
         }
 
+        _majorVersion = majorVersion;
         _sectorSize = 1 << sectorShift;
         _miniSectorSize = 1 << miniSectorShift;
         _miniStreamCutoff = BinaryPrimitives.ReadUInt32LittleEndian(span[56..]);
@@ -82,7 +85,7 @@ internal sealed class CompoundFile
         var firstMiniFatSector = BinaryPrimitives.ReadUInt32LittleEndian(span[60..]);
         var firstDifatSector = BinaryPrimitives.ReadUInt32LittleEndian(span[68..]);
 
-        _fat = ReadFat(span, fatSectorCount, firstDifatSector);
+        (_fat, _fatSectors) = ReadFat(span, fatSectorCount, firstDifatSector);
         _miniFat = firstMiniFatSector == EndOfChain
             ? []
             : ToUInt32s(ReadChain(firstMiniFatSector, long.MaxValue));
@@ -163,7 +166,24 @@ internal sealed class CompoundFile
         return stream.Size < _miniStreamCutoff ? ReadMiniChain(stream.StartSector, stream.Size) : ReadChain(stream.StartSector, stream.Size);
     }
 
-    private uint[] ReadFat(ReadOnlySpan<byte> span, uint fatSectorCount, uint firstDifatSector)
+    // what a CompoundFileEditor starts from: the file's bytes and layout, its FAT and the sectors that hold it, its mini FAT
+    internal ReadOnlyMemory<byte> Data => _data;
+
+    internal ushort MajorVersion => _majorVersion;
+
+    internal int SectorSize => _sectorSize;
+
+    internal int MiniSectorSize => _miniSectorSize;
+
+    internal uint MiniStreamCutoff => _miniStreamCutoff;
+
+    internal IReadOnlyList<uint> Fat => _fat;
+
+    internal IReadOnlyList<uint> FatSectors => _fatSectors;
+
+    internal IReadOnlyList<uint> MiniFat => _miniFat;
+
+    private (uint[] Fat, List<uint> Sectors) ReadFat(ReadOnlySpan<byte> span, uint fatSectorCount, uint firstDifatSector)
     {
         var sectorCount = (uint)((_data.Length - _sectorSize) / _sectorSize);
         if (fatSectorCount > sectorCount)
@@ -206,7 +226,7 @@ internal sealed class CompoundFile
             }
         }
 
-        return fat;
+        return (fat, fatSectors);
     }
 
     private ReadOnlySpan<byte> Sector(uint sector)

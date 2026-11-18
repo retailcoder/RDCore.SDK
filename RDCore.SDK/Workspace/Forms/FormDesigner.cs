@@ -83,6 +83,23 @@ public static partial class FormDesigner
     /// </summary>
     public const string MSFormsLibrary = "MSForms";
 
+    /// <summary>
+    /// The extension of the companion file of each kind of designer file of VBA and Visual Basic 6.0, keyed by the designer file's extension: a
+    /// form's <c>.frx</c> (<c>.frm</c>), a user control's <c>.ctx</c> (<c>.ctl</c>), a designer's <c>.dsx</c> (<c>.dsr</c>), a property page's
+    /// <c>.pgx</c> (<c>.pag</c>), a user document's <c>.dox</c> (<c>.dob</c>).
+    /// </summary>
+    /// <remarks>
+    /// Each extension has its dot; a key is looked up ignoring case.
+    /// </remarks>
+    public static IReadOnlyDictionary<string, string> CompanionExtensions { get; } = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+    {
+        [".frm"] = ".frx",
+        [".ctl"] = ".ctx",
+        [".dsr"] = ".dsx",
+        [".pag"] = ".pgx",
+        [".dob"] = ".dox",
+    };
+
     private const int BlobHeaderSize = 24;
 
     /// <summary>
@@ -111,6 +128,28 @@ public static partial class FormDesigner
                 match.Groups["file"].Value.Replace("\"\"", "\""),
                 long.Parse(match.Groups["offset"].Value, NumberStyles.HexNumber, CultureInfo.InvariantCulture))
             : null;
+    }
+
+    /// <summary>
+    /// The path of the companion file of the form module at <paramref name="modulePath"/>: the file its source names (<see cref="CompanionOf(string)"/>),
+    /// beside the module's own file, as <see cref="ReadCompanion"/> reads it.
+    /// </summary>
+    /// <param name="modulePath">The path of the form module's file.</param>
+    /// <param name="source">The form module's source.</param>
+    /// <returns>
+    /// The path, whether or not the file is there; <see langword="null"/> when the module names no companion file, or its designer block is not
+    /// terminated.
+    /// </returns>
+    public static string? CompanionPathOf(string modulePath, string? source)
+    {
+        try
+        {
+            return CompanionOf(source) is { } reference ? Path.Combine(Path.GetDirectoryName(modulePath) ?? string.Empty, reference.FileName) : null;
+        }
+        catch (FormDesignerFormatException)
+        {
+            return null;
+        }
     }
 
     /// <summary>

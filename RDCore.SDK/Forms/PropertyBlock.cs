@@ -85,6 +85,12 @@ internal sealed class Block(ulong mask)
 
     public Dictionary<string, object> Values { get; } = new(StringComparer.OrdinalIgnoreCase);
 
+    // where the structure starts in its stream, and where each stored string's count and characters are: what a writer
+    // that changes a string needs
+    public int Start { get; init; }
+
+    public Dictionary<string, (int CountAt, int TextAt)> StringsAt { get; } = new(StringComparer.OrdinalIgnoreCase);
+
     public bool Has(int bit) => (Mask & (1UL << bit)) != 0;
 
     public T Get<T>(string name, T fallback) => Values.TryGetValue(name, out var value) && value is T typed ? typed : fallback;
@@ -125,11 +131,12 @@ internal static class PropertyBlock
         var size = reader.ReadUInt16();
         var end = reader.Position + size;
         var mask = maskSize == 8 ? reader.ReadUInt32() | ((ulong)reader.ReadUInt32() << 32) : reader.ReadUInt32();
-        var block = new Block(mask);
+        var block = new Block(mask) { Start = start };
         var stored = slots.Where(slot => block.Has(slot.Bit)).ToList();
 
         // DataBlock: the values of 4 bytes or less, then padding to a multiple of 4
         var counts = new Dictionary<int, uint>();
+        var countsAt = new Dictionary<int, int>();
         foreach (var slot in stored)
         {
             switch (slot.Type)
@@ -175,6 +182,7 @@ internal static class PropertyBlock
                     break;
                 case SlotType.String or SlotType.Strings:
                     reader.AlignFrom(start, 4);
+                    countsAt[slot.Bit] = reader.Position;
                     counts[slot.Bit] = reader.ReadUInt32();
                     break;
                 case SlotType.Picture or SlotType.Font:
@@ -200,6 +208,7 @@ internal static class PropertyBlock
                     Set(block, slot, Points(width), Points(height));
                     break;
                 case SlotType.String:
+                    block.StringsAt[slot.Name] = (countsAt[slot.Bit], reader.Position);
                     Set(block, slot, reader.ReadString(counts[slot.Bit]));
                     reader.AlignFrom(start, 4);
                     break;
