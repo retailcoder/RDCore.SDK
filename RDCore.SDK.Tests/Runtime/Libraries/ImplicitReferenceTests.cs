@@ -84,6 +84,20 @@ public sealed class ImplicitReferenceTests
     }
 
     [TestMethod]
+    public void AReferenceToAProject_IsItsNameAlone_WhateverTypeLibraryItGives()
+    {
+        var project = Project(WithAForm) with
+        {
+            References = [new RDCoreReference { Name = "Scripting", IsProject = true, Guid = Guid.NewGuid(), Major = 2, Minor = 1 }, new RDCoreReference { Name = "Scripting" }],
+        };
+
+        var problem = LibrarySymbolProvider.Load(Source(), project, SupportedLanguages.RDVBA).Problems.Single();
+
+        Assert.AreEqual(LibraryProblemKind.DuplicateName, problem.Kind);
+        Assert.AreEqual(new LibraryIdentity("Scripting").ToString(), problem.Related[0]);
+    }
+
+    [TestMethod]
     public void AProjectWithNoRDFormsForm_DoesNotLoadRDForms()
     {
         var libraries = LibrarySymbolProvider.Load(Source(), Project(WithNoForm, "Scripting"));
