@@ -38,6 +38,11 @@ namespace RDCore.SDK.Runtime.Libraries;
 /// resolved by its name when it is used (<see cref="VBUnresolvedType"/>), as a workspace's classes that name one another are.
 /// </para>
 /// <para>
+/// An object of a class is of the class's default interface (<see cref="ClassDescription.DefaultInterface"/>) and of each class its description names
+/// (<see cref="ClassDescription.Implements"/>): each is one of the class symbol's <see cref="VBClassModuleSymbol.ImplementedInterfaces"/>, the default
+/// interface first. The classes named are given to the symbol once every library is read, as a class can name one of a library listed after its own.
+/// </para>
+/// <para>
 /// An application object (<see cref="ClassDescription.IsApplication"/>) is a class like any other, except the Visual Basic 6.0 library's (<c>VB.Global</c>,
 /// known by the library's <see cref="LibraryOrigin.Guid"/>). That one is a standard module of the library, like VBA's own global module: its members are
 /// procedures of the module, with no <c>Me</c>, and names of the project at the library's rank, and it has neither a type nor events.
@@ -145,6 +150,8 @@ public sealed class LibrarySymbolReader(Uri workspaceRoot, bool is64Bit = true)
             }
         }
 
+        ReadImplements(libraries, classes, symbols);
+
         // what shadows what is read off the symbols that are names of the project - the library's project, its module of enumerations, the enumerations and their
         // constants, the classes, the library's modules and their procedures, and the Visual Basic 6.0 library's Global module and its members. The members of a class are reached through an object, and no
         // name of the project is one of them.
@@ -152,6 +159,73 @@ public sealed class LibrarySymbolReader(Uri workspaceRoot, bool is64Bit = true)
         return [.. symbols.Select(symbol => symbol.GetProperty(SymbolProperties.Library) is { } library && rankOf.TryGetValue(library, out var rank)
             ? symbol.With(SymbolProperties.LibraryPriority, rank)
             : symbol)];
+    }
+
+    // the classes an object of a class is as well (ClassDescription.Implements), read once every library is: a library names a class of one that can be listed
+    // after it. Each is one of the class's implemented interfaces, after its default interface, and the class's symbol is replaced with the one that has them.
+    private static void ReadImplements(
+        IReadOnlyList<LibraryDescription> libraries,
+        Dictionary<(string Library, string Name), VBClassType> classes,
+        ImmutableArray<Symbol>.Builder symbols)
+    {
+        var implementing = libraries
+            .SelectMany(library => library.Classes.Where(description => !description.Implements.IsDefaultOrEmpty)
+                .Select(description => (library, description)))
+            .GroupBy(entry => (entry.library.Name, entry.description.Name), TypeKeyComparer.Instance)
+            .ToDictionary(group => group.Key, group => group.First(), TypeKeyComparer.Instance);
+        var done = new HashSet<(string Library, string Name)>(TypeKeyComparer.Instance);
+
+        // a class is given its classes after each of them is given its own, so that a class names the symbol that has them; where two name each other, the
+        // one that is given its classes first names the other's symbol as it was, which has the same Uri and so is the same class.
+        void Read((string Library, string Name) key)
+        {
+            if (!done.Add(key) || !implementing.TryGetValue(key, out var entry)
+                || !classes.TryGetValue(key, out var classType))
+            {
+                return;
+            }
+
+            // a qualified name is a class of the library it names, and one that is not is a class of this library. A name that is no class of the libraries
+            // read (an unknown class, or a class of a library that is not in the list) is left out, as a workspace class's Implements of a name that is no
+            // class is, and so is the class itself.
+            var named = entry.description.Implements
+                .Select(name => name.Trim())
+                .Select(name => name.IndexOf('.') is var split and > 0 ? (name[..split], name[(split + 1)..]) : (entry.library.Name, name))
+                .Where(classes.ContainsKey)
+                .ToArray();
+            foreach (var other in named)
+            {
+                Read(other);
+            }
+
+            var symbol = classType.Symbol;
+            var seen = new HashSet<string>(StringComparer.Ordinal) { symbol.Uri.AbsoluteUri };
+            ImmutableArray<VBClassModuleSymbol> interfaces =
+            [
+                .. symbol.ImplementedInterfaces.Where(implemented => seen.Add(implemented.Uri.AbsoluteUri)),
+                .. named.Select(other => classes[other].Symbol).Where(implemented => seen.Add(implemented.Uri.AbsoluteUri)),
+            ];
+            if (interfaces.Length == symbol.ImplementedInterfaces.Length)
+            {
+                return;
+            }
+
+            var replaced = symbol with { ImplementedInterfaces = interfaces };
+            classes[key] = VBClassType.FromClassModule(replaced);
+            for (var index = 0; index < symbols.Count; index++)
+            {
+                if (ReferenceEquals(symbols[index], symbol))
+                {
+                    symbols[index] = replaced;
+                    break;
+                }
+            }
+        }
+
+        foreach (var key in implementing.Keys)
+        {
+            Read(key);
+        }
     }
 
     // the names, without the library, of the types of this library that a class declares its members and events as.
