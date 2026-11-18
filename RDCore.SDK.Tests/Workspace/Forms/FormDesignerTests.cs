@@ -200,6 +200,25 @@ public sealed class FormDesignerTests
     }
 
     [TestMethod]
+    public void CompanionPathOf_IsTheFileTheModuleNames_BesideIt()
+    {
+        var folder = Path.Combine(Path.GetTempPath(), "rdcore-forms");
+
+        Assert.AreEqual(Path.Combine(folder, "ExampleView.frx"), FormDesigner.CompanionPathOf(Path.Combine(folder, "Renamed.frm"), Text("ExampleView.frm")));
+        Assert.IsNull(FormDesigner.CompanionPathOf(Path.Combine(folder, "Form1.frm"), VisualBasic6Module), "a module that names none");
+        Assert.IsNull(FormDesigner.CompanionPathOf(Path.Combine(folder, "Module1.bas"), "Attribute VB_Name = \"Module1\"\r\n"), "a module that is not a form");
+    }
+
+    [TestMethod]
+    [DataRow(".frm", ".frx")]
+    [DataRow(".CTL", ".ctx")]
+    [DataRow(".dsr", ".dsx")]
+    [DataRow(".pag", ".pgx")]
+    [DataRow(".dob", ".dox")]
+    public void CompanionExtensions_AreTheBinaryFilesOfEachDesigner(string designer, string companion)
+        => Assert.AreEqual(companion, FormDesigner.CompanionExtensions[designer]);
+
+    [TestMethod]
     public void CompanionOf_VisualBasic6FormThatCitesNoFrx_IsNone()
         => Assert.IsNull(FormDesigner.CompanionOf(VisualBasic6Module));
 
