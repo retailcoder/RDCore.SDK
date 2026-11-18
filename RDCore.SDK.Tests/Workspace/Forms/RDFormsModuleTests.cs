@@ -166,6 +166,14 @@ public sealed class RDFormsModuleTests
     }
 
     [TestMethod]
+    [DataRow(FormDesignerKind.RDForms, true, DisplayName = "an RDForms form")]
+    [DataRow(FormDesignerKind.VisualBasic6, true, DisplayName = "a Visual Basic 6.0 form")]
+    [DataRow(FormDesignerKind.MSForms, false, DisplayName = "a UserForm")]
+    [DataRow(FormDesignerKind.Other, false, DisplayName = "another designer's form")]
+    public void AnRDFormsForm_KeepsVisualBasic6sFormModel_AsAVB6FormDoes(FormDesignerKind kind, bool model)
+        => Assert.AreEqual(model, new FormDescriptor("Form1", kind, new FormControlClass(null, "Form"), new Dictionary<string, string>(), []).HasVisualBasic6FormModel);
+
+    [TestMethod]
     public void Register_TakesAReader() => Assert.ThrowsExactly<ArgumentNullException>(() => FormDesigner.Register(null!));
 
     [TestMethod]

@@ -169,6 +169,14 @@ public sealed record class FormDescriptor(
     /// </summary>
     public double PointsPerUnit => Kind == FormDesignerKind.RDForms ? 0.75 : 0.05;
 
+    /// <summary>
+    /// Whether the form keeps Visual Basic 6.0's form model, as a Visual Basic 6.0 form (<see cref="FormDesignerKind.VisualBasic6"/>) and an RDForms form
+    /// (<see cref="FormDesignerKind.RDForms"/>) do: its handlers are <c>Form_</c>'s, a member of its form loads it, <c>Show</c> with no style shows it
+    /// modeless, its code can draw on it, and a form host that hosts Visual Basic 6.0 forms hosts it. <see langword="false"/> for a UserForm and for any
+    /// other designer's form.
+    /// </summary>
+    public bool HasVisualBasic6FormModel => Kind is FormDesignerKind.VisualBasic6 or FormDesignerKind.RDForms;
+
     // a length property, as points: a designer writes numbers the same way in every locale.
     private double? PointsOf(string property)
         => double.TryParse(Properties.GetValueOrDefault(property), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var length)
