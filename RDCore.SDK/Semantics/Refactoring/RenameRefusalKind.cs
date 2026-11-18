@@ -81,4 +81,10 @@ public enum RenameRefusalKind
     /// The new name of a module is longer than a module's name can be (MS-VBAL §4.2).
     /// </summary>
     ModuleNameTooLong,
+
+    /// <summary>
+    /// The name is a procedure's of a document module whose host is not known, or whose host's class the project does not resolve: what the host calls
+    /// the procedure for cannot be told, so none of its procedures is renamed, whatever its name.
+    /// </summary>
+    UnknownDocumentHost,
 }

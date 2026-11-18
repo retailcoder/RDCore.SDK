@@ -61,6 +61,12 @@ public sealed class RefactoringTitlesTests
         => Assert.AreEqual(expected, RefactoringTitles.RenameRefusal(RenameRefusalKind.BoundHandlerOrImplementation, "Class1_Foo", culture: CultureInfo.GetCultureInfo(language)));
 
     [TestMethod]
+    [DataRow("en", "'Workbook_Open' is a procedure of a document module whose host is not known: what the host calls it for is not known, and the rename could make that call fail.")]
+    [DataRow("fr", "« Workbook_Open » est une procédure d'un module de document dont l'hôte n'est pas connu : ce pour quoi l'hôte l'appelle n'est pas connu, et le renommage pourrait faire échouer cet appel.")]
+    public void AProcedureOfADocumentModuleWithAnUnknownHost_SaysThatWhatTheHostCallsItForIsNotKnown(string language, string expected)
+        => Assert.AreEqual(expected, RefactoringTitles.RenameRefusal(RenameRefusalKind.UnknownDocumentHost, "Workbook_Open", culture: CultureInfo.GetCultureInfo(language)));
+
+    [TestMethod]
     [DataRow("en", "'Foo' already means Module1.Foo at Module2 4:12: the rename would change what the code refers to.")]
     [DataRow("fr", "« Foo » désigne déjà Module1.Foo à Module2 4:12 : le renommage changerait ce à quoi le code fait référence.")]
     public void ARefusedRename_NamesTheNameWhatElseItMeans_AndWhere(string language, string expected)

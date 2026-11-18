@@ -28,6 +28,9 @@
   <data name="Rename_BoundHandlerOrImplementation" xml:space="preserve">
     <value>'{0}' handles an event or implements an interface member: renamed, it would do neither. Rename its source, or the event or member it is bound to, and it is renamed with them.</value>
   </data>
+  <data name="Rename_UnknownDocumentHost" xml:space="preserve">
+    <value>'{0}' is a procedure of a document module whose host is not known: what the host calls it for is not known, and the rename could make that call fail.</value>
+  </data>
   <data name="Rename_Event" xml:space="preserve">
     <value>'{0}' is an event, and its handlers are named after it: renaming an event is not supported yet.</value>
   </data>
