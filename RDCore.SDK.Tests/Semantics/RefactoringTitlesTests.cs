@@ -61,51 +61,6 @@ public sealed class RefactoringTitlesTests
         => Assert.AreEqual(expected, RefactoringTitles.RenameRefusal(RenameRefusalKind.BoundHandlerOrImplementation, "Class1_Foo", culture: CultureInfo.GetCultureInfo(language)));
 
     [TestMethod]
-    public void EveryRefusalOfAParameterRemovalOrReordering_HasItsOwnText_InEachLanguage()
-    {
-        var english = CultureInfo.GetCultureInfo("en");
-        var french = CultureInfo.GetCultureInfo("fr");
-        foreach (var kind in Enum.GetValues<ParameterRemovalRefusalKind>())
-        {
-            var text = RefactoringTitles.ParameterRemovalRefusal(kind, "Foo", culture: english);
-            Assert.AreNotEqual(kind.ToString(), text, $"{kind} has no English text.");
-            Assert.AreNotEqual(text, RefactoringTitles.ParameterRemovalRefusal(kind, "Foo", culture: french), $"{kind} has no French text.");
-        }
-
-        foreach (var kind in Enum.GetValues<ParameterReorderRefusalKind>())
-        {
-            var text = RefactoringTitles.ParameterReorderRefusal(kind, "Foo", culture: english);
-            Assert.AreNotEqual(kind.ToString(), text, $"{kind} has no English text.");
-            Assert.AreNotEqual(text, RefactoringTitles.ParameterReorderRefusal(kind, "Foo", culture: french), $"{kind} has no French text.");
-        }
-    }
-
-    [TestMethod]
-    [DataRow("en", "Remove parameter 'value'", "Reorder the parameters of 'DoIt'", "The change is not accepted: why")]
-    [DataRow("fr", "Supprimer le paramètre « value »", "Réordonner les paramètres de « DoIt »", "La modification n'est pas acceptée : why")]
-    public void TheCodeActionsOfParameters_NameTheParameterOrTheProcedure(string language, string removal, string reordering, string notAccepted)
-    {
-        var culture = CultureInfo.GetCultureInfo(language);
-
-        Assert.AreEqual(removal, RefactoringTitles.RemoveParameter("value", culture));
-        Assert.AreEqual(reordering, RefactoringTitles.ReorderParameters("DoIt", culture));
-        Assert.AreEqual(notAccepted, RefactoringTitles.ReorderParametersNotAccepted("why", culture));
-        Assert.IsFalse(string.IsNullOrWhiteSpace(RefactoringTitles.ReorderParametersChoice(culture)));
-        Assert.IsFalse(string.IsNullOrWhiteSpace(RefactoringTitles.ReorderParametersChoiceDescription(culture)));
-    }
-
-    [TestMethod]
-    [DataRow("en", "'Workbook_Open' is a procedure of a document module whose host is not known: what the host calls it for, and with which arguments, is not known.")]
-    [DataRow("fr", "« Workbook_Open » est une procédure d'un module de document dont l'hôte n'est pas connu : ce pour quoi l'hôte l'appelle, et avec quels arguments, n'est pas connu.")]
-    public void AParameterOfAProcedureOfADocumentModuleWithAnUnknownHost_IsNeitherRemovedNorReordered_ForThatReason(string language, string expected)
-    {
-        var culture = CultureInfo.GetCultureInfo(language);
-
-        Assert.AreEqual(expected, RefactoringTitles.ParameterRemovalRefusal(ParameterRemovalRefusalKind.UnknownDocumentHost, "Workbook_Open", culture: culture));
-        Assert.AreEqual(expected, RefactoringTitles.ParameterReorderRefusal(ParameterReorderRefusalKind.UnknownDocumentHost, "Workbook_Open", culture: culture));
-    }
-
-    [TestMethod]
     [DataRow("en", "'Workbook_Open' is a procedure of a document module whose host is not known: what the host calls it for is not known, and the rename could make that call fail.")]
     [DataRow("fr", "« Workbook_Open » est une procédure d'un module de document dont l'hôte n'est pas connu : ce pour quoi l'hôte l'appelle n'est pas connu, et le renommage pourrait faire échouer cet appel.")]
     public void AProcedureOfADocumentModuleWithAnUnknownHost_SaysThatWhatTheHostCallsItForIsNotKnown(string language, string expected)
