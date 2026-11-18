@@ -18,8 +18,9 @@ namespace RDCore.SDK.Client;
 /// <param name="FailureReason">Why the edit was not applied, in the language of the user interface; <see langword="null"/> when it was.</param>
 /// <param name="FailedChange">The index of the change that was not applied, among the edit's document changes (or its changes); <see langword="null"/> when it was.</param>
 /// <param name="Written">
-/// The paths of the files whose text was written, in the order they were written, each where the edit leaves it: every file whose text the edit changes, when it
-/// was applied. When it was not, the paths the edit changed and could not put back as they were; empty when it put everything back.
+/// The paths of the files whose text was written, in the order they were written, each where the edit leaves it: every file whose text
+/// the edit changes, when it was applied. When it was not, the paths the edit changed and could not put back as they were; empty when it
+/// put everything back.
 /// </param>
 public sealed record class WorkspaceEditFilesResult(bool Applied, string? FailureReason, int? FailedChange, IReadOnlyList<string> Written)
 {
@@ -36,16 +37,17 @@ public sealed record class WorkspaceEditFilesResult(bool Applied, string? Failur
 /// </summary>
 /// <remarks>
 /// <para>
-/// The edit is applied whole or not at all. Every change is made in memory first, in the order the edit lists them: a change that cannot be made (a document
-/// whose version is not the client's, a file that does not exist, a rename over a file that exists, a text its encoding cannot write, an edit that does not fit
-/// the text) refuses the edit before any file is touched. Then the files are renamed and deleted, in the edit's order, and each text is written, atomically,
-/// where the edit leaves its file. When one of those fails, what was done before it is undone (<c>failureHandling</c> <c>undo</c>): each text is written back as
-/// it was, each rename is reversed, and each deleted file is back.
+/// The edit is applied whole or not at all. Every change is made in memory first, in the order the edit lists them: a change that cannot be
+/// made (a document whose version is not the client's, a file that does not exist, a rename over a file that exists, a text its encoding
+/// cannot write, an edit that does not fit the text) refuses the edit before any file is touched. Then the files are renamed and deleted, in
+/// the edit's order, and each text is written, atomically, where the edit leaves its file. When one of those fails, what was done before it
+/// is undone (<c>failureHandling</c> <c>undo</c>): each text is written back as it was, each rename is reversed, and each deleted file is
+/// back.
 /// </para>
 /// <para>
-/// A file the edit deletes, or renames another over (<c>overwrite</c>), is set beside itself under another name, and deleted for good only once every change was
-/// made, so undoing the edit never loses it. Creating a file and deleting a folder are refused. A client that applies edits with this says what it takes with
-/// <see cref="Capability"/>.
+/// A file the edit deletes, or renames another over (<c>overwrite</c>), is set beside itself under another name, and deleted for good only
+/// once every change was made, so undoing the edit never loses it. Creating a file and deleting a folder are refused. A client that applies
+/// edits with this says what it takes with <see cref="Capability"/>.
 /// </para>
 /// </remarks>
 /// <param name="fileSystem">The file system the files are on.</param>
