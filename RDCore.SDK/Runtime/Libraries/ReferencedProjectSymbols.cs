@@ -18,7 +18,7 @@ namespace RDCore.SDK.Runtime.Libraries;
 /// </para>
 /// <para>
 /// A member is accessible when it is declared <c>Public</c> or <c>Global</c>, or without an access modifier where that makes it public (a procedure,
-/// an <c>Enum</c>, a user-defined type), and its module allows it (<strong>MS-VBAL §5.2.3</strong>):
+/// an <c>Enum</c>, a user-defined type), and its module allows it (<strong>MS-VBAL §5.2.3</strong>; for a procedure, <strong>MS-VBAL §5.3.1</strong>):
 /// </para>
 /// <list type="bullet">
 /// <item>a variable, a procedure or an <c>Enum</c> and its members: in a class module, or a procedural module that is not a private module;</item>
