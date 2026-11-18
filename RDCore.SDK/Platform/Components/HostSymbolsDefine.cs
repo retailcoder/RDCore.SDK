@@ -98,9 +98,8 @@ public record class DefineSymbolsParams : IRequest, IRequest<DefineSymbolsResult
     /// <remarks>
     /// The host composes the class from them once its members are defined
     /// (<see cref="RDCore.SDK.Runtime.Abstract.Execution.ISessionSymbols.TryComposeClassModule(Uri, ImmutableArray{string}, ImmutableArray{SourceRange})"/>),
-    /// resolving each to the class it
-    /// names among the class modules it has: an object of the class is then an object that implements the interface, which is
-    /// what a call through a variable declared as the interface is dispatched on (<strong>§5.3.1.9</strong>), and what a
+    /// resolving each to the class it names among the class modules it has: an object of the class is then an object that implements the
+    /// interface, which is what a call through a variable declared as the interface is dispatched on (<strong>§5.3.1.9</strong>), and what a
     /// <c>TypeOf ... Is</c> and a <c>Set</c> to such a variable are decided by.
     /// </remarks>
     public ImmutableArray<string> ImplementedInterfaceNames { get; init; } = [];
