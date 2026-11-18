@@ -44,6 +44,8 @@ public abstract class AppHost<TApp>() : IDisposable
     private Exception? _unhandledFault;
     // what the setting of the language of the user interface came to, when the configuration was read.
     private UserInterfaceLanguageSetting? _language;
+    // the root folder of the workspace whose settings are a layer of the configuration; none when the command line names no folder.
+    private string? _workspaceFolder;
 
     private static readonly Lazy<AssemblyName> _info = new(() => Assembly.GetEntryAssembly()?.GetName()!, LazyThreadSafetyMode.PublicationOnly);
 
@@ -342,6 +344,14 @@ public abstract class AppHost<TApp>() : IDisposable
             var configuration = builder!.Configuration;
             Configure(configuration, builder.Services, args);
 
+            // what the workspace sets for itself goes above what the user set and below what the process is started with; which workspace it is, the command
+            // line says, and Configure has just put it in the configuration.
+            if (configuration[$"{SettingsSchema.Root}:Workspace:WorkspaceUri"] is { Length: > 0 } workspace && WorkspaceSettingsStore.FolderOf(workspace) is { } folder)
+            {
+                _workspaceFolder = folder;
+                configuration.AddWorkspaceSettings(folder, Settings);
+            }
+
             // bound the generic host's shutdown so a wedged background task cannot hang the process
             // (this also bounds ConsoleLifetime's ProcessExit wait).
             builder.Services.Configure<HostOptions>(options => options.ShutdownTimeout = TimeSpan.FromSeconds(5));
@@ -396,7 +406,13 @@ public abstract class AppHost<TApp>() : IDisposable
         services
             .AddLiveSettings<SdkAppOptions>(SettingsSchema.Platform, string.Empty)
             .AddLiveSettings<SdkServerOptions>(SettingsSchema.Platform, "Server")
-            .AddSingleton<ILiveSettings>(sp => new LiveSettings(sp.GetServices<LiveSettingsTarget>(), Settings, sp.GetRequiredService<IPlatformEnvironment>(), sp.GetService<ILogger<LiveSettings>>()));
+            .AddSingleton<ILiveSettings>(sp => new LiveSettings(sp.GetServices<LiveSettingsTarget>(), Settings, sp.GetRequiredService<IPlatformEnvironment>(), sp.GetService<ILogger<LiveSettings>>())
+            {
+                Workspace = _workspaceFolder is null ? new Dictionary<string, string>() : sp.GetRequiredService<WorkspaceSettingsStore>().Values(_workspaceFolder),
+            })
+            // the settings a workspace keeps for itself, in the same file the configuration reads them from.
+            .AddSingleton(sp => new WorkspaceSettingsStore(sp.GetRequiredService<IFileSystem>(), Settings))
+            .AddSingleton<IWorkspaceSettings>(sp => sp.GetRequiredService<WorkspaceSettingsStore>());
 
         services
             .AddSingleton<IRuntimeEnvironmentProfile>(sp =>
