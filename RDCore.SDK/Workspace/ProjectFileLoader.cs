@@ -178,7 +178,7 @@ public sealed class ProjectFileLoader(IFileSystem fileSystem) : IProjectFileLoad
             return;
         }
 
-        foreach (var file in files.Where(file => IsSourceFile(file, language)))
+        foreach (var file in files.Where(language.IsSourceFile))
         {
             var relativeUri = RelativeUriOf(root, file);
             var name = ModuleName.Resolve(await ReadSourceAsync(file, token), relativeUri);
@@ -203,12 +203,6 @@ public sealed class ProjectFileLoader(IFileSystem fileSystem) : IProjectFileLoad
                 folders.Add(RelativeUriOf(root, subdirectory));
             }
         }
-    }
-
-    private bool IsSourceFile(string path, SupportedLanguage language)
-    {
-        var extension = fileSystem.Path.GetExtension(path);
-        return language.FileTypes.Any(fileType => string.Equals(fileType.TrimStart('*'), extension, StringComparison.OrdinalIgnoreCase));
     }
 
     private async Task<string?> ReadSourceAsync(string path, CancellationToken token)
