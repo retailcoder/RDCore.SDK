@@ -269,6 +269,45 @@ public sealed class ScopeTreeBuilderTests
         Assert.AreSame(tree.Global, project.Parent);
     }
 
+    private static readonly Uri OtherRoot = new("file://rdcore-test-lib");
+
+    // MS-VBAL §5.6.10: each project is a namespace of its own.
+    [TestMethod]
+    public void ModulesUnderTwoRoots_AreEachUnderTheProjectScopeOfTheirOwnRoot()
+    {
+        var module = Module("Mod1");
+        var library = new VBStandardModuleSymbol(OtherRoot, OtherRoot, "LibMod");
+
+        var tree = ScopeTreeBuilder.Build([library, module]);
+        var project = tree.ScopeFor(module.Uri).Parent!;
+        var libraryProject = tree.ScopeFor(library.Uri).Parent!;
+
+        Assert.AreEqual(LexicalScopeKind.Project, project.Kind);
+        Assert.AreEqual(LexicalScopeKind.Project, libraryProject.Kind);
+        Assert.AreNotSame(project, libraryProject);
+        Assert.AreSame(tree.Global, libraryProject.Parent);
+        Assert.AreSame(project, tree.ScopeFor(Root), "keyed on its root");
+        Assert.AreSame(libraryProject, tree.ScopeFor(OtherRoot));
+        CollectionAssert.AreEqual(new[] { libraryProject, project }, tree.Projects.ToArray(), "in the order of the first module of each");
+    }
+
+    [TestMethod]
+    public void APublicMemberOfAModuleUnderAnotherRoot_IsInThatRootsProjectScope_Only()
+    {
+        var module = Module("Mod1");
+        var library = new VBStandardModuleSymbol(OtherRoot, OtherRoot, "LibMod");
+        var api = new VBProcedureMemberSymbol(OtherRoot, library.Uri, "DoWork", ScopeKind.Module, SymbolKindExt.Procedure, VBVoidType.TypeInfo, R, R,
+            AccessModifier.Public);
+        var (colour, red) = Enum(library.Uri, "Colour", "Red");
+
+        var tree = ScopeTreeBuilder.Build([module, library, api, colour, red]);
+
+        Assert.AreSame(api, tree.ScopeFor(library.Uri).Parent!.DeclaredAs("DoWork").Single());
+        Assert.AreSame(red, tree.ScopeFor(library.Uri).Parent!.DeclaredAs("Red").Single());
+        Assert.IsEmpty(tree.ScopeFor(module.Uri).Parent!.DeclaredAs("DoWork"));
+        Assert.IsEmpty(tree.ScopeFor(module.Uri).Parent!.DeclaredAs("Red"));
+    }
+
     [TestMethod]
     public void PublicStandardModuleMembers_AreVisibleInTheProjectScope()
     {

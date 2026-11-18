@@ -12,8 +12,8 @@ namespace RDCore.SDK.Model.Symbols;
 /// <list type="bullet">
 /// <item>module symbols, project-level precompiler constants, global <see cref="StaticSymbol"/>s, and
 ///   anything the tree cannot otherwise place → the <see cref="ScopeTree.Global"/> scope;</item>
-/// <item>a standard module's non-<c>Private</c> members → the project scope, where sibling modules
-///   see them;</item>
+/// <item>a standard module's non-<c>Private</c> members → the scope of its project, where sibling modules see them: a project
+/// scope for each <see cref="Symbol.WorkspaceRoot"/> the modules are under, each a namespace of its own (<strong>MS-VBAL §5.6.10</strong>);</item>
 /// <item>every module's members: fields, constants, procedures, properties, enums, user-defined
 ///   types, events, <c>Declare</c>s → that module's own scope;</item>
 /// <item>a procedure's parameters and its procedure-local <c>Dim</c> / <c>Static</c> / <c>Const</c>
@@ -102,7 +102,7 @@ public static class ScopeTreeBuilder
         // enclosing project" (public) or "within the enclosing module" (private). An enum constant is
         // lexically scoped exactly as its enum is, so it goes in the scope that declares the enum. A
         // constant whose enum is not in this set has no scope to hang off, and is dropped.
-        var projectEnumConstants = new List<Symbol>();
+        var projectEnumConstants = new List<(Symbol Constant, string Module)>();
         foreach (var constant in all.OfType<VBEnumConstMemberSymbol>())
         {
             if (!enums.TryGetValue(constant.ParentUri.AbsoluteUri, out var declaringEnum))
@@ -115,7 +115,7 @@ public static class ScopeTreeBuilder
                 inModule.Add(constant);
                 if (IsProjectVisible(declaringEnum))
                 {
-                    projectEnumConstants.Add(constant);
+                    projectEnumConstants.Add((constant, declaringEnum.ParentUri.AbsoluteUri));
                 }
             }
             else
@@ -141,37 +141,44 @@ public static class ScopeTreeBuilder
             [StaticSymbol.GlobalUri.AbsoluteUri] = global,
         };
 
-        // the project scope surfaces a standard module's non-Private members to its siblings. it is
-        // keyed on the workspace root the modules share, and skipped when the set has no modules.
-        var moduleParent = global;
-        if (modules.Count > 0)
+        // MS-VBAL §5.6.10: each project is a namespace of its own. A project scope per workspace root its modules are under surfaces a standard module's
+        // non-Private members to the modules of that project; a set with no modules has none.
+        var projectOfModule = new Dictionary<string, LexicalScope>(StringComparer.Ordinal);
+        var projectOfRoot = new Dictionary<string, LexicalScope>(StringComparer.Ordinal);
+        foreach (var root in modules.GroupBy(module => module.Value.WorkspaceRoot.AbsoluteUri, StringComparer.Ordinal))
         {
-            var workspaceRoot = modules.Values.First().WorkspaceRoot;
-            var projectDeclarations = standardModuleUris
-                .SelectMany(uri => moduleDeclarations[uri])
+            var uris = root.Select(module => module.Key).ToHashSet(StringComparer.Ordinal);
+            var projectDeclarations = root
+                .Where(module => standardModuleUris.Contains(module.Key))
+                .SelectMany(module => moduleDeclarations[module.Key])
                 // an enum constant has no access modifier of its own — its enum's is what decides, and
                 // projectEnumConstants already carries the ones that reach here.
                 .Where(symbol => symbol is not VBEnumConstMemberSymbol && IsProjectVisible(symbol))
                 // a public Enum or user-defined type is accessible within the project wherever it is
                 // declared (MS-VBAL §5.2.3.4 / §5.2.3.3) — a class module's other members would need
                 // an instance, but a declared type needs none.
-                .Concat(modules.Keys
-                    .Where(uri => !standardModuleUris.Contains(uri))
-                    .SelectMany(uri => moduleDeclarations[uri])
+                .Concat(root
+                    .Where(module => !standardModuleUris.Contains(module.Key))
+                    .SelectMany(module => moduleDeclarations[module.Key])
                     .Where(symbol => symbol is VBEnumMemberSymbol or VBUserDefinedTypeMemberSymbol)
                     .Where(IsProjectVisible))
-                .Concat(projectEnumConstants)
+                .Concat(projectEnumConstants.Where(constant => uris.Contains(constant.Module)).Select(constant => constant.Constant))
                 .ToList();
+            var workspaceRoot = root.First().Value.WorkspaceRoot;
             var project = new LexicalScope(workspaceRoot, LexicalScopeKind.Project, global, projectDeclarations);
             scopeByUri[workspaceRoot.AbsoluteUri] = project;
-            moduleParent = project;
+            projectOfRoot[root.Key] = project;
+            foreach (var uri in uris)
+            {
+                projectOfModule[uri] = project;
+            }
         }
 
         var moduleScopes = new Dictionary<string, LexicalScope>(StringComparer.Ordinal);
         foreach (var (uri, symbol) in modules)
         {
             var directives = symbol is VBModuleSymbol module ? module.Directives : ModuleDirectives.None;
-            var scope = new LexicalScope(symbol.Uri, LexicalScopeKind.Module, moduleParent, moduleDeclarations[uri], directives);
+            var scope = new LexicalScope(symbol.Uri, LexicalScopeKind.Module, projectOfModule[uri], moduleDeclarations[uri], directives);
             moduleScopes[uri] = scope;
             scopeByUri[uri] = scope;
             MapDeclarationsToScope(scopeByUri, moduleDeclarations[uri], scope);
@@ -179,7 +186,9 @@ public static class ScopeTreeBuilder
 
         foreach (var (uri, symbol) in procedures)
         {
-            var parent = moduleScopes.GetValueOrDefault(symbol.ParentUri.AbsoluteUri, moduleParent);
+            // a procedure whose module is not in the set is under its project's scope, when the set has a module of that project.
+            var parent = moduleScopes.GetValueOrDefault(symbol.ParentUri.AbsoluteUri)
+                ?? projectOfRoot.GetValueOrDefault(symbol.WorkspaceRoot.AbsoluteUri, global);
             var scope = new LexicalScope(symbol.Uri, LexicalScopeKind.Procedure, parent, procedureDeclarations[uri]);
             scopeByUri[uri] = scope; // a procedure resolves from its own scope, not its module's
             MapDeclarationsToScope(scopeByUri, procedureDeclarations[uri], scope);
@@ -187,7 +196,7 @@ public static class ScopeTreeBuilder
 
         MapDeclarationsToScope(scopeByUri, globalDeclarations, global);
 
-        return new ScopeTree(global, scopeByUri);
+        return new ScopeTree(global, scopeByUri, [.. projectOfRoot.Values]);
     }
 
     // record each declared symbol's own uri against the scope that declares it, so a lookup can
