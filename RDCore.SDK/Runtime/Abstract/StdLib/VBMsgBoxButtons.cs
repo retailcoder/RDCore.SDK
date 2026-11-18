@@ -1,8 +1,9 @@
 namespace RDCore.SDK.Runtime.Abstract.StdLib;
 
 /// <summary>
-/// The buttons a <c>MsgBox</c> has, by its style (<strong>MS-VBAL 6.1.1.12</strong> <c>VbMsgBoxStyle</c>, <strong>6.1.1.11</strong> <c>VbMsgBoxResult</c>): what
-/// whoever shows the dialog may answer it with, which of them has the focus, and how the dialog is laid out, as Windows shows it.
+/// The buttons a <c>MsgBox</c> has, by its style (<strong>MS-VBAL §6.1.1.12</strong> <c>VbMsgBoxStyle</c>, <strong>§6.1.1.11</strong>
+/// <c>VbMsgBoxResult</c>): what whoever shows the dialog may answer it with, which of them has the focus, and how the dialog is laid out, as Windows
+/// shows it.
 /// </summary>
 public static class VBMsgBoxButtons
 {
@@ -23,17 +24,17 @@ public static class VBMsgBoxButtons
             : 0;
 
     /// <summary>
-    /// The index in <see cref="ChoicesOf"/> of the button that has the focus when the dialog opens: the one <see cref="VBMsgBoxStyle.VBDefaultButton1"/> through
-    /// <see cref="VBMsgBoxStyle.VBDefaultButton4"/> names, or the first when the dialog has no such button.
+    /// The index in <see cref="ChoicesOf"/> of the button that has the focus when the dialog opens: the one <see cref="VBMsgBoxStyle.VBDefaultButton1"/>
+    /// through <see cref="VBMsgBoxStyle.VBDefaultButton4"/> names, or the first when the dialog has no such button.
     /// </summary>
     /// <param name="style">The style a program asked for.</param>
     public static int DefaultChoiceOf(VBMsgBoxStyle style)
         => (((int)style & DefaultButtonMask) >> DefaultButtonShift) is var index && index < ChoicesOf(style).Count ? index : 0;
 
     /// <summary>
-    /// The answer of a dialog of the style closed without choosing a button, by <kbd>Esc</kbd> or its close button: <see cref="VBMsgBoxResult.VBCancel"/> when
-    /// it has a <em>Cancel</em> button, <see cref="VBMsgBoxResult.VBOK"/> when <em>OK</em> is its only one, and <see langword="null"/> for a dialog that cannot be
-    /// closed that way (<see cref="VBMsgBoxStyle.VBYesNo"/>, <see cref="VBMsgBoxStyle.VBAbortRetryIgnore"/>).
+    /// The answer of a dialog of the style closed without choosing a button, by <kbd>Esc</kbd> or its close button: <see cref="VBMsgBoxResult.VBCancel"/>
+    /// when it has a <em>Cancel</em> button, <see cref="VBMsgBoxResult.VBOK"/> when <em>OK</em> is its only one, and <see langword="null"/> for a dialog
+    /// that cannot be closed that way (<see cref="VBMsgBoxStyle.VBYesNo"/>, <see cref="VBMsgBoxStyle.VBAbortRetryIgnore"/>).
     /// </summary>
     /// <param name="style">The style a program asked for.</param>
     public static VBMsgBoxResult? EscapeResultOf(VBMsgBoxStyle style) => ChoicesOf(style) switch
