@@ -49,9 +49,9 @@ public static partial class FormDesigner
     public const string MSFormsLibrary = "MSForms";
 
     /// <summary>
-    /// The extension of the companion file of each kind of designer file of VBA and Visual Basic 6.0, by the designer file's own: a form's <c>.frx</c>
-    /// (<c>.frm</c>), a user control's <c>.ctx</c> (<c>.ctl</c>), a designer's <c>.dsx</c> (<c>.dsr</c>), a property page's <c>.pgx</c> (<c>.pag</c>), a
-    /// user document's <c>.dox</c> (<c>.dob</c>).
+    /// The extension of the companion file of each kind of designer file of VBA and Visual Basic 6.0, keyed by the designer file's extension: a
+    /// form's <c>.frx</c> (<c>.frm</c>), a user control's <c>.ctx</c> (<c>.ctl</c>), a designer's <c>.dsx</c> (<c>.dsr</c>), a property page's
+    /// <c>.pgx</c> (<c>.pag</c>), a user document's <c>.dox</c> (<c>.dob</c>).
     /// </summary>
     /// <remarks>
     /// Each extension has its dot; a key is looked up ignoring case.
@@ -101,7 +101,10 @@ public static partial class FormDesigner
     /// </summary>
     /// <param name="modulePath">The path of the form module's file.</param>
     /// <param name="source">The form module's source.</param>
-    /// <returns>The path, whether or not the file is there; <c>null</c> when the module names no companion file, or its designer block is not terminated.</returns>
+    /// <returns>
+    /// The path, whether or not the file is there; <see langword="null"/> when the module names no companion file, or its designer block is not
+    /// terminated.
+    /// </returns>
     public static string? CompanionPathOf(string modulePath, string? source)
     {
         try

@@ -47,12 +47,12 @@ public sealed record class StagedFile(DocumentUri Target, DocumentUri Staged, Do
 /// A staged file holds content made of the file as it was. When the file changes before the client applies the edit, the staged file is deleted
 /// (<see cref="Verify"/>): the edit's rename of it then fails, and a client that undoes a failed edit puts every other change back. The server calls
 /// <see cref="Verify"/> when it hears of a change to a file (<c>workspace/didChangeWatchedFiles</c>, its own watcher) and when the client says it will rename
-/// a staged file (<c>workspace/willRenameFiles</c>, whose filter <see cref="GlobPattern"/> is).
+/// a staged file (<c>workspace/willRenameFiles</c>, with <see cref="GlobPattern"/> as its filter).
 /// </para>
 /// <para>
 /// A file is staged for one edit at a time: staging another deletes the ones before it, and so does <see cref="Discard"/>. A staged file a server left behind
-/// (it ended before the client applied the edit, or the client never did) is deleted by <see cref="Sweep"/>. Only files named as a staged file is named
-/// (<see cref="IsStaged"/>) are ever deleted.
+/// (it ended before the client applied the edit, or the client never did) is deleted by <see cref="Sweep"/>. Only a file whose name is a staged file's
+/// (<see cref="IsStaged"/>) is ever deleted.
 /// </para>
 /// </remarks>
 /// <param name="fileSystem">The file system the files are on.</param>

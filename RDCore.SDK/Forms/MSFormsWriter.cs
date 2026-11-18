@@ -26,7 +26,7 @@ public static class MSFormsWriter
     /// <para>
     /// A name of another length changes the site's size, and the count of bytes of the sites of the form stream that holds
     /// it (2.2.10.6); the form stream keeps the sectors of the compound file ([MS-CFB]) it still needs and takes more as it
-    /// must, and a <c>.frx</c> blob header's length of the compound file follows. Every other stream is unchanged.
+    /// must, and the length of the compound file in a <c>.frx</c> blob header follows it. Every other stream is unchanged.
     /// </para>
     /// <para>
     /// A name the site stores compressed, one byte a character (2.4.14.2), is written compressed when every character of

@@ -42,7 +42,7 @@ public sealed record class WorkspaceEditFilesResult(bool Applied, string? Failur
 /// cannot write, an edit that does not fit the text) refuses the edit before any file is touched. Then the files are renamed and deleted, in
 /// the edit's order, and each text is written, atomically, where the edit leaves its file. When one of those fails, what was done before it
 /// is undone (<c>failureHandling</c> <c>undo</c>): each text is written back as it was, each rename is reversed, and each deleted file is
-/// back.
+/// put back.
 /// </para>
 /// <para>
 /// A file the edit deletes, or renames another over (<c>overwrite</c>), is set beside itself under another name, and deleted for good only
