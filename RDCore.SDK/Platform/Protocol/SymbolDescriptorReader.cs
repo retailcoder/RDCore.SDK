@@ -30,16 +30,72 @@ public static class SymbolDescriptorReader
     /// <param name="resolveType">
     /// Resolves a declared type name to a <see cref="VBType"/>, or returns <c>null</c> when it cannot.
     /// </param>
-    /// <exception cref="ArgumentException"><see cref="DefineSymbolsParams.WorkspaceRoot"/> is not set.</exception>
+    /// <remarks>
+    /// The symbols of a module of the session's own project are addressed under <see cref="DefineSymbolsParams.WorkspaceRoot"/>. Those of a module of a
+    /// referenced project (<see cref="DefineSymbolsParams.Library"/>) are addressed under that project's root, which
+    /// <see cref="DefineSymbolsParams.ModuleUri"/> is the module's address under: they are members of <see cref="LibraryModuleOf"/>.
+    /// </remarks>
+    /// <exception cref="ArgumentException">
+    /// <see cref="DefineSymbolsParams.WorkspaceRoot"/> is not set, or <see cref="DefineSymbolsParams.ModuleUri"/> is not set for a module of a referenced
+    /// project.
+    /// </exception>
     public static IEnumerable<Symbol> Read(DefineSymbolsParams request, Func<string, VBType?> resolveType)
     {
-        var workspaceRoot = request.WorkspaceRoot
-            ?? throw new ArgumentException("A WorkspaceRoot is required to address the reconstructed symbols.", nameof(request));
+        ArgumentNullException.ThrowIfNull(request);
+        ArgumentNullException.ThrowIfNull(resolveType);
+        var workspaceRoot = request.Library is null
+            ? request.WorkspaceRoot ?? throw new ArgumentException("A WorkspaceRoot is required to address the reconstructed symbols.", nameof(request))
+            : LibraryRootOf(request);
 
         // re-derive the module symbol uri the same way ProjectSymbolProvider does (parent + name fragment),
         // so member uris line up with the module symbol the host already composed.
         var moduleUri = ChildUri(workspaceRoot, request.ModuleName);
 
+        return ReadAll(request, resolveType, workspaceRoot, moduleUri);
+    }
+
+    /// <summary>
+    /// The module symbol of a module of a referenced project (<see cref="DefineSymbolsParams.Library"/>), as the language server composes it: a class
+    /// module or a standard module (<see cref="DefineSymbolsParams.ModuleType"/>) under the referenced project's root, declared under
+    /// <see cref="DefineSymbolsParams.Directives"/>. A class module has its attributes as its properties (<see cref="SymbolProperties.PredeclaredId"/>,
+    /// <see cref="SymbolProperties.Creatable"/>, <see cref="SymbolProperties.Extensible"/>).
+    /// </summary>
+    /// <remarks>
+    /// The module is untagged: <see cref="Runtime.Libraries.ReferencedProjectSymbols.Of"/> tags it, with the members <see cref="Read"/> reconstructs.
+    /// </remarks>
+    /// <param name="request">The define-symbols request.</param>
+    /// <returns>The module symbol; <see langword="null"/> when the request is for a module of the session's own project.</returns>
+    /// <exception cref="ArgumentException"><see cref="DefineSymbolsParams.ModuleUri"/> is not set for a module of a referenced project.</exception>
+    public static VBModuleSymbol? LibraryModuleOf(DefineSymbolsParams request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        if (request.Library is null)
+        {
+            return null;
+        }
+
+        var root = LibraryRootOf(request);
+        if (request.ModuleType is Model.AST.Declarations.ModuleType.StdModule)
+        {
+            return new VBStandardModuleSymbol(root, root, request.ModuleName) { Directives = request.Directives };
+        }
+
+        return (VBModuleSymbol)new VBClassModuleSymbol(root, root, request.ModuleName) { Directives = request.Directives }
+            .With(SymbolProperties.PredeclaredId, request.Directives.PredeclaredId)
+            .With(SymbolProperties.Creatable, request.Directives.Creatable)
+            .With(SymbolProperties.Extensible, request.Directives.Extensible);
+    }
+
+    // the root of the referenced project a module is of: what its address is a member of.
+    private static Uri LibraryRootOf(DefineSymbolsParams request)
+    {
+        var moduleUri = request.ModuleUri
+            ?? throw new ArgumentException("A ModuleUri is required to address the symbols of a module of a referenced project.", nameof(request));
+        return new UriBuilder(moduleUri) { Fragment = string.Empty }.Uri;
+    }
+
+    private static IEnumerable<Symbol> ReadAll(DefineSymbolsParams request, Func<string, VBType?> resolveType, Uri workspaceRoot, Uri moduleUri)
+    {
         foreach (var descriptor in request.Symbols)
         {
             // the primary symbol is always yielded first, ahead of any nested members (enum
