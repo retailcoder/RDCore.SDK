@@ -32,6 +32,11 @@ public static class ToolResultLimits
     public const int OutlineEntries = 1_000;
 
     /// <summary>
+    /// The most fixes a call answers.
+    /// </summary>
+    public const int Fixes = 200;
+
+    /// <summary>
     /// The most characters the text of a result has (<see cref="CapText"/>): 32,768.
     /// </summary>
     public const int TextLength = 32 * 1024;

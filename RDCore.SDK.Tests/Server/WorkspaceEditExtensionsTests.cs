@@ -147,4 +147,68 @@ public sealed class WorkspaceEditExtensionsTests
         StringAssert.Contains(refused.Message, "Module1.bas");
         Assert.AreSame(edit, edit.For(Taking(documentChanges: true)));
     }
+
+    [TestMethod]
+    [DataRow(true, new[] { "a", "commented" }, DisplayName = "answered yes: made, and no longer asked")]
+    [DataRow(false, new[] { "a" }, DisplayName = "answered no: left out, with its annotation")]
+    public void AQuestionAnswered_ConfirmsItsEdits_OrLeavesThemOut(bool yes, string[] made)
+    {
+        var answered = WithAConfirmation().Answered(yes ? [InAComment.Identifier] : []);
+
+        CollectionAssert.AreEqual(made, Texts(answered.DocumentChanges!.Single().TextDocumentEdit!.Edits));
+        Assert.IsFalse(answered.ChangeAnnotations?.Values.Any(annotation => annotation.NeedsConfirmation == true) ?? false);
+        Assert.AreEqual(yes, answered.ChangeAnnotations?.ContainsKey(InAComment) ?? false);
+    }
+
+    [TestMethod]
+    public void AFileRenameOfAnAnnotation_IsLeftOutWithIt()
+    {
+        var rename = new RenameFile { OldUri = First, NewUri = Second, AnnotationId = InAComment };
+        var edit = WithAConfirmation() with
+        {
+            DocumentChanges = new Container<WorkspaceEditDocumentChange>(WithAConfirmation().DocumentChanges!.Append(new WorkspaceEditDocumentChange(rename))),
+        };
+
+        Assert.IsFalse(edit.Without(InAComment).DocumentChanges!.Any(change => change.IsRenameFile));
+        Assert.IsTrue(edit.Confirmed(InAComment).DocumentChanges!.Any(change => change.IsRenameFile));
+    }
+
+    [TestMethod]
+    public void AnEditWithoutItsFileRenames_KeepsTheTextEditsOfTheDocumentsAsTheyAreNamed()
+    {
+        var edit = new WorkspaceEdit
+        {
+            DocumentChanges = new Container<WorkspaceEditDocumentChange>(
+                Change(First, 4, Edit(0, "a")),
+                new WorkspaceEditDocumentChange(new RenameFile { OldUri = First, NewUri = Second }),
+                Change(Second, 1, Edit(1, "b"))),
+        };
+
+        var kept = edit.WithoutFileRenames();
+
+        Assert.AreEqual(First, kept.DocumentChanges!.Single().TextDocumentEdit!.TextDocument.Uri);
+        var plain = Versioned();
+        Assert.AreSame(plain, plain.WithoutFileRenames(), "an edit that renames no file is itself");
+    }
+
+    [TestMethod]
+    [DataRow(true, true, DisplayName = "documentChanges and rename")]
+    [DataRow(false, false, DisplayName = "rename without documentChanges")]
+    public void AClientRenamesFiles_WhenItSaysDocumentChangesAndRename(bool documentChanges, bool renames)
+    {
+        Assert.AreEqual(renames, Taking(documentChanges, resources: ResourceOperationKind.Rename).TakesResourceOperation(ResourceOperationKind.Rename));
+        Assert.IsFalse(Taking(documentChanges: true).TakesResourceOperation(ResourceOperationKind.Rename));
+        Assert.IsFalse(((ClientCapabilities?)null).TakesResourceOperation(ResourceOperationKind.Rename));
+    }
+
+    [TestMethod]
+    [DataRow(true, true)]
+    [DataRow(false, false)]
+    public void AClientAppliesEdits_WhenItSaysApplyEdit(bool applyEdit, bool applies)
+    {
+        var client = new ClientCapabilities { Workspace = new WorkspaceClientCapabilities { ApplyEdit = applyEdit } };
+
+        Assert.AreEqual(applies, client.AppliesEdits());
+        Assert.IsFalse(new ClientCapabilities().AppliesEdits());
+    }
 }
