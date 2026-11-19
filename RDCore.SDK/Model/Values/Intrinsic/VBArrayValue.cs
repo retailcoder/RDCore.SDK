@@ -15,14 +15,27 @@ namespace RDCore.SDK.Model.Values.Intrinsic;
 /// A <see cref="VBTypedValue"/> representing a runtime value of the <see cref="VBArrayType"/> data type.
 /// </summary>
 /// <remarks>
+/// <para>
 /// 👉 The element store is a single flat block of <see cref="IBindingHandle"/> cells addressed in
 /// <strong>column-major</strong> order (the first subscript varies fastest, as an OLE <c>SAFEARRAY</c>).
 /// Bounds live in <see cref="Dimensions"/> as metadata (<c>LBound</c>/<c>UBound</c>/rank); the cells
 /// are mutable storage. An uninitialized array (<c>Dim a()</c>) has no dimensions and no cells.
+/// </para>
+/// <para>
+/// An element's cell is made the first time the element is read, written or given to a caller (<see cref="CellAt"/>), and not when the array is:
+/// an array of millions of elements costs nothing until its elements are used. A cell is made as the array's constructor would have made it, holding
+/// the element type's default value, so when it is made is not something a caller sees.
+/// </para>
 /// </remarks>
 public abstract record class VBArrayValue : VBTypedValue
 {
-    private readonly IBindingHandle[] _cells;
+    // the cells this array and the views a `with` makes of it share, each made as it is first needed.
+    private ElementStore _store;
+
+    // the cells this view was given in place of the shared ones (TrySetElementAt), by flat index; null until it is given one.
+    private IBindingHandle?[]? _own;
+
+    private readonly int _length;
 
     /// <summary>
     /// Creates an array value with the given dimension bounds and element type.
@@ -39,7 +52,8 @@ public abstract record class VBArrayValue : VBTypedValue
     {
         ItemType = itemType;
         Dimensions = [.. dimensions.Select(d => new VBArrayDimension(d.lBound, d.uBound))];
-        _cells = CreateCells(Dimensions, itemType, elementDefault, elementCell);
+        _length = LengthOf(Dimensions);
+        _store = new ElementStore(_length, itemType, elementDefault, itemType is VBUserDefinedType ? null : elementCell);
     }
 
     /// <summary>
@@ -53,23 +67,32 @@ public abstract record class VBArrayValue : VBTypedValue
         Handle = handle;
     }
 
-    // C# records synthesize `with` from a memberwise copy constructor, which would share this array's
-    // _cells by reference with whatever copy it just built — since _cells is a field, not a primary
-    // constructor parameter, `with` never re-runs CreateCells. This one gives a `with`-derived copy
+    // C# records synthesize `with` from a memberwise copy constructor. This one gives a `with`-derived copy
     // (TryAllocateIn's included) slots of its own, so that replacing an element's cell in one
     // (TrySetElement) does not replace it in the other - but the cells in those slots are the same
-    // cells, and a write to one is seen by both: a `with` is another view of the array. The copy an
-    // assignment makes, which shares nothing, is DataCopy.
+    // cells, and a write to one is seen by both: a `with` is another view of the array. The views share
+    // the store, so a cell one of them makes is the cell of every other. The copy an assignment makes,
+    // which shares nothing, is DataCopy.
     protected VBArrayValue(VBArrayValue original) : base(original)
     {
         ItemType = original.ItemType;
         Dimensions = original.Dimensions;
-        _cells = [.. original._cells];
+        _length = original._length;
+        _store = original._store;
+        _own = original._own is null ? null : [.. original._own];
     }
 
-    /// <summary>
-    /// The declared <see cref="VBType"/> of the elements in this array.
-    /// </summary>
+    // the cell of the element at a flat index in this view, made where it is not yet.
+    private IBindingHandle Cell(int index) => _own?[index] ?? _store.Made(index);
+
+    // the cell of the element at a flat index in this view, or none where it is not made yet.
+    private IBindingHandle? MadeCell(int index) => _own?[index] ?? _store.MadeOrNone(index);
+
+    // whether any cell of this view is made: an array none of whose cells is made holds its element type's default value in each element.
+    private bool AnyMade => _own is not null || _store.AnyMade;
+
+    private void SetCell(int index, IBindingHandle cell) => (_own ??= new IBindingHandle?[_length])[index] = cell;
+
     /// <summary>
     /// A copy of this array that shares no cell with it: the copy an assignment makes of an array (<see cref="DataValues"/>).
     /// </summary>
@@ -80,9 +103,20 @@ public abstract record class VBArrayValue : VBTypedValue
     public VBArrayValue DataCopy()
     {
         var copy = this with { Handle = InvalidBindingHandle.Default };
-        for (var index = 0; index < _cells.Length; index++)
+        copy._store = _store.Fresh();
+        copy._own = null;
+        if (!AnyMade)
         {
-            copy._cells[index] = DataValues.CopyCell(_cells[index]);
+            return copy;
+        }
+
+        // an element whose cell is not made holds the default value, as the copy's own element does until its cell is made.
+        for (var index = 0; index < _length; index++)
+        {
+            if (MadeCell(index) is { } cell)
+            {
+                copy._store.Adopt(index, DataValues.CopyCell(cell));
+            }
         }
 
         return copy;
@@ -108,18 +142,33 @@ public abstract record class VBArrayValue : VBTypedValue
     /// <returns><see langword="false"/> when <paramref name="source"/> has another element type or other bounds, and nothing is written.</returns>
     public bool TryLetFrom(VBArrayValue source)
     {
-        if (!Equals(ItemType, source.ItemType) || !Dimensions.SequenceEqual(source.Dimensions) || _cells.Length != source._cells.Length)
+        if (!Equals(ItemType, source.ItemType) || !Dimensions.SequenceEqual(source.Dimensions) || _length != source._length)
         {
             return false;
         }
 
-        for (var index = 0; index < _cells.Length; index++)
+        if (AnyMade || source.AnyMade)
         {
-            var (to, from) = (_cells[index], source._cells[index]);
-            if (ItemType is VBUserDefinedType ? !IsRecordLetInPlace(to, from) : !IsWrittenInItsCell(to, from))
+            for (var index = 0; index < _length; index++)
             {
-                _cells[index] = from;
+                // two elements whose cells are not made both hold the default value: there is nothing to write, but what is known of it (below).
+                if (MadeCell(index) is null && source.MadeCell(index) is null)
+                {
+                    continue;
+                }
+
+                var (to, from) = (Cell(index), source.Cell(index));
+                if (ItemType is VBUserDefinedType ? !IsRecordLetInPlace(to, from) : !IsWrittenInItsCell(to, from))
+                {
+                    SetCell(index, from);
+                }
             }
+        }
+
+        // an element not made in either array is let the default value as the source knows it; a record's cell is not written, but its fields.
+        if (ItemType is not VBUserDefinedType)
+        {
+            _store.Unmade = source._store.Unmade;
         }
 
         return true;
@@ -135,9 +184,25 @@ public abstract record class VBArrayValue : VBTypedValue
     /// </remarks>
     public void ResetElements()
     {
-        for (var index = 0; index < _cells.Length; index++)
+        // an element whose cell is not made holds the default, which is then known, as a cell written the default is; a record's cell is not written, but
+        // its fields.
+        if (ItemType is not VBUserDefinedType)
         {
-            var to = _cells[index];
+            _store.Unmade = UnmadeKnowledge.Known;
+        }
+
+        if (!AnyMade)
+        {
+            return;
+        }
+
+        for (var index = 0; index < _length; index++)
+        {
+            if (MadeCell(index) is not { } to)
+            {
+                continue;
+            }
+
             if (ItemType is VBUserDefinedType)
             {
                 if (to.Value is VBRuntimeValue<VBRuntimeUserDefinedTypeValue> { StoredValue.UserDefinedType: { } record })
@@ -168,14 +233,14 @@ public abstract record class VBArrayValue : VBTypedValue
     /// <returns><see langword="false"/> when there is no element at the index.</returns>
     public bool TryLetElementAt(int flatIndex, VBTypedValue value)
     {
-        if (flatIndex < 0 || flatIndex >= _cells.Length)
+        if (flatIndex < 0 || flatIndex >= _length)
         {
             return false;
         }
 
-        if (!IsWrittenInItsCell(_cells[flatIndex], value.Handle))
+        if (!IsWrittenInItsCell(Cell(flatIndex), value.Handle))
         {
-            _cells[flatIndex] = value.Handle;
+            SetCell(flatIndex, value.Handle);
         }
 
         return true;
@@ -210,6 +275,9 @@ public abstract record class VBArrayValue : VBTypedValue
             && from.Value is VBRuntimeValue<VBRuntimeUserDefinedTypeValue> { StoredValue.UserDefinedType: { IsIndeterminate: false } record }
             && held.TryLetFrom(record);
 
+    /// <summary>
+    /// The declared <see cref="VBType"/> of the elements in this array.
+    /// </summary>
     public VBType ItemType { get; init; }
 
     /// <summary>
@@ -230,7 +298,7 @@ public abstract record class VBArrayValue : VBTypedValue
     /// <summary>
     /// The total number of elements across every dimension.
     /// </summary>
-    public int Length => _cells.Length;
+    public int Length => _length;
 
     /// <summary>
     /// The most elements an array holds in RD-VBA: 16,777,216 (2<sup>24</sup>), in every dimension together.
@@ -270,7 +338,7 @@ public abstract record class VBArrayValue : VBTypedValue
     }
 
     /// <inheritdoc/>
-    public override int Size => _cells.Length == 0 ? 0 : ItemType.DefaultValue.Size * _cells.Length;
+    public override int Size => _length == 0 ? 0 : ItemType.DefaultValue.Size * _length;
 
     /// <summary>
     /// Gets the element at the given subscripts, or <c>null</c> when any subscript is out of bounds
@@ -282,7 +350,7 @@ public abstract record class VBArrayValue : VBTypedValue
         get
         {
             var index = LinearIndex(subscripts);
-            return index < 0 ? null : ReadElement(_cells[index]);
+            return index < 0 ? null : ReadElement(Cell(index));
         }
     }
 
@@ -307,14 +375,24 @@ public abstract record class VBArrayValue : VBTypedValue
     /// </remarks>
     public void ForgetElements(IRuntimeValue? assigned = null)
     {
-        foreach (var cell in _cells)
+        // an element whose cell is not made holds the default, as a cell made now would: it is forgotten as that cell would be, once it is made.
+        _store.Unmade = _store.Unmade.Forget(assigned);
+        if (!AnyMade)
         {
-            if (cell is IKnowledgeBinding { IsKnown: true } known && !(assigned is not null && Equals(known.Value.BoxedValue, assigned.BoxedValue)))
+            return;
+        }
+
+        for (var index = 0; index < _length; index++)
+        {
+            if (MadeCell(index) is IKnowledgeBinding known && IsForgotten(known, assigned))
             {
                 known.Forget();
             }
         }
     }
+
+    private static bool IsForgotten(IBindingHandle cell, IRuntimeValue? assigned)
+        => cell is IKnowledgeBinding { IsKnown: true } known && !(assigned is not null && Equals(known.Value.BoxedValue, assigned.BoxedValue));
 
     /// <summary>
     /// Gets the element at the given flat (column-major) index, or <c>null</c> when out of bounds.
@@ -327,7 +405,7 @@ public abstract record class VBArrayValue : VBTypedValue
     /// re-deriving per-dimension subscripts.
     /// </remarks>
     public VBTypedValue? ElementAt(int flatIndex)
-        => flatIndex < 0 || flatIndex >= _cells.Length ? null : ReadElement(_cells[flatIndex]);
+        => flatIndex < 0 || flatIndex >= _length ? null : ReadElement(Cell(flatIndex));
 
     /// <summary>
     /// Gets the binding of the element at the given subscripts, or <c>null</c> when any subscript is out of
@@ -341,7 +419,7 @@ public abstract record class VBArrayValue : VBTypedValue
     public IBindingHandle? GetElementHandle(params int[] subscripts)
     {
         var index = LinearIndex(subscripts);
-        return index < 0 ? null : _cells[index];
+        return index < 0 ? null : Cell(index);
     }
 
     /// <summary>
@@ -352,7 +430,47 @@ public abstract record class VBArrayValue : VBTypedValue
     /// For whoever walks every cell of the array without subscripts - what the objects its elements hold are held by, each by its own cell.
     /// </remarks>
     /// <param name="flatIndex">From 0 to <see cref="Length"/> - 1.</param>
-    public IBindingHandle? CellAt(int flatIndex) => flatIndex < 0 || flatIndex >= _cells.Length ? null : _cells[flatIndex];
+    public IBindingHandle? CellAt(int flatIndex) => flatIndex < 0 || flatIndex >= _length ? null : Cell(flatIndex);
+
+    /// <summary>
+    /// The elements of this array that have a cell, each with its flat index and its cell. Walking them makes no cell.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// An element is given its cell the first time it is read, written or given to a caller (the indexer, <see cref="ElementAt"/>, <see cref="CellAt"/>,
+    /// <see cref="GetElementHandle"/>, <see cref="TryLetElementAt"/>, <see cref="TrySetElementAt"/>), and keeps it. An element without a cell holds the
+    /// default value of <see cref="ItemType"/>, which holds no object, and nothing is bound to it: a caller that walks every element for what it holds,
+    /// or for what is bound to it, walks these instead and makes no cell for the others.
+    /// </para>
+    /// <para>
+    /// The elements come in increasing flat index, the column-major order <see cref="ElementAt"/> reads them in (<strong>MS-VBAL §5.4.2.4.1</strong>).
+    /// A view of the array made with <c>with</c> yields the cells it was given in place of the shared ones (<see cref="TrySetElementAt"/>), and the shared
+    /// cells at every other index.
+    /// </para>
+    /// <para>
+    /// The walk is deferred: it reads each element when it reaches it. A cell made or replaced at an index the walk has not reached yet is the one it
+    /// yields. One made or replaced at an index it has passed is not yielded. When no cell is made as the walk starts (its first step), it yields none,
+    /// whatever cells are made while it runs.
+    /// </para>
+    /// </remarks>
+    public IEnumerable<(int FlatIndex, IBindingHandle Cell)> MadeCells
+    {
+        get
+        {
+            if (!AnyMade)
+            {
+                yield break;
+            }
+
+            for (var index = 0; index < _length; index++)
+            {
+                if (MadeCell(index) is { } cell)
+                {
+                    yield return (index, cell);
+                }
+            }
+        }
+    }
 
     /// <summary>
     /// Rebinds the element at a flat index, in the order <see cref="ElementAt"/> reads them, to <paramref name="value"/>: what writes an element at its
@@ -363,12 +481,12 @@ public abstract record class VBArrayValue : VBTypedValue
     /// <returns><c>false</c> when there is no element at the index.</returns>
     public bool TrySetElementAt(int flatIndex, IBindingHandle value)
     {
-        if (flatIndex < 0 || flatIndex >= _cells.Length)
+        if (flatIndex < 0 || flatIndex >= _length)
         {
             return false;
         }
 
-        _cells[flatIndex] = value;
+        SetCell(flatIndex, value);
         return true;
     }
 
@@ -385,7 +503,7 @@ public abstract record class VBArrayValue : VBTypedValue
             return false;
         }
 
-        _cells[index] = value;
+        SetCell(index, value);
         return true;
     }
 
@@ -425,7 +543,7 @@ public abstract record class VBArrayValue : VBTypedValue
 
     private int LinearIndex(ReadOnlySpan<int> subscripts)
     {
-        if (_cells.Length == 0 || subscripts.Length != Dimensions.Length)
+        if (_length == 0 || subscripts.Length != Dimensions.Length)
         {
             return -1;
         }
@@ -448,12 +566,12 @@ public abstract record class VBArrayValue : VBTypedValue
         return index;
     }
 
-    private static IBindingHandle[] CreateCells(
-        ImmutableArray<VBArrayDimension> dimensions, VBType itemType, Func<VBTypedValue>? elementDefault, Func<IBindingHandle>? elementCell)
+    // the number of elements of the given dimensions: 0 for none, or where a dimension has none.
+    private static int LengthOf(ImmutableArray<VBArrayDimension> dimensions)
     {
         if (dimensions.Length == 0)
         {
-            return [];
+            return 0;
         }
 
         var total = 1;
@@ -462,19 +580,57 @@ public abstract record class VBArrayValue : VBTypedValue
             total *= Math.Max(0, dimension.Length);
         }
 
-        if (total == 0)
+        return total;
+    }
+
+    // the cells of an array and of the views a `with` makes of it, each made the first time it is needed, as the array's constructor was told to make
+    // it: by elementCell where it was given one, holding the element type's default value.
+    private sealed class ElementStore(int length, VBType itemType, Func<VBTypedValue>? elementDefault, Func<IBindingHandle>? elementCell)
+    {
+        private IBindingHandle?[]? _made;
+
+        // what is known of the elements not made yet, which a cell made from now on is told.
+        public UnmadeKnowledge Unmade { get; set; } = UnmadeKnowledge.Known;
+
+        public bool AnyMade => _made is not null;
+
+        public IBindingHandle? MadeOrNone(int index) => _made?[index];
+
+        public IBindingHandle Made(int index)
         {
-            return [];
+            var made = _made ??= new IBindingHandle?[length];
+            if (made[index] is not { } cell)
+            {
+                cell = made[index] = elementCell?.Invoke() ?? CreateDefaultCell(itemType, elementDefault);
+                if (Unmade.IsForgotten && IsForgotten(cell, Unmade.UnlessHolding) && cell is IKnowledgeBinding known)
+                {
+                    known.Forget();
+                }
+            }
+
+            return cell;
         }
 
-        var cells = new IBindingHandle[total];
-        var makeCell = itemType is VBUserDefinedType ? null : elementCell;
-        for (var i = 0; i < total; i++)
-        {
-            cells[i] = makeCell?.Invoke() ?? CreateDefaultCell(itemType, elementDefault);
-        }
+        // keeps a cell made elsewhere as the one at an index: the copy of an element of another array.
+        public void Adopt(int index, IBindingHandle cell) => (_made ??= new IBindingHandle?[length])[index] = cell;
 
-        return cells;
+        // a store of the same length and element type, none of whose cells is made, which knows of its elements what this one knows of those not made.
+        public ElementStore Fresh() => new(length, itemType, elementDefault, elementCell) { Unmade = Unmade };
+    }
+
+    // what is known of the elements whose cells are not made, all of which hold the same default value: each is known, or each is forgotten as
+    // ForgetElements forgets a cell, unless it holds UnlessHolding where that is given. Known without making a cell, which is what tells the default.
+    private readonly record struct UnmadeKnowledge(bool IsForgotten, IRuntimeValue? UnlessHolding)
+    {
+        public static UnmadeKnowledge Known => default;
+
+        // what is known of them after ForgetElements(assigned): an element that holds a value no assignment differs from stays known.
+        public UnmadeKnowledge Forget(IRuntimeValue? assigned) => this switch
+        {
+            { IsForgotten: false } => new(true, assigned),
+            { UnlessHolding: { } kept } when assigned is not null && Equals(kept.BoxedValue, assigned.BoxedValue) => this,
+            _ => new(true, null),
+        };
     }
 
     // A fresh binding per cell so an element write never aliases another cell. An element that is a record is a record of its own,

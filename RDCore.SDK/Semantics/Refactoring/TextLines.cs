@@ -60,6 +60,10 @@ internal sealed partial class TextLines
     // the position of what ends a line: past its last character.
     public SourcePosition EndOf(int line) => new(line, _lengths[line]);
 
+    // what ends a line: a carriage return and a line feed, a line feed, or a carriage return; nothing, on the last line.
+    public string NewLineOf(int line)
+        => line + 1 < Count ? _text.Substring(_starts[line] + _lengths[line], _starts[line + 1] - _starts[line] - _lengths[line]) : string.Empty;
+
     // the first character of the line after a line; the end of the text, on its last line.
     public SourcePosition StartOfLineAfter(int line) => line + 1 < Count ? new SourcePosition(line + 1, 0) : EndOf(line);
 

@@ -99,4 +99,29 @@ public static class RefactoringKinds
     /// </para>
     /// </remarks>
     public const string ImplementInterface = "refactor.rewrite.implementInterface";
+
+    /// <summary>
+    /// Remove Parameter: a parameter of a procedure is removed from its declaration, and its argument from every call that passes it, by position or by
+    /// name (<strong>MS-VBAL §5.3.1.5</strong>, <strong>§5.6.13.1</strong>). The accessors of a property lose it together, and so do the member of a class
+    /// that other classes implement and the procedures that implement it. The range it is asked for is on the parameter.
+    /// </summary>
+    public const string RemoveParameter = "refactor.rewrite.removeParameter";
+
+    /// <summary>
+    /// Reorder Parameters: the parameters of a procedure are put in another order in its declaration, and the arguments passed by position in every call
+    /// to it with them (<strong>MS-VBAL §5.3.1.5</strong>, <strong>§5.6.13.1</strong>). The accessors of a property change together, and so do the member
+    /// of a class that other classes implement and the procedures that implement it; the value of a <c>Property Let</c> or <c>Property Set</c> stays last.
+    /// The range it is asked for is on the name of the procedure where it is declared, or on one of its parameters. Its choice is the list of the
+    /// parameters, in the order the user puts them in.
+    /// </summary>
+    public const string ReorderParameters = "refactor.rewrite.reorderParameters";
+
+    /// <summary>
+    /// Move Closer To Usage: the declaration of a variable moves to a line of its own before the statement that first uses it, in the innermost block that
+    /// holds every use of it (<strong>MS-VBAL §5.4.3.1</strong>). A <c>Private</c> variable of a module that a single procedure uses moves into that
+    /// procedure, declared <c>Static</c> or <c>Dim</c>, the user's choice: <c>Static</c> by default, which keeps its value between calls. In a class module
+    /// either keyword changes the variable's extent (<strong>MS-VBAL §2.3</strong>), and the user accepts that change. The range it is asked for is on the
+    /// variable's declaration or on a use of it.
+    /// </summary>
+    public const string MoveCloserToUsage = "refactor.move.closerToUsage";
 }

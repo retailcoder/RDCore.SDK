@@ -27,7 +27,7 @@ public sealed record class CompletionCandidate(string Label, CompletionItemKind 
 {
     /// <summary>
     /// What is inserted in place of the word when it is not the label: the name alone of a named argument whose <c>:=</c> is written already
-    /// (<c>Send "a", Cop|:=2</c>); <see langword="null"/> for the label.
+    /// (<c>Send "a", Cop|:=2</c>), or the snippet of the block a keyword starts (<see cref="IsSnippet"/>); <see langword="null"/> for the label.
     /// </summary>
     public string? InsertText { get; init; }
 
@@ -36,6 +36,19 @@ public sealed record class CompletionCandidate(string Label, CompletionItemKind 
     /// named argument (<c>Send "a", Co|pies:=2</c>), so that no part of the name is written twice; 0 for a candidate written at the cursor.
     /// </summary>
     public int ReplacedAfter { get; init; }
+
+    /// <summary>
+    /// Whether <see cref="InsertText"/> is a snippet (<strong>LSP 3.17</strong> §Snippet Syntax), with tab stops and placeholders, rather than plain text
+    /// (<see cref="CompletionSnippets"/>).
+    /// </summary>
+    public bool IsSnippet { get; init; }
+
+    /// <summary>
+    /// How the client treats the whitespace of what the candidate inserts (<strong>LSP 3.17</strong> <c>InsertTextMode</c>):
+    /// <see cref="InsertTextMode.AdjustIndentation"/> for a snippet whose lines are indented relative to its first; <see langword="null"/> for the client's
+    /// default.
+    /// </summary>
+    public InsertTextMode? InsertTextMode { get; init; }
 
     /// <summary>
     /// The candidate as an item of an LSP completion list (<strong>LSP 3.17</strong> §Completion Request).
@@ -50,17 +63,31 @@ public sealed record class CompletionCandidate(string Label, CompletionItemKind 
     /// <see cref="Rank"/>, then by the label in any case: by the name it writes, so a name in brackets (<c>[My Field]</c>) sorts among the others by
     /// <c>My Field</c>.
     /// </para>
+    /// <para>
+    /// A snippet's item says <c>insertTextFormat</c> <c>Snippet</c>, and its <see cref="InsertTextMode"/> when it has one; a plain item says neither, as plain
+    /// text is what a client inserts when nothing says otherwise.
+    /// </para>
     /// </remarks>
     /// <param name="match">How the label matches the word typed (<see cref="CompletionCandidates.MatchOf"/>).</param>
-    public CompletionItem ToCompletionItem(CompletionMatch match = CompletionMatch.Prefix) => new()
+    public CompletionItem ToCompletionItem(CompletionMatch match = CompletionMatch.Prefix)
     {
-        Label = Label,
-        Kind = Kind,
-        InsertText = InsertText,
-        Detail = Detail,
-        Documentation = Documentation is { Length: > 0 } documentation ? new StringOrMarkupContent(documentation) : null,
-        SortText = $"{TierOf(match)}{Rank:D2}{CompletionCandidates.NameOf(Label).ToString().ToLowerInvariant()}",
-    };
+        var item = new CompletionItem
+        {
+            Label = Label,
+            Kind = Kind,
+            InsertText = InsertText,
+            Detail = Detail,
+            Documentation = Documentation is { Length: > 0 } documentation ? new StringOrMarkupContent(documentation) : null,
+            SortText = $"{TierOf(match)}{Rank:D2}{CompletionCandidates.NameOf(Label).ToString().ToLowerInvariant()}",
+        };
+
+        if (IsSnippet)
+        {
+            item = item with { InsertTextFormat = InsertTextFormat.Snippet };
+        }
+
+        return InsertTextMode is { } mode ? item with { InsertTextMode = mode } : item;
+    }
 
     internal static char TierOf(CompletionMatch match) => match switch
     {
@@ -560,23 +587,59 @@ public static class CompletionCandidates
 
     /// <summary>
     /// The names that can be written as a simple name expression where <paramref name="origin"/> is: what the procedure, the module, the project, the libraries
-    /// and the language declare, nearest first. The keywords are not names; which of them can be written where is <see cref="CompletionRules"/>' to say.
+    /// and the language declare, nearest first. A class module's names are followed by the members of the library's class it names as its own: a document
+    /// module's host class (<see cref="VBClassModuleSymbol.HostClass"/>), and the base class a designed root's class is built on
+    /// (<see cref="VBClassModuleSymbol.BaseClass"/>). The keywords are not names; which of them can be written where is <see cref="CompletionRules"/>' to say.
     /// </summary>
     /// <param name="tree">The scope tree of the composed workspace.</param>
     /// <param name="origin">Where the lookup originates (<see cref="OriginAt"/>).</param>
     public static IReadOnlyList<CompletionCandidate> Names(ScopeTree tree, Uri origin)
     {
         var candidates = new Candidates();
-        foreach (var scope in tree.ScopeFor(origin).SelfAndAncestors())
+        var scopes = tree.ScopeFor(origin).SelfAndAncestors().ToList();
+        foreach (var scope in scopes)
         {
             var rank = RankOf(scope.Kind);
             foreach (var symbol in scope.Declarations.Where(symbol => IsValueName(symbol, scope.Kind)))
             {
                 candidates.Add(Describe(symbol), rank);
             }
+
+            if (scope.Kind == LexicalScopeKind.Module)
+            {
+                foreach (var member in LibraryClassMembersOf(scopes, scope).Where(member => IsValueName(member, scope.Kind)))
+                {
+                    candidates.Add(Describe(member), rank);
+                }
+            }
         }
 
         return candidates.ToList();
+    }
+
+    // the members of the library classes a class module names as its own (its host class, its base class), found among the classes the scopes declare by
+    // their library's name and their own; events are left out, as an event names no value.
+    private static IEnumerable<VBTypeMemberSymbol> LibraryClassMembersOf(IReadOnlyList<LexicalScope> scopes, LexicalScope moduleScope)
+    {
+        var module = scopes.SelectMany(scope => scope.DeclaredAs(SymbolUri.ModuleNameOf(moduleScope.Uri))).OfType<VBClassModuleSymbol>()
+            .FirstOrDefault(candidate => candidate.Uri.AbsoluteUri == moduleScope.Uri.AbsoluteUri);
+        (string? Library, string? Name)[] named = module is null
+            ? []
+            : [(module.HostClass?.Library, module.HostClass?.ClassName), (module.BaseClass?.Library, module.BaseClass?.Name)];
+        foreach (var (library, name) in named)
+        {
+            if (library is null || name is null)
+            {
+                continue;
+            }
+
+            var found = scopes.SelectMany(scope => scope.DeclaredAs(name)).OfType<VBClassModuleSymbol>()
+                .FirstOrDefault(candidate => string.Equals(candidate.GetProperty(SymbolProperties.Library), library, StringComparison.OrdinalIgnoreCase));
+            foreach (var member in found?.DefaultInterfaceMembers.Where(member => member is not VBEventMemberSymbol) ?? [])
+            {
+                yield return member;
+            }
+        }
     }
 
     /// <summary>
@@ -653,7 +716,9 @@ public static class CompletionCandidates
         var candidates = new Candidates();
         IEnumerable<Symbol> declared = owner switch
         {
-            VBProjectSymbol project => tree.Global.Declarations.Concat(ProjectScopeOf(tree)?.Declarations ?? []).Where(symbol => IsOfProject(symbol, project)),
+            // each project's declared types are in its own project's scope.
+            VBProjectSymbol project
+                => tree.Global.Declarations.Concat(tree.Projects.SelectMany(scope => scope.Declarations)).Where(symbol => IsOfProject(symbol, project)),
             VBModuleSymbol module when tree.TryGetScope(module.Uri, out var scope) && scope.Kind == LexicalScopeKind.Module => scope.Declarations,
             _ => [],
         };
@@ -796,11 +861,6 @@ public static class CompletionCandidates
             ? scope.Declarations
             : module.Members;
 
-    private static LexicalScope? ProjectScopeOf(ScopeTree tree)
-        => tree.Global.Declarations.OfType<VBModuleSymbol>()
-            .Select(module => tree.TryGetScope(module.Uri, out var scope) ? scope.Parent : null)
-            .FirstOrDefault(scope => scope?.Kind == LexicalScopeKind.Project);
-
     private static bool IsOfProject(Symbol symbol, VBProjectSymbol project)
         => string.Equals(symbol.GetProperty(SymbolProperties.Library) ?? string.Empty, project.GetProperty(SymbolProperties.Library) ?? string.Empty, StringComparison.Ordinal);
 
@@ -870,7 +930,20 @@ public static class CompletionCandidates
 
     // the candidate a symbol is: its name as it is written, in brackets when it is no identifier; its kind, and what is said of it.
     private static CompletionCandidate Describe(Symbol symbol)
-        => new(IsIdentifier(symbol.Name) ? symbol.Name : $"[{symbol.Name}]", KindOf(symbol), DetailOf(symbol), symbol.GetProperty(SymbolProperties.DocString), symbol);
+        => new(IsIdentifier(symbol.Name) ? symbol.Name : $"[{symbol.Name}]", KindOf(symbol), DetailOf(symbol), DocumentationOf(symbol), symbol);
+
+    // what is said of a symbol: its doc string, after the mark of what RD-VBA adds to a library that its type library does not declare.
+    private static string? DocumentationOf(Symbol symbol)
+    {
+        var documentation = symbol.GetProperty(SymbolProperties.DocString);
+        if (!symbol.GetProperty(SymbolProperties.LibraryAddition) || symbol.GetProperty(SymbolProperties.Library) is not { Length: > 0 } library)
+        {
+            return documentation;
+        }
+
+        var addition = SymbolTexts.LibraryAddition(library);
+        return documentation is { Length: > 0 } ? $"{addition}\n\n{documentation}" : addition;
+    }
 
     private static CompletionItemKind KindOf(Symbol symbol) => symbol switch
     {

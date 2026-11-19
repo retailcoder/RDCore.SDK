@@ -2,6 +2,9 @@ using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 using OmniSharp.Extensions.JsonRpc;
 using OmniSharp.Extensions.JsonRpc.Server;
+using OmniSharp.Extensions.LanguageServer.Protocol.Models;
+using OmniSharp.Extensions.LanguageServer.Protocol.Serialization;
+using OmniSharp.Extensions.LanguageServer.Protocol.Server.Capabilities;
 using RDCore.SDK.Assistant;
 using RDCore.SDK.Server.Assistant;
 using System.Globalization;
@@ -11,7 +14,7 @@ namespace RDCore.Tests.Server;
 
 /// <summary>
 /// The catalog lists its tools in the client's language and calls them by name: a refusal is a result the assistant reads, an unknown name is a
-/// JSON-RPC error, and the text of a result is cut at its cap.
+/// JSON-RPC error, and the text of a result is cut at its cap. A server whose catalog has a tool declares its tools in its <c>initialize</c> result.
 /// </summary>
 [TestClass]
 public sealed class AssistantToolCatalogTests
@@ -165,5 +168,29 @@ public sealed class AssistantToolCatalogTests
 
         Assert.StartsWith(new string('x', ToolResultLimits.TextLength), cut);
         Assert.EndsWith($"The text is cut at {ToolResultLimits.TextLength} of {text.Length} characters. Narrow the call (a path, a query) to see the rest.", cut);
+    }
+
+    [TestMethod]
+    public void AServerWithTools_DeclaresThemAsHexIDEsChatReadsThem_WithTheirMethodsAndNoContext()
+    {
+        var capabilities = new ServerCapabilities();
+
+        var declared = AssistantToolsCapability.Declare(capabilities, new AssistantToolCatalog([Tool("references")]));
+
+        Assert.IsTrue(declared);
+        var written = JsonNode.Parse(new LspSerializer().SerializeObject(new InitializeResult { Capabilities = capabilities }))!["capabilities"]!["experimental"]!;
+        Assert.IsTrue(JsonNode.DeepEquals(JsonNode.Parse("""{"hexide.chatTools":{"list":"rdcore/tools/list","call":"rdcore/tools/call"}}"""), written), written.ToJsonString());
+    }
+
+    [TestMethod]
+    public void AServerWithNoTools_DeclaresNone()
+    {
+        foreach (var catalog in new[] { null, new AssistantToolCatalog([]) })
+        {
+            var capabilities = new ServerCapabilities();
+
+            Assert.IsFalse(AssistantToolsCapability.Declare(capabilities, catalog));
+            Assert.IsFalse(capabilities.Experimental?.ContainsKey(RDCore.SDK.Client.RDCorePlatformProtocol.ChatToolsCapability) == true);
+        }
     }
 }

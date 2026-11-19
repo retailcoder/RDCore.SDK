@@ -1,4 +1,6 @@
-﻿namespace RDCore.SDK.Workspace.Forms;
+﻿using RDCore.SDK.Forms;
+
+namespace RDCore.SDK.Workspace.Forms;
 
 /// <summary>
 /// The reasons a form's designer data cannot be read.
@@ -51,20 +53,68 @@ public enum FormDesignerFormatProblem
     /// ([MS-OFORMS] 2.2.10.7, 2.5.13).
     /// </summary>
     InvalidControl,
+
+    /// <summary>
+    /// The sizes the sites of a parent control give their controls in its object stream (<c>o</c>) do not add up to that
+    /// stream's length ([MS-OFORMS] 2.1.2.2.1).
+    /// </summary>
+    InvalidObjectStream,
+
+    /// <summary>
+    /// An RDForms form's document (<see cref="FormDesigner.RDFormsDocumentOf"/>), which holds its controls, is not there.
+    /// </summary>
+    MissingDocument,
+
+    /// <summary>
+    /// No <see cref="IFormDocumentReader"/> is registered for an RDForms form's document (<see cref="FormDesigner.Register"/>).
+    /// </summary>
+    NoDocumentReader,
+
+    /// <summary>
+    /// An RDForms form's document holds no form, as its <see cref="IFormDocumentReader"/> reads it.
+    /// </summary>
+    InvalidDocument,
 }
 
 /// <summary>
-/// The exception that is thrown when a form's designer data, in its module's text or in its companion <c>.frx</c> file,
-/// cannot be read.
+/// The exception that is thrown when a form's designer data, in its module's text, in its companion <c>.frx</c> file or in its
+/// RDForms document, cannot be read.
 /// </summary>
-/// <param name="problem">What is wrong with the designer data.</param>
-public sealed class FormDesignerFormatException(FormDesignerFormatProblem problem)
-    : SdkException(MessageOf(problem))
+public sealed class FormDesignerFormatException : SdkException
 {
+    /// <summary>
+    /// Initializes an exception for <paramref name="problem"/>.
+    /// </summary>
+    /// <param name="problem">What is wrong with the designer data.</param>
+    public FormDesignerFormatException(FormDesignerFormatProblem problem)
+        : base(MessageOf(problem))
+        => Problem = problem;
+
+    // the problem the Microsoft Forms reader found, by the same name, with its exception as the inner one
+    internal FormDesignerFormatException(MSFormsFormatException inner)
+        : this(ProblemOf(inner.Problem), inner)
+    {
+    }
+
+    private FormDesignerFormatException(FormDesignerFormatProblem problem, Exception inner)
+        : base(MessageOf(problem), inner: inner)
+        => Problem = problem;
+
     /// <summary>
     /// Gets what is wrong with the designer data.
     /// </summary>
-    public FormDesignerFormatProblem Problem { get; } = problem;
+    public FormDesignerFormatProblem Problem { get; }
+
+    private static FormDesignerFormatProblem ProblemOf(MSFormsFormatProblem problem) => problem switch
+    {
+        MSFormsFormatProblem.NotACompoundFile => FormDesignerFormatProblem.NotACompoundFile,
+        MSFormsFormatProblem.CorruptCompoundFile => FormDesignerFormatProblem.CorruptCompoundFile,
+        MSFormsFormatProblem.MissingFormStream => FormDesignerFormatProblem.MissingFormStream,
+        MSFormsFormatProblem.UnsupportedVersion => FormDesignerFormatProblem.UnsupportedVersion,
+        MSFormsFormatProblem.InvalidControl => FormDesignerFormatProblem.InvalidControl,
+        MSFormsFormatProblem.InvalidObjectStream => FormDesignerFormatProblem.InvalidObjectStream,
+        _ => FormDesignerFormatProblem.Truncated,
+    };
 
     private static string MessageOf(FormDesignerFormatProblem problem) => problem switch
     {
@@ -76,6 +126,10 @@ public sealed class FormDesignerFormatException(FormDesignerFormatProblem proble
         FormDesignerFormatProblem.MissingFormStream => Exceptions.FormDesigner_MissingFormStream,
         FormDesignerFormatProblem.UnsupportedVersion => Exceptions.FormDesigner_UnsupportedVersion,
         FormDesignerFormatProblem.InvalidControl => Exceptions.FormDesigner_InvalidControl,
+        FormDesignerFormatProblem.InvalidObjectStream => Exceptions.FormDesigner_InvalidObjectStream,
+        FormDesignerFormatProblem.MissingDocument => Exceptions.FormDesigner_MissingDocument,
+        FormDesignerFormatProblem.NoDocumentReader => Exceptions.FormDesigner_NoDocumentReader,
+        FormDesignerFormatProblem.InvalidDocument => Exceptions.FormDesigner_InvalidDocument,
         _ => Exceptions.FormDesigner_Truncated,
     };
 }

@@ -230,12 +230,14 @@ public static class SymbolUri
     // nothing.
     private const char SuffixDelimiter = ']';
 
-    // the reserved words a symbol's address has after its name, when the name alone is a namesake's (Symbol.UriSuffix).
+    // the reserved words a symbol's address has after its name, when the name alone is a namesake's (Symbol.UriSuffix), and after the name of the default
+    // instance of a referenced project's class (DefaultInstance).
     internal const string LetSuffix = "Let";
     internal const string SetSuffix = "Set";
     internal const string EnumSuffix = "Enum";
     internal const string TypeSuffix = "Type";
     internal const string EventSuffix = "Event";
+    internal const string InstanceSuffix = "Instance";
 
     // a name of a path, without the suffix after it: what follows the first ']' that closes no '['.
     private static string WithoutSuffix(string name)
@@ -297,6 +299,24 @@ public static class SymbolUri
     /// <param name="parent">The address of the symbol it is a member of, or the root of its project or library.</param>
     /// <param name="name">Its name.</param>
     public static Uri Member(Uri parent, string name) => Member(parent, name, suffix: null);
+
+    /// <summary>
+    /// The address of the default instance of a class of a project that another project of the workspace references (<strong>MS-VBAL §5.2.4.1.2</strong>):
+    /// a member of the class module, after a suffix no name has (<c>Board.Board]Instance</c>).
+    /// </summary>
+    /// <remarks>
+    /// The default instance of a class of the project itself is a name of the global scope, at an address that holds the class name only. A
+    /// referenced project's class may share that name, and its instance is addressed under its own module instead, so the two never collide.
+    /// </remarks>
+    /// <param name="classModule">The address of the class module.</param>
+    /// <returns>The address of the class's default instance.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="classModule"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="classModule"/> is a relative URI.</exception>
+    public static Uri DefaultInstance(Uri classModule)
+    {
+        ArgumentNullException.ThrowIfNull(classModule);
+        return Member(classModule, NameOf(classModule), InstanceSuffix);
+    }
 
     // the address of a member whose name alone is a namesake's (Symbol.UriSuffix): its name, then the suffix after a delimiter no name has.
     internal static Uri Member(Uri parent, string name, string? suffix)

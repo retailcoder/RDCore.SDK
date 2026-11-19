@@ -1,5 +1,6 @@
 using OmniSharp.Extensions.LanguageServer.Protocol.Serialization;
 using RDCore.SDK.Model;
+using RDCore.SDK.Model.AST.Declarations;
 using RDCore.SDK.Model.Source;
 using RDCore.SDK.Model.Symbols;
 using RDCore.SDK.Model.Symbols.Abstract;
@@ -195,4 +196,70 @@ public sealed class SymbolDescriptorReaderTests
     public void MissingWorkspaceRoot_Throws()
         => Assert.ThrowsExactly<ArgumentException>(
             () => SymbolDescriptorReader.Read(new DefineSymbolsParams { ModuleName = "X" }, Intrinsic).ToArray());
+
+    private static readonly Uri LibraryRoot = new("file:///c:/ws/NavalLib/");
+
+    private static DefineSymbolsParams LibraryRequest(ModuleType kind, ModuleDirectives directives, params SymbolDescriptor[] symbols) => new()
+    {
+        WorkspaceRoot = WorkspaceRoot,
+        ModuleUri = SymbolUri.Member(LibraryRoot, "Module1"),
+        ModuleName = "Module1",
+        Library = "NavalLib",
+        LibraryPriority = 1,
+        ModuleType = kind,
+        Directives = directives,
+        Symbols = [.. symbols],
+    };
+
+    private static SymbolDescriptor PublicProcedure(string name)
+        => new() { Name = name, Kind = SymbolDescriptorKind.Procedure, Scope = ScopeKind.Module, AccessModifier = AccessModifier.Public };
+
+    // a referenced project's Module1 and the session's own Module1 are two modules: each one's members are its own.
+    [TestMethod]
+    public void TheMembersOfAModuleOfAReferencedProject_AreAddressedUnderThatProjectsRoot()
+    {
+        var request = LibraryRequest(ModuleType.StdModule, ModuleDirectives.None, PublicProcedure("PlaceShip"));
+
+        var library = SymbolDescriptorReader.Read(request, Intrinsic).Single();
+        var own = SymbolDescriptorReader.Read(request with { Library = null }, Intrinsic).Single();
+
+        Assert.AreEqual(SymbolDescriptorReader.LibraryModuleOf(request)!.Uri, library.ParentUri);
+        Assert.AreEqual(request.ModuleUri, library.ParentUri);
+        Assert.AreEqual(LibraryRoot, library.WorkspaceRoot);
+        Assert.AreEqual(SymbolUri.Member(WorkspaceRoot, "Module1"), own.ParentUri);
+        Assert.AreNotEqual(own.Uri, library.Uri);
+    }
+
+    [TestMethod]
+    [DataRow(ModuleType.StdModule, typeof(VBStandardModuleSymbol))]
+    [DataRow(ModuleType.ClassModule, typeof(VBClassModuleSymbol))]
+    [DataRow(ModuleType.DocumentModule, typeof(VBClassModuleSymbol), DisplayName = "a document module is a class module")]
+    public void TheModuleOfAReferencedProject_IsOfItsKind_UnderItsDirectives(ModuleType kind, Type expected)
+    {
+        var directives = new ModuleDirectives(PredeclaredId: true, Exposed: true);
+
+        var module = SymbolDescriptorReader.LibraryModuleOf(LibraryRequest(kind, directives))!;
+
+        Assert.IsInstanceOfType(module, expected);
+        Assert.AreEqual(SymbolUri.Member(LibraryRoot, "Module1"), module.Uri);
+        Assert.AreEqual(directives, module.Directives);
+        Assert.IsNull(module.GetProperty(SymbolProperties.Library), "the host tags it");
+        if (module is VBClassModuleSymbol)
+        {
+            Assert.IsTrue(module.GetProperty(SymbolProperties.PredeclaredId));
+        }
+    }
+
+    [TestMethod]
+    public void AModuleOfTheSessionsOwnProject_HasNoModuleMadeForIt()
+        => Assert.IsNull(SymbolDescriptorReader.LibraryModuleOf(new DefineSymbolsParams { WorkspaceRoot = WorkspaceRoot, ModuleName = "Module1" }));
+
+    [TestMethod]
+    public void AModuleOfAReferencedProject_WithoutItsAddress_Throws()
+    {
+        var request = LibraryRequest(ModuleType.StdModule, ModuleDirectives.None, PublicProcedure("PlaceShip")) with { ModuleUri = null };
+
+        Assert.ThrowsExactly<ArgumentException>(() => SymbolDescriptorReader.Read(request, Intrinsic));
+        Assert.ThrowsExactly<ArgumentException>(() => SymbolDescriptorReader.LibraryModuleOf(request));
+    }
 }

@@ -91,6 +91,18 @@ public sealed record class ToolAnnotations
     /// Whether the tool reaches beyond the workspace: the network, another program. The language server's tools do not.
     /// </summary>
     public bool OpenWorldHint { get; init; }
+
+    /// <summary>
+    /// Whether the tool runs the user's code: a procedure of the workspace, or code it is given. A client that asks its user before code runs asks before it
+    /// calls the tool.
+    /// </summary>
+    /// <remarks>
+    /// Serialized as <c>hexide.runsCode</c> (<see cref="Client.RDCorePlatformProtocol.RunsCodeAnnotation"/>), the annotation HexIDE's chat reads, and left out
+    /// when it is <see langword="false"/>.
+    /// </remarks>
+    [JsonPropertyName(Client.RDCorePlatformProtocol.RunsCodeAnnotation)]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public bool RunsCodeHint { get; init; }
 }
 
 /// <summary>

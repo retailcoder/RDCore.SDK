@@ -34,4 +34,12 @@ public enum ClassModuleSemanticFlags
     /// The implementing module gives each member of the interface a body of its own, and does not run the code of the class's members.
     /// </summary>
     Implemented = 1 << 2,
+
+    /// <summary>
+    /// The class is accessible within the projects that reference its project, as well as within its own (<strong>MS-VBAL §5.2.4.1.1</strong>): its
+    /// <c>VB_Exposed</c> attribute is <c>True</c>, which the <em>Public Not Creatable</em> and <em>Public Creatable</em> instancing modes write. A module of
+    /// such a project can implement the class, and <see cref="Implemented"/> does not tell of it: it is about the class's own project. Without the flag, the
+    /// class is <em>Private</em>, the default: no other project can name it, so <see cref="Implemented"/> tells of every module that implements it.
+    /// </summary>
+    Exposed = 1 << 3,
 }

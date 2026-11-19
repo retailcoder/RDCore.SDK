@@ -1,7 +1,7 @@
 ﻿using System.Buffers.Binary;
 using System.Text;
 
-namespace RDCore.SDK.Workspace.Forms;
+namespace RDCore.SDK.Forms;
 
 /// <summary>
 /// The kinds of directory entries of a compound file ([MS-CFB] 2.6.1).
@@ -35,7 +35,7 @@ internal sealed record class CompoundFileEntry(
 /// This reader reads just enough of [MS-CFB] for that: the header, the FAT and its DIFAT, the mini FAT and mini stream, and
 /// the directory. It runs on any platform: no OLE32. Its input is untrusted, so every sector chain is bounded by the number
 /// of sectors in the file and every directory walk by the number of entries; a damaged file is a
-/// <see cref="FormDesignerFormatException"/>, never a hang or an out-of-range read.
+/// <see cref="MSFormsFormatException"/>, never a hang or an out-of-range read.
 /// </remarks>
 internal sealed class CompoundFile
 {
@@ -51,7 +51,9 @@ internal sealed class CompoundFile
     private readonly int _sectorSize;
     private readonly int _miniSectorSize;
     private readonly uint _miniStreamCutoff;
+    private readonly ushort _majorVersion;
     private readonly uint[] _fat;
+    private readonly List<uint> _fatSectors;
     private readonly uint[] _miniFat;
     private readonly IReadOnlyList<CompoundFileEntry> _entries;
     private readonly byte[] _miniStream;
@@ -61,7 +63,7 @@ internal sealed class CompoundFile
         var span = data.Span;
         if (span.Length < 512 || !span[..8].SequenceEqual(Signature))
         {
-            throw new FormDesignerFormatException(FormDesignerFormatProblem.NotACompoundFile);
+            throw new MSFormsFormatException(MSFormsFormatProblem.NotACompoundFile);
         }
 
         _data = data;
@@ -70,9 +72,10 @@ internal sealed class CompoundFile
         var miniSectorShift = BinaryPrimitives.ReadUInt16LittleEndian(span[32..]);
         if (majorVersion is not (3 or 4) || sectorShift != (majorVersion == 3 ? 9 : 12) || miniSectorShift != 6)
         {
-            throw new FormDesignerFormatException(FormDesignerFormatProblem.NotACompoundFile);
+            throw new MSFormsFormatException(MSFormsFormatProblem.NotACompoundFile);
         }
 
+        _majorVersion = majorVersion;
         _sectorSize = 1 << sectorShift;
         _miniSectorSize = 1 << miniSectorShift;
         _miniStreamCutoff = BinaryPrimitives.ReadUInt32LittleEndian(span[56..]);
@@ -82,7 +85,7 @@ internal sealed class CompoundFile
         var firstMiniFatSector = BinaryPrimitives.ReadUInt32LittleEndian(span[60..]);
         var firstDifatSector = BinaryPrimitives.ReadUInt32LittleEndian(span[68..]);
 
-        _fat = ReadFat(span, fatSectorCount, firstDifatSector);
+        (_fat, _fatSectors) = ReadFat(span, fatSectorCount, firstDifatSector);
         _miniFat = firstMiniFatSector == EndOfChain
             ? []
             : ToUInt32s(ReadChain(firstMiniFatSector, long.MaxValue));
@@ -90,14 +93,15 @@ internal sealed class CompoundFile
 
         var root = _entries.Count > 0 && _entries[0].Type == CompoundFileEntryType.Root
             ? _entries[0]
-            : throw new FormDesignerFormatException(FormDesignerFormatProblem.CorruptCompoundFile);
+            : throw new MSFormsFormatException(MSFormsFormatProblem.CorruptCompoundFile);
         _miniStream = root.StartSector == EndOfChain ? [] : ReadChain(root.StartSector, root.Size);
     }
 
     /// <summary>
     /// Opens the compound file in <paramref name="data"/>.
     /// </summary>
-    /// <exception cref="FormDesignerFormatException"><paramref name="data"/> is not a compound file, or a damaged one.</exception>
+    /// <param name="data">The compound file's bytes, from its signature.</param>
+    /// <exception cref="MSFormsFormatException"><paramref name="data"/> is not a compound file, or a damaged one.</exception>
     public static CompoundFile Open(ReadOnlyMemory<byte> data) => new(data);
 
     /// <summary>
@@ -122,7 +126,7 @@ internal sealed class CompoundFile
             {
                 if (current >= _entries.Count || !visited.Add(current))
                 {
-                    throw new FormDesignerFormatException(FormDesignerFormatProblem.CorruptCompoundFile);
+                    throw new MSFormsFormatException(MSFormsFormatProblem.CorruptCompoundFile);
                 }
 
                 pending.Push(current);
@@ -151,7 +155,7 @@ internal sealed class CompoundFile
     {
         if (stream.Type != CompoundFileEntryType.Stream)
         {
-            throw new FormDesignerFormatException(FormDesignerFormatProblem.CorruptCompoundFile);
+            throw new MSFormsFormatException(MSFormsFormatProblem.CorruptCompoundFile);
         }
 
         if (stream.Size == 0)
@@ -162,12 +166,29 @@ internal sealed class CompoundFile
         return stream.Size < _miniStreamCutoff ? ReadMiniChain(stream.StartSector, stream.Size) : ReadChain(stream.StartSector, stream.Size);
     }
 
-    private uint[] ReadFat(ReadOnlySpan<byte> span, uint fatSectorCount, uint firstDifatSector)
+    // what a CompoundFileEditor starts from: the file's bytes and layout, its FAT and the sectors that hold it, its mini FAT
+    internal ReadOnlyMemory<byte> Data => _data;
+
+    internal ushort MajorVersion => _majorVersion;
+
+    internal int SectorSize => _sectorSize;
+
+    internal int MiniSectorSize => _miniSectorSize;
+
+    internal uint MiniStreamCutoff => _miniStreamCutoff;
+
+    internal IReadOnlyList<uint> Fat => _fat;
+
+    internal IReadOnlyList<uint> FatSectors => _fatSectors;
+
+    internal IReadOnlyList<uint> MiniFat => _miniFat;
+
+    private (uint[] Fat, List<uint> Sectors) ReadFat(ReadOnlySpan<byte> span, uint fatSectorCount, uint firstDifatSector)
     {
         var sectorCount = (uint)((_data.Length - _sectorSize) / _sectorSize);
         if (fatSectorCount > sectorCount)
         {
-            throw new FormDesignerFormatException(FormDesignerFormatProblem.CorruptCompoundFile);
+            throw new MSFormsFormatException(MSFormsFormatProblem.CorruptCompoundFile);
         }
 
         // the FAT's own sectors: the first 109 in the header, the rest in the DIFAT chain ([MS-CFB] 2.5)
@@ -183,7 +204,7 @@ internal sealed class CompoundFile
         {
             if (difatSector > MaxRegularSector || hops > sectorCount)
             {
-                throw new FormDesignerFormatException(FormDesignerFormatProblem.CorruptCompoundFile);
+                throw new MSFormsFormatException(MSFormsFormatProblem.CorruptCompoundFile);
             }
 
             var difat = Sector(difatSector);
@@ -205,7 +226,7 @@ internal sealed class CompoundFile
             }
         }
 
-        return fat;
+        return (fat, fatSectors);
     }
 
     private ReadOnlySpan<byte> Sector(uint sector)
@@ -213,7 +234,7 @@ internal sealed class CompoundFile
         var offset = (sector + 1L) * _sectorSize;
         if (sector > MaxRegularSector || offset + _sectorSize > _data.Length)
         {
-            throw new FormDesignerFormatException(FormDesignerFormatProblem.CorruptCompoundFile);
+            throw new MSFormsFormatException(MSFormsFormatProblem.CorruptCompoundFile);
         }
 
         return _data.Span.Slice((int)offset, _sectorSize);
@@ -225,7 +246,7 @@ internal sealed class CompoundFile
     {
         if (size != long.MaxValue && (size < 0 || size > _data.Length))
         {
-            throw new FormDesignerFormatException(FormDesignerFormatProblem.CorruptCompoundFile);
+            throw new MSFormsFormatException(MSFormsFormatProblem.CorruptCompoundFile);
         }
 
         var buffer = new List<byte>();
@@ -234,7 +255,7 @@ internal sealed class CompoundFile
         {
             if (sector >= _fat.Length || hops > _fat.Length)
             {
-                throw new FormDesignerFormatException(FormDesignerFormatProblem.CorruptCompoundFile);
+                throw new MSFormsFormatException(MSFormsFormatProblem.CorruptCompoundFile);
             }
 
             buffer.AddRange(Sector(sector));
@@ -243,7 +264,7 @@ internal sealed class CompoundFile
 
         if (size != long.MaxValue && buffer.Count < size)
         {
-            throw new FormDesignerFormatException(FormDesignerFormatProblem.CorruptCompoundFile);
+            throw new MSFormsFormatException(MSFormsFormatProblem.CorruptCompoundFile);
         }
 
         return size == long.MaxValue ? [.. buffer] : [.. buffer.Take((int)size)];
@@ -253,7 +274,7 @@ internal sealed class CompoundFile
     {
         if (size < 0 || size > _miniStream.Length)
         {
-            throw new FormDesignerFormatException(FormDesignerFormatProblem.CorruptCompoundFile);
+            throw new MSFormsFormatException(MSFormsFormatProblem.CorruptCompoundFile);
         }
 
         var buffer = new byte[size];
@@ -264,7 +285,7 @@ internal sealed class CompoundFile
             var offset = (long)sector * _miniSectorSize;
             if (sector >= _miniFat.Length || hops > _miniFat.Length || offset + _miniSectorSize > _miniStream.Length)
             {
-                throw new FormDesignerFormatException(FormDesignerFormatProblem.CorruptCompoundFile);
+                throw new MSFormsFormatException(MSFormsFormatProblem.CorruptCompoundFile);
             }
 
             var count = (int)Math.Min(_miniSectorSize, size - written);
@@ -296,7 +317,7 @@ internal sealed class CompoundFile
             var nameLength = BinaryPrimitives.ReadUInt16LittleEndian(entry[64..]);
             if (nameLength > 64 || nameLength % 2 != 0)
             {
-                throw new FormDesignerFormatException(FormDesignerFormatProblem.CorruptCompoundFile);
+                throw new MSFormsFormatException(MSFormsFormatProblem.CorruptCompoundFile);
             }
 
             // the length counts the terminating null character; a version 3 file's size has undefined high 32 bits

@@ -147,4 +147,8 @@
     <value>Copyright © {0} {1}, all rights reserved.</value>
     <comment>{0} is the year of the copyright, {1} the company that holds it.</comment>
   </data>
+  <data name="VersionLine" xml:space="preserve">
+    <value>{0} {1}, built on RDCore.SDK {2}</value>
+    <comment>{0} is the application's product name, {1} its version, {2} the version of the SDK it runs on.</comment>
+  </data>
 </root>

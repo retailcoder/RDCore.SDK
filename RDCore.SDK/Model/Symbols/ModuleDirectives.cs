@@ -51,9 +51,14 @@
 /// Whether a module declares <c>Attribute VB_Extensible = True</c> (<strong>MS-VBAL §4.2.1</strong>): a host extends it with an extension module of the same
 /// name, as it does its document modules.
 /// </param>
+/// <param name="Exposed">
+/// Whether a class module declares <c>Attribute VB_Exposed = True</c> (<strong>MS-VBAL §5.2.4.1.1</strong>): the class is accessible within the projects
+/// that reference its project, as well as within its own. <see langword="false"/> for a module that declares no such attribute (the <em>Private</em>
+/// instancing mode), and for one that is not a class module.
+/// </param>
 public readonly record struct ModuleDirectives(
     bool Explicit = false, bool Strict = false, OptionCompare Compare = OptionCompare.Binary, int Base = 0, bool PrivateModule = false,
-    bool PredeclaredId = false, bool Creatable = true, bool Extensible = false)
+    bool PredeclaredId = false, bool Creatable = true, bool Extensible = false, bool Exposed = false)
 {
     /// <summary>
     /// The directives of a module that declares none of them explicitly.

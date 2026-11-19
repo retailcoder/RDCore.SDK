@@ -22,10 +22,13 @@ public record class SelectCaseStatementNode(SyntaxNodeId Identity, SourceLocatio
 /// </summary>
 /// <param name="Identity">A unique identifier for this specific syntax node.</param>
 /// <param name="Location">The document location (<c>Uri</c>+<c>Range</c>) of the bound expression.</param>
-/// <param name="RangeClauses">The comma-separated range clauses on this <c>Case</c> line, in source order (MS-VBAL 5.4.2.10).</param>
+/// <param name="RangeClauses">
+/// The comma-separated range clauses on this <c>Case</c> line, in source order (MS-VBAL §5.4.2.10). They are the node's <see cref="SyntaxNode.Children"/>,
+/// as the control expression is the <c>Select Case</c>'s; the statements of <paramref name="Block"/> are not.
+/// </param>
 /// <param name="Block">The body of the <c>Case</c> block.</param>
 public record class CaseExpressionStatementNode(SyntaxNodeId Identity, SourceLocation Location, ImmutableArray<CaseRangeClauseNode> RangeClauses, StatementBlock Block)
-    : StatementNode(Identity, Location, []);
+    : StatementNode(Identity, Location, RangeClauses.IsDefault ? [] : [.. RangeClauses]);
 
 /// <summary>
 /// The <c>Case Else</c> branch of a <c>Select Case</c> block statement.

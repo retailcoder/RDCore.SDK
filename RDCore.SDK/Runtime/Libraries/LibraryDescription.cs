@@ -147,6 +147,11 @@ public sealed record class EnumDescription
     /// <summary>Whether the library leaves it out of what it shows.</summary>
     public bool IsHidden { get; init; }
 
+    /// <summary>
+    /// Whether RD-VBA adds the enumeration to the library (<see cref="MemberDescription.IsAddition"/>).
+    /// </summary>
+    public bool IsAddition { get; init; }
+
     /// <summary>The members of the enumeration, in declaration order.</summary>
     public ImmutableArray<EnumMemberDescription> Members { get; init; } = [];
 }
@@ -167,6 +172,11 @@ public sealed record class EnumMemberDescription
 
     /// <summary>Whether the library leaves it out of what it shows.</summary>
     public bool IsHidden { get; init; }
+
+    /// <summary>
+    /// Whether RD-VBA adds the member to the enumeration (<see cref="MemberDescription.IsAddition"/>).
+    /// </summary>
+    public bool IsAddition { get; init; }
 }
 
 /// <summary>
@@ -192,6 +202,11 @@ public sealed record class ClassDescription
 
     /// <summary>Whether the library leaves it out of what it shows.</summary>
     public bool IsHidden { get; init; }
+
+    /// <summary>
+    /// Whether RD-VBA adds the class to the library (<see cref="MemberDescription.IsAddition"/>).
+    /// </summary>
+    public bool IsAddition { get; init; }
 
     /// <summary>
     /// Whether the class is the one the library's host is, which a host makes members of implicitly available (<c>Excel.Application</c>). Its members are never
@@ -223,6 +238,26 @@ public sealed record class ClassDescription
     /// description exported from a type library leaves it out. A file states it from format version 4 (<see cref="LibraryJson.CurrentFormatVersion"/>).
     /// </remarks>
     public string? TypeName { get; init; }
+
+    /// <summary>
+    /// The classes, of this library or of one it depends on (<see cref="LibraryDescription.DependsOn"/>), that an object of the class is as well: an object
+    /// of RDForms' <c>Font</c> is an OLE Automation <c>StdFont</c> too, so <c>TypeOf f Is stdole.StdFont</c> and <c>TypeOf f Is RDForms.Font</c> both
+    /// hold, and a variable of either type takes the object. A class of another library is qualified with that library's name
+    /// (<c>stdole.StdFont</c>), and one of this library is not (<c>Font</c>). Empty for a class whose objects are of no other class.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <see cref="LibrarySymbolReader"/> reads each as one of the class symbol's <see cref="Model.Symbols.VBClassModuleSymbol.ImplementedInterfaces"/>,
+    /// after its <see cref="DefaultInterface"/>, and the class's type has the type of each among its
+    /// <see cref="Model.Types.Complex.VBClassType.Supertypes"/>, whatever the order of the libraries it is given: the classes named are read first. A name
+    /// that names none of the classes read, or names the class itself, is left out, and a class named twice is there once.
+    /// </para>
+    /// <para>
+    /// A type library states the interfaces a class implements, not the classes its objects are, so a description exported from one has none. A file states
+    /// it from format version 6 (<see cref="LibraryJson.CurrentFormatVersion"/>).
+    /// </para>
+    /// </remarks>
+    public ImmutableArray<string> Implements { get; init; } = [];
 
     /// <summary>The members of the class, in declaration order.</summary>
     public ImmutableArray<MemberDescription> Members { get; init; } = [];
@@ -295,6 +330,11 @@ public sealed record class ConstantDescription
     /// Whether the library leaves it out of what it shows.
     /// </summary>
     public bool IsHidden { get; init; }
+
+    /// <summary>
+    /// Whether RD-VBA adds the constant to the library (<see cref="MemberDescription.IsAddition"/>).
+    /// </summary>
+    public bool IsAddition { get; init; }
 }
 
 /// <summary>
@@ -356,6 +396,17 @@ public sealed record class MemberDescription
     /// </remarks>
     public bool IsDesignTimeOnly { get; init; }
 
+    /// <summary>
+    /// Whether RD-VBA adds the member to the library's class: the type library the description was exported from does not declare it, and RD-VBA provides it
+    /// (a control's <c>Opacity</c> in the Visual Basic 6.0 library). Hover and completion can show it as such.
+    /// </summary>
+    /// <remarks>
+    /// A type library cannot state it, so a description exported from one has none. It is stated in the file (<c>"isAddition": true</c>) by whoever describes
+    /// the library with what RD-VBA adds to it, and is left out where it is <see langword="false"/>. A file states it from format version 5
+    /// (<see cref="LibraryJson.CurrentFormatVersion"/>).
+    /// </remarks>
+    public bool IsAddition { get; init; }
+
     /// <summary>The parameters of the member, in declaration order.</summary>
     public ImmutableArray<ParameterDescription> Parameters { get; init; } = [];
 }
@@ -399,6 +450,11 @@ public sealed record class EventDescription
 
     /// <summary>What the library says the event is.</summary>
     public string? Description { get; init; }
+
+    /// <summary>
+    /// Whether RD-VBA adds the event to the library's class (<see cref="MemberDescription.IsAddition"/>).
+    /// </summary>
+    public bool IsAddition { get; init; }
 
     /// <summary>The parameters a handler of the event receives, in declaration order.</summary>
     public ImmutableArray<ParameterDescription> Parameters { get; init; } = [];

@@ -10,8 +10,9 @@ namespace RDCore.SDK.Server.Configuration;
 /// What a workspace keeps is checked as the user's settings are: an item that is not a value of the setting is neither kept nor read.
 /// </para>
 /// <para>
-/// Where a workspace keeps its settings is the implementation's to say. A client changes them as a change of its own, as it changes the user's settings: the
-/// language server asks it to (<c>rdcore/settings/listValue</c>).
+/// Where a workspace keeps its settings is the implementation's to say: <see cref="WorkspaceSettingsStore"/> keeps them in the file the configuration reads
+/// them from (<see cref="WorkspaceSettingsConfiguration.AddWorkspaceSettings"/>). A client changes them as a change of its own, as it changes the user's
+/// settings: the language server asks it to (<c>rdcore/settings/listValue</c>).
 /// </para>
 /// </remarks>
 public interface IWorkspaceSettings

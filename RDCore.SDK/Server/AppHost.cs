@@ -44,6 +44,8 @@ public abstract class AppHost<TApp>() : IDisposable
     private Exception? _unhandledFault;
     // what the setting of the language of the user interface came to, when the configuration was read.
     private UserInterfaceLanguageSetting? _language;
+    // the root folder of the workspace whose settings are a layer of the configuration; none when the command line names no folder.
+    private string? _workspaceFolder;
 
     private static readonly Lazy<AssemblyName> _info = new(() => Assembly.GetEntryAssembly()?.GetName()!, LazyThreadSafetyMode.PublicationOnly);
 
@@ -112,10 +114,10 @@ public abstract class AppHost<TApp>() : IDisposable
     /// when the application fails before it is built.
     /// </para>
     /// <para>
-    /// <strong>What the base implementation draws.</strong> The platform's splash (<see cref="PlatformSplash"/>): the logo, the slogan and the copyright
-    /// notice, in the language of the user interface, as plain text (<see cref="PlatformSplash.WriteTo"/>). It writes it to the standard output of an
-    /// application that writes to its console (<see cref="WritesToConsole"/>), and only when that output is a console: output redirected to a file or a pipe
-    /// is a program's, and gets no splash in it. A server never shows one.
+    /// <strong>What the base implementation draws.</strong> The platform's splash (<see cref="PlatformSplash"/>): the logo, the slogan, the version line and
+    /// the copyright notice, in the language of the user interface, as plain text (<see cref="PlatformSplash.WriteTo"/>). It writes it to the standard output
+    /// of an application that writes to its console (<see cref="WritesToConsole"/>), and only when that output is a console: output redirected to a file or a
+    /// pipe is a program's, and gets no splash in it. A server never shows one.
     /// </para>
     /// <para>
     /// <strong>Your own splash.</strong> An override replaces the base implementation: what it draws is the one splash the application shows, and the
@@ -342,6 +344,14 @@ public abstract class AppHost<TApp>() : IDisposable
             var configuration = builder!.Configuration;
             Configure(configuration, builder.Services, args);
 
+            // what the workspace sets for itself goes above what the user set and below what the process is started with; which workspace it is, the command
+            // line says, and Configure has just put it in the configuration.
+            if (configuration[$"{SettingsSchema.Root}:Workspace:WorkspaceUri"] is { Length: > 0 } workspace && WorkspaceSettingsStore.FolderOf(workspace) is { } folder)
+            {
+                _workspaceFolder = folder;
+                configuration.AddWorkspaceSettings(folder, Settings);
+            }
+
             // bound the generic host's shutdown so a wedged background task cannot hang the process
             // (this also bounds ConsoleLifetime's ProcessExit wait).
             builder.Services.Configure<HostOptions>(options => options.ShutdownTimeout = TimeSpan.FromSeconds(5));
@@ -396,7 +406,13 @@ public abstract class AppHost<TApp>() : IDisposable
         services
             .AddLiveSettings<SdkAppOptions>(SettingsSchema.Platform, string.Empty)
             .AddLiveSettings<SdkServerOptions>(SettingsSchema.Platform, "Server")
-            .AddSingleton<ILiveSettings>(sp => new LiveSettings(sp.GetServices<LiveSettingsTarget>(), Settings, sp.GetRequiredService<IPlatformEnvironment>(), sp.GetService<ILogger<LiveSettings>>()));
+            .AddSingleton<ILiveSettings>(sp => new LiveSettings(sp.GetServices<LiveSettingsTarget>(), Settings, sp.GetRequiredService<IPlatformEnvironment>(), sp.GetService<ILogger<LiveSettings>>())
+            {
+                Workspace = _workspaceFolder is null ? new Dictionary<string, string>() : sp.GetRequiredService<WorkspaceSettingsStore>().Values(_workspaceFolder),
+            })
+            // the settings a workspace keeps for itself, in the same file the configuration reads them from.
+            .AddSingleton(sp => new WorkspaceSettingsStore(sp.GetRequiredService<IFileSystem>(), Settings))
+            .AddSingleton<IWorkspaceSettings>(sp => sp.GetRequiredService<WorkspaceSettingsStore>());
 
         services
             .AddSingleton<IRuntimeEnvironmentProfile>(sp =>
@@ -416,9 +432,9 @@ public abstract class AppHost<TApp>() : IDisposable
             .AddSingleton<IProjectFileLoader, ProjectFileLoader>()
             .AddSingleton<IProjectFileWriter, ProjectFileWriter>()
             .AddSingleton<IPlatformEnvironment, PlatformEnvironment>()
-            // the descriptions of the libraries a project can reference ship with the platform, in its Symbols folder.
-            .AddSingleton<RDCore.SDK.Runtime.Libraries.ILibrarySource>(provider => new RDCore.SDK.Runtime.Libraries.DirectoryLibrarySource(
-                provider.GetRequiredService<IFileSystem>(), provider.GetRequiredService<IPlatformEnvironment>().Resolve(PlatformEnvironment.SymbolsDirectory)))
+            // the descriptions of the libraries a project can reference ship with the platform, in its Symbols folder, and with what the application adds.
+            .AddSingleton(provider => LibrarySource(provider, new RDCore.SDK.Runtime.Libraries.DirectoryLibrarySource(
+                provider.GetRequiredService<IFileSystem>(), provider.GetRequiredService<IPlatformEnvironment>().Resolve(PlatformEnvironment.SymbolsDirectory))))
             .AddSingleton<IPlatformCompositionService, PlatformCompositionService>()
             .AddSingleton<IExtensionsProvider, ExtensionsClient>()
             .AddSingleton<IExtensionManifestValidationService, ExtensionManifestValidationService>()
@@ -470,6 +486,19 @@ public abstract class AppHost<TApp>() : IDisposable
     protected virtual void ConfigureAdditionalExternalServices(IServiceCollection services, IConfiguration configuration)
     {
     }
+
+    /// <summary>
+    /// The descriptions of the libraries a project of the application can reference: the <see cref="RDCore.SDK.Runtime.Libraries.ILibrarySource"/> the
+    /// external services give every service that asks for one.
+    /// </summary>
+    /// <remarks>
+    /// The base implementation returns <paramref name="symbols"/>. An application that ships a package describing libraries of its own puts that package's
+    /// source ahead of <paramref name="symbols"/>, with a <see cref="RDCore.SDK.Runtime.Libraries.CompositeLibrarySource"/>.
+    /// </remarks>
+    /// <param name="provider">The external services, to resolve what the source needs.</param>
+    /// <param name="symbols">The descriptions in the platform's <see cref="PlatformEnvironment.SymbolsDirectory"/> folder.</param>
+    /// <returns>The source the external services register.</returns>
+    protected virtual RDCore.SDK.Runtime.Libraries.ILibrarySource LibrarySource(IServiceProvider provider, RDCore.SDK.Runtime.Libraries.ILibrarySource symbols) => symbols;
 
     /// <summary>
     /// Configures the <em>external service provider</em> logging targets for a <c>RDCore.SDK</c> client/server application.

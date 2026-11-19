@@ -7,6 +7,7 @@ using RDCore.SDK.Model.Source;
 using RDCore.SDK.Model.Types;
 using RDCore.SDK.Runtime.Abstract.Execution;
 using RDCore.SDK.Runtime.Shared;
+using RDCore.SDK.Workspace.Forms;
 
 namespace RDCore.Tests.Model.Symbols;
 
@@ -47,12 +48,40 @@ public sealed class VBProjectSymbolTests
         var field = Field("Total");
         var resolver = Substitute.For<ISymbolResolver>();
         resolver.ResolveQualifier("MyProject", ScopeKind.Global, callerScope).Returns(SymbolResolutionResult.Resolved(project));
-        resolver.ResolveProjectType(project, "Total").Returns(SymbolResolutionResult.Resolved(field));
+        resolver.ResolveProjectType(project, "Total", callerScope).Returns(SymbolResolutionResult.Resolved(field));
 
         var result = VBProjectSymbol.ResolveQualifiedType(resolver, "MyProject", "Total", callerScope);
 
         Assert.AreEqual(field, result.Symbol);
         resolver.DidNotReceive().ResolveType("Total", Arg.Any<ScopeKind>(), callerScope);
+    }
+
+    [TestMethod]
+    public void AProjectsType_AsTheCodeAtAnAddressSeesIt_IsByDefaultAsTheEnclosingProjectSeesIt()
+    {
+        var project = new VBProjectSymbol(Root, "MyProject");
+        var field = Field("Total");
+        ISymbolResolver resolver = new TypesOf(Root, field);
+
+        var result = resolver.ResolveProjectType(project, "Total", new Uri("file://rdcore-test#Caller.Run"));
+
+        Assert.AreSame(field, result.Symbol);
+        Assert.AreSame(resolver.ResolveProjectType(project, "Total").Symbol, result.Symbol);
+    }
+
+    // a resolver that keeps the defaults: one type, found from one address.
+    private sealed class TypesOf(Uri from, Symbol type) : ISymbolResolver
+    {
+        public SymbolResolutionResult ResolveValue(string name, ScopeKind scope, Uri handle) => SymbolResolutionResult.Unbound;
+
+        public SymbolResolutionResult ResolveType(string name, ScopeKind scope, Uri handle)
+            => name == type.Name && handle == from ? SymbolResolutionResult.Resolved(type) : SymbolResolutionResult.Unbound;
+
+        public SymbolResolutionResult ResolveQualifier(string name, ScopeKind scope, Uri handle) => SymbolResolutionResult.Unbound;
+
+        public SymbolResolutionResult ResolveConditionalConstant(string name, ScopeKind scope, Uri handle) => SymbolResolutionResult.Unbound;
+
+        public SymbolResolutionResult ResolveMember(Symbol owner, string name, Uri handle) => SymbolResolutionResult.Unbound;
     }
 
     [TestMethod]
@@ -66,7 +95,7 @@ public sealed class VBProjectSymbolTests
         var resolver = Substitute.For<ISymbolResolver>();
         resolver.ResolveType("MyProject", ScopeKind.Global, callerScope).Returns(SymbolResolutionResult.Resolved(Field("MyProject")));
         resolver.ResolveQualifier("MyProject", ScopeKind.Global, callerScope).Returns(SymbolResolutionResult.Resolved(project));
-        resolver.ResolveProjectType(project, "Total").Returns(SymbolResolutionResult.Resolved(field));
+        resolver.ResolveProjectType(project, "Total", callerScope).Returns(SymbolResolutionResult.Resolved(field));
 
         var result = VBProjectSymbol.ResolveQualifiedType(resolver, "MyProject", "Total", callerScope);
 
@@ -98,5 +127,38 @@ public sealed class VBProjectSymbolTests
         var result = VBProjectSymbol.ResolveQualifiedType(resolver, "Unknown", "ClassName", Root);
 
         Assert.IsTrue(result.IsUnbound);
+    }
+
+    [TestMethod]
+    public void TheBaseClassOfAModule_IsTheClassOfItsLibrary_ByTheLibrarysName()
+    {
+        var library = new VBProjectSymbol(Root, "VB");
+        var userControl = new VBClassModuleSymbol(Root, library.Uri, "UserControl");
+        var module = new VBClassModuleSymbol(Root, Root, "UserControl1") { BaseClass = new FormControlClass("VB", "UserControl") };
+        var resolver = Substitute.For<ISymbolResolver>();
+        resolver.ResolveQualifier("VB", ScopeKind.Global, StaticSymbol.GlobalUri).Returns(SymbolResolutionResult.Resolved(library));
+        resolver.ResolveProjectType(library, "UserControl", StaticSymbol.GlobalUri).Returns(SymbolResolutionResult.Resolved(userControl));
+
+        Assert.AreSame(userControl, VBProjectSymbol.ResolveBaseClass(resolver, module));
+    }
+
+    [TestMethod]
+    public void AModuleWithNoBaseClass_HasNone_AndNothingIsLookedUp()
+    {
+        var resolver = Substitute.For<ISymbolResolver>();
+
+        Assert.IsNull(VBProjectSymbol.ResolveBaseClass(resolver, new VBClassModuleSymbol(Root, Root, "Class1")));
+        Assert.IsNull(VBProjectSymbol.ResolveBaseClass(resolver, new VBClassModuleSymbol(Root, Root, "Class2") { BaseClass = new FormControlClass(null, "UserControl") }));
+        Assert.IsEmpty(resolver.ReceivedCalls());
+    }
+
+    [TestMethod]
+    public void TheBaseClassOfALibraryTheProjectDoesNotReference_IsNone()
+    {
+        var module = new VBClassModuleSymbol(Root, Root, "UserControl1") { BaseClass = new FormControlClass("VB", "UserControl") };
+        var resolver = Substitute.For<ISymbolResolver>();
+        resolver.ResolveQualifier("VB", ScopeKind.Global, StaticSymbol.GlobalUri).Returns(SymbolResolutionResult.Unbound);
+
+        Assert.IsNull(VBProjectSymbol.ResolveBaseClass(resolver, module));
     }
 }

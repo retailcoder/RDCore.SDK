@@ -1,6 +1,8 @@
 ﻿using System.Buffers.Binary;
 using System.Globalization;
 using System.Text.RegularExpressions;
+using RDCore.SDK.Forms;
+using RDCore.SDK.Model.Source;
 
 namespace RDCore.SDK.Workspace.Forms;
 
@@ -12,6 +14,15 @@ namespace RDCore.SDK.Workspace.Forms;
 /// <param name="Offset">The offset of the designer data in the companion file: <c>0</c> for a Visual Basic 6.0 form, whose
 /// designer data is the whole file.</param>
 public sealed record class FormDesignerReference(string FileName, long Offset);
+
+/// <summary>
+/// A string property of a Visual Basic 6.0 form or of one of its controls whose value is the name of a control of the form
+/// (<see cref="FormDesigner.PropertiesNaming"/>).
+/// </summary>
+/// <param name="Owner">The name of the control that has the property, or of the form.</param>
+/// <param name="Property">The name of the property, as the designer block writes it.</param>
+/// <param name="Range">Where the value is written in the form module's source, inside its quotes: zero-based lines and characters.</param>
+public sealed record class FormControlNameReference(string Owner, string Property, SourceRange Range);
 
 /// <summary>
 /// Reads what a form module's designer declares: the form's class and designer properties, and its controls.
@@ -31,12 +42,47 @@ public sealed record class FormDesignerReference(string FileName, long Offset);
 /// properties (a <c>Font</c>). Its <c>.frx</c> file holds binary property values (pictures, lists), which a property
 /// cites as <c>"Form1.frx":0000</c>. The controls' declarations do not need it; the library that hosts the form reads it
 /// with the designer block's text (<see cref="FormDescriptor.DesignerText"/>).</item>
+/// <item>An <b>RDForms</b> form is a <c>.rdform</c> module (<see cref="ProjectModuleKinds.RDFormsModuleExtension"/>) with no designer block: its
+/// controls are in the RDForms document of the same base name beside it (<see cref="RDFormsDocumentOf"/>), which the <see cref="IFormDocumentReader"/>
+/// registered for its extension reads (<see cref="Register"/>).</item>
 /// </list>
 /// The reader takes the companion file's content from its caller, which owns the file system:
-/// <see cref="CompanionOf(string)"/> says which file and where.
+/// <see cref="CompanionOf(string)"/> says which file and where, and <see cref="ReadCompanion"/> reads it.
 /// </remarks>
 public static partial class FormDesigner
 {
+    /// <summary>
+    /// The extension of an RDForms form's document, which holds its controls: <c>.xaml</c>.
+    /// </summary>
+    public const string RDFormsDocumentExtension = ".xaml";
+
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, IFormDocumentReader> DocumentReaders = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// The path of the RDForms document of the RDForms form whose code is at <paramref name="modulePath"/>: the file of the same base name in the same folder,
+    /// with the <see cref="RDFormsDocumentExtension"/> extension (<c>Forms/Form1.rdform</c> pairs with <c>Forms/Form1.xaml</c>).
+    /// </summary>
+    /// <param name="modulePath">The path or relative URI of the form's <c>.rdform</c> module.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="modulePath"/> is <see langword="null"/>.</exception>
+    public static string RDFormsDocumentOf(string modulePath)
+    {
+        ArgumentNullException.ThrowIfNull(modulePath);
+        return Path.ChangeExtension(modulePath, RDFormsDocumentExtension);
+    }
+
+    /// <summary>
+    /// Registers the reader of the form documents of its <see cref="IFormDocumentReader.DocumentExtension"/>, in place of any registered for it before: every
+    /// read of this process that takes a module's path
+    /// (<see cref="Read(string?, string?, ReadOnlyMemory{byte}, out FormDesignerFormatException?)"/>) reads such a form's document with it.
+    /// </summary>
+    /// <param name="reader">The reader.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="reader"/> is <see langword="null"/>.</exception>
+    public static void Register(IFormDocumentReader reader)
+    {
+        ArgumentNullException.ThrowIfNull(reader);
+        DocumentReaders[reader.DocumentExtension] = reader;
+    }
+
     /// <summary>
     /// The class identifier of the Microsoft Forms 2.0 designer, which names a VBA UserForm's designer block.
     /// </summary>
@@ -45,7 +91,26 @@ public static partial class FormDesigner
     /// <summary>
     /// The name of the Microsoft Forms type library, which qualifies the classes of a UserForm and of its controls (<c>MSForms.TextBox</c>).
     /// </summary>
-    public const string MSFormsLibrary = MSFormsDesignerStorage.Library;
+    public const string MSFormsLibrary = "MSForms";
+
+    /// <summary>
+    /// The extension of the companion file of each kind of designer file, keyed by the designer file's extension: a form's <c>.frx</c>
+    /// (<c>.frm</c>), a user control's <c>.ctx</c> (<c>.ctl</c>), a designer's <c>.dsx</c> (<c>.dsr</c>), a property page's <c>.pgx</c>
+    /// (<c>.pag</c>), a user document's <c>.dox</c> (<c>.dob</c>), and an RDForms form's document, <see cref="RDFormsDocumentExtension"/>
+    /// (<see cref="ProjectModuleKinds.RDFormsModuleExtension"/>).
+    /// </summary>
+    /// <remarks>
+    /// Each extension has its dot; a key is looked up ignoring case.
+    /// </remarks>
+    public static IReadOnlyDictionary<string, string> CompanionExtensions { get; } = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+    {
+        [".frm"] = ".frx",
+        [".ctl"] = ".ctx",
+        [".dsr"] = ".dsx",
+        [".pag"] = ".pgx",
+        [".dob"] = ".dox",
+        [ProjectModuleKinds.RDFormsModuleExtension] = RDFormsDocumentExtension,
+    };
 
     private const int BlobHeaderSize = 24;
 
@@ -78,6 +143,33 @@ public static partial class FormDesigner
     }
 
     /// <summary>
+    /// The path of the companion file of the form module at <paramref name="modulePath"/>: the file its source names (<see cref="CompanionOf(string)"/>),
+    /// beside the module's own file, or an RDForms form's document (<see cref="RDFormsDocumentOf"/>), as <see cref="ReadCompanion"/> reads it.
+    /// </summary>
+    /// <param name="modulePath">The path of the form module's file.</param>
+    /// <param name="source">The form module's source, which an RDForms form's path does not depend on.</param>
+    /// <returns>
+    /// The path, whether or not the file is there; <see langword="null"/> when the module names no companion file, or its designer block is not
+    /// terminated.
+    /// </returns>
+    public static string? CompanionPathOf(string modulePath, string? source)
+    {
+        if (ProjectModuleKinds.IsRDFormsModule(modulePath))
+        {
+            return RDFormsDocumentOf(modulePath);
+        }
+
+        try
+        {
+            return CompanionOf(source) is { } reference ? Path.Combine(Path.GetDirectoryName(modulePath) ?? string.Empty, reference.FileName) : null;
+        }
+        catch (FormDesignerFormatException)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
     /// Reads the companion file of the form module at <paramref name="modulePath"/>: the file its source names (<see cref="CompanionOf(string)"/>), which is
     /// beside the module's own file.
     /// </summary>
@@ -86,6 +178,10 @@ public static partial class FormDesigner
     /// <see cref="Read(string, ReadOnlyMemory{byte}, out FormDesignerFormatException)"/>. A module whose companion is not read is still loaded. A VBA
     /// UserForm's controls are in its companion, so without it the read gives the problem and the form declares no controls. A Visual Basic 6.0 form's
     /// controls are in its text, so it declares them, with an empty <see cref="FormDescriptor.State"/>.
+    /// <para>
+    /// An RDForms form's companion is its RDForms document (<see cref="RDFormsDocumentOf"/>), which its text does not name: a missing document is the problem
+    /// <see cref="FormDesignerFormatProblem.MissingDocument"/>, and the module is still loaded, with no controls.
+    /// </para>
     /// </remarks>
     /// <param name="fileSystem">The file system the module is on.</param>
     /// <param name="modulePath">The path of the form module's file.</param>
@@ -96,14 +192,24 @@ public static partial class FormDesigner
     /// </param>
     /// <returns>
     /// The content of the companion file. Empty, with no problem, when the module names no companion file or the file is not there; empty, with the problem,
-    /// when the designer block or the file cannot be read.
+    /// when the designer block or the file cannot be read, and when an RDForms form's document is not there.
     /// </returns>
     public static ReadOnlyMemory<byte> ReadCompanion(System.IO.Abstractions.IFileSystem fileSystem, string modulePath, string? source, out Exception? problem)
     {
         problem = null;
         try
         {
-            if (CompanionOf(source) is { } reference
+            if (ProjectModuleKinds.IsRDFormsModule(modulePath))
+            {
+                var document = RDFormsDocumentOf(modulePath);
+                if (fileSystem.File.Exists(document))
+                {
+                    return fileSystem.File.ReadAllBytes(document);
+                }
+
+                problem = new FormDesignerFormatException(FormDesignerFormatProblem.MissingDocument);
+            }
+            else if (CompanionOf(source) is { } reference
                 && fileSystem.Path.Combine(fileSystem.Path.GetDirectoryName(modulePath) ?? string.Empty, reference.FileName) is var path
                 && fileSystem.File.Exists(path))
             {
@@ -132,17 +238,67 @@ public static partial class FormDesigner
     /// form module.
     /// </param>
     public static FormDescriptor? Read(string? source, ReadOnlyMemory<byte> companion, out FormDesignerFormatException? problem)
+        => Read(modulePath: null, source, companion, out problem);
+
+    /// <summary>
+    /// What the form module at <paramref name="modulePath"/> declares, as <see cref="Read(string?, string?, ReadOnlyMemory{byte})"/> reads it, or <c>null</c>
+    /// when it is not a form module or its designer data cannot be read, which <paramref name="problem"/> then says.
+    /// </summary>
+    /// <remarks>
+    /// A form whose designer data cannot be read declares nothing, so its module is loaded as one whose form has no controls.
+    /// </remarks>
+    /// <param name="modulePath">The path or relative URI of the module's file, or <see langword="null"/> for a module that has no file.</param>
+    /// <param name="source">The form module's source.</param>
+    /// <param name="companion">The content of the module's companion file (<see cref="ReadCompanion"/>).</param>
+    /// <param name="problem">
+    /// Why the designer data cannot be read (<see cref="FormDesignerFormatException.Problem"/>); <c>null</c> when it was read, and for a module that is not a
+    /// form module.
+    /// </param>
+    public static FormDescriptor? Read(string? modulePath, string? source, ReadOnlyMemory<byte> companion, out FormDesignerFormatException? problem)
     {
         problem = null;
         try
         {
-            return Read(source, companion);
+            return Read(modulePath, source, companion);
         }
         catch (FormDesignerFormatException exception)
         {
             problem = exception;
             return null;
         }
+    }
+
+    /// <summary>
+    /// What the form module at <paramref name="modulePath"/> declares, or <c>null</c> when it is not a form module.
+    /// </summary>
+    /// <remarks>
+    /// The code of an RDForms form (<see cref="ProjectModuleKinds.IsRDFormsModule"/>) declares what its RDForms document does, as the
+    /// <see cref="IFormDocumentReader"/> registered for <see cref="RDFormsDocumentExtension"/> reads it (<see cref="Register"/>). Any other module is read as
+    /// <see cref="Read(string?, ReadOnlyMemory{byte})"/> reads it.
+    /// </remarks>
+    /// <param name="modulePath">The path or relative URI of the module's file, or <see langword="null"/> for a module that has no file.</param>
+    /// <param name="source">The form module's source.</param>
+    /// <param name="companion">The content of the module's companion file (<see cref="ReadCompanion"/>): an RDForms form's document.</param>
+    /// <exception cref="FormDesignerFormatException">
+    /// The designer data cannot be read, as <see cref="Read(string?, ReadOnlyMemory{byte})"/> says; or, for an RDForms form, <paramref name="companion"/> is
+    /// empty (<see cref="FormDesignerFormatProblem.MissingDocument"/>), no reader is registered for its document
+    /// (<see cref="FormDesignerFormatProblem.NoDocumentReader"/>), or its document holds no form (<see cref="FormDesignerFormatProblem.InvalidDocument"/>).
+    /// </exception>
+    public static FormDescriptor? Read(string? modulePath, string? source, ReadOnlyMemory<byte> companion)
+    {
+        if (!ProjectModuleKinds.IsRDFormsModule(modulePath))
+        {
+            return Read(source, companion);
+        }
+
+        if (companion.IsEmpty)
+        {
+            throw new FormDesignerFormatException(FormDesignerFormatProblem.MissingDocument);
+        }
+
+        return DocumentReaders.TryGetValue(RDFormsDocumentExtension, out var reader)
+            ? reader.Read(companion)
+            : throw new FormDesignerFormatException(FormDesignerFormatProblem.NoDocumentReader);
     }
 
     /// <summary>
@@ -174,7 +330,14 @@ public static partial class FormDesigner
         if (kind == FormDesignerKind.MSForms && CompanionOf(designer) is { } reference)
         {
             state = BlobAt(companion, reference.Offset);
-            controls = [.. MSFormsDesignerStorage.ReadControls(CompoundFile.Open(state))];
+            try
+            {
+                controls = [.. MSFormsReader.Read(state.Span).Form.Children.Select(ToDescriptor)];
+            }
+            catch (MSFormsFormatException exception)
+            {
+                throw new FormDesignerFormatException(exception);
+            }
         }
         else if (kind == FormDesignerKind.VisualBasic6)
         {
@@ -208,6 +371,80 @@ public static partial class FormDesigner
         return ClassOf(designer.Root.Class).Kind == FormDesignerKind.VisualBasic6 ? companion : BlobAt(companion, reference.Offset);
     }
 
+    /// <summary>
+    /// Where the name of a Visual Basic 6.0 form's control is written in the form module's designer block: on the <c>Begin &lt;class&gt; &lt;name&gt;</c>
+    /// line of each control so named, which is every element of a control array, at any depth.
+    /// </summary>
+    /// <remarks>
+    /// The name is what a rename of the control changes in the designer block. Names compare case-insensitively. The form's own <c>Begin</c> line names
+    /// the form, not a control. A VBA UserForm keeps its controls' names in its companion file, not in the module's text, so none is found in one, nor
+    /// in another designer's form.
+    /// </remarks>
+    /// <param name="source">The form module's source.</param>
+    /// <param name="name">The name of the control.</param>
+    /// <returns>
+    /// The range of the name on each <c>Begin</c> line, in the order the lines are written: empty when no control of the form has the name, and for a
+    /// module that is not a Visual Basic 6.0 form.
+    /// </returns>
+    /// <exception cref="FormDesignerFormatException">The designer block is not terminated.</exception>
+    public static IReadOnlyList<SourceRange> ControlNameRangesOf(string? source, string name)
+    {
+        if (ReadSource(source) is not { } designer || ClassOf(designer.Root.Class).Kind != FormDesignerKind.VisualBasic6)
+        {
+            return [];
+        }
+
+        return [.. designer.Root.Children.SelectMany(block => block.DescendantsAndSelf())
+            .Where(block => string.Equals(block.Name, name, StringComparison.OrdinalIgnoreCase))
+            .Select(NameRangeOf)];
+    }
+
+    /// <summary>
+    /// Where a form module's designer block writes the name of the form: on its first <c>Begin &lt;class&gt; &lt;name&gt;</c> line, whichever designer wrote
+    /// it (<c>Begin VB.Form Form1</c>, <c>Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} Dialog</c>).
+    /// </summary>
+    /// <remarks>
+    /// The name is what a rename of the form's module changes in the designer block, with the module's <c>VB_Name</c> attribute.
+    /// </remarks>
+    /// <param name="source">The form module's source.</param>
+    /// <returns>The range of the name, or <c>null</c> when the module is not a form module (it has no designer block).</returns>
+    /// <exception cref="FormDesignerFormatException">The designer block is not terminated.</exception>
+    public static SourceRange? FormNameRangeOf(string? source)
+        => ReadSource(source) is { } designer ? NameRangeOf(designer.Root) : null;
+
+    /// <summary>
+    /// The string properties of a Visual Basic 6.0 form, and of its controls other than those named <paramref name="name"/>, whose whole value is
+    /// <paramref name="name"/>: what may name the control so named, as an UpDown's <c>BuddyControl = "Text1"</c> names its buddy and a data-bound control's
+    /// <c>DataSource = "Adodc1"</c> its data control.
+    /// </summary>
+    /// <remarks>
+    /// Whether a property names the control, or only holds the same text (a <c>Label</c>'s <c>Caption</c>), is the property's own meaning, which the designer
+    /// block does not say: every such property is found. Names compare case-insensitively. The properties of a grouped property (<c>BeginProperty</c> …
+    /// <c>EndProperty</c>) are not the control's, and are not searched. A VBA UserForm's properties are in its companion file: none is found in one.
+    /// </remarks>
+    /// <param name="source">The form module's source.</param>
+    /// <param name="name">The name of the control.</param>
+    /// <returns>Each property so found, in the order it is written: empty for a module that is not a Visual Basic 6.0 form.</returns>
+    /// <exception cref="FormDesignerFormatException">The designer block is not terminated.</exception>
+    public static IReadOnlyList<FormControlNameReference> PropertiesNaming(string? source, string name)
+    {
+        if (ReadSource(source) is not { } designer || ClassOf(designer.Root.Class).Kind != FormDesignerKind.VisualBasic6)
+        {
+            return [];
+        }
+
+        return [.. designer.Root.DescendantsAndSelf()
+            .Where(block => ReferenceEquals(block, designer.Root) || !string.Equals(block.Name, name, StringComparison.OrdinalIgnoreCase))
+            .SelectMany(block => block.Strings
+                .Where(property => string.Equals(property.Value, name, StringComparison.OrdinalIgnoreCase))
+                .Select(property => new FormControlNameReference(block.Name, property.Property, new SourceRange(
+                    new SourcePosition(property.Line, property.Start),
+                    new SourcePosition(property.Line, property.Start + name.Length)))))];
+    }
+
+    private static SourceRange NameRangeOf(DesignerBlock block)
+        => new(new SourcePosition(block.Line, block.NameColumn), new SourcePosition(block.Line, block.NameColumn + block.Name.Length));
+
     // the designer data at `offset` of a companion file: its blob header, then that many bytes
     private static ReadOnlyMemory<byte> BlobAt(ReadOnlyMemory<byte> companion, long offset)
     {
@@ -233,7 +470,7 @@ public static partial class FormDesigner
         if (Guid.TryParse(token, out var classId))
         {
             return classId == MSFormsClassId
-                ? (FormDesignerKind.MSForms, new FormControlClass(MSFormsDesignerStorage.Library, "UserForm", classId))
+                ? (FormDesignerKind.MSForms, new FormControlClass(MSFormsLibrary, "UserForm", classId))
                 : (FormDesignerKind.Other, new FormControlClass(null, null, classId));
         }
 
@@ -260,10 +497,36 @@ public static partial class FormDesigner
             IntegerOf(block.Properties.GetValueOrDefault("Index")),
             [.. block.Children.Select(ToDescriptor)]);
 
+    // a UserForm's control by the Microsoft Forms reader: an ActiveX control that is not Microsoft Forms' own is named by its
+    // CLSID, a nested form (cache index 7 outside a MultiPage) is a UserForm
+    private static FormControlDescriptor ToDescriptor(MSFormsControl control)
+        => new(
+            control.Name,
+            control.Kind switch
+            {
+                MSFormsControlKind.Other => new FormControlClass(null, null, control.ClassId),
+                MSFormsControlKind.Form => new FormControlClass(MSFormsLibrary, "UserForm"),
+                _ => new FormControlClass(MSFormsLibrary, control.Kind.ToString()),
+            },
+            control.Site is { TabIndex: >= 0 } site ? site.TabIndex : null,
+            Index: null,
+            [.. control.Children.Select(ToDescriptor)]);
+
     private static int? IntegerOf(string? value)
         => int.TryParse(value, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var result) ? result : null;
 
-    private sealed record class DesignerBlock(string Class, string Name, Dictionary<string, string> Properties, List<DesignerBlock> Children);
+    // a `Begin` block: its name is at `NameColumn` (zero-based) of the source's zero-based `Line`; its string properties are where they are written
+    private sealed record class DesignerBlock(string Class, string Name, Dictionary<string, string> Properties, List<DesignerBlock> Children, int Line,
+        int NameColumn)
+    {
+        public List<DesignerString> Strings { get; } = [];
+
+        public IEnumerable<DesignerBlock> DescendantsAndSelf()
+            => Children.SelectMany(child => child.DescendantsAndSelf()).Prepend(this);
+    }
+
+    // a property whose value is a string literal: its value, unquoted, and where its text starts, past the opening quote, on its zero-based line
+    private sealed record class DesignerString(string Property, string Value, int Line, int Start);
 
     // the designer block, the source from its first line through the block's End, and the first companion file a property of
     // the block cites at any depth, grouped properties included
@@ -305,7 +568,8 @@ public static partial class FormDesigner
             return null;
         }
 
-        var root = new DesignerBlock(begin.Groups["class"].Value, begin.Groups["name"].Value, new(StringComparer.OrdinalIgnoreCase), []);
+        var root = new DesignerBlock(begin.Groups["class"].Value, begin.Groups["name"].Value, new(StringComparer.OrdinalIgnoreCase), [], index,
+            begin.Groups["name"].Index);
         var open = new Stack<DesignerBlock>([root]);
         var propertyDepth = 0;
         FormDesignerReference? cited = null;
@@ -338,7 +602,8 @@ public static partial class FormDesigner
 
             if (BeginLine().Match(lines[index]) is { Success: true } child)
             {
-                var block = new DesignerBlock(child.Groups["class"].Value, child.Groups["name"].Value, new(StringComparer.OrdinalIgnoreCase), []);
+                var block = new DesignerBlock(child.Groups["class"].Value, child.Groups["name"].Value, new(StringComparer.OrdinalIgnoreCase), [], index,
+                    child.Groups["name"].Index);
                 open.Peek().Children.Add(block);
                 open.Push(block);
             }
@@ -354,7 +619,14 @@ public static partial class FormDesigner
             }
             else if (PropertyLine().Match(line) is { Success: true } property)
             {
-                open.Peek().Properties[property.Groups["name"].Value] = ValueOf(property.Groups["value"].Value);
+                var name = property.Groups["name"].Value;
+                var value = ValueOf(property.Groups["value"].Value);
+                open.Peek().Properties[name] = value;
+                if (property.Groups["value"].Value.StartsWith('"'))
+                {
+                    // a property's name has no quote: the line's first one opens the value
+                    open.Peek().Strings.Add(new DesignerString(name, value, index, lines[index].IndexOf('"') + 1));
+                }
             }
         }
 
