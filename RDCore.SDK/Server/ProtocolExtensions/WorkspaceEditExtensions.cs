@@ -125,7 +125,7 @@ public static class WorkspaceEditExtensions
     }
 
     /// <summary>
-    /// The edit as its user confirmed the changes of an annotation: they no longer need confirming, and are applied as its other changes are.
+    /// The edit as its user confirmed the changes of an annotation: they are applied as its other changes are, with nothing asked.
     /// </summary>
     /// <param name="edit">The edit.</param>
     /// <param name="annotation">The annotation of the changes confirmed.</param>
@@ -146,8 +146,8 @@ public static class WorkspaceEditExtensions
     /// <param name="edit">The edit.</param>
     /// <param name="annotation">The annotation of the changes left out.</param>
     /// <returns>
-    /// The edit without the text edits, and the files created, renamed or deleted, that the annotation is of, nor the annotation; a <c>TextDocumentEdit</c> left
-    /// with no edit stays, with none.
+    /// The edit without the text edits, and the files created, renamed or deleted, that the annotation is of, nor the annotation; a
+    /// <c>TextDocumentEdit</c> left with no edit stays, with none.
     /// </returns>
     public static WorkspaceEdit Without(this WorkspaceEdit edit, ChangeAnnotationIdentifier annotation)
     {
