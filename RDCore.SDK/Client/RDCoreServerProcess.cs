@@ -168,7 +168,7 @@ public class RDCoreServerProcess(
         var verbose = true; //Options.Value.Server.Verbose;
 
         var arguments = ServerArguments(
-            Environment.ProcessId, pipeName, workspace, trace, verbose, Options.Value.Workspace.Language);
+            Environment.ProcessId, pipeName, workspace, trace, verbose, Options.Value.Workspace.Language, Options.Value.Workspace.Defines);
         var info = CreateProcessStartInfo(fullPath, arguments);
         if (mode is not null)
         {
@@ -215,20 +215,47 @@ public class RDCoreServerProcess(
     /// <remarks>
     /// The language a client serves is its own to say of the server it starts: an interactive shell is a BASIC, and says so
     /// here, because the servers have to agree on it. It is left out when it is the default, so that a server's own
-    /// settings win.
+    /// settings win. So are the constants the client's own command line defines (<see cref="SdkWorkspaceOptions.Defines"/>): every component reads the
+    /// same project-level constants, the servers a server starts in turn too.
     /// <para>
     /// 👉 <c>-v</c> goes last. It is a switch the argument parser only reads as one at the end of a command line; with
     /// anything after it, it takes the next argument for its value and the server never starts.
     /// </para>
     /// </remarks>
     internal static string ServerArguments(
-        int clientProcessId, string pipeName, string workspace, LogLevel trace, bool verbose, string? language = null)
+        int clientProcessId, string pipeName, string workspace, LogLevel trace, bool verbose, string? language = null,
+        IReadOnlyDictionary<string, string>? defines = null)
     {
         var languageArgument = language is null || string.Equals(language, Workspace.SupportedLanguages.RDVBA.Id, StringComparison.OrdinalIgnoreCase)
             ? null
             : $"--language {language} ";
 
-        return $"-p {clientProcessId} -n {pipeName} -w \"{workspace}\" {languageArgument}-t {trace} {(verbose ? "-v" : null)}";
+        // the parser takes the switch once, with every value after it.
+        var definesArgument = defines is { Count: > 0 }
+            ? $"--define {string.Join(" ", defines.Select(define => Quoted($"{define.Key}={define.Value}")))} "
+            : null;
+
+        return $"-p {clientProcessId} -n {pipeName} -w \"{workspace}\" {languageArgument}{definesArgument}-t {trace} {(verbose ? "-v" : null)}";
+    }
+
+    // one argument, as the process reads it back: a backslash is itself, but before a quote, which it escapes, and before the closing quote.
+    private static string Quoted(string argument)
+    {
+        var quoted = new System.Text.StringBuilder("\"");
+        var backslashes = 0;
+        foreach (var character in argument)
+        {
+            if (character == '\\')
+            {
+                backslashes++;
+                continue;
+            }
+
+            quoted.Append('\\', character == '"' ? backslashes * 2 + 1 : backslashes).Append(character);
+            backslashes = 0;
+        }
+
+        return quoted.Append('\\', backslashes * 2).Append('"').ToString();
     }
 
     // the child's input is closed (nothing it reads is the owner's) and what it writes is logged, so that none of it reaches a stream of ours.

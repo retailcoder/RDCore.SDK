@@ -109,10 +109,13 @@ public record class SdkAppCommandLineArgs
     public string? Language { get; set; }
 
     /// <summary>
-    /// Repeatable <em>command-line argument</em> defining or overriding a project-level precompiler
-    /// constant, in <c>NAME=VALUE</c> form (e.g. <c>--define RDDEBUG=1</c>). Overrides the
-    /// <c>.rdproj</c> and the built-in host constants.
+    /// <em>Command-line argument</em> defining or overriding project-level precompiler constants, each in <c>NAME=VALUE</c> form, after the one switch
+    /// (e.g. <c>--define RDDEBUG=1 TRACE=0</c>). Overrides the <c>.rdproj</c> and the built-in host constants.
     /// </summary>
+    /// <remarks>
+    /// The constants are the configuration's <see cref="SdkWorkspaceOptions.Defines"/> (<see cref="ToConfigurationOverrides"/>), which a client passes on to the
+    /// servers it starts.
+    /// </remarks>
     [Option('D', "define")]
     public IEnumerable<string>? Define { get; set; }
 
@@ -152,6 +155,11 @@ public record class SdkAppCommandLineArgs
         if (WorkspaceUri is string workspaceUri) yield return new("Configuration:Workspace:WorkspaceUri", workspaceUri);
         if (DefaultLocation is string defaultLocation) yield return new("Configuration:Workspace:DefaultLocation", defaultLocation);
         if (Language is string language) yield return new("Configuration:Workspace:Language", language);
+        foreach (var (name, value) in PrecompilerConstantOverrides())
+        {
+            yield return new($"Configuration:Workspace:Defines:{name}", value);
+        }
+
         if (Type is ServerTransportLayerMode transportType) yield return new("Configuration:Platform:Transport:Type", transportType.ToString());
         if (PipeName is string pipeName) yield return new("Configuration:Platform:Transport:PipeConfig:PipeName", pipeName);
     }
@@ -245,9 +253,17 @@ public record class SdkEnvironmentOptions
     /// 64-bit Mac too, as in Excel for Mac, and a hint says so of each <c>Win64</c> a directive reads.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// A condition on the bitness of the environment tests <c>Is64BitEnv</c>, which this does not change
     /// (<see cref="Runtime.Abstract.Execution.IRuntimeEnvironmentProfile.Win64OnlySetOnWindows"/>).
+    /// </para>
+    /// <para>
+    /// One value for the whole installation: only the deployed configuration of the environment host sets it (<see cref="SettingReach.Deployment"/>), and
+    /// neither a user's settings nor a workspace's do. What the host's sessions are composed with is what it states of each module
+    /// (<see cref="Semantics.ModuleSemanticModel.Win64OnlySetOnWindows"/>), and what an analyzer reads.
+    /// </para>
     /// </remarks>
+    [Setting(SettingReach.Deployment)]
     public bool Win64OnlySetOnWindows { get; set; }
     /// <summary>
     /// The environment locale identifier. <c>0</c> (the default) means the invariant locale.
@@ -568,6 +584,39 @@ public record class SdkWorkspaceOptions
     /// </remarks>
     [Setting(SettingReach.NextStart)]
     public bool EnableFileSystemWatchers { get; set; } = true;
+
+    /// <summary>
+    /// The conditional-compilation constants that the <c>--define</c> arguments define (<see cref="SdkAppCommandLineArgs.Define"/>), by name: each value
+    /// is the source text of a constant expression, as a <c>.rdproj</c> <c>#Const</c> writes it (<see cref="Workspace.RDCoreProject.PrecompilerConstants"/>).
+    /// </summary>
+    /// <remarks>
+    /// A constant here wins over the project's of the same name, and either wins over a predefined one. The command line is what sets these: a client passes
+    /// them on to each server it starts (<see cref="Client.RDCoreServerProcess"/>), and nothing writes them to the project file.
+    /// </remarks>
+    [Setting(SettingReach.Deployment)]
+    public Dictionary<string, string> Defines { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// A project as the platform's components compose it: its own conditional-compilation constants (a <c>.rdproj</c> <c>#Const</c>), with those of the
+    /// command line over them (<see cref="Defines"/>). Nothing is written: the project file keeps its own.
+    /// </summary>
+    /// <param name="project">The project, as its file says.</param>
+    /// <returns><paramref name="project"/> itself when the command line defines nothing; otherwise a copy of it with both sets of constants.</returns>
+    public Workspace.RDCoreProject WithDefines(Workspace.RDCoreProject project)
+    {
+        if (Defines.Count == 0)
+        {
+            return project;
+        }
+
+        var constants = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var (name, value) in project.PrecompilerConstants.Concat(Defines))
+        {
+            constants[name] = value;
+        }
+
+        return project with { PrecompilerConstants = constants };
+    }
 
     /// <summary>
     /// The language <see cref="Language"/> names.

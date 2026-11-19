@@ -59,7 +59,7 @@
     <value>Si l'environnement est un environnement 64 bits : la largeur de LongPtr, ce que dit #If Is64BitEnv, et ce que dit #If Win64 sous Windows et sur un Mac.</value>
   </data>
   <data name="Environment_Win64OnlySetOnWindows" xml:space="preserve">
-    <value>Si Win64 est vrai sous Windows 64 bits seulement. Désactivé par défaut : il est vrai sur un Mac 64 bits aussi, comme dans Excel pour Mac, et chaque #If qui le lit reçoit un indice pour tester Is64BitEnv.</value>
+    <value>Si Win64 est vrai sous Windows 64 bits seulement. Désactivé par défaut : il est vrai sur un Mac 64 bits aussi, comme dans Excel pour Mac, et chaque #If qui le lit reçoit un indice pour tester Is64BitEnv. Seule la configuration avec laquelle la plateforme est installée le définit.</value>
   </data>
   <data name="Environment_Lcid" xml:space="preserve">
     <value>L'identificateur de paramètres régionaux de l'environnement; 0 désigne les paramètres invariants.</value>
