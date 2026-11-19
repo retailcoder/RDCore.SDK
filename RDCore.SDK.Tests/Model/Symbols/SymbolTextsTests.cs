@@ -25,6 +25,14 @@ public sealed class SymbolTextsTests
         => Assert.AreEqual(expected, SymbolTexts.ControlArrayOf("VB.CommandButton", CultureInfo.GetCultureInfo(language)));
 
     [TestMethod]
+    [DataRow("en", "Class1", "Class1 (default instance)")]
+    [DataRow("fr", "Class1", "Class1 (instance par défaut)")]
+    [DataRow("de", "Class1", "Class1 (default instance)")]
+    [DataRow("en", "`Class1`", "`Class1` (default instance)")]
+    public void DefaultInstance_NamesTheClass_InTheLanguageOfTheReader(string language, string className, string expected)
+        => Assert.AreEqual(expected, SymbolTexts.DefaultInstance(className, CultureInfo.GetCultureInfo(language)));
+
+    [TestMethod]
     [DataRow("en", "The references of 'Foo' may be incomplete: what 'Foo' refers to at Module1 4:12 is not known.")]
     [DataRow("fr", "Les références de « Foo » peuvent être incomplètes : ce que « Foo » désigne à Module1 4:12 n'est pas connu.")]
     public void IncompleteReferences_NameTheSymbol_AndWhereItsBindingIsNotKnown(string language, string expected)
@@ -39,6 +47,7 @@ public sealed class SymbolTextsTests
             CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("fr");
             Assert.AreEqual("Membre de Module1", SymbolTexts.MemberOf("Module1"));
             Assert.AreEqual("Groupe de contrôles de type VB.Label", SymbolTexts.ControlArrayOf("VB.Label"));
+            Assert.AreEqual("Form1 (instance par défaut)", SymbolTexts.DefaultInstance("Form1"));
             Assert.AreEqual("Ajout de RD-VBA : la bibliothèque de types de VB ne le déclare pas.", SymbolTexts.LibraryAddition("VB"));
         }
         finally

@@ -177,6 +177,10 @@
   <data name="Hover_ControlArrayOf" xml:space="preserve">
     <value>Groupe de contrôles de type {0}</value>
   </data>
+  <!-- What a hover says the default instance variable of a class is (SymbolTexts.DefaultInstance): {0} is the name of the class, as the hover writes it. -->
+  <data name="Hover_DefaultInstance" xml:space="preserve">
+    <value>{0} (instance par défaut)</value>
+  </data>
   <!-- What a completion item or a hover says of a member RD-VBA adds to a library (SymbolTexts.LibraryAddition, SymbolProperties.LibraryAddition):
        {0} is the library, VB. -->
   <data name="Symbol_LibraryAddition" xml:space="preserve">
