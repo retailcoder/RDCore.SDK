@@ -81,8 +81,8 @@ public class ExtensionsClient(
     /// <param name="description">A short description of the extension.</param>
     /// <remarks>
     /// The implementation validates that it is executing this method inside the target extension folder.
-    /// The current directory and the extensions folder are compared as their <see cref="PlatformRootConfinement.RealPath">real paths</see>, and an extension
-    /// is not described when a link on the way to either can't be followed.
+    /// The folder the current directory is in and the extensions folder are compared as their <see cref="PlatformRootConfinement.RealPath">real paths</see>,
+    /// and an extension is not described when a link on the way to either cannot be followed.
     /// </remarks>
     /// <returns><c>null</c> if the specified extension cannot be described.</returns>
     public ExtensionInfo? Describe(string name, string description)
@@ -106,7 +106,7 @@ public class ExtensionsClient(
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
-            // a link on the way to either can't be followed: a cycle, too many links, or one that can't be read.
+            // a link on the way to either cannot be followed: a cycle, too many links, or one that cannot be read.
             return null;
         }
 

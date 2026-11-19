@@ -20,7 +20,7 @@ public sealed class RDCoreLanguageServerLaunchTests
     [TestInitialize]
     public void CreateRoot()
     {
-        // macOS: the temporary folder is through a link (/var is /private/var), and the launch names the real path of what it starts.
+        // macOS: the temporary folder is reached through a link (/var is /private/var), and the launch names the real path of what it starts.
         _folder = PlatformRootConfinement.RealPath(Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), "RDCore", "launch", Guid.NewGuid().ToString("N"))).FullName);
         _root = Path.Combine(_folder, "platform");
         _outside = Path.Combine(_folder, "outside");
