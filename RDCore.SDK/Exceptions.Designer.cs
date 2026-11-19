@@ -367,7 +367,7 @@ namespace RDCore.SDK {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The project file &apos;{0}&apos; is not valid JSON, at line {1}, position {2}: {3}.
+        ///   Looks up a localized string similar to The project file &apos;{0}&apos; cannot be read, at line {1}, position {2}: {3}.
         /// </summary>
         internal static string ProjectFile_InvalidJson {
             get {

@@ -112,7 +112,7 @@ public sealed class ProjectFileLoader(IFileSystem fileSystem) : IProjectFileLoad
         }
         catch (JsonException exception)
         {
-            // where the file stops being JSON, in the lines and columns an editor counts from 1.
+            // where the file stops being a project file (not JSON, or JSON of another shape), in the lines and columns an editor counts from 1.
             throw new InvalidDataException(string.Format(Exceptions.ProjectFile_InvalidJson, path,
                 (exception.LineNumber ?? 0) + 1, (exception.BytePositionInLine ?? 0) + 1, WhatIsWrong(exception)), exception);
         }

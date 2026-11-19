@@ -220,7 +220,7 @@
     <value>The form&apos;s RDForms document (.xaml) holds no form.</value>
   </data>
   <data name="ProjectFile_InvalidJson" xml:space="preserve">
-    <value>The project file &apos;{0}&apos; is not valid JSON, at line {1}, position {2}: {3}</value>
+    <value>The project file &apos;{0}&apos; cannot be read, at line {1}, position {2}: {3}</value>
   </data>
   <data name="WorkspaceEdit_FileOperationNotSupported" xml:space="preserve">
     <value>The editor can&apos;t apply this change: it creates, renames or deletes a file, which the editor did not say it can do.</value>
