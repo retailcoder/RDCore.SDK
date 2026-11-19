@@ -78,7 +78,7 @@ public static class VBIdentifier
     /// Whether <paramref name="name"/> is a <c>reserved-identifier</c> (<strong>MS-VBAL §3.3.5.2</strong>), which no <c>IDENTIFIER</c> is.
     /// </summary>
     /// <remarks>
-    /// Every name <see cref="IsReserved"/> says is a keyword, but the <c>reserved-type-identifiers</c> that are no <c>reserved-name</c>: <c>Boolean</c>,
+    /// Every name <see cref="IsReserved"/> says is a keyword, except the <c>reserved-type-identifiers</c> that are no <c>reserved-name</c>: <c>Boolean</c>,
     /// <c>Byte</c>, <c>Currency</c>, <c>Double</c>, <c>Integer</c>, <c>Long</c>, <c>LongLong</c>, <c>LongPtr</c>, <c>Single</c> and <c>Variant</c>. The
     /// production of <c>reserved-identifier</c> does not name <c>reserved-type-identifier</c>, so the specification allows each of these as a name, which
     /// MS-VBA refuses. <c>Date</c> and <c>String</c> are <c>reserved-names</c>, and are reserved.
