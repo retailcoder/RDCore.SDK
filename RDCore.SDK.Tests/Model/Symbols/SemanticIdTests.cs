@@ -53,4 +53,52 @@ public sealed class SemanticIdTests
         // uri argument — SemanticId only needs to track whatever Uri the symbol actually settled on.
         Assert.AreEqual(new SemanticId(symbol.Uri), symbol.SemanticId);
     }
+
+    [TestMethod]
+    public void Symbol_GivenAnotherUri_IsIdentifiedByIt()
+    {
+        var uri = Uri("Foo");
+        var symbol = new VBUserDefinedTypeMemberSymbol(uri, uri, "Foo", ScopeKind.Module, SourceRange.Empty, SourceRange.Empty, AccessModifier.Public);
+        var moved = symbol with { Uri = Uri("Bar") };
+
+        // the identity is kept with the symbol; a copy given another address is identified by that one, and the original keeps its own.
+        Assert.AreEqual(new SemanticId(Uri("Bar")), moved.SemanticId);
+        Assert.AreEqual(new SemanticId(Uri("Bar")).GetHashCode(), moved.SemanticId.GetHashCode());
+        Assert.AreEqual(new SemanticId(symbol.Uri), symbol.SemanticId);
+    }
+
+    [TestMethod]
+    public void GivenAnotherUri_HashesThatOne()
+    {
+        var moved = new SemanticId(Uri("Foo")) with { Uri = Uri("Bar") };
+
+        Assert.AreEqual(new SemanticId(Uri("Bar")), moved);
+        Assert.AreEqual(new SemanticId(Uri("Bar")).GetHashCode(), moved.GetHashCode());
+        Assert.AreNotEqual(new SemanticId(Uri("Foo")), moved);
+    }
+
+    [TestMethod]
+    public void TheSameUriInstance_IsEqual()
+    {
+        var uri = Uri("Foo");
+
+        Assert.AreEqual(new SemanticId(uri), new SemanticId(uri));
+    }
+
+    [TestMethod]
+    public void Deconstruct_GivesTheUri()
+    {
+        var uri = Uri("Foo");
+        new SemanticId(uri).Deconstruct(out var deconstructed);
+
+        Assert.AreSame(uri, deconstructed);
+    }
+
+    [TestMethod]
+    public void TheDefaultIdentity_IsEqualToItself_AndToNoSymbolsIdentity()
+    {
+        Assert.AreEqual(default, default(SemanticId));
+        Assert.AreEqual(0, default(SemanticId).GetHashCode());
+        Assert.AreNotEqual(new SemanticId(Uri("Foo")), default);
+    }
 }

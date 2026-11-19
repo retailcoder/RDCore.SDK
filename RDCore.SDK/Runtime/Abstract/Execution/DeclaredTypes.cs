@@ -26,8 +26,14 @@ public static class DeclaredTypes
     /// </param>
     /// <param name="scope">The module or procedure the name is written in, which the name is resolved as seen from.</param>
     /// <param name="is64Bit">Whether the environment is 64-bit, which decides what a <c>LongPtr</c> is.</param>
+    /// <param name="visibility">
+    /// Decides which types of a module the code outside it sees, for a name qualified by a module (<see cref="VBProjectSymbol.ResolveQualifiedType"/>);
+    /// <see langword="null"/> binds such a name only from within its module.
+    /// </param>
+    /// <param name="originProject">The root of the project of the code at <paramref name="scope"/>; <see langword="null"/> when it is not known.</param>
     /// <returns>The type, or <c>null</c> when the name resolves to no type.</returns>
-    public static VBType? Resolve(ISymbolResolver resolver, string typeName, Uri scope, bool is64Bit)
+    public static VBType? Resolve(
+        ISymbolResolver resolver, string typeName, Uri scope, bool is64Bit, IProjectVisibility? visibility = null, Uri? originProject = null)
     {
         if (IntrinsicVBTypes.TryResolve(typeName, is64Bit, out var intrinsic))
         {
@@ -36,7 +42,8 @@ public static class DeclaredTypes
 
         // a name qualified by a library is that library's, whatever else the references call by it.
         var resolved = typeName.IndexOf('.') is > 0 and var dot
-            && VBProjectSymbol.ResolveQualifiedType(resolver, typeName[..dot], typeName[(dot + 1)..], scope) is { IsResolved: true } qualified
+            && VBProjectSymbol.ResolveQualifiedType(resolver, typeName[..dot], typeName[(dot + 1)..], scope, visibility, originProject)
+                is { IsResolved: true } qualified
                 ? qualified
                 : resolver.ResolveType(typeName, ScopeKind.Module, scope);
 

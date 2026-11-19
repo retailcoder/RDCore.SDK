@@ -85,10 +85,35 @@ public class AppHostRegistrationTests
         Assert.IsTrue(logger.IsEnabled(LogLevel.Error));
     }
 
+    [TestMethod]
+    public void TheLibrarySource_ReadsThePlatformsSymbolsFolder()
+        => Assert.IsInstanceOfType<RDCore.SDK.Runtime.Libraries.DirectoryLibrarySource>(BuildExternalServices().GetRequiredService<RDCore.SDK.Runtime.Libraries.ILibrarySource>());
+
+    [TestMethod]
+    public void AnApplicationsLibrarySource_IsGivenTheSymbolsFolders_AndIsTheOneEveryServiceGets()
+    {
+        RDCore.SDK.Runtime.Libraries.ILibrarySource? given = null;
+        var services = new ServiceCollection();
+        var configuration = new ConfigurationBuilder().Build();
+        services.AddSingleton<IConfiguration>(configuration);
+        new TestAppHost(libraries: symbols => new RDCore.SDK.Runtime.Libraries.CompositeLibrarySource(given = symbols)).Configure(services, configuration);
+        using var provider = services.BuildServiceProvider();
+
+        var source = provider.GetRequiredService<RDCore.SDK.Runtime.Libraries.ILibrarySource>();
+
+        Assert.IsInstanceOfType<RDCore.SDK.Runtime.Libraries.DirectoryLibrarySource>(given);
+        CollectionAssert.AreEqual(new[] { given }, ((RDCore.SDK.Runtime.Libraries.CompositeLibrarySource)source).Sources.ToArray());
+        Assert.AreSame(source, provider.GetRequiredService<RDCore.SDK.Runtime.Libraries.ILibrarySource>());
+    }
+
     // exposes AppHost's protected external-service registration for assertions.
-    private sealed class TestAppHost(string? logFileName = null) : AppHost<TestAppHost.FakeApp>
+    private sealed class TestAppHost(string? logFileName = null,
+        Func<RDCore.SDK.Runtime.Libraries.ILibrarySource, RDCore.SDK.Runtime.Libraries.ILibrarySource>? libraries = null) : AppHost<TestAppHost.FakeApp>
     {
         protected override string? LogFileName => logFileName;
+
+        protected override RDCore.SDK.Runtime.Libraries.ILibrarySource LibrarySource(IServiceProvider provider, RDCore.SDK.Runtime.Libraries.ILibrarySource symbols)
+            => libraries is null ? base.LibrarySource(provider, symbols) : libraries(symbols);
 
         public void Configure(IServiceCollection services, IConfiguration configuration)
             => ConfigureExternalServices(services, configuration);

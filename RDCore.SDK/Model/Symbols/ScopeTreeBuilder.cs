@@ -7,13 +7,14 @@ namespace RDCore.SDK.Model.Symbols;
 
 /// <summary>
 /// Builds a <see cref="ScopeTree"/> from a flat set of composed symbols. Placement is structural:
-/// a symbol's concrete type, its <see cref="Symbol.ParentUri"/>, and its access modifier decide its
+/// a symbol's concrete type, its <see cref="Symbol.ParentUri"/>, and what an <see cref="IProjectVisibility"/> says of it decide its
 /// scope:
 /// <list type="bullet">
 /// <item>module symbols, project-level precompiler constants, global <see cref="StaticSymbol"/>s, and
 ///   anything the tree cannot otherwise place → the <see cref="ScopeTree.Global"/> scope;</item>
-/// <item>a standard module's non-<c>Private</c> members → the project scope, where sibling modules
-///   see them;</item>
+/// <item>a standard module's members that are visible to its project (<see cref="IProjectVisibility.IsProjectVisible"/>), and the
+/// visible <c>Enum</c> and user-defined types of any module → the scope of its project, where sibling modules see them: a project
+/// scope for each <see cref="Symbol.WorkspaceRoot"/> the modules are under, each a namespace of its own (<strong>MS-VBAL §5.6.10</strong>);</item>
 /// <item>every module's members: fields, constants, procedures, properties, enums, user-defined
 ///   types, events, <c>Declare</c>s → that module's own scope;</item>
 /// <item>a procedure's parameters and its procedure-local <c>Dim</c> / <c>Static</c> / <c>Const</c>
@@ -31,22 +32,26 @@ public static class ScopeTreeBuilder
     /// Builds the scope tree for <paramref name="symbols"/>. Any subset is valid input — a symbol
     /// whose enclosing scope is not in the set is placed in the <see cref="ScopeTree.Global"/> scope.
     /// </summary>
-    public static ScopeTree Build(IEnumerable<Symbol> symbols)
+    /// <param name="symbols">The symbols to place.</param>
+    /// <param name="visibility">Decides which members of a module are placed in the scope of its project.</param>
+    /// <returns>The scope tree.</returns>
+    public static ScopeTree Build(IEnumerable<Symbol> symbols, IProjectVisibility visibility)
     {
         ArgumentNullException.ThrowIfNull(symbols);
+        ArgumentNullException.ThrowIfNull(visibility);
         var all = symbols as IReadOnlyCollection<Symbol> ?? [.. symbols];
 
         // pass 1 — index the symbols that define a scope, by their own uri (Uri equality ignores the
         // fragment, and the scope path lives entirely in the fragment, so key on AbsoluteUri).
-        var modules = new Dictionary<string, Symbol>(StringComparer.Ordinal);
+        var modules = new Dictionary<string, VBModuleSymbol>(StringComparer.Ordinal);
         var standardModuleUris = new HashSet<string>(StringComparer.Ordinal);
         var procedures = new Dictionary<string, Symbol>(StringComparer.Ordinal);
         var enums = new Dictionary<string, VBEnumMemberSymbol>(StringComparer.Ordinal);
         foreach (var symbol in all)
         {
-            if (symbol is VBModuleSymbol)
+            if (symbol is VBModuleSymbol declaredModule)
             {
-                modules[symbol.Uri.AbsoluteUri] = symbol;
+                modules[symbol.Uri.AbsoluteUri] = declaredModule;
                 if (symbol is VBStandardModuleSymbol)
                 {
                     standardModuleUris.Add(symbol.Uri.AbsoluteUri);
@@ -102,7 +107,7 @@ public static class ScopeTreeBuilder
         // enclosing project" (public) or "within the enclosing module" (private). An enum constant is
         // lexically scoped exactly as its enum is, so it goes in the scope that declares the enum. A
         // constant whose enum is not in this set has no scope to hang off, and is dropped.
-        var projectEnumConstants = new List<Symbol>();
+        var projectEnumConstants = new List<(Symbol Constant, string Module)>();
         foreach (var constant in all.OfType<VBEnumConstMemberSymbol>())
         {
             if (!enums.TryGetValue(constant.ParentUri.AbsoluteUri, out var declaringEnum))
@@ -113,9 +118,9 @@ public static class ScopeTreeBuilder
             if (moduleDeclarations.TryGetValue(declaringEnum.ParentUri.AbsoluteUri, out var inModule))
             {
                 inModule.Add(constant);
-                if (IsProjectVisible(declaringEnum))
+                if (visibility.IsProjectVisible(declaringEnum, modules[declaringEnum.ParentUri.AbsoluteUri]))
                 {
-                    projectEnumConstants.Add(constant);
+                    projectEnumConstants.Add((constant, declaringEnum.ParentUri.AbsoluteUri));
                 }
             }
             else
@@ -141,37 +146,42 @@ public static class ScopeTreeBuilder
             [StaticSymbol.GlobalUri.AbsoluteUri] = global,
         };
 
-        // the project scope surfaces a standard module's non-Private members to its siblings. it is
-        // keyed on the workspace root the modules share, and skipped when the set has no modules.
-        var moduleParent = global;
-        if (modules.Count > 0)
+        // MS-VBAL §5.6.10: each project is a namespace of its own. A project scope per workspace root its modules are under surfaces a standard module's
+        // members that the visibility says its project sees to the modules of that project; a set with no modules has none.
+        var projectOfModule = new Dictionary<string, LexicalScope>(StringComparer.Ordinal);
+        var projectOfRoot = new Dictionary<string, LexicalScope>(StringComparer.Ordinal);
+        foreach (var root in modules.GroupBy(module => module.Value.WorkspaceRoot.AbsoluteUri, StringComparer.Ordinal))
         {
-            var workspaceRoot = modules.Values.First().WorkspaceRoot;
-            var projectDeclarations = standardModuleUris
-                .SelectMany(uri => moduleDeclarations[uri])
+            var uris = root.Select(module => module.Key).ToHashSet(StringComparer.Ordinal);
+            var projectDeclarations = root
+                .Where(module => standardModuleUris.Contains(module.Key))
                 // an enum constant has no access modifier of its own — its enum's is what decides, and
                 // projectEnumConstants already carries the ones that reach here.
-                .Where(symbol => symbol is not VBEnumConstMemberSymbol && IsProjectVisible(symbol))
+                .SelectMany(module => moduleDeclarations[module.Key]
+                    .Where(symbol => symbol is not VBEnumConstMemberSymbol && visibility.IsProjectVisible(symbol, module.Value)))
                 // a public Enum or user-defined type is accessible within the project wherever it is
                 // declared (MS-VBAL §5.2.3.4 / §5.2.3.3) — a class module's other members would need
                 // an instance, but a declared type needs none.
-                .Concat(modules.Keys
-                    .Where(uri => !standardModuleUris.Contains(uri))
-                    .SelectMany(uri => moduleDeclarations[uri])
-                    .Where(symbol => symbol is VBEnumMemberSymbol or VBUserDefinedTypeMemberSymbol)
-                    .Where(IsProjectVisible))
-                .Concat(projectEnumConstants)
+                .Concat(root
+                    .Where(module => !standardModuleUris.Contains(module.Key))
+                    .SelectMany(module => moduleDeclarations[module.Key]
+                        .Where(symbol => symbol is VBEnumMemberSymbol or VBUserDefinedTypeMemberSymbol && visibility.IsProjectVisible(symbol, module.Value))))
+                .Concat(projectEnumConstants.Where(constant => uris.Contains(constant.Module)).Select(constant => constant.Constant))
                 .ToList();
+            var workspaceRoot = root.First().Value.WorkspaceRoot;
             var project = new LexicalScope(workspaceRoot, LexicalScopeKind.Project, global, projectDeclarations);
             scopeByUri[workspaceRoot.AbsoluteUri] = project;
-            moduleParent = project;
+            projectOfRoot[root.Key] = project;
+            foreach (var uri in uris)
+            {
+                projectOfModule[uri] = project;
+            }
         }
 
         var moduleScopes = new Dictionary<string, LexicalScope>(StringComparer.Ordinal);
         foreach (var (uri, symbol) in modules)
         {
-            var directives = symbol is VBModuleSymbol module ? module.Directives : ModuleDirectives.None;
-            var scope = new LexicalScope(symbol.Uri, LexicalScopeKind.Module, moduleParent, moduleDeclarations[uri], directives);
+            var scope = new LexicalScope(symbol.Uri, LexicalScopeKind.Module, projectOfModule[uri], moduleDeclarations[uri], symbol.Directives);
             moduleScopes[uri] = scope;
             scopeByUri[uri] = scope;
             MapDeclarationsToScope(scopeByUri, moduleDeclarations[uri], scope);
@@ -179,7 +189,9 @@ public static class ScopeTreeBuilder
 
         foreach (var (uri, symbol) in procedures)
         {
-            var parent = moduleScopes.GetValueOrDefault(symbol.ParentUri.AbsoluteUri, moduleParent);
+            // a procedure whose module is not in the set is under its project's scope, when the set has a module of that project.
+            var parent = moduleScopes.GetValueOrDefault(symbol.ParentUri.AbsoluteUri)
+                ?? projectOfRoot.GetValueOrDefault(symbol.WorkspaceRoot.AbsoluteUri, global);
             var scope = new LexicalScope(symbol.Uri, LexicalScopeKind.Procedure, parent, procedureDeclarations[uri]);
             scopeByUri[uri] = scope; // a procedure resolves from its own scope, not its module's
             MapDeclarationsToScope(scopeByUri, procedureDeclarations[uri], scope);
@@ -187,7 +199,7 @@ public static class ScopeTreeBuilder
 
         MapDeclarationsToScope(scopeByUri, globalDeclarations, global);
 
-        return new ScopeTree(global, scopeByUri);
+        return new ScopeTree(global, scopeByUri, [.. projectOfRoot.Values]);
     }
 
     // record each declared symbol's own uri against the scope that declares it, so a lookup can
@@ -212,32 +224,6 @@ public static class ScopeTreeBuilder
         VBEventMemberSymbol => true,
         _ => false,
     };
-
-    /// <summary>
-    /// Whether a member of a module is visible to the other modules of its project (<strong>MS-VBAL §5.2.3</strong>): a visible member is placed
-    /// in the project scope (see <see cref="Build"/>), where a name resolver binds it from a sibling module.
-    /// </summary>
-    /// <remarks>
-    /// A member declared <c>Public</c>, <c>Global</c> or <c>Friend</c> is visible, and one declared <c>Private</c> is not. A member declared with no access
-    /// modifier is visible, except a module variable or a constant, which is private by default. A symbol that is not an
-    /// <see cref="AccessibleTypedSymbol"/> has no access modifier, and is not visible.
-    /// </remarks>
-    /// <param name="symbol">The member to check.</param>
-    /// <returns><see langword="true"/> when the other modules of the project see <paramref name="symbol"/>.</returns>
-    public static bool IsProjectVisible(Symbol symbol)
-    {
-        if (symbol is not AccessibleTypedSymbol accessible)
-        {
-            return false;
-        }
-
-        return accessible.AccessModifier switch
-        {
-            AccessModifier.Private => false,
-            AccessModifier.Public or AccessModifier.Global or AccessModifier.Friend => true,
-            _ => symbol is not (VBModuleFieldVariableMemberSymbol or VBConstantMemberSymbol),
-        };
-    }
 
     private static ImmutableArray<VBParameterSymbol> ParametersOf(Symbol symbol) => symbol switch
     {

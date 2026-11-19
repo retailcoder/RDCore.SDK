@@ -39,6 +39,22 @@ public static class WorkspaceEditExtensions
         => client?.Workspace?.WorkspaceEdit is { IsSupported: true, Value.ChangeAnnotationSupport: not null };
 
     /// <summary>
+    /// Whether the client takes an edit that replaces a file (<see cref="StagedFile"/>) and puts it back when the edit fails: <c>documentChanges</c> that
+    /// rename and delete files, and a failure that undoes the whole edit.
+    /// </summary>
+    /// <param name="client">What the client said it can do, as it initialized; none when it is not known.</param>
+    /// <returns>
+    /// <see langword="true"/> when it said <c>documentChanges</c>, <c>resourceOperations</c> with <c>rename</c> and <c>delete</c>, and <c>failureHandling</c>
+    /// <c>transactional</c> or <c>undo</c>; <see langword="false"/> otherwise. <c>textOnlyTransactional</c> and <c>abort</c> would leave the file changed
+    /// and the text not, or the other way round.
+    /// </returns>
+    public static bool TakesFileReplacement(this ClientCapabilities? client)
+        => client?.Workspace?.WorkspaceEdit is
+            { IsSupported: true, Value: { DocumentChanges: true, ResourceOperations: { } kinds, FailureHandling: { } failure } }
+            && kinds.Contains(ResourceOperationKind.Rename) && kinds.Contains(ResourceOperationKind.Delete)
+            && (failure == FailureHandlingKind.Transactional || failure == FailureHandlingKind.Undo);
+
+    /// <summary>
     /// The edit as the client can apply it.
     /// </summary>
     /// <param name="edit">The edit, as the server made it.</param>

@@ -189,4 +189,32 @@ public sealed class ProjectFileLoaderTests
 
         Assert.AreEqual(expected, project.ProjectInfo.Name);
     }
+
+    // a folder of one Visual Basic 6 project is that project's, which says the project is written in VB6, as an import of it says.
+    [TestMethod]
+    public async Task LoadOrSynthesizeAsync_AFolderOfOneVbp_IsThatProjects_WrittenInVB6()
+    {
+        var fs = FolderWith(("Probe.vbp", "Type=Exe"), ("Module1.bas", Named("Module1")));
+
+        var project = await new ProjectFileLoader(fs).LoadOrSynthesizeAsync(Root, SupportedLanguages.RDVBA);
+
+        Assert.AreEqual("Probe.vbp", project.ProjectInfo.SourceProject);
+        Assert.AreSame(SupportedLanguages.VB6, SupportedLanguages.OfProject(project.ProjectInfo));
+    }
+
+    [TestMethod]
+    [DataRow(new[] { "One.vbp", "Two.vbp" }, DisplayName = "two projects")]
+    [DataRow(new[] { "One.vbp", "Group.vbg" }, DisplayName = "a project and a project group")]
+    [DataRow(new[] { "Group.vbg" }, DisplayName = "a project group alone")]
+    [DataRow(new[] { "src/One.vbp" }, DisplayName = "a project in a subfolder only")]
+    [DataRow(new string[0], DisplayName = "no project")]
+    public async Task LoadOrSynthesizeAsync_AFolderOfNoOneVbp_NamesNoSourceProject(string[] projects)
+    {
+        var fs = FolderWith([("Module1.bas", Named("Module1")), .. projects.Select(project => (project, "Type=Exe"))]);
+
+        var project = await new ProjectFileLoader(fs).LoadOrSynthesizeAsync(Root, SupportedLanguages.RDVBA);
+
+        Assert.IsNull(project.ProjectInfo.SourceProject);
+        Assert.IsNull(SupportedLanguages.OfProject(project.ProjectInfo));
+    }
 }

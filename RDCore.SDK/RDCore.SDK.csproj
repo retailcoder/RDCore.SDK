@@ -24,6 +24,11 @@
     <PackageReference Include="System.IO.Abstractions" Version="22.2.0" />
   </ItemGroup>
 
+  <!-- the year of the copyright, which the platform's splash reads from the assembly (PlatformSplash.CopyrightYear); the company is the assembly's own. -->
+  <ItemGroup>
+    <AssemblyMetadata Include="CopyrightYear" Value="$(CopyrightYear)" />
+  </ItemGroup>
+
   <!-- the protocol ships inside this package as its own assembly, so it is no package dependency: its assembly, xmldoc and fr resources
        go in lib/, and its symbols in the .snupkg. -->
   <ItemGroup>
@@ -65,6 +70,16 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>TraceMessages.resx</DependentUpon>
     </Compile>
+    <Compile Update="Server\Assistant\AssistantMessages.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>AssistantMessages.resx</DependentUpon>
+    </Compile>
+    <Compile Update="Forms\MSFormsMessages.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>MSFormsMessages.resx</DependentUpon>
+    </Compile>
   </ItemGroup>
 
   <ItemGroup>
@@ -79,6 +94,14 @@
     <EmbeddedResource Update="Server\TraceMessages.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>TraceMessages.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Update="Server\Assistant\AssistantMessages.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>AssistantMessages.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Update="Forms\MSFormsMessages.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>MSFormsMessages.Designer.cs</LastGenOutput>
     </EmbeddedResource>
   </ItemGroup>
 

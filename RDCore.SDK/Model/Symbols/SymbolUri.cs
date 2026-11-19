@@ -1,5 +1,6 @@
 using OmniSharp.Extensions.LanguageServer.Protocol;
 using RDCore.SDK.Platform.Components;
+using RDCore.SDK.Workspace;
 
 namespace RDCore.SDK.Model.Symbols;
 
@@ -118,6 +119,66 @@ public static class SymbolUri
     }
 
     /// <summary>
+    /// The root a symbol is addressed under: its address without the fragment, which is the root of its project or library (<see cref="Module(Uri, string)"/>).
+    /// </summary>
+    /// <remarks>
+    /// The root of a root is the root itself.
+    /// </remarks>
+    /// <param name="symbol">The address of a symbol, or the root of a project or a library.</param>
+    /// <returns>The root.</returns>
+    /// <exception cref="ArgumentException"><paramref name="symbol"/> is a relative URI.</exception>
+    public static Uri ProjectRootOf(Uri symbol)
+    {
+        ArgumentNullException.ThrowIfNull(symbol);
+        if (!symbol.IsAbsoluteUri)
+        {
+            throw new ArgumentException(string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                "'{0}' is a relative URI: a symbol is addressed under the absolute root of its project or library.", symbol.OriginalString), nameof(symbol));
+        }
+
+        return symbol.Fragment.Length == 0 ? symbol : new UriBuilder(symbol) { Fragment = string.Empty }.Uri;
+    }
+
+    /// <summary>
+    /// Whether two addresses are under the same root (<see cref="ProjectRootOf"/>): whether the symbols are of one project or library.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Two <c>file</c> roots compare as the paths of the platform do (<see cref="WorkspacePaths.Comparison"/>): on Windows, a client may write the drive or a folder of the
+    /// same root in another case (<c>file:///c:/Work</c>, <c>file:///C:/Work</c>), and both name one folder. A root of any other scheme compares as it is written.
+    /// </para>
+    /// <para>
+    /// <see cref="Uri.Equals(object?)"/> cannot say so: it ignores the fragment, so the addresses of two modules of a project are equal by it, and it compares the
+    /// path as it is written.
+    /// </para>
+    /// </remarks>
+    /// <param name="left">The address of a symbol, or a root.</param>
+    /// <param name="right">The address of another symbol, or another root.</param>
+    /// <returns>Whether the roots are the same.</returns>
+    /// <exception cref="ArgumentException">Either is a relative URI.</exception>
+    public static bool SameRoot(Uri left, Uri right)
+    {
+        var (leftRoot, rightRoot) = (ProjectRootOf(left), ProjectRootOf(right));
+        return string.Equals(leftRoot.AbsoluteUri, rightRoot.AbsoluteUri, leftRoot.IsFile && rightRoot.IsFile ? WorkspacePaths.Comparison : StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// Compares addresses by their root, as <see cref="SameRoot"/> does: what keys a project by its root, whichever address of it is given.
+    /// </summary>
+    public static IEqualityComparer<Uri> RootComparer { get; } = new SameRootComparer();
+
+    private sealed class SameRootComparer : IEqualityComparer<Uri>
+    {
+        public bool Equals(Uri? x, Uri? y) => x is null || y is null ? ReferenceEquals(x, y) : SameRoot(x, y);
+
+        public int GetHashCode(Uri obj)
+        {
+            var root = ProjectRootOf(obj);
+            return (root.IsFile ? WorkspacePaths.Comparer : StringComparer.Ordinal).GetHashCode(root.AbsoluteUri);
+        }
+    }
+
+    /// <summary>
     /// Where a symbol is in its project or library, as its address has it: the names of the module and of each member down to the symbol, joined by dots
     /// (<c>GameBoard.Reset.Count</c>), as they were written, and not as an address escapes them.
     /// </summary>
@@ -169,12 +230,14 @@ public static class SymbolUri
     // nothing.
     private const char SuffixDelimiter = ']';
 
-    // the reserved words a symbol's address has after its name, when the name alone is a namesake's (Symbol.UriSuffix).
+    // the reserved words a symbol's address has after its name, when the name alone is a namesake's (Symbol.UriSuffix), and after the name of the default
+    // instance of a referenced project's class (DefaultInstance).
     internal const string LetSuffix = "Let";
     internal const string SetSuffix = "Set";
     internal const string EnumSuffix = "Enum";
     internal const string TypeSuffix = "Type";
     internal const string EventSuffix = "Event";
+    internal const string InstanceSuffix = "Instance";
 
     // a name of a path, without the suffix after it: what follows the first ']' that closes no '['.
     private static string WithoutSuffix(string name)
@@ -236,6 +299,24 @@ public static class SymbolUri
     /// <param name="parent">The address of the symbol it is a member of, or the root of its project or library.</param>
     /// <param name="name">Its name.</param>
     public static Uri Member(Uri parent, string name) => Member(parent, name, suffix: null);
+
+    /// <summary>
+    /// The address of the default instance of a class of a project that another project of the workspace references (<strong>MS-VBAL §5.2.4.1.2</strong>):
+    /// a member of the class module, after a suffix no name has (<c>Board.Board]Instance</c>).
+    /// </summary>
+    /// <remarks>
+    /// The default instance of a class of the project itself is a name of the global scope, at an address that holds the class name only. A
+    /// referenced project's class may share that name, and its instance is addressed under its own module instead, so the two never collide.
+    /// </remarks>
+    /// <param name="classModule">The address of the class module.</param>
+    /// <returns>The address of the class's default instance.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="classModule"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="classModule"/> is a relative URI.</exception>
+    public static Uri DefaultInstance(Uri classModule)
+    {
+        ArgumentNullException.ThrowIfNull(classModule);
+        return Member(classModule, NameOf(classModule), InstanceSuffix);
+    }
 
     // the address of a member whose name alone is a namesake's (Symbol.UriSuffix): its name, then the suffix after a delimiter no name has.
     internal static Uri Member(Uri parent, string name, string? suffix)

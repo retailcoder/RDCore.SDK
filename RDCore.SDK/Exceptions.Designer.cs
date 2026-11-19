@@ -266,7 +266,34 @@ namespace RDCore.SDK {
                 return ResourceManager.GetString("FormDesigner_MissingCompanion", resourceCulture);
             }
         }
-        
+
+        /// <summary>
+        ///   Looks up a localized string similar to The form&apos;s RDForms document is missing: the .xaml file of the same name beside its .rdform module holds its controls..
+        /// </summary>
+        internal static string FormDesigner_MissingDocument {
+            get {
+                return ResourceManager.GetString("FormDesigner_MissingDocument", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to No reader of RDForms documents (.xaml) is registered, so the form&apos;s controls cannot be read..
+        /// </summary>
+        internal static string FormDesigner_NoDocumentReader {
+            get {
+                return ResourceManager.GetString("FormDesigner_NoDocumentReader", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to The form&apos;s RDForms document (.xaml) holds no form..
+        /// </summary>
+        internal static string FormDesigner_InvalidDocument {
+            get {
+                return ResourceManager.GetString("FormDesigner_InvalidDocument", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   Looks up a localized string similar to The form&apos;s designer data is not where its module says it is in its .frx file..
         /// </summary>
@@ -327,6 +354,15 @@ namespace RDCore.SDK {
         internal static string FormDesigner_InvalidControl {
             get {
                 return ResourceManager.GetString("FormDesigner_InvalidControl", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to The form&apos;s designer data has an object stream (o) that does not hold exactly the controls its sites describe..
+        /// </summary>
+        internal static string FormDesigner_InvalidObjectStream {
+            get {
+                return ResourceManager.GetString("FormDesigner_InvalidObjectStream", resourceCulture);
             }
         }
         

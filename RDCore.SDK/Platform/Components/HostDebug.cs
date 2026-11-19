@@ -197,8 +197,15 @@ public record class HostDebugEditStatusParams : IRequest, IRequest<DebugEditStat
 /// breakpoints the module had (<see cref="DebugBreakpointsResult"/>).
 /// </summary>
 /// <remarks>
+/// <para>
+/// Handled as it arrives, while a request that runs a program runs (<see cref="HandledOnArrivalAttribute"/>): it is answered at once, and the program waits at
+/// the breakpoints from its next instruction on.
+/// </para>
+/// <para>
 /// Part of the component protocol (<see cref="RDCoreComponentProtocol"/>), outside the SDK's compatibility promise.
+/// </para>
 /// </remarks>
+[HandledOnArrival]
 [Method(RDCoreComponentProtocol.HostDebugBreakpoints, Direction.ClientToServer)]
 public record class HostDebugBreakpointsParams : IRequest, IRequest<DebugBreakpointsResult>
 {

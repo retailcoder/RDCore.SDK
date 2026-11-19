@@ -2,6 +2,7 @@ using MediatR;
 using OmniSharp.Extensions.JsonRpc;
 using RDCore.SDK.Platform.Protocol;
 using RDCore.SDK.Extensibility.Diagnostics;
+using RDCore.SDK.Model.Symbols;
 
 namespace RDCore.SDK.Platform.Components;
 
@@ -20,9 +21,21 @@ namespace RDCore.SDK.Platform.Components;
 public record class HostSemanticsParams : IRequest, IRequest<HostSemanticsResult>
 {
     /// <summary>
-    /// The name of the module whose model is asked for, or empty for the model of every module of the workspace.
+    /// The name of a module of the primary project whose model is asked for, or empty for the model of every module of the workspace. Not read when
+    /// <see cref="ModuleUri"/> is given.
     /// </summary>
     public string ModuleName { get; init; } = string.Empty;
+
+    /// <summary>
+    /// The address of the module whose model is asked for, as <see cref="SymbolUri.Module(Uri, string)"/> makes it: the root of its project, with the
+    /// module's name as the fragment. The host answers with the model of that module, in whichever project of the workspace it defined it. Without it,
+    /// <see cref="ModuleName"/> names a module of the primary project.
+    /// </summary>
+    /// <remarks>
+    /// A file that two projects list is a module of each, with a model of its own: the address tells the two apart, and the name does not. Two addresses
+    /// that differ only by their fragment are two modules.
+    /// </remarks>
+    public Uri? ModuleUri { get; init; }
 
     /// <summary>
     /// What the answer waits for. <see cref="AnalysisPhase.Static"/> is answered at once with whatever the host has: the facts that are ready when the module

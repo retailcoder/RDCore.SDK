@@ -26,7 +26,7 @@ public sealed class ProjectFileTests
 
         // assert
         Assert.AreEqual(string.Empty, sut.Version);
-        Assert.AreEqual("1.1", written.Version);
+        Assert.AreEqual("1.3", written.Version);
     }
 
     [TestMethod]
@@ -248,6 +248,35 @@ public sealed class ProjectFileTests
     }
 
     [TestMethod]
+    [DataRow(true)]
+    [DataRow(false)]
+    public void WithKeepSystemTheme_SetsItWithDirtyFlag(bool keepSystemTheme)
+    {
+        var sut = new ProjectFile(TestWorkspaceUri, new RDCoreProject { Name = "P", KeepSystemTheme = !keepSystemTheme });
+
+        var result = sut.WithKeepSystemTheme(keepSystemTheme);
+
+        Assert.IsTrue(result.IsDirty, "IsDirty flag was not set");
+        Assert.AreEqual(keepSystemTheme, result.ProjectInfo.KeepSystemTheme);
+        Assert.AreEqual("P", result.ProjectInfo.Name, "the rest of the project is as it was");
+    }
+
+    [TestMethod]
+    [DataRow(true, DisplayName = "a section")]
+    [DataRow(false, DisplayName = "no section")]
+    public void WithMake_SetsItWithDirtyFlag(bool section)
+    {
+        var make = section ? new ProjectMake { Title = "Naval", Major = 2 } : null;
+        var sut = new ProjectFile(TestWorkspaceUri, new RDCoreProject { Name = "P", Make = new ProjectMake { Title = "Before" } });
+
+        var result = sut.WithMake(make);
+
+        Assert.IsTrue(result.IsDirty, "IsDirty flag was not set");
+        Assert.AreEqual(make, result.ProjectInfo.Make);
+        Assert.AreEqual("P", result.ProjectInfo.Name, "the rest of the project is as it was");
+    }
+
+    [TestMethod]
     public void PrecompilerConstants_RoundTripThroughRdprojJson()
     {
         var sut = new ProjectFile(TestWorkspaceUri, new RDCoreProject
@@ -301,4 +330,21 @@ public sealed class ProjectFileTests
         Assert.IsTrue(eqopResult, "== operation should return true");
         Assert.IsFalse(neqopResult, "!= operation should return false");
     }
+
+    [TestMethod]
+    public void TheProjectsName_IsWhereItsFileWritesIt_AndNotTheNameOfAReference()
+    {
+        const string text = "﻿{\r\n  \"Version\": \"1.1\",\r\n  \"References\": [ { \"Name\": \"VBA\" } ],\r\n  \"Name\": \"Café\",\r\n  \"Modules\": []\r\n}";
+
+        var range = ProjectFile.NameRangeIn(text);
+
+        Assert.AreEqual(new RDCore.SDK.Model.Source.SourceRange(new RDCore.SDK.Model.Source.SourcePosition(3, 11), new RDCore.SDK.Model.Source.SourcePosition(3, 15)), range);
+    }
+
+    [TestMethod]
+    [DataRow("{ \"Version\": \"1.1\" }", DisplayName = "no name")]
+    [DataRow("{ \"Name\": 3 }", DisplayName = "a name that is no string")]
+    [DataRow("not a project", DisplayName = "no JSON")]
+    public void AFileThatWritesNoName_HasNoRangeOfIt(string text)
+        => Assert.IsNull(ProjectFile.NameRangeIn(text));
 }

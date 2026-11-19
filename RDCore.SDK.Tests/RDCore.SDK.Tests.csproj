@@ -22,6 +22,7 @@
   <ItemGroup>
     <!-- form designer fixtures: binary .frx/storage files, read as bytes on every platform -->
     <EmbeddedResource Include="Workspace\Forms\Fixtures\**" />
+    <EmbeddedResource Include="Forms\Fixtures\**" />
   </ItemGroup>
 
   <ItemGroup>

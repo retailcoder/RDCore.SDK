@@ -48,14 +48,17 @@ public static class ModuleBlocks
     {
         ArgumentNullException.ThrowIfNull(parse);
         ArgumentNullException.ThrowIfNull(text);
+        ModuleIndenter.ResetWork();
         var lines = ModuleIndenter.LinesIn(text);
-        if (line < 0 || line >= lines.Length)
-        {
-            return [];
-        }
+        return line < 0 || line >= lines.Length ? [] : OpenAt(parse, lines, line, ModuleIndenter.ProcedureAround(parse, lines, line, line));
+    }
 
+    // the open blocks at a line, from the blocks of the procedure the line is in when it is in one that nothing outside reaches into: no block outside a
+    // procedure has a line of it.
+    private static List<ModuleBlock> OpenAt(ModuleParseResult parse, string[] lines, int line, ModuleIndenter.Procedure? procedure)
+    {
         var open = new List<ModuleBlock>();
-        foreach (var (block, closer) in ModuleIndenter.UnclosedBlocks(parse, lines))
+        foreach (var (block, closer) in ModuleIndenter.UnclosedBlocks(parse, lines, procedure))
         {
             var range = block.SourceLocation.Range;
             var last = range.End.Character == 0 && range.End.Line > range.Start.Line ? range.End.Line - 1 : range.End.Line;
@@ -87,13 +90,20 @@ public static class ModuleBlocks
     /// The lines are indented as the module is once the closer is in it, which is parsed again for that: the new line is then in the block's body, as a
     /// procedure's is although the module has nothing after its header yet.
     /// </para>
+    /// <para>
+    /// The work grows with the procedure the line is in: when the line is in a <c>Sub</c>, a <c>Function</c> or a <c>Property</c> that has its
+    /// closer, and no <c>#If</c> block is around it or in it, only that procedure's lines and nodes are looked at, and the text parsed again is the procedure
+    /// with the closer in it, from its first line to its closer. Anywhere else (the declarations of the module, a procedure that has no closer yet, one an
+    /// <c>#If</c> block reaches into), the whole module is, as the indentation of its lines can depend on the rest of it. The edits are the same either way.
+    /// </para>
     /// </remarks>
     /// <param name="parse">The module, as it was parsed from <paramref name="text"/>, the line break in it.</param>
     /// <param name="text">The text of the module, the line break in it. A line ends with a carriage return, a line feed, or both, as the Language Server
     /// Protocol counts them.</param>
     /// <param name="line">The line the break starts, from 0.</param>
     /// <param name="options">How code is indented.</param>
-    /// <param name="reparse">Parses the text of the module with the closer in it.</param>
+    /// <param name="reparse">Parses a text of the module with the closer in it: the procedure the line is in, from its first line to its closer, or the whole
+    /// module.</param>
     /// <param name="token">A token that cancels the parse.</param>
     /// <returns>The edits, in the order they are to be made: by line, then by character, and the closer's insertion after the edits of the new line.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="parse"/>, <paramref name="text"/>, <paramref name="options"/> or <paramref name="reparse"/> is
@@ -105,6 +115,7 @@ public static class ModuleBlocks
         ArgumentNullException.ThrowIfNull(text);
         ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(reparse);
+        ModuleIndenter.ResetWork();
         var lines = ModuleIndenter.LinesIn(text);
         if (line < 1 || line >= lines.Length)
         {
@@ -113,27 +124,40 @@ public static class ModuleBlocks
 
         // the empty line indented as the code around it is; the procedures left as they are spaced, which a line break does not change.
         var indenting = options with { EmptyLineHandlingMethod = EmptyLineHandlingMethod.Indent, VerticallySpaceProcedures = false };
-        if (!string.IsNullOrWhiteSpace(lines[line]) || OpenAt(parse, text, line - 1) is not [{ Opener: var opener, HasBody: false } block, ..] || opener != line - 1)
+        var procedure = ModuleIndenter.ProcedureAround(parse, lines, line - 1, line);
+        if (!string.IsNullOrWhiteSpace(lines[line]) || OpenAt(parse, lines, line - 1, procedure) is not [{ Opener: var opener, HasBody: false } block, ..]
+            || opener != line - 1)
         {
-            return [.. ModuleIndenter.Indent(parse, text, indenting, line - 1, line).Select(Edit)];
+            var edits = procedure is { } around
+                ? ModuleIndenter.IndentWithin(parse, text, lines, indenting, line - 1, line, around)
+                : ModuleIndenter.IndentLines(parse, text, lines, indenting, line - 1, line);
+            return [.. edits.Select(edit => Edit(edit, 0))];
         }
 
-        // the closer after the new line, as the opener is indented now: the module with it in it is indented again, the closer's line with the others.
+        // the closer after the new line, as the opener is indented: the text with it in it is parsed and indented again, the closer's line with the others.
+        // That text is the procedure the line is in, from its first line to its closer, when nothing outside it reaches into it; the whole module otherwise.
         var ends = ModuleIndenter.LineEndsIn(text);
         var written = lines[opener][..(lines[opener].Length - lines[opener].TrimStart().Length)] + block.Closer;
         var inserted = line + 1 < lines.Length
             ? (At: new Range(line + 1, 0, line + 1, 0), Text: written + ends[line])
             : (At: new Range(line, lines[line].Length, line, lines[line].Length), Text: ends[line - 1] + written);
-        var at = Enumerable.Range(0, inserted.At.Start.Line).Sum(index => lines[index].Length + ends[index].Length) + inserted.At.Start.Character;
-        var closed = text.Insert(at, inserted.Text);
-        var indentation = ModuleIndenter.Indent(await reparse(closed, token), closed, indenting, line - 1, line + 1);
-        var closer = ModuleIndenter.LinesIn(ModuleIndenter.Apply(closed, indentation))[line + 1];
-        return [.. indentation.Where(edit => edit.Line <= line).Select(Edit),
+        // the module's last line has no line end: a procedure whose closer is that line ends without one.
+        string Written(int index) => index < ends.Length ? lines[index] + ends[index] : lines[index];
+        var (first, closed) = procedure is { } scope
+            ? (scope.First, string.Concat(Enumerable.Range(scope.First, line + 1 - scope.First).Select(Written))
+                + inserted.Text + string.Concat(Enumerable.Range(line + 1, scope.Last - line).Select(Written)))
+            : (0, text.Insert(Enumerable.Range(0, inserted.At.Start.Line).Sum(index => lines[index].Length + ends[index].Length) + inserted.At.Start.Character,
+                inserted.Text));
+        var closedLines = ModuleIndenter.LinesIn(closed);
+        var indentation = ModuleIndenter.IndentLines(await reparse(closed, token), closed, closedLines, indenting, line - 1 - first, line + 1 - first);
+        var closer = ModuleIndenter.LinesIn(ModuleIndenter.Apply(closed, indentation))[line + 1 - first];
+        return [.. indentation.Where(edit => edit.Line <= line - first).Select(edit => Edit(edit, first)),
             new TextEdit { Range = inserted.At, NewText = line + 1 < lines.Length ? closer + ends[line] : ends[line - 1] + closer }];
     }
 
-    private static TextEdit Edit(IndentationEdit edit)
-        => new() { Range = new Range(edit.Line, edit.Character, edit.EndLine, edit.EndCharacter), NewText = edit.NewText };
+    // an indentation edit as an edit of the module, its lines from the line of the module that is the first of the text it was made in.
+    private static TextEdit Edit(IndentationEdit edit, int first)
+        => new() { Range = new Range(edit.Line + first, edit.Character, edit.EndLine + first, edit.EndCharacter), NewText = edit.NewText };
 
     // the lines a block's branches start on.
     private static IEnumerable<int> Branches(SyntaxNode block)

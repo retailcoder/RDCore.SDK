@@ -21,17 +21,28 @@ namespace RDCore.SDK.Model.AST.Abstract;
 /// or <see cref="ForEachStatementNode.NextExpression"/>, and it is walked after the statements of the loop's body, where it is written. It is a reference to
 /// the loop's control variable, which a rename rewrites and a search for references finds.
 /// </para>
+/// <para>
+/// So is the array a <c>ReDim</c> resizes (<c>ReDim a(1 To n)</c>): a <see cref="Declarations.RedimDeclarationNode"/> keeps it in its
+/// <see cref="Declarations.RedimDeclarationNode.Target"/>, and it is walked before the bounds, where it is written. It is a reference to the array, or the
+/// declaration of a local array it declares.
+/// </para>
 /// </remarks>
 public static class SyntaxNodeWalk
 {
     /// <summary>
     /// The nodes <paramref name="node"/> is directly made of: its <see cref="SyntaxNode.Children"/>, the branches of a structured statement, the statements of
-    /// its own blocks, the variable the <c>Next</c> of a loop names, and the expressions of the bounds of a declared array.
+    /// its own blocks, the variable the <c>Next</c> of a loop names, the array a <c>ReDim</c> resizes, and the expressions of the bounds of a declared array.
     /// </summary>
     /// <param name="node">A node of the tree.</param>
     /// <returns>The nodes, in the order they are written.</returns>
     public static IEnumerable<SyntaxNode> ChildNodes(this SyntaxNode node)
     {
+        // the array a ReDim resizes is written before its bounds.
+        if (node is Declarations.RedimDeclarationNode redim)
+        {
+            yield return redim.Target;
+        }
+
         foreach (var child in node.Children)
         {
             yield return child;
@@ -144,14 +155,6 @@ public static class SyntaxNodeWalk
                 if (select.CaseElseBlock is { } caseElse)
                 {
                     yield return caseElse;
-                }
-
-                break;
-
-            case CaseExpressionStatementNode caseExpression:
-                foreach (var clause in caseExpression.RangeClauses)
-                {
-                    yield return clause;
                 }
 
                 break;

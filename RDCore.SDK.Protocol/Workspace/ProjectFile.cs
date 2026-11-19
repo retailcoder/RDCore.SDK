@@ -26,9 +26,73 @@ public sealed record class ProjectFile : IEquatable<ProjectFile>
     /// <remarks>
     /// Before the format had a version of its own, a project file was stamped with the version of the platform that wrote it: <c>1.0.0</c> by the first builds,
     /// <c>0.1.x</c> by the next. They read as the format 1.0 and an older one (<see cref="SchemaOf"/>), and are both the format 1.0. The format 1.1 adds the
-    /// project's <c>build</c> section (<see cref="RDCoreProject.Build"/>).
+    /// project's <c>build</c> section (<see cref="RDCoreProject.Build"/>), and the format 1.2 the project's <c>KeepSystemTheme</c>
+    /// (<see cref="RDCoreProject.KeepSystemTheme"/>), its <c>Make</c> section (<see cref="RDCoreProject.Make"/>), and the <c>build</c> section's
+    /// <c>ConsoleApplication</c> output type (<see cref="ProjectOutputType.ConsoleApplication"/>). The format 1.3 adds the references to other projects
+    /// of the workspace (<see cref="RDCoreReference.IsProject"/>).
     /// </remarks>
-    public const string SchemaVersion = "1.1";
+    public const string SchemaVersion = "1.3";
+
+    /// <summary>
+    /// Where the text of a project file writes the project's name (<see cref="RDCoreProject.Name"/>): the value of its <c>Name</c> member, between its quotes.
+    /// An edit of that range renames the project in its file and leaves the rest of the text as it is.
+    /// </summary>
+    /// <param name="text">The text of a project file, as <see cref="FileName"/> is read.</param>
+    /// <returns>
+    /// The range, by line and character from 0; <see langword="null"/> when the text is not a JSON object, or its object has no <c>Name</c> member whose value
+    /// is a string.
+    /// </returns>
+    public static RDCore.SDK.Model.Source.SourceRange? NameRangeIn(string text)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        var start = text.Length > 0 && text[0] == '﻿' ? 1 : 0;
+        var bytes = System.Text.Encoding.UTF8.GetBytes(text[start..]);
+        var reader = new Utf8JsonReader(bytes, new JsonReaderOptions { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true });
+        try
+        {
+            while (reader.Read())
+            {
+                if (reader.TokenType == JsonTokenType.PropertyName && reader.CurrentDepth == 1 && reader.ValueTextEquals(nameof(RDCoreProject.Name)))
+                {
+                    if (!reader.Read() || reader.TokenType != JsonTokenType.String)
+                    {
+                        return null;
+                    }
+
+                    // the token starts at its opening quote; its raw value is as written, escapes and all.
+                    var from = start + System.Text.Encoding.UTF8.GetCharCount(bytes, 0, (int)reader.TokenStartIndex + 1);
+                    var to = from + System.Text.Encoding.UTF8.GetCharCount(reader.ValueSpan);
+                    return new RDCore.SDK.Model.Source.SourceRange(PositionOf(text, from), PositionOf(text, to));
+                }
+
+                if (reader.CurrentDepth >= 1 && reader.TokenType is JsonTokenType.StartObject or JsonTokenType.StartArray)
+                {
+                    reader.Skip();
+                }
+            }
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+
+        return null;
+    }
+
+    // the line and character of an offset of a text whose lines end with a line feed, a carriage return and a line feed, or a carriage return.
+    private static RDCore.SDK.Model.Source.SourcePosition PositionOf(string text, int offset)
+    {
+        var (line, lineStart) = (0, 0);
+        for (var at = 0; at < offset; at++)
+        {
+            if (text[at] == '\n' || (text[at] == '\r' && (at + 1 >= text.Length || text[at + 1] != '\n')))
+            {
+                (line, lineStart) = (line + 1, at + 1);
+            }
+        }
+
+        return new RDCore.SDK.Model.Source.SourcePosition(line, offset - lineStart);
+    }
 
     /// <summary>
     /// How the format a project file says it is (<see cref="Version"/>) compares with the one the platform reads and writes (<see cref="SchemaVersion"/>).
@@ -242,6 +306,18 @@ public sealed record class ProjectFile : IEquatable<ProjectFile>
     /// <param name="value">The source text of its value.</param>
     public ProjectFile WithPrecompilerConstant(string name, string value) => this with { ProjectInfo = ProjectInfo.WithPrecompilerConstant(name, value), IsDirty = true };
 
+    /// <summary>
+    /// The project file with the project's <see cref="RDCoreProject.KeepSystemTheme"/> set to <paramref name="keepSystemTheme"/>; it is dirty.
+    /// </summary>
+    /// <param name="keepSystemTheme">Whether the program's user interface follows the system theme.</param>
+    public ProjectFile WithKeepSystemTheme(bool keepSystemTheme) => this with { ProjectInfo = ProjectInfo with { KeepSystemTheme = keepSystemTheme }, IsDirty = true };
+
+    /// <summary>
+    /// The project file with the project's <see cref="RDCoreProject.Make"/> section set to <paramref name="make"/>; it is dirty.
+    /// </summary>
+    /// <param name="make">The program's title, version and version strings; <see langword="null"/> for no section.</param>
+    public ProjectFile WithMake(ProjectMake? make) => this with { ProjectInfo = ProjectInfo with { Make = make }, IsDirty = true };
+
     /// <summary>The project file without <paramref name="reference"/>; it is dirty.</summary>
     /// <param name="reference">The reference to remove.</param>
     public ProjectFile WithoutReference(RDCoreReference reference) => this with { ProjectInfo = ProjectInfo.WithoutReference(reference), IsDirty = true };
@@ -295,6 +371,12 @@ public record class RDCoreProject
     public RDCoreReference[] References { get; init; } = [];
 
     /// <summary>
+    /// The project's references to other projects of the workspace, in their priority order (<see cref="RDCoreReference.IsProject"/>).
+    /// </summary>
+    [JsonIgnore]
+    public IEnumerable<RDCoreReference> ProjectReferences => References.Where(reference => reference.IsProject);
+
+    /// <summary>
     /// The project's modules: its source files, by their paths relative to the workspace root (<strong>RD-VBAL §2.2.3.3</strong>).
     /// </summary>
     public RDCoreModule[] Modules { get; init; } = [];
@@ -338,6 +420,32 @@ public record class RDCoreProject
     [JsonConverter(typeof(ProjectBuildJsonConverter))]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public ProjectBuild? Build { get; init; }
+
+    /// <summary>
+    /// Whether the program's user interface follows the system theme, light or dark, instead of the classic light system colors: the initial value of the
+    /// program's <c>App.KeepSystemTheme</c>, which its code can change as it runs (<strong>RD-VBAL §2.2.3</strong>).
+    /// </summary>
+    /// <remarks>
+    /// It is <see langword="false"/> for a project file that does not have it, and for one whose value is anything but the JSON <c>true</c>, such as
+    /// <c>"true"</c> or <c>1</c>: a project file is never refused for it. It is written only when it is <see langword="true"/>, so a project that keeps the
+    /// light colors is written as it was before the format 1.2. A
+    /// platform of the format 1.1 reads it as a member it does not know, and writes it back as it was read (<see cref="ProjectFile.SchemaVersion"/>).
+    /// </remarks>
+    [JsonConverter(typeof(ProjectFlagJsonConverter))]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public bool KeepSystemTheme { get; init; }
+
+    /// <summary>
+    /// The project's <c>Make</c> section: the program's title, its version and its version strings, as Visual Basic 6.0's Make tab has them
+    /// (<see cref="ProjectMake"/>, <strong>RD-VBAL §2.2.3.1</strong>). <see langword="null"/> for a project file that has none.
+    /// </summary>
+    /// <remarks>
+    /// The section is optional, and written only when the project has one. A platform of the format 1.1 reads it as a member it does not know, and writes it
+    /// back as it was read (<see cref="ProjectFile.SchemaVersion"/>).
+    /// </remarks>
+    [JsonConverter(typeof(ProjectMakeJsonConverter))]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public ProjectMake? Make { get; init; }
 
     /// <summary>
     /// The members of the project this model does not know, as they were read, which are written back (<see cref="ProjectFile.ExtensionData"/>).
@@ -457,6 +565,27 @@ public sealed record class RDCoreReference : IEquatable<RDCoreReference>
     /// Whether the reference cannot be removed from the project.
     /// </summary>
     public bool IsUnremovable { get; init; } = false;
+
+    /// <summary>
+    /// Whether the reference is to another project of the workspace, which its <see cref="Name"/> names, instead of a library
+    /// (<strong>RD-VBAL §2.2.3.2</strong>).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A project is referenced by its name alone, resolved among the projects of the workspace. The reference has no path, and the members that find a
+    /// library (<see cref="AbsolutePath"/>, <see cref="Guid"/>, <see cref="Major"/>, <see cref="Minor"/>, <see cref="TypeLibInfoPath"/>) are not read
+    /// for it. It is written <c>"IsProject": true</c>: <c>{ "Name": "NavalLib", "IsProject": true }</c>.
+    /// </para>
+    /// <para>
+    /// It is <see langword="false"/> for a reference that does not have it, and for one whose value is anything but the JSON <c>true</c>, such as
+    /// <c>"true"</c> or <c>1</c>: a project file is never refused for it. It is written only when it is <see langword="true"/>, so a reference to a
+    /// library is written as it was before the format 1.3. A platform of the format 1.2 reads it as a member of the reference it does not know, and
+    /// writes it back as it was read (<see cref="ExtensionData"/>); to that platform, the reference is to a library of the project's name.
+    /// </para>
+    /// </remarks>
+    [JsonConverter(typeof(ProjectFlagJsonConverter))]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public bool IsProject { get; init; }
 
     /// <summary>
     /// The members of the reference this model does not know, as they were read, which are written back (<see cref="ProjectFile.ExtensionData"/>).
@@ -723,6 +852,21 @@ internal static class ProjectFileEntry
             value.WriteTo(writer);
         }
     }
+}
+
+// a flag of a project: true is set, and anything else, such as "true" or 1, is not, so that a project file written by hand always reads.
+internal sealed class ProjectFlagJsonConverter : JsonConverter<bool>
+{
+    public override bool HandleNull => true;
+
+    public override bool Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        var set = reader.TokenType is JsonTokenType.True;
+        reader.Skip();
+        return set;
+    }
+
+    public override void Write(Utf8JsonWriter writer, bool value, JsonSerializerOptions options) => writer.WriteBooleanValue(value);
 }
 
 /// <summary>

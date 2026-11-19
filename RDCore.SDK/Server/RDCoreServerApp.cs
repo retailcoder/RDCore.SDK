@@ -304,7 +304,7 @@ public abstract class RDCoreServerApp(
             // OmniSharp completes both as it handles exit, under the loops that read and write them: the input then ends, and a message still being
             // written is no longer cancelled through the writer that was completed. Neither disposes the pipe, which this app does as it is disposed.
             .WithInput(new ServerInput(PipeReader.Create(_incomingChanges.Tap(_namedPipe))))
-            .WithOutput(ServerOutput.Over(_namedPipe))
+            .WithOutput(ConnectionOutput.Over(_namedPipe))
             // basic server app information:
             .WithServerInfo(GetServerInfo())
             // wire-up lifecycle delegates:
@@ -624,6 +624,12 @@ public abstract class RDCoreServerApp(
     private async Task HandleLanguageServerInitializedAsync(ILanguageServer server, InitializeParams request, InitializeResult response, CancellationToken cancellationToken)
     {
         ServerStateProvider.OnInitialized();
+        // a server that serves assistant tools says so in its answer, whatever the application adds to it.
+        if (Assistant.AssistantToolsCapability.Declare(response.Capabilities, server.Services.GetService<Assistant.AssistantToolCatalog>() ?? ExternalServices?.GetService<Assistant.AssistantToolCatalog>()))
+        {
+            LogIfEnabled(LogLevel.Information, $"The server declares its assistant tools ({RDCorePlatformProtocol.ChatToolsCapability}).");
+        }
+
         await OnLanguageServerInitializedAsync(server, request, response, cancellationToken);
     }
     /// <summary>

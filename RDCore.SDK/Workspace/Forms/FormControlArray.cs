@@ -18,8 +18,9 @@ namespace RDCore.SDK.Workspace.Forms;
 /// No type library describes a control array: VB6.OLB declares the classes of the controls, not the object that holds them. The array's class is described
 /// here as a library's (<see cref="LibraryDescription"/>), read as one is (<see cref="LibrarySymbolReader"/>), with one class for each class of control. Its
 /// default member takes the index and returns the control, as the control's class; <c>Count</c>, <c>LBound</c> and <c>UBound</c> are <c>Integer</c>, as the
-/// Visual Basic 6.0 documentation gives them. It has no other member, and no event: the events of a control of the array are its class's, and a handler of one
-/// takes the control's index first (<c>MemberRoles</c>).
+/// Visual Basic 6.0 documentation gives them. Its hidden enumerator, <c>_NewEnum</c> (dispatch identifier <c>-4</c>), is what <c>For Each</c> asks for to
+/// go through the controls. The class has no other member, and no event: the events of a control of the array are its class's, and a handler of one takes the control's
+/// index first (<c>MemberRoles</c>).
 /// </para>
 /// <para>
 /// The name of the array's class is the platform's, not Visual Basic's: no code can name it, and what describes the array to a user names the class of its
@@ -35,6 +36,9 @@ public static class FormControlArray
 
     // the default member, which takes the index; hidden, and a name no code writes but [_Default].
     private const string DefaultMemberName = "_Default";
+
+    // the enumerator For Each asks for, by its dispatch identifier; hidden.
+    private const string EnumeratorName = "_NewEnum";
 
     private static MemberDescription Get(string name, string type) => new() { Name = name, Kind = MemberKind.PropertyGet, Type = type };
 
@@ -67,6 +71,7 @@ public static class FormControlArray
                         Get("Count", "Integer"),
                         Get("LBound", "Integer"),
                         Get("UBound", "Integer"),
+                        new MemberDescription { Name = EnumeratorName, Kind = MemberKind.PropertyGet, Type = "Object", DispId = -4, IsHidden = true },
                     ],
                 },
             ],

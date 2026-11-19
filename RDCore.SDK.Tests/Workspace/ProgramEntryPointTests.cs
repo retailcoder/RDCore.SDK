@@ -38,7 +38,14 @@ public sealed class ProgramEntryPointTests
         var helper = new VBClassModuleSymbol(WorkspaceRoot, WorkspaceRoot, "Helper");
         (VBModuleSymbol, IEnumerable<VBTypeMemberSymbol>)[] modules = [Standard("Tools", "Helper"), (helper, [SubMain(helper.Uri)]), Standard("Program", "Main")];
 
-        foreach (var build in new[] { null, new ProjectBuild(), new ProjectBuild { OutputType = ProjectOutputType.Application } })
+        // a console program starts as any other program does.
+        foreach (var build in new[]
+        {
+            null,
+            new ProjectBuild(),
+            new ProjectBuild { OutputType = ProjectOutputType.Application },
+            new ProjectBuild { OutputType = ProjectOutputType.ConsoleApplication },
+        })
         {
             var resolved = ProgramEntryPoint.Of(build, modules);
 

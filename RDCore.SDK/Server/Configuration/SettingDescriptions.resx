@@ -211,4 +211,19 @@
   <data name="Analysis_DisabledDiagnostics" xml:space="preserve">
     <value>The codes of the diagnostics that are not reported, separated by commas: RDC01001, XYZ00042. A compile or run-time error (VBC, VBR, VBA) cannot be disabled.</value>
   </data>
+  <data name="InlayHints_Arguments" xml:space="preserve">
+    <value>Whether a positional argument shows the name of the parameter it is given to, in brackets before it: [X:]10.</value>
+  </data>
+  <data name="InlayHints_BlockEnds" xml:space="preserve">
+    <value>Whether the End Sub, End Function or End Property of a procedure shows the procedure's name after it: End Sub [DoSomething].</value>
+  </data>
+  <data name="InlayHints_NextVariables" xml:space="preserve">
+    <value>Whether a Next that names no variable shows the loop's variable after it: Next [i].</value>
+  </data>
+  <data name="InlayHints_ImplicitModifiers" xml:space="preserve">
+    <value>Whether a procedure declared without Public, Private or Friend shows the access it has, and a parameter declared without ByVal or ByRef how it is passed: [Public] Sub Work([ByRef]Total As Long).</value>
+  </data>
+  <data name="InlayHints_ImplicitTypes" xml:space="preserve">
+    <value>Whether a variable or a parameter declared without a type shows the one it has, after its name: Dim First [As Variant].</value>
+  </data>
 </root>

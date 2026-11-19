@@ -79,6 +79,13 @@ public record class ExecuteResult
     public IReadOnlyList<string> Output { get; init; } = [];
 
     /// <summary>
+    /// How long the program ran, in milliseconds: from its first statement to the end of the run, or to where it waits when <see cref="Outcome"/> is
+    /// <see cref="ExecutionOutcome.Suspended"/>. <c>0</c> for a run that did not start (<see cref="ExecutionOutcome.SyntaxError"/>,
+    /// <see cref="ExecutionOutcome.NotFound"/>).
+    /// </summary>
+    public long DurationMilliseconds { get; init; }
+
+    /// <summary>
     /// How many lines the host has said by notification (<c>rdcore/host/output</c>) since it started, when this answer was given. A run that streams has
     /// said its lines before it answers, and they are not in <see cref="Output"/>; this is what lets the receiver wait for them.
     /// </summary>

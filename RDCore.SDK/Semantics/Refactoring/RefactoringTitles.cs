@@ -4,7 +4,8 @@ using System.Resources;
 namespace RDCore.SDK.Semantics.Refactoring;
 
 /// <summary>
-/// What the platform's code actions are called, in the language of the reader.
+/// The titles and the messages of the platform's refactorings, in the language of the reader: what its code actions and code lenses are called, what a
+/// rename asks its user and how it labels the edits it asks about, and why a rename is refused.
 /// </summary>
 public static class RefactoringTitles
 {
@@ -166,6 +167,27 @@ public static class RefactoringTitles
     /// </summary>
     /// <param name="culture">The language of the reader; the current UI culture by default.</param>
     public static string RenameOutsideCallersCancel(CultureInfo? culture = null) => Say("Rename_OutsideCallers_Cancel", culture);
+
+    /// <summary>
+    /// Why a rename is refused, as the user is told: <c>'Foo' already means Module1.Foo at Module2 4:12: the rename would change what the code refers to.</c>
+    /// </summary>
+    /// <param name="kind">Why the rename is refused.</param>
+    /// <param name="name">The name the rename is asked for: the symbol's for a refused symbol, the new name for a refused name
+    /// (<see cref="RenameRefusalKind.Empty"/>, <see cref="RenameRefusalKind.NotAnIdentifier"/>, <see cref="RenameRefusalKind.Reserved"/>,
+    /// <see cref="RenameRefusalKind.Conflict"/>, <see cref="RenameRefusalKind.ModuleNameTooLong"/>).</param>
+    /// <param name="other">What else the refusal names: the interface of a <see cref="RenameRefusalKind.InterfaceMember"/>, what the new name already means for
+    /// a <see cref="RenameRefusalKind.Conflict"/>, the most characters a module's name has for a <see cref="RenameRefusalKind.ModuleNameTooLong"/>, the
+    /// property that holds the name for a <see cref="RenameRefusalKind.ControlNamedByProperty"/> (<c>UpDown1.BuddyControl</c>). Unused by the other
+    /// kinds.</param>
+    /// <param name="where">Where the refusal is, as the client names a position: the conflict of a <see cref="RenameRefusalKind.Conflict"/>, the name of an
+    /// <see cref="RenameRefusalKind.Unresolved"/>. Unused by the other kinds.</param>
+    /// <param name="culture">The language of the reader; the current UI culture by default.</param>
+    /// <returns>The text, formatted with <paramref name="culture"/>; the name of <paramref name="kind"/> for a kind the platform has no text for.</returns>
+    public static string RenameRefusal(RenameRefusalKind kind, string name, string? other = null, string? where = null, CultureInfo? culture = null)
+    {
+        culture ??= CultureInfo.CurrentUICulture;
+        return string.Format(culture, Messages.GetString($"Rename_{kind}", culture) ?? kind.ToString(), name, other ?? string.Empty, where ?? string.Empty);
+    }
 
     private static string Say(string key, CultureInfo? culture, params object[] arguments)
     {

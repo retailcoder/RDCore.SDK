@@ -4,6 +4,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using OmniSharp.Extensions.LanguageServer.Client;
+using OmniSharp.Extensions.LanguageServer.Protocol;
 using OmniSharp.Extensions.LanguageServer.Protocol.Client;
 using OmniSharp.Extensions.LanguageServer.Protocol.Client.Capabilities;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
@@ -17,6 +18,8 @@ using RDCore.SDK.Server;
 using RDCore.SDK.Server.Configuration;
 using RDCore.SDK.Server.Handlers.Lifecycle;
 using RDCore.SDK.Server.Handlers.Platform;
+using RDCore.SDK.Workspace;
+using System.IO.Abstractions;
 using System.Reflection;
 namespace RDCore.SDK.Client;
 
@@ -104,6 +107,7 @@ public abstract class RDCoreClientApp : IRDCoreClientApp
 
     private ChildConnection? _connection;
     private IServiceProvider? _hostServices;
+    private WorkspaceFolderList? _workspaceFolders;
     private bool _disposed;
 
     /// <summary>
@@ -214,8 +218,73 @@ public abstract class RDCoreClientApp : IRDCoreClientApp
         LogIfEnabled(LogLevel.Information, TraceMessages.LanguageClientStarting);
         await BeforeRunAsync(args);
 
+        _workspaceFolders = ReadWorkspaceFolders(provider.GetService<IFileSystem>() ?? new FileSystem());
+        foreach (var refused in _workspaceFolders?.Refused ?? [])
+        {
+            OnWorkspaceFolderRefused(refused, _workspaceFolders!.WorkspaceFilePath);
+        }
+
         await StartLanguageClientAsync(provider.GetRequiredService<IPlatformCompositionService>());
     }
+
+    /// <summary>
+    /// The workspace the app opens on its workspace folder (<see cref="SdkWorkspaceOptions.WorkspaceUri"/>), when a <c>.rdworkspace</c> lists it or is in it
+    /// (<see cref="WorkspaceFolderList.Read"/>, <strong>RD-VBAL §2.2.2</strong>): its folders are the <c>workspaceFolders</c> of the <c>initialize</c>
+    /// request, in the file's order, and its primary folder is the request's <c>rootUri</c>.
+    /// </summary>
+    /// <remarks>
+    /// The base implementation reads it for the platform's client app (<see cref="CoreServerComponent.ClientApp"/>), the app a user opens a folder with,
+    /// and gives <see langword="null"/> for any other component: a component a platform server runs as the client of its own child is told its workspace
+    /// by that server. It gives <see langword="null"/> as well for a workspace folder that is neither a path nor a <c>file</c> URI.
+    /// </remarks>
+    /// <param name="fileSystem">The file system the workspace is on: the host's <see cref="IFileSystem"/>, or the machine's.</param>
+    /// <returns>The workspace; <see langword="null"/> when the folder is opened on its own.</returns>
+    protected virtual WorkspaceFolderList? ReadWorkspaceFolders(IFileSystem fileSystem)
+    {
+        if (PlatformComponent is not CoreServerComponent.ClientApp)
+        {
+            return null;
+        }
+
+        var folder = FolderOf(fileSystem, _options.Value.Workspace.WorkspaceUri);
+        try
+        {
+            return folder is null ? null : WorkspaceFolderList.Read(fileSystem, folder);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            LogIfEnabled(LogLevel.Warning, $"The workspace file of '{folder}' could not be read; the folder is opened on its own: {exception.Message}");
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// An entry of the <c>.rdworkspace</c>'s folders is refused (<see cref="RefusedWorkspaceFolder"/>): the server is given the other folders only.
+    /// </summary>
+    /// <remarks>
+    /// The base implementation logs it as a warning. An app that shows its user what it loads overrides this to tell them too.
+    /// </remarks>
+    /// <param name="refused">The entry and why it is not loaded.</param>
+    /// <param name="workspaceFile">The path of the <c>.rdworkspace</c> that lists it.</param>
+    protected virtual void OnWorkspaceFolderRefused(RefusedWorkspaceFolder refused, string workspaceFile)
+        => LogIfEnabled(LogLevel.Warning, refused.ToMessage(workspaceFile));
+
+    // the folder a workspace folder setting is: a path as it is written, absolute or relative to the current directory, or the path of a file URI; a URI of
+    // another scheme is no folder.
+    internal static string? FolderOf(IFileSystem fileSystem, string? workspace)
+        => workspace is not { Length: > 0 } ? null
+            : fileSystem.Path.IsPathFullyQualified(workspace) || !Uri.TryCreate(workspace, UriKind.Absolute, out var uri) ? workspace
+            : uri.IsFile ? DocumentUri.From(uri).GetFileSystemPath()
+            : null;
+
+    // the root and the folders of the initialize request: the primary project of a workspace its .rdworkspace describes, and every folder of it in the file's
+    // order; otherwise the workspace folder alone, and no folders.
+    internal static (DocumentUri RootUri, Container<WorkspaceFolder>? Folders) InitializeWorkspaceOf(WorkspaceFolderList? workspace, string workspaceUri)
+        => workspace?.Primary is { } primary
+            ? (DocumentUri.From(primary.Uri),
+                new Container<WorkspaceFolder>(workspace.Folders.Select(folder =>
+                    new WorkspaceFolder { Uri = DocumentUri.From(folder.Uri), Name = folder.Name })))
+            : (workspaceUri, null);
 
     /// <summary>
     /// Gets information about this LSP client application and its configuration.
@@ -328,7 +397,8 @@ public abstract class RDCoreClientApp : IRDCoreClientApp
     {
         ClientInfo = GetClientInfo(),
         Capabilities = GetClientCapabilities(),
-        RootUri = _options.Value.Workspace.WorkspaceUri,
+        RootUri = InitializeWorkspaceOf(_workspaceFolders, _options.Value.Workspace.WorkspaceUri).RootUri,
+        WorkspaceFolders = InitializeWorkspaceOf(_workspaceFolders, _options.Value.Workspace.WorkspaceUri).Folders,
         ProcessId = Environment.ProcessId,
         Locale = Thread.CurrentThread.CurrentUICulture.Name,
         Trace = _options.Value.Server.TraceLevel == LogLevel.None ? InitializeTrace.Off
@@ -407,6 +477,12 @@ public abstract class RDCoreClientApp : IRDCoreClientApp
         if (initialization.RootUri is { } rootUri)
         {
             options.WithRootUri(rootUri);
+        }
+
+        // nor does it send workspaceFolders unless it is given them.
+        foreach (var folder in initialization.WorkspaceFolders ?? [])
+        {
+            options.WithWorkspaceFolder(folder);
         }
 
         // the work the server begins of its own is tracked from the token it creates for it.
