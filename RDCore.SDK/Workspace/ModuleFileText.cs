@@ -148,6 +148,38 @@ public sealed partial class ModuleFileText
     }
 
     /// <summary>
+    /// The file with another text, in the same encoding and with the same byte order mark or its absence: what an editor saves of a document whose whole text
+    /// it holds.
+    /// </summary>
+    /// <remarks>
+    /// The text is written as it is given, its line endings included: unlike <see cref="Edit"/>, nothing of it is changed. A text that is the file's own
+    /// leaves the file as it is, byte for byte.
+    /// </remarks>
+    /// <param name="text">The whole text of the file.</param>
+    /// <returns>The file with that text.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="text"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ModuleFileTextException">
+    /// The file is not <see cref="IsLossless">lossless</see>, or the text has a character its encoding cannot write.
+    /// </exception>
+    public ModuleFileText WithText(string text)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        if (!IsLossless)
+        {
+            throw new ModuleFileTextException(ModuleFileTextFailure.NotLossless, Message(nameof(ModuleFileTextFailure.NotLossless), Encoding.WebName));
+        }
+
+        if (string.Equals(text, Text, StringComparison.Ordinal))
+        {
+            return this;
+        }
+
+        var replaced = new ModuleFileText(text, Encoding, _preamble, isLossless: true, bytes: null);
+        _ = replaced.Encode();
+        return replaced;
+    }
+
+    /// <summary>
     /// The bytes of the file: the byte order mark it was read with, if any, then the text in its encoding. Unedited, they are the bytes it was read from.
     /// </summary>
     /// <returns>The bytes to write.</returns>
