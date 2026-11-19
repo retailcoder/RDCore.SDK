@@ -8,21 +8,24 @@ public static class RefactoringCommands
 {
     /// <summary>
     /// Renames the symbol named at a position of a document, to a name the client asks its user for: the client asks, and sends <c>textDocument/rename</c> with
-    /// the name it is given, unless the user cancels. Its arguments are the URI of the document and the position (<strong>LSP 3.17</strong> <c>Position</c>).
+    /// the name it is given, unless the user cancels. Its arguments are the URI of the document and the position (<strong>LSP 3.17</strong> <c>Position</c>),
+    /// which <see cref="RenameCommandArguments"/> reads and writes.
     /// </summary>
     public const string Rename = "rdcore.rename";
 
     /// <summary>
     /// Shows its user where a symbol is referred to: the command of a code lens that counts the references of a member (<strong>LSP 3.17</strong>
     /// <c>CodeLens.command</c>). Its arguments are the URI of the document, the position of the member's name (<strong>LSP 3.17</strong> <c>Position</c>), and the
-    /// references (<strong>LSP 3.17</strong> <c>Location[]</c>): the arguments of VS Code's <c>editor.action.showReferences</c>.
+    /// references (<strong>LSP 3.17</strong> <c>Location[]</c>): the arguments of VS Code's <c>editor.action.showReferences</c>, which
+    /// <see cref="ShowReferencesCommandArguments"/> reads and writes.
     /// </summary>
     public const string ShowReferences = "rdcore.showReferences";
 
     /// <summary>
     /// Takes its user to one place in the code: the client opens the document and selects the range, as it does for a definition. It is the command of a
     /// code lens that leads to a single location, such as the interface member a procedure implements, where there is nothing to choose from
-    /// (<strong>LSP 3.17</strong> <c>CodeLens.command</c>). Its arguments are the URI of the document and the range (<strong>LSP 3.17</strong> <c>Range</c>).
+    /// (<strong>LSP 3.17</strong> <c>CodeLens.command</c>). Its arguments are the URI of the document and the range (<strong>LSP 3.17</strong> <c>Range</c>),
+    /// which <see cref="GoToLocationCommandArguments"/> reads and writes.
     /// </summary>
     /// <remarks>
     /// A lens that leads to two or more locations is <see cref="ShowReferences"/> instead, which lets its user choose one.
