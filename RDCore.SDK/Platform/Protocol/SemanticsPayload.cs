@@ -400,11 +400,15 @@ public record class ProcedureSemanticsDto(
 /// <param name="Binding">
 /// What it is bound to, for a handler or an implementation (<see cref="DeclarationFact.Binding"/>); <see langword="null"/> for any other declaration.
 /// </param>
+/// <param name="IsUsedByReferencingProjects">
+/// Whether it counts as used by the projects that reference a library project (<see cref="DeclarationFact.IsUsedByReferencingProjects"/>).
+/// </param>
 public record class DeclarationFactDto(
     Uri Symbol, string Name, DeclarationKind Kind, AccessModifier Access, bool IsImplicit, SourceLocation Location, DeclarationReferences? References,
     DeclarationRole Role = DeclarationRole.None, LocalDeclarationKind? DeclaredBy = null, HiddenDeclaration? Hides = null,
     ImmutableArray<DeclarationReference>? ReferencedFrom = null, DeclaredTypeKind? TypeKind = null, bool IsArray = false, Uri? AutoInstantiates = null,
-    CompiledPlatforms? CompiledOn = null, ImmutableArray<CompiledPlatforms>? StatementsCompiledOn = null, DeclarationBindingDto? Binding = null);
+    CompiledPlatforms? CompiledOn = null, ImmutableArray<CompiledPlatforms>? StatementsCompiledOn = null, DeclarationBindingDto? Binding = null,
+    bool IsUsedByReferencingProjects = false);
 
 /// <summary>
 /// A <see cref="DeclarationBinding"/>, as it travels: the member it binds is the declaration it is the binding of, and its role is the declaration's
@@ -482,7 +486,8 @@ public record class ModuleSemanticsDto(
             declaration.Symbol.Uri, declaration.Name, declaration.Kind, declaration.Access, declaration.IsImplicit, declaration.Location, declaration.References, declaration.Role,
             declaration.DeclaredBy, declaration.Hides, declaration.ReferencedFrom, declaration.TypeKind, declaration.IsArray,
             declaration.AutoInstantiates?.Uri, declaration.CompiledOn, declaration.StatementsCompiledOn.IsDefault ? null : declaration.StatementsCompiledOn,
-            declaration.Binding is { } binding ? new DeclarationBindingDto(binding.Source.Uri, binding.Bound?.Uri) : null))],
+            declaration.Binding is { } binding ? new DeclarationBindingDto(binding.Source.Uri, binding.Bound?.Uri) : null,
+            declaration.IsUsedByReferencingProjects))],
         model.Language,
         model.Class,
         model.Document,
