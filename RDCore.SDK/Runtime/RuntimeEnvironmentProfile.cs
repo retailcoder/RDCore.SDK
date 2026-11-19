@@ -23,6 +23,9 @@ namespace RDCore.SDK.Runtime;
 /// <param name="ReleaseDropsDebugStatements">Whether a release build leaves out the <c>Debug</c> statements; <c>false</c> unless said otherwise.</param>
 /// <param name="ErlAfterErrClear">What <c>Err.Clear</c> does to the line <c>Erl</c> reports; it resets it unless said otherwise.</param>
 /// <param name="OperatingSystem">The operating system the environment runs on; Windows unless said otherwise (<see cref="Running"/> is the one this process runs on).</param>
+/// <param name="Win64OnlySetOnWindows">
+/// Whether <c>Win64</c> is <c>1</c> on 64-bit Windows only; <c>false</c> unless said otherwise, and it is on a 64-bit Mac too.
+/// </param>
 public sealed record class RuntimeEnvironmentProfile(
     bool Is64Bit,
     int Lcid,
@@ -39,7 +42,8 @@ public sealed record class RuntimeEnvironmentProfile(
     VBBuildConfiguration Configuration = VBBuildConfiguration.Debug,
     bool ReleaseDropsDebugStatements = false,
     VBErlAfterErrClear ErlAfterErrClear = VBErlAfterErrClear.Reset,
-    VBOperatingSystem OperatingSystem = VBOperatingSystem.Windows) : IRuntimeEnvironmentProfile
+    VBOperatingSystem OperatingSystem = VBOperatingSystem.Windows,
+    bool Win64OnlySetOnWindows = false) : IRuntimeEnvironmentProfile
 {
     /// <summary>
     /// The operating system this process runs on: what the environment host's profile says (<see cref="From"/>).
@@ -76,7 +80,7 @@ public sealed record class RuntimeEnvironmentProfile(
         => new(options.Is64Bit, options.Lcid, options.AnsiCodePage, options.SupportsOptionCompareDatabase, options.DatabaseCompare,
             options.ErlLineNumbering, options.AllowDllImports, language, options.AllowAutomation,
             options.LegacyRegistrySettings, options.Regional.ToSettings(), options.ExecutionEngine, options.Configuration,
-            options.ReleaseDropsDebugStatements, options.ErlAfterErrClear, Running);
+            options.ReleaseDropsDebugStatements, options.ErlAfterErrClear, Running, options.Win64OnlySetOnWindows);
 
     /// <summary>
     /// The profile <paramref name="environment"/> is, as a <see cref="RuntimeEnvironmentProfile"/>: itself when it is one, and otherwise one with each of its
@@ -88,7 +92,7 @@ public sealed record class RuntimeEnvironmentProfile(
             environment.Is64Bit, environment.Lcid, environment.AnsiCodePage, environment.SupportsOptionCompareDatabase, environment.DatabaseCompare,
             environment.ErlLineNumbering, environment.AllowDllImports, environment.Language, environment.AllowAutomation, environment.LegacyRegistrySettings,
             environment.Regional, environment.ExecutionEngine, environment.Configuration, environment.ReleaseDropsDebugStatements,
-            environment.ErlAfterErrClear, environment.OperatingSystem);
+            environment.ErlAfterErrClear, environment.OperatingSystem, environment.Win64OnlySetOnWindows);
 
     /// <inheritdoc/>
     /// <remarks>

@@ -236,10 +236,19 @@ public record class SdkEnvironmentOptions
     public const Runtime.Abstract.Execution.VBExecutionEngine DefaultExecutionEngine = Runtime.Abstract.Execution.VBExecutionEngine.Compiled;
 
     /// <summary>
-    /// <c>true</c> for a 64-bit environment (<c>LongPtr</c> width, and the <c>Win64</c> or <c>Linux64</c> conditional-compilation constant of the
-    /// operating system the environment runs on).
+    /// <c>true</c> for a 64-bit environment (<c>LongPtr</c> width, the <c>Is64BitEnv</c> conditional-compilation constant, and <c>Win64</c> on Windows and
+    /// on a Mac).
     /// </summary>
     public bool Is64Bit { get; set; } = true;
+    /// <summary>
+    /// <c>true</c> when the <c>Win64</c> conditional-compilation constant is <c>1</c> on 64-bit Windows only. <c>false</c> by default: it is <c>1</c> on a
+    /// 64-bit Mac too, as in Excel for Mac, and a hint says so of each <c>Win64</c> a directive reads.
+    /// </summary>
+    /// <remarks>
+    /// A condition on the bitness of the environment tests <c>Is64BitEnv</c>, which this does not change
+    /// (<see cref="Runtime.Abstract.Execution.IRuntimeEnvironmentProfile.Win64OnlySetOnWindows"/>).
+    /// </remarks>
+    public bool Win64OnlySetOnWindows { get; set; }
     /// <summary>
     /// The environment locale identifier. <c>0</c> (the default) means the invariant locale.
     /// </summary>

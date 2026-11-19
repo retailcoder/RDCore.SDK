@@ -123,6 +123,17 @@ public sealed record class ModuleSemanticModel(
     public ImmutableArray<string> DocumentModules { get; init; } = [];
 
     /// <summary>
+    /// The names of the conditional-compilation constants that the module's directives read and nothing defines: no <c>#Const</c> of the module, no constant
+    /// of the project or of the command line, and no predefined constant (<see cref="SDK.Runtime.PredefinedConditionalConstants.Names"/>). Each is
+    /// <c>0</c> where it is read, as in MS-VBA, which makes a condition that tests it <c>False</c>.
+    /// </summary>
+    /// <remarks>
+    /// Each name once, as the first directive that reads it writes it, in the order they are written. Empty when every name is defined, and when the host
+    /// does not say.
+    /// </remarks>
+    public ImmutableArray<string> UndefinedConditionalConstants { get; init; } = [];
+
+    /// <summary>
     /// Every compile error of the module: those of its declarations, then those of each procedure.
     /// </summary>
     public ImmutableArray<VBCompileErrorInfo> CompileErrors => [.. DeclarationErrors, .. Procedures.SelectMany(procedure => procedure.CompileErrors)];

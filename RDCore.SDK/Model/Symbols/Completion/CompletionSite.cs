@@ -19,6 +19,12 @@ public enum CompletionSiteKind
 
     /// <summary>The operand of <c>New</c> (<strong>MS-VBAL §5.6.13.3</strong>): a class.</summary>
     NewType,
+
+    /// <summary>
+    /// A name in the conditional compilation binding context (<strong>MS-VBAL §5.6.10</strong>), in the condition of a <c>#If</c> or a <c>#ElseIf</c>, or in
+    /// the value of a <c>#Const</c> (<strong>MS-VBAL §3.4</strong>): a conditional-compilation constant.
+    /// </summary>
+    ConditionalConstant,
 }
 
 /// <summary>
@@ -61,6 +67,11 @@ public sealed record class CompletionSite(CompletionSiteKind Kind, string Prefix
     /// A name written in brackets (<strong>MS-VBAL §3.3.5.3</strong> <c>foreign-name</c>) holds any character of the line but a <c>]</c>: where its opening
     /// bracket is not closed yet, the name is being typed from it, and the prefix is the bracket and what follows it (<c>x = [My Fi</c>).
     /// </para>
+    /// <para>
+    /// In a directive (<strong>MS-VBAL §3.4</strong>), a name written in the condition of a <c>#If</c> or a <c>#ElseIf</c>, or after the <c>=</c> of a
+    /// <c>#Const</c>, is a conditional-compilation constant (<see cref="CompletionSiteKind.ConditionalConstant"/>). The name a <c>#Const</c> declares, and
+    /// anything written after <c>Then</c>, is offered nothing.
+    /// </para>
     /// </remarks>
     /// <param name="text">The text of the line, up to the cursor.</param>
     public static CompletionSite Read(string text)
@@ -68,6 +79,11 @@ public sealed record class CompletionSite(CompletionSiteKind Kind, string Prefix
         if (IsInLiteralOrComment(text))
         {
             return new(CompletionSiteKind.None);
+        }
+
+        if (DirectiveSiteOf(text) is { } directive)
+        {
+            return directive;
         }
 
         var start = text.Length;
@@ -122,6 +138,62 @@ public sealed record class CompletionSite(CompletionSiteKind Kind, string Prefix
     }
 
     private static bool IsIdentifierCharacter(char character) => char.IsLetterOrDigit(character) || character == '_';
+
+    // where a #If, a #ElseIf or the value of a #Const is being written, the site of a conditional-compilation constant; null for any other line, and for
+    // a directive whose keyword is still being typed, which are read as a statement is.
+    private static CompletionSite? DirectiveSiteOf(string text)
+    {
+        var line = text.TrimStart();
+        if (!line.StartsWith('#'))
+        {
+            return null;
+        }
+
+        var keywordEnd = 1;
+        while (keywordEnd < line.Length && IsIdentifierCharacter(line[keywordEnd]))
+        {
+            keywordEnd++;
+        }
+
+        // the keyword is still being typed, or another directive (#Else, #End If) is written: the line is read as any other.
+        if (keywordEnd == line.Length || !char.IsWhiteSpace(line[keywordEnd]))
+        {
+            return null;
+        }
+
+        var keyword = line[1..keywordEnd];
+        var rest = line[keywordEnd..];
+        var isCondition = keyword.Equals("If", StringComparison.OrdinalIgnoreCase) || keyword.Equals("ElseIf", StringComparison.OrdinalIgnoreCase);
+        if (!isCondition && !keyword.Equals("Const", StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        // the name a #Const declares is a new one, and nothing is written after the Then of a condition but a comment.
+        if (!isCondition && !rest.Contains('=') || isCondition && EndsAtThen(rest))
+        {
+            return new(CompletionSiteKind.None);
+        }
+
+        var start = text.Length;
+        while (start > 0 && IsIdentifierCharacter(text[start - 1]))
+        {
+            start--;
+        }
+
+        var prefix = text[start..];
+        return prefix.Length > 0 && char.IsAsciiDigit(prefix[0]) || start > 0 && text[start - 1] is '.' or '!' or '['
+            ? new(CompletionSiteKind.None)
+            : new(CompletionSiteKind.ConditionalConstant, prefix);
+    }
+
+    // whether a condition's Then is written before the word being typed.
+    private static bool EndsAtThen(string condition)
+    {
+        var words = condition.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
+        var written = char.IsWhiteSpace(condition[^1]) ? words : words[..^1];
+        return written.Any(word => word.Equals("Then", StringComparison.OrdinalIgnoreCase));
+    }
 
     // the `[` of a name in brackets that is still being written at the end of the line (MS-VBAL §3.3.5.3 <foreign-name>), outside a string literal; -1 when
     // every bracket is closed. What is between the brackets is the name, a space or a `"` included.

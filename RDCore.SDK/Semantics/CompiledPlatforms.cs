@@ -11,13 +11,14 @@ namespace RDCore.SDK.Semantics;
 /// <remarks>
 /// <para>
 /// A platform is an operating system and a bitness, the two things that decide the values of <c>Win32</c>, <c>Win64</c>, <c>Mac</c>, <c>Linux</c> and
-/// <c>Linux64</c> (<see cref="PredefinedConditionalConstants.Of(IRuntimeEnvironmentProfile)"/>). Code outside any <c>#If</c> block is compiled on
+/// <c>Is64BitEnv</c> (<see cref="PredefinedConditionalConstants.Of(IRuntimeEnvironmentProfile)"/>). Code outside any <c>#If</c> block is compiled on
 /// <see cref="All"/> of them; code in a branch is compiled on those where the conditions before it are false and its own is true. A constant that no
 /// platform decides (a project <c>#Const</c>, a module's own, <c>DEBUG</c>, <c>VBA7</c>) has the value it has in the session, on every platform; one
-/// that overrides a predefined constant overrides it on every platform too.
+/// that overrides a predefined constant overrides it on every platform too. The session's
+/// <see cref="IRuntimeEnvironmentProfile.Win64OnlySetOnWindows"/> holds on every platform: <c>Win64</c> is <c>1</c> on macOS unless it is set.
 /// </para>
 /// <para>
-/// <c>Linux</c> and <c>Linux64</c> are RD-VBA additions, and so are the platforms they decide: MS-VBA runs on Windows and macOS only.
+/// <c>Linux</c> is an RD-VBA addition, and so are the platforms it decides: MS-VBA runs on Windows and macOS only.
 /// </para>
 /// </remarks>
 [Flags]
@@ -29,27 +30,28 @@ public enum CompiledPlatforms
     None = 0,
 
     /// <summary>
-    /// 32-bit Windows: <c>Win32</c> is <c>1</c>, <c>Win64</c> is <c>0</c>.
+    /// 32-bit Windows: <c>Win32</c> is <c>1</c>, <c>Win64</c> and <c>Is64BitEnv</c> are <c>0</c>.
     /// </summary>
     Windows32 = 1 << 0,
 
     /// <summary>
-    /// 64-bit Windows: <c>Win32</c> and <c>Win64</c> are <c>1</c>.
+    /// 64-bit Windows: <c>Win32</c>, <c>Win64</c> and <c>Is64BitEnv</c> are <c>1</c>.
     /// </summary>
     Windows64 = 1 << 1,
 
     /// <summary>
-    /// macOS: <c>Mac</c> is <c>1</c>.
+    /// 64-bit macOS: <c>Mac</c> and <c>Is64BitEnv</c> are <c>1</c>, and <c>Win64</c> unless <see cref="IRuntimeEnvironmentProfile.Win64OnlySetOnWindows"/>
+    /// is set.
     /// </summary>
     MacOS = 1 << 2,
 
     /// <summary>
-    /// 32-bit Linux: <c>Linux</c> is <c>1</c>, <c>Linux64</c> is <c>0</c>. An RD-VBA addition.
+    /// 32-bit Linux: <c>Linux</c> is <c>1</c>, <c>Is64BitEnv</c> is <c>0</c>. An RD-VBA addition.
     /// </summary>
     Linux32 = 1 << 3,
 
     /// <summary>
-    /// 64-bit Linux: <c>Linux</c> and <c>Linux64</c> are <c>1</c>. An RD-VBA addition.
+    /// 64-bit Linux: <c>Linux</c> and <c>Is64BitEnv</c> are <c>1</c>, and <c>Win64</c> is <c>0</c>. An RD-VBA addition.
     /// </summary>
     Linux64 = 1 << 4,
 
