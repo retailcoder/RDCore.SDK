@@ -178,9 +178,13 @@ public sealed class ProcessMainThread
     /// <exception cref="ArgumentNullException"><paramref name="setUp"/> or <paramref name="loop"/> is <see langword="null"/>.</exception>
     /// <exception cref="InvalidOperationException">The program has ended, and the main thread runs no more work.</exception>
     /// <remarks>
-    /// What <paramref name="setUp"/> throws is thrown here, with the stack it was thrown with, and the loop is not run. The main thread then goes back to the
-    /// work posted after it, and the program can end as any other does. Called from a thread other than the main thread: the main thread waited on cannot run
-    /// the setup.
+    /// <para>
+    /// Call it from a thread other than this main thread: called on the main thread, it waits for a setup that only the main thread can run.
+    /// </para>
+    /// <para>
+    /// While the loop runs, the main thread runs no other work posted to it. What <paramref name="setUp"/> throws is thrown here, with the stack it was
+    /// thrown with, and the loop is not run. The main thread then goes back to the work posted after it, and the program can end as any other does.
+    /// </para>
     /// </remarks>
     public T StartLoop<T>(Func<T> setUp, Action<T, CancellationToken> loop)
     {
@@ -193,8 +197,8 @@ public sealed class ProcessMainThread
 
     /// <summary>
     /// Starts a user interface's loop on a new thread of its own: <paramref name="setUp"/> runs there, and once it returns, <paramref name="loop"/> runs there
-    /// until it returns. Waits for the setup only. The loop of a system whose windows run on any thread, which runs beside the program rather than on the
-    /// process's main thread.
+    /// until it returns. Waits for the setup only. For a system whose windows can run on any thread: the loop runs beside the program, and the process's main
+    /// thread is not needed.
     /// </summary>
     /// <typeparam name="T">What the setup makes, which the loop is given.</typeparam>
     /// <param name="name">The name of the thread.</param>
@@ -204,7 +208,9 @@ public sealed class ProcessMainThread
     /// process.
     /// </param>
     /// <returns>What <paramref name="setUp"/> returned.</returns>
-    /// <exception cref="ArgumentNullException"><paramref name="name"/>, <paramref name="setUp"/> or <paramref name="loop"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="name"/>, <paramref name="setUp"/> or <paramref name="loop"/> is <see langword="null"/>.
+    /// </exception>
     /// <remarks>
     /// What <paramref name="setUp"/> throws is thrown here, with the stack it was thrown with, and the loop is not run. On Windows the thread is in a
     /// single-threaded apartment, which a window's drag and drop, clipboard and accessibility need.
@@ -225,8 +231,8 @@ public sealed class ProcessMainThread
         return start.Made();
     }
 
-    // a loop's start: its setup, which the starting thread waits for, then its loop, on the thread that runs it. The event is not disposed: the thread that sets
-    // it may still be in Set when the waiting one returns, and it holds no kernel handle unless its WaitHandle is asked for.
+    // a loop's start: its setup, which the starting thread waits for, then its loop, on the thread that runs it. The event is not disposed: the thread that
+    // sets it may still be in Set when the waiting one returns, and it holds no kernel handle unless its WaitHandle is asked for.
     private sealed class LoopStart<T>(Func<T> setUp, Action<T, CancellationToken> loop)
     {
         private readonly ManualResetEventSlim _ready = new();
