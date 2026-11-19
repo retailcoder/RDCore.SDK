@@ -15,19 +15,31 @@ namespace RDCore.SDK.Runtime.Abstract.Execution;
 public interface IRuntimeEnvironmentProfile
 {
     /// <summary>
-    /// <c>true</c> for a 64-bit environment. Determines <c>LongPtr</c> width and, on its own operating system (<see cref="OperatingSystem"/>), the value of
-    /// the <c>Win64</c> and <c>Linux64</c> conditional-compilation constants.
+    /// <c>true</c> for a 64-bit environment: the bitness of the environment host's process. Determines <c>LongPtr</c> width and the value of the
+    /// <c>Is64BitEnv</c> conditional-compilation constant, and of <c>Win64</c> on the operating systems where it can be <c>1</c>
+    /// (<see cref="OperatingSystem"/>).
     /// </summary>
     bool Is64Bit { get; }
 
     /// <summary>
-    /// The operating system the environment runs on. With <see cref="Is64Bit"/>, it decides the built-in <c>Win32</c>, <c>Win64</c>, <c>Mac</c>,
-    /// <c>Linux</c> and <c>Linux64</c> conditional-compilation constants: each is <c>1</c> only on its own operating system, and <c>0</c> on every other.
+    /// The operating system the environment runs on. It decides the built-in <c>Win32</c>, <c>Mac</c> and <c>Linux</c> conditional-compilation constants,
+    /// each <c>1</c> only on its own operating system and <c>0</c> on every other, and with <see cref="Is64Bit"/>, <c>Win64</c>
+    /// (<see cref="PredefinedConditionalConstants.Of(IRuntimeEnvironmentProfile)"/>).
     /// </summary>
     /// <remarks>
     /// The environment host's is the one it runs on. <see cref="VBOperatingSystem.Windows"/> unless said otherwise.
     /// </remarks>
     VBOperatingSystem OperatingSystem { get; }
+
+    /// <summary>
+    /// Whether the built-in <c>Win64</c> conditional-compilation constant is <c>1</c> on 64-bit Windows only. <see langword="false"/> unless said otherwise:
+    /// <c>Win64</c> is <c>1</c> on a 64-bit Mac too, as in Excel for Mac, so that code written for MS-VBA takes the same branch.
+    /// </summary>
+    /// <remarks>
+    /// A condition on the bitness of the environment tests <c>Is64BitEnv</c>, which this does not change
+    /// (<see cref="PredefinedConditionalConstants.Is64BitEnv"/>).
+    /// </remarks>
+    bool Win64OnlySetOnWindows => false;
 
     /// <summary>
     /// The environment locale identifier (LCID). <c>0</c> means the invariant locale.

@@ -33,16 +33,41 @@ public static class PredefinedConditionalConstants
     /// </summary>
     public const short False = 0;
 
+    /// <summary>
+    /// The name of MS-VBA's <c>Win64</c>: <c>1</c> on 64-bit Windows and, as in Excel for Mac, on a 64-bit Mac, unless the environment sets it on Windows
+    /// only (<see cref="IRuntimeEnvironmentProfile.Win64OnlySetOnWindows"/>). A condition on the bitness of the environment tests <see cref="Is64BitEnv"/>.
+    /// </summary>
+    public const string Win64 = "Win64";
+
+    /// <summary>
+    /// The name of RD-VBA's bitness test: <c>1</c> in a 64-bit environment, whatever its operating system, as
+    /// <see cref="IRuntimeEnvironmentProfile.Is64Bit"/> says.
+    /// </summary>
+    public const string Is64BitEnv = "Is64BitEnv";
+
     private const string Win16 = "Win16";
 
     private static readonly HashSet<string> NamesOfConstants =
-        new([RuntimeSessionExtensions.DebugConstantName, Win16, "Win32", "Win64", "Mac", "Linux", "Linux64", "VBA6", "VBA7"], StringComparer.OrdinalIgnoreCase);
+        new([RuntimeSessionExtensions.DebugConstantName, Win16, "Win32", Win64, "Mac", "Linux", Is64BitEnv, "VBA6", "VBA7"],
+            StringComparer.OrdinalIgnoreCase);
+
+    private static readonly Dictionary<string, string> RetiredConstants = new(StringComparer.OrdinalIgnoreCase) { ["Linux64"] = "Linux And " + Is64BitEnv };
 
     /// <summary>
     /// The names of the constants the environment defines, whatever the environment: each is defined, true or false, in every one.
     /// </summary>
     /// <remarks>Names are compared without regard to case, as a <c>#If</c> reads them.</remarks>
     public static IReadOnlySet<string> Names => NamesOfConstants;
+
+    /// <summary>
+    /// The names of retired predefined constants, which the environment does not define, each with the condition that tests the same thing: <c>Linux64</c>,
+    /// and <c>Linux And Is64BitEnv</c>.
+    /// </summary>
+    /// <remarks>
+    /// A directive that reads one reads a constant nothing defines, which is <c>0</c>, unless the project or the module defines it. Names are compared
+    /// without regard to case.
+    /// </remarks>
+    public static IReadOnlyDictionary<string, string> Retired => RetiredConstants;
 
     /// <summary>
     /// Whether the predefined constant <paramref name="name"/> is true in some environment: every one but <c>Win16</c>, which is never true.
@@ -54,17 +79,23 @@ public static class PredefinedConditionalConstants
     /// <summary>
     /// The name and the value of each constant the environment defines, in the order they are defined.
     /// </summary>
-    /// <param name="environment">The environment: its operating system, its bitness and its build configuration decide the values.</param>
+    /// <param name="environment">
+    /// The environment: its operating system, its bitness, its build configuration and <see cref="IRuntimeEnvironmentProfile.Win64OnlySetOnWindows"/> decide
+    /// the values.
+    /// </param>
     /// <returns>
     /// <list type="table">
     /// <listheader><term>Constant</term><description>Is <c>1</c></description></listheader>
     /// <item><term><c>DEBUG</c></term><description>In a debug build (<see cref="IRuntimeEnvironmentProfile.Configuration"/>). RD-VBA's own.</description></item>
     /// <item><term><c>Win16</c></term><description>Never.</description></item>
     /// <item><term><c>Win32</c></term><description>On Windows, 32-bit or 64-bit: the Win32 API is there.</description></item>
-    /// <item><term><c>Win64</c></term><description>On 64-bit Windows.</description></item>
+    /// <item><term><c>Win64</c></term><description>
+    /// On 64-bit Windows, and on a 64-bit Mac as in Excel for Mac; on 64-bit Windows only when <see cref="IRuntimeEnvironmentProfile.Win64OnlySetOnWindows"/>
+    /// is <see langword="true"/>.
+    /// </description></item>
     /// <item><term><c>Mac</c></term><description>On macOS.</description></item>
     /// <item><term><c>Linux</c></term><description>On Linux, 32-bit or 64-bit. RD-VBA's own.</description></item>
-    /// <item><term><c>Linux64</c></term><description>On 64-bit Linux. RD-VBA's own.</description></item>
+    /// <item><term><c>Is64BitEnv</c></term><description>In a 64-bit environment, on any operating system. RD-VBA's own.</description></item>
     /// <item><term><c>VBA6</c></term><description>Always, as in MS-VBA 7.</description></item>
     /// <item><term><c>VBA7</c></term><description>Always.</description></item>
     /// </list>
@@ -72,15 +103,16 @@ public static class PredefinedConditionalConstants
     public static IReadOnlyList<(string Name, short Value)> Of(IRuntimeEnvironmentProfile environment)
     {
         var os = environment.OperatingSystem;
+        var is64Bit = environment.Is64Bit;
         return
         [
             (RuntimeSessionExtensions.DebugConstantName, Of(environment.Configuration is not VBBuildConfiguration.Release)),
             (Win16, False),
             ("Win32", Of(os is VBOperatingSystem.Windows)),
-            ("Win64", Of(os is VBOperatingSystem.Windows && environment.Is64Bit)),
+            (Win64, Of(is64Bit && (os is VBOperatingSystem.Windows || os is VBOperatingSystem.MacOS && !environment.Win64OnlySetOnWindows))),
             ("Mac", Of(os is VBOperatingSystem.MacOS)),
             ("Linux", Of(os is VBOperatingSystem.Linux)),
-            ("Linux64", Of(os is VBOperatingSystem.Linux && environment.Is64Bit)),
+            (Is64BitEnv, Of(is64Bit)),
             ("VBA6", True),
             ("VBA7", True),
         ];

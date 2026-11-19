@@ -816,6 +816,46 @@ public static class CompletionCandidates
     }
 
     /// <summary>
+    /// The conditional-compilation constants a directive of a module can name (<see cref="CompletionSiteKind.ConditionalConstant"/>): the module's own
+    /// <c>#Const</c>s, then the project's, then the predefined constants (<see cref="Runtime.PredefinedConditionalConstants.Names"/>), each by name.
+    /// </summary>
+    /// <remarks>
+    /// <strong>MS-VBAL §3.4.1</strong>: every <c>#Const</c> of the module, those of an excluded block too, declares a constant that every directive of the
+    /// module can name, wherever it is written. A name is offered once, as the nearest tier declares it.
+    /// </remarks>
+    /// <param name="lines">The lines of the module.</param>
+    /// <param name="project">The names of the constants the project defines; none unless said otherwise.</param>
+    public static IReadOnlyList<CompletionCandidate> ConditionalConstants(IEnumerable<string> lines, IEnumerable<string>? project = null)
+    {
+        var module = lines.Select(ConditionalConstantDeclaredBy).OfType<string>()
+            .Select(name => new CompletionCandidate(name, CompletionItemKind.Constant, Rank: ModuleRank));
+        var projects = (project ?? []).Select(name => new CompletionCandidate(name, CompletionItemKind.Constant, Rank: ProjectRank));
+        var predefined = Runtime.PredefinedConditionalConstants.Names
+            .Select(name => new CompletionCandidate(name, CompletionItemKind.Constant, Rank: GlobalRank));
+        return [.. module.Concat(projects).Concat(predefined).DistinctBy(candidate => candidate.Label, StringComparer.OrdinalIgnoreCase)
+            .OrderBy(candidate => candidate.Rank).ThenBy(candidate => candidate.Label, StringComparer.OrdinalIgnoreCase)];
+    }
+
+    // the name a #Const line declares, without its type character (MS-VBAL §3.4.1: it is ignored); null for any other line.
+    private static string? ConditionalConstantDeclaredBy(string line)
+    {
+        var text = line.TrimStart();
+        if (!text.StartsWith('#'))
+        {
+            return null;
+        }
+
+        var directive = text[1..].TrimStart();
+        if (!directive.StartsWith("Const", StringComparison.OrdinalIgnoreCase) || directive.Length == 5 || !char.IsWhiteSpace(directive[5]))
+        {
+            return null;
+        }
+
+        var name = new string([.. directive[5..].TrimStart().TakeWhile(character => char.IsLetterOrDigit(character) || character == '_')]);
+        return name.Length > 0 && char.IsLetter(name[0]) ? name : null;
+    }
+
+    /// <summary>
     /// The project or the module a qualifier names, when it names one: <c>VBA</c>, <c>VBA.Strings</c>, <c>Module1</c> - what a member access is written on that
     /// is a namespace and not a value, and whose members are its declarations (<see cref="MembersOf(ScopeTree, Symbol, Uri)"/>).
     /// </summary>
