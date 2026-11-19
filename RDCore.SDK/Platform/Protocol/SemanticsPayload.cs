@@ -217,6 +217,11 @@ public record class ConversionFactDto(
 /// The <c>String</c> operand of a comparison of a <c>String</c> with a number, Let-coerced both ways (<see cref="ComparisonOperatorFact.StringOperand"/>);
 /// <see langword="null"/> for any other operation.
 /// </param>
+/// <param name="LateBoundCandidates">
+/// The members a late-bound access may resolve to when it runs (<see cref="MemberAccessFact.LateBoundCandidates"/>): <see langword="null"/> when the
+/// classes its object may be of are not known, and for any other operation; an empty array when they are known and none has an accessible member of
+/// the name.
+/// </param>
 public record class OperatorFactDto(
     SyntaxNodeId Node,
     SourceLocation Location,
@@ -233,7 +238,8 @@ public record class OperatorFactDto(
     string? ComparisonCulture = null,
     string? Member = null,
     SourceLocation? OperatorLocation = null,
-    StringOperandFact? StringOperand = null)
+    StringOperandFact? StringOperand = null,
+    ImmutableArray<LateBoundCandidate>? LateBoundCandidates = null)
 {
     /// <summary>
     /// Describes an operation for the wire.
@@ -255,7 +261,8 @@ public record class OperatorFactDto(
         ComparisonCulture: (fact as ComparisonOperatorFact)?.Comparison.Culture is { Name.Length: > 0 } culture ? culture.Name : null,
         Member: (fact as MemberAccessFact)?.Member,
         OperatorLocation: fact.OperatorLocation,
-        StringOperand: (fact as ComparisonOperatorFact)?.StringOperand);
+        StringOperand: (fact as ComparisonOperatorFact)?.StringOperand,
+        LateBoundCandidates: (fact as MemberAccessFact)?.LateBoundCandidates);
 }
 
 /// <summary>
