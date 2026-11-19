@@ -147,4 +147,29 @@ public sealed class WorkspaceEditExtensionsTests
         StringAssert.Contains(refused.Message, "Module1.bas");
         Assert.AreSame(edit, edit.For(Taking(documentChanges: true)));
     }
+
+    [TestMethod]
+    [DataRow(true, new[] { "a", "commented" }, DisplayName = "answered yes: made, and no longer asked")]
+    [DataRow(false, new[] { "a" }, DisplayName = "answered no: left out, with its annotation")]
+    public void AQuestionAnswered_ConfirmsItsEdits_OrLeavesThemOut(bool yes, string[] made)
+    {
+        var answered = WithAConfirmation().Answered(yes ? [InAComment.Identifier] : []);
+
+        CollectionAssert.AreEqual(made, Texts(answered.DocumentChanges!.Single().TextDocumentEdit!.Edits));
+        Assert.IsFalse(answered.ChangeAnnotations?.Values.Any(annotation => annotation.NeedsConfirmation == true) ?? false);
+        Assert.AreEqual(yes, answered.ChangeAnnotations?.ContainsKey(InAComment) ?? false);
+    }
+
+    [TestMethod]
+    public void AFileRenameOfAnAnnotation_IsLeftOutWithIt()
+    {
+        var rename = new RenameFile { OldUri = First, NewUri = Second, AnnotationId = InAComment };
+        var edit = WithAConfirmation() with
+        {
+            DocumentChanges = new Container<WorkspaceEditDocumentChange>(WithAConfirmation().DocumentChanges!.Append(new WorkspaceEditDocumentChange(rename))),
+        };
+
+        Assert.IsFalse(edit.Without(InAComment).DocumentChanges!.Any(change => change.IsRenameFile));
+        Assert.IsTrue(edit.Confirmed(InAComment).DocumentChanges!.Any(change => change.IsRenameFile));
+    }
 }

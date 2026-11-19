@@ -128,10 +128,10 @@ public record class FixToolArguments
 public sealed record class ApplyFixToolArguments : FixToolArguments
 {
     /// <summary>
-    /// The <see cref="ToolEditQuestion.Id"/> of each question of the edit that is answered yes (<see cref="EditToolResult.Questions"/>); none when the call
-    /// does not say.
+    /// The <see cref="ToolEditQuestion.Id"/> of each question of the edit that is answered yes (<see cref="EditToolResult.Questions"/>), the others being
+    /// answered no; <see langword="null"/> when the call answers none, and an edit that asks a question is then not applied.
     /// </summary>
-    public IReadOnlyList<string> Accept { get; init; } = [];
+    public IReadOnlyList<string>? Accept { get; init; }
 }
 
 /// <summary>
@@ -146,10 +146,10 @@ public sealed record class RenameToolArguments : PositionToolArguments
     public required string NewName { get; init; }
 
     /// <summary>
-    /// The <see cref="ToolEditQuestion.Id"/> of each question of the edit that is answered yes (<see cref="EditToolResult.Questions"/>); none when the call
-    /// does not say.
+    /// The <see cref="ToolEditQuestion.Id"/> of each question of the edit that is answered yes (<see cref="EditToolResult.Questions"/>), the others being
+    /// answered no; <see langword="null"/> when the call answers none, and an edit that asks a question is then not applied.
     /// </summary>
-    public IReadOnlyList<string> Accept { get; init; } = [];
+    public IReadOnlyList<string>? Accept { get; init; }
 }
 
 /// <summary>
@@ -178,9 +178,9 @@ public sealed record class PreviewFixToolResult
 /// What <see cref="CoreAssistantTools.ApplyFix"/> and <see cref="CoreAssistantTools.Rename"/> answer: the edit applied, or the questions it asks first.
 /// </summary>
 /// <remarks>
-/// An edit with a question that the call does not answer (<see cref="ApplyFixToolArguments.Accept"/>, <see cref="RenameToolArguments.Accept"/>) is not
-/// applied: the result lists its questions, and the tool is called again with the answers. The approval a host asks of its user before it makes the tool's
-/// call answers none of these questions: it is given before the questions are known.
+/// An edit that asks a question is not applied by a call that answers none (<see cref="ApplyFixToolArguments.Accept"/>,
+/// <see cref="RenameToolArguments.Accept"/> <see langword="null"/>): the result lists its questions, and the tool is called again with the answers. The
+/// approval a host asks of its user before it makes the tool's call answers none of these questions: it is given before the questions are known.
 /// </remarks>
 public sealed record class EditToolResult
 {

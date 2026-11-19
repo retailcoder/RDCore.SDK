@@ -124,6 +124,72 @@ public static class WorkspaceEditExtensions
         return edit with { DocumentChanges = null, Changes = byDocument, ChangeAnnotations = null };
     }
 
+    /// <summary>
+    /// The edit as its user confirmed the changes of an annotation: they no longer need confirming, and are applied as its other changes are.
+    /// </summary>
+    /// <param name="edit">The edit.</param>
+    /// <param name="annotation">The annotation of the changes confirmed.</param>
+    /// <returns>The edit, with the annotation's <c>needsConfirmation</c> false.</returns>
+    public static WorkspaceEdit Confirmed(this WorkspaceEdit edit, ChangeAnnotationIdentifier annotation)
+    {
+        ArgumentNullException.ThrowIfNull(edit);
+        return edit with
+        {
+            ChangeAnnotations = edit.ChangeAnnotations?.ToDictionary(each => each.Key,
+                each => each.Key == annotation ? each.Value with { NeedsConfirmation = false } : each.Value),
+        };
+    }
+
+    /// <summary>
+    /// The edit without the changes of an annotation: those its user chose not to make.
+    /// </summary>
+    /// <param name="edit">The edit.</param>
+    /// <param name="annotation">The annotation of the changes left out.</param>
+    /// <returns>
+    /// The edit without the text edits, and the files created, renamed or deleted, that the annotation is of, nor the annotation; a <c>TextDocumentEdit</c> left
+    /// with no edit stays, with none.
+    /// </returns>
+    public static WorkspaceEdit Without(this WorkspaceEdit edit, ChangeAnnotationIdentifier annotation)
+    {
+        ArgumentNullException.ThrowIfNull(edit);
+        bool Kept(TextEdit each) => each is not AnnotatedTextEdit { AnnotationId: var id } || id != annotation;
+        return edit with
+        {
+            DocumentChanges = edit.DocumentChanges is { } changes
+                ? new Container<WorkspaceEditDocumentChange>(changes
+                    .Where(change => change.IsTextDocumentEdit || AnnotationOf(change) != annotation)
+                    .Select(change => change.IsTextDocumentEdit
+                        ? new WorkspaceEditDocumentChange(change.TextDocumentEdit! with { Edits = new TextEditContainer(change.TextDocumentEdit.Edits.Where(Kept)) })
+                        : change))
+                : null,
+            Changes = edit.Changes?.ToDictionary(change => change.Key, change => (IEnumerable<TextEdit>)[.. change.Value.Where(Kept)]),
+            ChangeAnnotations = edit.ChangeAnnotations?.Where(each => each.Key != annotation).ToDictionary() is { Count: > 0 } kept ? kept : null,
+        };
+    }
+
+    /// <summary>
+    /// The edit as the questions it asks are answered: the changes of each annotation that needs confirmation (<c>needsConfirmation</c>) confirmed when it is
+    /// answered yes, and left out when it is not.
+    /// </summary>
+    /// <param name="edit">The edit.</param>
+    /// <param name="accepted">The identifier of each annotation answered yes; an identifier the edit has no annotation of is ignored.</param>
+    /// <returns>The edit, with no annotation that needs confirmation (<see cref="Confirmed"/>, <see cref="Without"/>).</returns>
+    public static WorkspaceEdit Answered(this WorkspaceEdit edit, IReadOnlyCollection<string> accepted)
+    {
+        ArgumentNullException.ThrowIfNull(edit);
+        ArgumentNullException.ThrowIfNull(accepted);
+        foreach (var annotation in NeedingConfirmation(edit))
+        {
+            edit = accepted.Contains(annotation.Identifier) ? edit.Confirmed(annotation) : edit.Without(annotation);
+        }
+
+        return edit;
+    }
+
+    // the annotation of a file the edit creates, renames or deletes.
+    private static ChangeAnnotationIdentifier? AnnotationOf(WorkspaceEditDocumentChange change)
+        => change.IsRenameFile ? change.RenameFile!.AnnotationId : change.IsCreateFile ? change.CreateFile!.AnnotationId : change.DeleteFile?.AnnotationId;
+
     // whether anything of the edit is annotated: its annotations, or a text edit that names one.
     private static bool IsAnnotated(WorkspaceEdit edit)
         => edit.ChangeAnnotations is { Count: > 0 }

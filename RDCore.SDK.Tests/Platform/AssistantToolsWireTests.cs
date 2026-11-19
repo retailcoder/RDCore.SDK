@@ -158,7 +158,7 @@ public sealed class AssistantToolsWireTests
         yield return (new FixToolArguments { FixId = "eyJwIjoxfQ" }, """{"fixId":"eyJwIjoxfQ"}""");
         yield return (new ApplyFixToolArguments { FixId = "eyJwIjoxfQ", Accept = ["inString"] }, """{"accept":["inString"],"fixId":"eyJwIjoxfQ"}""");
         yield return (new RenameToolArguments { Path = "src/Module1.bas", Line = 2, Column = 17, NewName = "FullName" },
-            """{"newName":"FullName","accept":[],"path":"src/Module1.bas","line":2,"column":17}""");
+            """{"newName":"FullName","accept":null,"path":"src/Module1.bas","line":2,"column":17}""");
         yield return (new PreviewFixToolResult { Title = "Remove the variable", Files = [new ToolFileChange { Path = "src/Module1.bas", Diff = "--- src/Module1.bas\n" }] },
             """{"title":"Remove the variable","files":[{"path":"src/Module1.bas","newPath":null,"diff":"--- src/Module1.bas\n"}],"questions":[]}""");
         yield return (new EditToolResult { Files = [new ToolFileChange { Path = "src/Module1.bas", NewPath = "src/Totals.bas" }], Questions = [new ToolEditQuestion { Id = "inString", Label = "Called by its name in a string" }] },
