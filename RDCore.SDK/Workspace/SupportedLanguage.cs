@@ -196,8 +196,8 @@ public static class SupportedLanguages
     /// The platform's BASIC, which an interactive shell is written in.
     /// </summary>
     /// <remarks>
-    /// Its source is a <c>.rdc</c> file: a program of the shell, a text file of lines. It is not a <c>.bas</c>, which is a module of the BASIC of Visual Basic - a file with
-    /// procedures in it, and a header - and which this is not. The modules of a workspace the shell opens are RD-VBA's
+    /// Its source is a <c>.rdc</c> file: a program of the shell, a text file of lines. It is not a <c>.bas</c>, which is a module of the BASIC of
+    /// Visual Basic (a file with procedures in it, and a header), which this is not. The modules of a workspace the shell opens are RD-VBA's
     /// (<see cref="SupportedLanguage.ModuleFileTypes"/>): standard modules (<c>.bas</c>), class modules (<c>.cls</c>), UserForms (<c>.frm</c>) and
     /// document modules (<c>.doccls</c>).
     /// </remarks>
