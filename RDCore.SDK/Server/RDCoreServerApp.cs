@@ -86,7 +86,7 @@ public abstract class RDCoreServerApp(
     protected virtual TextDocumentSelector? DocumentSelector => null;
 
     /// <summary>
-    /// Whether the server reads the changes to documents' files that its client says of (<c>workspace/didChangeWatchedFiles</c>), and says when each is read:
+    /// Whether the server reads the changes to documents' files that its client reports (<c>workspace/didChangeWatchedFiles</c>), and says when each is read:
     /// a request about a document then waits for the changes to its file that arrived before it (<see cref="IncomingDocumentChanges.ServeFileChanges"/>).
     /// <see langword="false"/> unless the server says so.
     /// </summary>

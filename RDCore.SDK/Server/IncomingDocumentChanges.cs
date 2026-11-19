@@ -24,7 +24,7 @@ namespace RDCore.SDK.Server;
 /// messages". The client asks again for the document as it is now. A change to another document changes nothing for it.
 /// </para>
 /// <para>
-/// A change to a document's file that the client says of (<c>workspace/didChangeWatchedFiles</c>) is read by a server that serves file changes
+/// A change to a document's file that the client reports (<c>workspace/didChangeWatchedFiles</c>) is read by a server that serves file changes
 /// (<see cref="ServeFileChanges"/>) as the notification arrives, beside the requests that run. A request about the document waits until every such change that
 /// arrived before it is read (<see cref="WhenFileChangesReadAsync"/>), and is then made of the document as the file is.
 /// </para>
@@ -105,7 +105,7 @@ public sealed class IncomingDocumentChanges
         => [.. _watches.Where(watch => watch.Document is null || string.Equals(watch.Document, key, StringComparison.OrdinalIgnoreCase)).Select(watch => watch.Changed)];
 
     /// <summary>
-    /// Says that the server reads the changes to documents' files that its client says of (<c>workspace/didChangeWatchedFiles</c>), and says when each is read
+    /// Says that the server reads the changes to documents' files that its client reports (<c>workspace/didChangeWatchedFiles</c>), and says when each is read
     /// (<see cref="FileChangeRead"/>): a request about a document then waits for the changes to its file that arrived before it.
     /// </summary>
     /// <remarks>
@@ -123,7 +123,7 @@ public sealed class IncomingDocumentChanges
     /// <summary>
     /// A change to a document's file has arrived from the client (<c>workspace/didChangeWatchedFiles</c>) and is not read yet: a request about the document
     /// waits for it (<see cref="WhenFileChangesReadAsync"/>), and each that runs, made of the document as it was, is answered <c>ContentModified</c>. A change
-    /// to a document the server does not serve (<see cref="Serve(Func{Uri, bool})"/>) is nothing, and so is every change until the server serves file changes
+    /// to a document the server does not serve (<see cref="Serve(Func{Uri, bool})"/>) is ignored, and so is every change until the server serves file changes
     /// (<see cref="ServeFileChanges"/>).
     /// </summary>
     /// <param name="document">The document whose file changed.</param>
@@ -154,7 +154,8 @@ public sealed class IncomingDocumentChanges
     }
 
     /// <summary>
-    /// A change to a document's file has been read: the document is what the file is, or the server leaves the file alone. The requests that wait for it go on.
+    /// A change to a document's file has been read: the document is what the file is, or the server leaves the file alone. The requests that wait for it
+    /// go on.
     /// </summary>
     /// <param name="document">The document whose file changed.</param>
     public void FileChangeRead(Uri document)
@@ -260,8 +261,8 @@ public sealed class IncomingDocumentChanges
 
     /// <summary>
     /// Answers a request about every document of the workspace with what <paramref name="answer"/> makes of them, unless a change to any document arrives
-    /// first: then the request stops, and is answered <c>ContentModified</c> (-32801). The answer is made once the changes to the documents' files that arrived
-    /// are read (<see cref="WhenAllFileChangesReadAsync"/>).
+    /// first: then the request stops, and is answered <c>ContentModified</c> (-32801). The answer is made once the changes to the documents' files that
+    /// arrived are read (<see cref="WhenAllFileChangesReadAsync"/>).
     /// </summary>
     /// <remarks>
     /// A request such as <c>workspace/diagnostic</c> is made of every module; a keystroke in any of them would wait for all of them, and the completion the
