@@ -44,6 +44,7 @@ public static class LibraryJson
     /// </summary>
     /// <remarks>
     /// <list type="bullet">
+    /// <item>Version 6 states the classes an object of a class is as well (<see cref="ClassDescription.Implements"/>).</item>
     /// <item>Version 5 states what RD-VBA adds to a library that its type library does not declare (<see cref="MemberDescription.IsAddition"/>).</item>
     /// <item>Version 4 states what <c>TypeName</c> says of an object of a class, when it is not the class's name (<see cref="ClassDescription.TypeName"/>).</item>
     /// <item>Version 3 states the modules a library declares (<see cref="LibraryDescription.Modules"/>).</item>
@@ -52,7 +53,7 @@ public static class LibraryJson
     /// <item>Version 1 states a dependency by its name alone.</item>
     /// </list>
     /// </remarks>
-    public const int CurrentFormatVersion = 5;
+    public const int CurrentFormatVersion = 6;
 
     /// <summary>
     /// The oldest version of the format this reads.
@@ -66,7 +67,7 @@ public static class LibraryJson
     /// <exception cref="InvalidDataException">
     /// The text is not a description this reads: it is not JSON of the format, has no name, is of a format version this does not know, or states what its
     /// format version does not have (a dependency's identity before version 2, modules before version 3, a class's type name before version 4, an addition
-    /// before version 5).
+    /// before version 5, the classes an object of a class is as well before version 6).
     /// </exception>
     public static LibraryDescription Read(string json)
     {
@@ -113,6 +114,13 @@ public static class LibraryJson
         {
             throw new InvalidDataException(
                 $"The library description of '{description.Name}' is of format version {description.FormatVersion}, which states no additions, and states '{added}' as one.");
+        }
+
+        if (description.FormatVersion < 6 && description.Classes.FirstOrDefault(declared => !declared.Implements.IsDefaultOrEmpty) is { } implementing)
+        {
+            throw new InvalidDataException(
+                $"The library description of '{description.Name}' is of format version {description.FormatVersion}, which states no class an object "
+                + $"of a class is as well, and states '{implementing.Implements[0]}' for '{implementing.Name}'.");
         }
 
         // a name is one type or module of the library, whatever its case: VBA names are not case sensitive, and a library that declares one twice is not one a
