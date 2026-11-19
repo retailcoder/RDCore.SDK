@@ -86,6 +86,11 @@ public interface ISymbolResolver
     /// those of the project and no others <em>before</em> it is decided that the name is ambiguous. A project is told from another by the library its symbols
     /// say they are of (<see cref="SymbolProperties.Library"/>), which the enclosing project's own are not of any.
     /// <para>
+    /// The name is resolved as the enclosing project's code sees the project's types: a class that a referenced project does not expose
+    /// (<strong>MS-VBAL §5.2.4.1.1</strong>) is unbound. <see cref="ResolveProjectType(VBProjectSymbol, string, Uri)"/> resolves it as the code at an
+    /// address sees them.
+    /// </para>
+    /// <para>
     /// The default asks <see cref="ResolveType"/> and accepts what it gives if it is the project's, which is right for a resolver that has one candidate of a
     /// name to give; one that decides ambiguity itself overrides it.
     /// </para>
@@ -100,6 +105,26 @@ public interface ISymbolResolver
                 ? found
                 : SymbolResolutionResult.Unbound;
     }
+
+    /// <summary>
+    /// Resolves the type <paramref name="name"/> that a <em>project</em> declares, as the code at <paramref name="handle"/> sees the project's types
+    /// (<strong>MS-VBAL §5.6.12</strong>).
+    /// </summary>
+    /// <remarks>
+    /// The code of a project sees every type of its own project, a class the project does not expose (<strong>MS-VBAL §5.2.4.1.1</strong>) included: in
+    /// the code of a referenced project <c>NavalLib</c>, <c>NavalLib.Board</c> binds its class <c>Board</c>. The code of another project sees the types the
+    /// project makes accessible to it.
+    /// <para>
+    /// The default calls <see cref="ResolveProjectType(VBProjectSymbol, string)"/>, whatever the address: a resolver that keeps it resolves every
+    /// project-qualified type as the enclosing project's code sees it, so the code of a referenced project does not bind its own class that the project
+    /// does not expose.
+    /// </para>
+    /// </remarks>
+    /// <param name="project">The project, as <see cref="ResolveQualifier"/> bound it.</param>
+    /// <param name="name">The name of the type.</param>
+    /// <param name="handle">The <see cref="Uri"/> of the symbol the lookup originates from.</param>
+    /// <returns>The type, an unbound result, or an <em>Ambiguous name detected</em> (<c>VBC09301</c>) error with the colliding candidates.</returns>
+    SymbolResolutionResult ResolveProjectType(VBProjectSymbol project, string name, Uri handle) => ResolveProjectType(project, name);
 
     /// <summary>
     /// Resolves the specified <em>identifier name</em> as a reference to a <em>conditional compilation
