@@ -1,7 +1,8 @@
 namespace RDCore.SDK.Server;
 
 /// <summary>
-/// Marks a request that an RDCore server handles as it arrives, beside the requests before it that are still being handled, rather than after them.
+/// Marks a request or a notification that an RDCore server handles as it arrives, beside the requests before it that are still being handled, rather than
+/// after them.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -15,6 +16,12 @@ namespace RDCore.SDK.Server;
 /// itself - and may wait only for requests that are marked too: an end the program cannot come to at once is answered after a set while, as asked and still
 /// stopping. The marked requests are handled in the order they arrive in, one after the other, so one that waited without bound would hold every one after it;
 /// the order of every other request and notification is not changed. A <c>$/cancelRequest</c> does not reach it.
+/// </para>
+/// <para>
+/// A request is marked on its parameters' class. A notification is marked on the class of its handler, since the parameters of a notification of the protocol
+/// are OmniSharp's, and is handled on arrival when every handler of it is marked. A notification whose handler begins work that requests wait for is
+/// marked, so that a request is never kept waiting for a notification scheduled after it: <c>workspace/didChangeWatchedFiles</c>, whose changes a request
+/// about the document waits for (<see cref="IncomingDocumentChanges.ServeFileChanges"/>).
 /// </para>
 /// </remarks>
 [AttributeUsage(AttributeTargets.Class, Inherited = true, AllowMultiple = false)]

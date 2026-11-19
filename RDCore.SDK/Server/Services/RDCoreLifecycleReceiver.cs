@@ -25,8 +25,8 @@ namespace RDCore.SDK.Server.Services;
 /// (<see cref="ServerRequestScheduling.WithLifecycleReceiver"/>): the internal registration uses DryIoc's <c>Keep</c> semantics,
 /// so whichever <see cref="IReceiver"/> is registered first wins.
 /// <para>
-/// Once the server is initialized, a request marked <see cref="HandledOnArrivalAttribute"/> is kept, and handled as it arrives (<see cref="ArrivalRequests"/>):
-/// what is not returned here is never scheduled.
+/// Once the server is initialized, a request or a notification marked <see cref="HandledOnArrivalAttribute"/> is kept, and handled as it arrives
+/// (<see cref="ArrivalRequests"/>): what is not returned here is never scheduled.
 /// </para>
 /// <para>
 /// It also keeps the <c>locale</c> of the <c>initialize</c> request (<see cref="InitializeLocale"/>), which OmniSharp reads the request without.
@@ -44,7 +44,8 @@ internal sealed class RDCoreLifecycleReceiver(ILogger<RDCoreLifecycleReceiver> l
             var (received, responds) = base.GetRequests(container);
             return arrivals is null
                 ? (received, responds)
-                : (received.Where(renor => !(renor.IsRequest && arrivals.TryHandle(renor.Request!))).ToList(), responds);
+                : (received.Where(renor => !(renor.IsRequest && arrivals.TryHandle(renor.Request!))
+                    && !(renor.IsNotification && arrivals.TryHandle(renor.Notification!))).ToList(), responds);
         }
 
         var (parsed, hasResponse) = base.GetRequests(container);
