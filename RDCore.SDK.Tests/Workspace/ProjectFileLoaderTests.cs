@@ -106,6 +106,61 @@ public sealed class ProjectFileLoaderTests
         => await Assert.ThrowsExactlyAsync<FileNotFoundException>(
             () => new ProjectFileLoader(new MockFileSystem()).LoadAsync(Root));
 
+    // the message says where the file stops being a project file once, in the lines and columns an editor counts from 1: the JSON reader's own count of them,
+    // from 0, and its path in the document, are not repeated after its description of what is wrong.
+    [TestMethod]
+    [DataRow("{\n  \"Name\": \"A\"\n  \"Modules\": []\n}", "at line 3, position 3: ", DisplayName = "a comma left out")]
+    [DataRow("{\n  \"Version\": \"1.3\",\n  \"ProjectInfo\": { \"Name\": \"A\", \"Modules\": 5 }\n}", "at line 3, position ",
+        DisplayName = "a number where a list is")]
+    public async Task LoadAsync_AFileThatIsNoProjectFile_SaysWhereOnce(string text, string where)
+    {
+        var fileSystem = new MockFileSystem(new Dictionary<string, MockFileData> { [ProjectFilePath] = new MockFileData(text) });
+
+        var thrown = await Assert.ThrowsExactlyAsync<InvalidDataException>(() => new ProjectFileLoader(fileSystem).LoadAsync(Root));
+
+        StringAssert.Contains(thrown.Message, where);
+        Assert.AreEqual(1, thrown.Message.Split("line ").Length - 1, thrown.Message);
+        Assert.DoesNotContain("LineNumber", thrown.Message);
+        Assert.DoesNotContain("BytePositionInLine", thrown.Message);
+        Assert.DoesNotContain("Path: $", thrown.Message);
+        Assert.IsInstanceOfType<JsonException>(thrown.InnerException);
+    }
+
+    // the position is in characters, as an editor shows the column: an accented name before the place is as long as the same name without its accents,
+    // where the JSON reader counts the two bytes of each accented letter.
+    [TestMethod]
+    [DataRow("Événement", DisplayName = "accented letters")]
+    [DataRow("日本", DisplayName = "letters of three bytes each")]
+    public async Task LoadAsync_AFileThatIsNoProjectFile_SaysThePositionInCharacters(string name)
+    {
+        static async Task<string> PositionOf(string name)
+        {
+            var text = $"{{\n  \"Name\": \"{name}\" \"Modules\": []\n}}";
+            var fileSystem = new MockFileSystem(new Dictionary<string, MockFileData> { [ProjectFilePath] = new MockFileData(text) });
+            var thrown = await Assert.ThrowsExactlyAsync<InvalidDataException>(() => new ProjectFileLoader(fileSystem).LoadAsync(Root));
+            return System.Text.RegularExpressions.Regex.Match(thrown.Message, @"line \d+, position \d+").Value;
+        }
+
+        var plain = await PositionOf(new string('x', name.Length));
+
+        Assert.AreEqual(plain, await PositionOf(name));
+        // `  "Name": "` and the name's quote and space come before `"Modules"`, the token that is wrong: its first character's column, from 1.
+        Assert.AreEqual($"line 2, position {name.Length + 14}", plain);
+    }
+
+    // a byte order mark takes no column of the first line: the reader starts after it.
+    [TestMethod]
+    public async Task LoadAsync_AFileWithAByteOrderMark_SaysThePositionOnItsFirstLineInCharacters()
+    {
+        byte[] bytes = [.. System.Text.Encoding.UTF8.Preamble, .. System.Text.Encoding.UTF8.GetBytes("{\"Name\": \"Événement\" \"Modules\": []}")];
+        var fileSystem = new MockFileSystem(new Dictionary<string, MockFileData> { [ProjectFilePath] = new MockFileData(bytes) });
+
+        var thrown = await Assert.ThrowsExactlyAsync<InvalidDataException>(() => new ProjectFileLoader(fileSystem).LoadAsync(Root));
+
+        // `{"Name": "`, the name, and its quote and space: 21 characters before `"Modules"`.
+        StringAssert.Contains(thrown.Message, "line 1, position 22");
+    }
+
     private static MockFileSystem FolderWith(params (string RelativePath, string Source)[] files)
     {
         var fs = new MockFileSystem();

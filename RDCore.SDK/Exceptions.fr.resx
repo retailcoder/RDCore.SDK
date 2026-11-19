@@ -220,7 +220,7 @@
     <value>Le document RDForms (.xaml) du formulaire ne contient aucun formulaire.</value>
   </data>
   <data name="ProjectFile_InvalidJson" xml:space="preserve">
-    <value>Le fichier de projet &apos;{0}&apos; n&apos;est pas du JSON valide, à la ligne {1}, position {2} : {3}</value>
+    <value>Le fichier de projet &apos;{0}&apos; ne peut pas être lu, à la ligne {1}, position {2} : {3}</value>
   </data>
   <data name="WorkspaceEdit_FileOperationNotSupported" xml:space="preserve">
     <value>L&apos;éditeur ne peut pas appliquer cette modification : elle crée, renomme ou supprime un fichier, ce que l&apos;éditeur n&apos;a pas dit savoir faire.</value>
