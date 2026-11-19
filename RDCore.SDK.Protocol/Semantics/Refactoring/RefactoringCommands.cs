@@ -1,8 +1,8 @@
 namespace RDCore.SDK.Semantics.Refactoring;
 
 /// <summary>
-/// The commands of the platform's code actions that a client runs itself (<strong>LSP 3.17</strong> <c>CodeAction.command</c>): what only the client can do,
-/// such as asking its user for a name.
+/// The commands of the platform's code actions and code lenses that a client runs itself (<strong>LSP 3.17</strong> <c>CodeAction.command</c>,
+/// <c>CodeLens.command</c>): what only the client can do, such as asking its user for a name or moving its caret.
 /// </summary>
 public static class RefactoringCommands
 {
@@ -18,6 +18,16 @@ public static class RefactoringCommands
     /// references (<strong>LSP 3.17</strong> <c>Location[]</c>): the arguments of VS Code's <c>editor.action.showReferences</c>.
     /// </summary>
     public const string ShowReferences = "rdcore.showReferences";
+
+    /// <summary>
+    /// Takes its user to one place in the code: the client opens the document and selects the range, as it does for a definition. It is the command of a
+    /// code lens that leads to a single location, such as the interface member a procedure implements, where there is nothing to choose from
+    /// (<strong>LSP 3.17</strong> <c>CodeLens.command</c>). Its arguments are the URI of the document and the range (<strong>LSP 3.17</strong> <c>Range</c>).
+    /// </summary>
+    /// <remarks>
+    /// A lens that leads to two or more locations is <see cref="ShowReferences"/> instead, which lets its user choose one.
+    /// </remarks>
+    public const string GoToLocation = "rdcore.goToLocation";
 
     /// <summary>
     /// Applies a refactoring with the client's own dialog: the command of a refactoring's code action, offered to a client that expects the
