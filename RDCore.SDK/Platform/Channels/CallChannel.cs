@@ -37,6 +37,11 @@ public sealed class CallChannel : IDisposable
     private const byte AnswerFrame = 2;
     private const byte FailureFrame = 3;
 
+    // the most a frame puts in the stream at once. A pipe takes no write longer than the system can lock for it: one of 600 MB fails ("Insufficient
+    // system resources exist to complete the requested service"), and a busy system locks less: the answer of a whole column of a worksheet, 115 MB, can
+    // be too much.
+    private const int Slice = 1024 * 1024;
+
     // how long a caller looks for its answer before it sleeps: about what a call costs that the other end answers at once. A thread that sleeps has to be woken,
     // which costs as much again.
     private static readonly TimeSpan Spin = TimeSpan.FromMicroseconds(250);
@@ -68,7 +73,8 @@ public sealed class CallChannel : IDisposable
     }
 
     /// <summary>
-    /// Completes when the channel is closed: the other end closed it, or went away, or this end was disposed.
+    /// Completes when the channel is closed: the other end closed it or went away, a frame failed to be written, or this end was disposed. The stream
+    /// closes with the channel, so that the other end is told.
     /// </summary>
     public Task Closed => _closed.Task;
 
@@ -154,7 +160,7 @@ public sealed class CallChannel : IDisposable
         {
             Write(CallFrame, number, method, JsonSerializer.SerializeToUtf8Bytes(call, Json));
         }
-        catch (Exception exception) when (exception is IOException or ObjectDisposedException)
+        catch (Exception exception) when (exception is IOException or ObjectDisposedException or OperationCanceledException)
         {
             _ = _pending.TryRemove(number, out _);
             Close();
@@ -177,7 +183,11 @@ public sealed class CallChannel : IDisposable
 
         lock (_writing)
         {
-            _stream.Write(frame);
+            for (var written = 0; written < frame.Length; written += Slice)
+            {
+                _stream.Write(frame, written, Math.Min(Slice, frame.Length - written));
+            }
+
             _stream.Flush();
         }
     }
@@ -291,9 +301,9 @@ public sealed class CallChannel : IDisposable
         {
             Write(kind, number, string.Empty, answer);
         }
-        catch (Exception exception) when (exception is IOException or ObjectDisposedException)
+        catch (Exception exception) when (exception is IOException or ObjectDisposedException or OperationCanceledException)
         {
-            // a caller that is gone has nobody to answer.
+            // a caller that is gone has nobody to answer, and an answer that failed to go is cut short: either way, the channel closes.
             Close();
         }
     }
@@ -316,6 +326,10 @@ public sealed class CallChannel : IDisposable
 
         // the threads that wait for their turn to read have nothing left to read, and go.
         _ = _followers.Release(Math.Max(1, Volatile.Read(ref _idle)));
+
+        // the other end reads what this one writes: a frame that a failed write cut short would keep it waiting for the rest, and its caller for an answer
+        // that never comes. The stream closes with the channel, which tells the other end there is no more.
+        _stream.Dispose();
     }
 
     /// <summary>
@@ -329,7 +343,6 @@ public sealed class CallChannel : IDisposable
         }
 
         Close();
-        _stream.Dispose();
     }
 
     // what waits for the answer to a call.
