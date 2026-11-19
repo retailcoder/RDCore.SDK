@@ -216,7 +216,7 @@ public class RDCoreServerProcess(
     /// The language a client serves is its own to say of the server it starts: an interactive shell is a BASIC, and says so
     /// here, because the servers have to agree on it. It is left out when it is the default, so that a server's own
     /// settings win. The constants the client's own command line defines (<see cref="SdkWorkspaceOptions.Defines"/>) are passed on as
-    /// <c>--define</c>, so that every component reads the same project-level constants, the servers a server starts in turn too.
+    /// <c>--define</c>, so that every component reads the same project-level constants, including the servers that a server starts in turn.
     /// <para>
     /// 👉 <c>-v</c> goes last. It is a switch the argument parser only reads as one at the end of a command line; with
     /// anything after it, it takes the next argument for its value and the server never starts.
@@ -245,7 +245,8 @@ public class RDCoreServerProcess(
         return $"-p {clientProcessId} -n {pipeName} -w \"{workspace}\" {languageArgument}{definesArgument}-t {trace} {(verbose ? "-v" : null)}";
     }
 
-    // one argument, as the process reads it back: a backslash is itself, but before a quote, which it escapes, and before the closing quote.
+    // one argument, quoted so the process reads it back as written: a backslash stands for itself, except before a quote, where the backslashes are
+    // doubled and one more escapes the quote, and before the closing quote, where they are doubled.
     private static string Quoted(string argument)
     {
         var quoted = new System.Text.StringBuilder("\"");

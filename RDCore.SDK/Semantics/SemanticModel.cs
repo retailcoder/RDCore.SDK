@@ -140,7 +140,7 @@ public sealed record class ModuleSemanticModel(
     /// <remarks>
     /// A <c>--define</c> argument wins over the <c>.rdproj</c>, and either wins over a predefined constant
     /// (<see cref="SDK.Runtime.PredefinedConditionalConstants"/>): a predefined constant that the project defines is listed, with the project's value.
-    /// Empty when the project defines none, and when the host does not say.
+    /// Empty when the project defines none, or when the host does not say.
     /// </remarks>
     public ImmutableArray<ConditionalConstantFact> ProjectConditionalConstants { get; init; } = [];
 

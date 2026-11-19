@@ -259,8 +259,8 @@ public record class SdkEnvironmentOptions
     /// </para>
     /// <para>
     /// One value for the whole installation: only the deployed configuration of the environment host sets it (<see cref="SettingReach.Deployment"/>), and
-    /// neither a user's settings nor a workspace's do. What the host's sessions are composed with is what it states of each module
-    /// (<see cref="Semantics.ModuleSemanticModel.Win64OnlySetOnWindows"/>), and what an analyzer reads.
+    /// neither a user's settings nor a workspace's do. The host states the value its sessions are composed with for each module
+    /// (<see cref="Semantics.ModuleSemanticModel.Win64OnlySetOnWindows"/>), and an analyzer reads it there.
     /// </para>
     /// </remarks>
     [Setting(SettingReach.Deployment)]
