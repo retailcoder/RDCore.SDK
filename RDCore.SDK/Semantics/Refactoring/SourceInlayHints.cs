@@ -125,10 +125,10 @@ public static class SourceInlayHints
         {
             switch (node)
             {
-                case IndexExpressionNode index when sites.Arguments && Intersects(index.Location.Range, range):
+                case IndexExpressionNode index when sites.Arguments && index.Location.Range.Touches(range):
                     AddArguments(hints, index.Callee, index.Arguments, signatureOf);
                     break;
-                case CallStatementNode call when sites.Arguments && Intersects(call.SourceLocation.Range, range):
+                case CallStatementNode call when sites.Arguments && call.SourceLocation.Range.Touches(range):
                     AddArguments(hints, call.Callee, call.Arguments, signatureOf);
                     break;
                 case MemberDeclarationNode member and not ExternalMemberDeclarationNode when IsProcedure(member.MemberKind):
@@ -238,6 +238,4 @@ public static class SourceInlayHints
     private static bool IsImplicitVariant(SyntaxNode declaration, string name, string? typeHint, IReadOnlyList<TypeDefDirectiveNode> directives)
         => string.IsNullOrEmpty(typeHint) && !declaration.Children.OfType<AsTypeExpressionNode>().Any()
             && (TypeDefDirectiveNode.Covering(directives, name) is not { } directive || directive.TypeName == VBTypeNames.VBVariant);
-
-    private static bool Intersects(SourceRange node, SourceRange range) => node.Start <= range.End && range.Start <= node.End;
 }

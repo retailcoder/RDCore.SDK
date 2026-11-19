@@ -53,4 +53,21 @@ public sealed class SourceRangeTests
         Assert.AreEqual(expected, range.Intersects(other));
         Assert.AreEqual(expected, other.Intersects(range), "either way");
     }
+
+    [TestMethod]
+    [DataRow(2, 0, 2, 3, true, DisplayName = "within it")]
+    [DataRow(0, 0, 1, 4, true, DisplayName = "ending at its start")]
+    [DataRow(3, 2, 4, 0, true, DisplayName = "starting at its end")]
+    [DataRow(2, 0, 2, 0, true, DisplayName = "empty, within it")]
+    [DataRow(1, 4, 1, 4, true, DisplayName = "empty, at its start")]
+    [DataRow(0, 0, 1, 3, false, DisplayName = "ending before its start")]
+    [DataRow(3, 3, 3, 3, false, DisplayName = "empty, after its end")]
+    public void TwoRanges_Touch_WhenNeitherEndsBeforeTheOtherStarts(int startLine, int startCharacter, int endLine, int endCharacter, bool expected)
+    {
+        var range = new SourceRange(1, 4, 3, 2);
+        var other = new SourceRange(startLine, startCharacter, endLine, endCharacter);
+
+        Assert.AreEqual(expected, range.Touches(other));
+        Assert.AreEqual(expected, other.Touches(range), "either way");
+    }
 }
