@@ -57,7 +57,7 @@ public static class VBIdentifier
         "CDecl", "Decimal", "DefDec",
     }.ToFrozenSet(StringComparer.OrdinalIgnoreCase);
 
-    // the reserved-type-identifiers that are no reserved-name: Date and String are both, and are reserved-identifiers.
+    // the reserved-type-identifiers but Date and String, which are reserved-names as well, and so reserved-identifiers.
     private static readonly FrozenSet<string> _typeIdentifiersOnly = new[]
     {
         "Boolean", "Byte", "Currency", "Double", "Integer", "Long", "LongLong", "LongPtr", "Single", "Variant",
