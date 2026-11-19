@@ -42,8 +42,8 @@ public class SupportedLanguage
     /// otherwise.
     /// </summary>
     /// <remarks>
-    /// A BASIC's are RD-VBA's modules (<see cref="SupportedLanguages.BASIC"/>): its own file, a <c>.rdc</c>, is a program of the shell, which the lines
-    /// typed at its prompt are, and no module of a project.
+    /// A BASIC's are RD-VBA's, except the code of an RDForms form (<see cref="SupportedLanguages.BASIC"/>): its own file, a <c>.rdc</c>, is a program of the
+    /// shell, as the lines typed at its prompt are, and is not a module of a project.
     /// </remarks>
     public string[] ModuleFileTypes
     {
@@ -199,7 +199,7 @@ public static class SupportedLanguages
     /// Its source is a <c>.rdc</c> file: a program of the shell, a text file of lines. It is not a <c>.bas</c>, which is a module of the BASIC of
     /// Visual Basic (a file with procedures in it, and a header), which this is not. The modules of a workspace the shell opens are RD-VBA's
     /// (<see cref="SupportedLanguage.ModuleFileTypes"/>): standard modules (<c>.bas</c>), class modules (<c>.cls</c>), UserForms (<c>.frm</c>) and
-    /// document modules (<c>.doccls</c>).
+    /// document modules (<c>.doccls</c>). The code of an RDForms form (<c>.rdform</c>) is not one of them.
     /// </remarks>
     public static SupportedLanguage BASIC { get; } = new("basic", "RDCore BASIC", "*.rdc")
     {
