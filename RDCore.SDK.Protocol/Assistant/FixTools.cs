@@ -29,12 +29,13 @@ public sealed record class ListFixesToolArguments
     public int? Column { get; init; }
 
     /// <summary>
-    /// The line the range ends on, from 1; <see langword="null"/> for a range that ends where it starts.
+    /// The line the range ends on, from 1; <see langword="null"/> for a range that ends on <see cref="Line"/>.
     /// </summary>
     public int? EndLine { get; init; }
 
     /// <summary>
-    /// The column the range ends at, from 1; <see langword="null"/> for a range that ends where it starts, or at the start of <see cref="EndLine"/>.
+    /// The column the range ends at, from 1; <see langword="null"/> for a range that ends where it starts when <see cref="EndLine"/> is
+    /// <see langword="null"/>, or at the start of <see cref="EndLine"/> otherwise.
     /// </summary>
     public int? EndColumn { get; init; }
 
@@ -178,8 +179,8 @@ public sealed record class PreviewFixToolResult
 /// </summary>
 /// <remarks>
 /// An edit with a question that the call does not answer (<see cref="ApplyFixToolArguments.Accept"/>, <see cref="RenameToolArguments.Accept"/>) is not
-/// applied: the result lists its questions, and the tool is called again with the answers. A question asked of the user approving the tool's call is not one
-/// of these: that approval is given before the questions are known.
+/// applied: the result lists its questions, and the tool is called again with the answers. The approval a host asks of its user before it makes the tool's
+/// call answers none of these questions: it is given before the questions are known.
 /// </remarks>
 public sealed record class EditToolResult
 {
@@ -237,7 +238,7 @@ public sealed record class ToolEditQuestion
     public string Label { get; init; } = string.Empty;
 
     /// <summary>
-    /// More of what the edits it is of are; <see langword="null"/> when the label says it all.
+    /// What the question's edits are, in more detail than <see cref="Label"/>; <see langword="null"/> when the label says it all.
     /// </summary>
     public string? Description { get; init; }
 }

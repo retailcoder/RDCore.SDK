@@ -14,7 +14,8 @@ namespace RDCore.SDK.Assistant;
 /// </para>
 /// <para>
 /// The texts are compared line by line, whatever ends their lines (<c>CRLF</c>, <c>LF</c> or <c>CR</c>), and the diff's lines end with <c>LF</c>: two
-/// texts that differ only in their line breaks have no diff. Two runs of changes with no more than twice the context between them are one hunk.
+/// texts whose lines end with different line breaks have no diff. A last line that gains or loses its line break is a change. Two runs of changes with no
+/// more than twice the context between them are one hunk.
 /// </para>
 /// </remarks>
 public static class UnifiedDiff
