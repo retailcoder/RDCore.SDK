@@ -81,7 +81,8 @@ public class ExtensionsClient(
     /// <param name="description">A short description of the extension.</param>
     /// <remarks>
     /// The implementation validates that it is executing this method inside the target extension folder.
-    /// The current directory and the extensions folder are compared as their <see cref="PlatformRootConfinement.RealPath">real paths</see>.
+    /// The current directory and the extensions folder are compared as their <see cref="PlatformRootConfinement.RealPath">real paths</see>, and an extension
+    /// is not described when a link on the way to either can't be followed.
     /// </remarks>
     /// <returns><c>null</c> if the specified extension cannot be described.</returns>
     public ExtensionInfo? Describe(string name, string description)
@@ -90,10 +91,22 @@ public class ExtensionsClient(
         // the extension title. Compare the resolved extensions root, not a relative path fragment, and both as real paths: the system
         // gives the current directory as one (getcwd), and the platform root may be named through a link (/var is /private/var on macOS).
         var currentDirectory = fileSystem.DirectoryInfo.New(fileSystem.Directory.GetCurrentDirectory());
-        var extensionsRoot = PlatformRootConfinement.RealPath(environment.Resolve(options.Value.Platform.Extensions.Path));
-        if (currentDirectory.Parent is not { } parent
-            || !string.Equals(PlatformRootConfinement.RealPath(parent.FullName), extensionsRoot, StringComparison.InvariantCultureIgnoreCase))
+        if (currentDirectory.Parent is not { } parent)
         {
+            return null;
+        }
+
+        try
+        {
+            var extensionsRoot = PlatformRootConfinement.RealPath(environment.Resolve(options.Value.Platform.Extensions.Path));
+            if (!string.Equals(PlatformRootConfinement.RealPath(parent.FullName), extensionsRoot, StringComparison.InvariantCultureIgnoreCase))
+            {
+                return null;
+            }
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            // a link on the way to either can't be followed: a cycle, too many links, or one that can't be read.
             return null;
         }
 
