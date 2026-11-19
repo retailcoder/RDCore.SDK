@@ -14,8 +14,8 @@ public static class JsonErrorPlace
     /// </summary>
     /// <param name="exception">The exception the JSON reader or serializer threw.</param>
     /// <param name="text">
-    /// The text that was read, without its byte order mark; <see langword="null"/> when it is not known, and the column is then the reader's count of bytes,
-    /// counted from 1.
+    /// The text that was read, without its byte order mark; <see langword="null"/> when it is not known. When it is <see langword="null"/>, or has no line
+    /// the exception names, the column is the reader's count of bytes, counted from 1.
     /// </param>
     /// <returns>
     /// The line and the column; <see langword="null"/> when <paramref name="exception"/> places nothing (its <see cref="JsonException.LineNumber"/> is
