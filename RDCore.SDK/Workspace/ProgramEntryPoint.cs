@@ -2,6 +2,7 @@ using RDCore.SDK.Model;
 using RDCore.SDK.Model.Symbols;
 using RDCore.SDK.Model.Symbols.Abstract;
 using RDCore.SDK.Model.Symbols.VBProject;
+using RDCore.SDK.Runtime.Abstract.Execution;
 
 namespace RDCore.SDK.Workspace;
 
@@ -102,6 +103,21 @@ public static class ProgramEntryPoint
             [] => new ProgramEntryPointResolution { Refusal = ProgramEntryPointRefusal.NotFound },
             _ => new ProgramEntryPointResolution { Refusal = ProgramEntryPointRefusal.Ambiguous, Candidates = [.. found.Select(entry => entry.Module)] },
         };
+    }
+
+    /// <summary>
+    /// The entry point of the project a runtime session was composed of: <see cref="Of"/>, given the session's <c>build</c> section
+    /// (<see cref="IRuntimeSession.Build"/>) and the members the session defined for each module (<see cref="ISessionSymbols.MembersOf"/>).
+    /// </summary>
+    /// <param name="session">The session the project's modules are defined in.</param>
+    /// <param name="modules">The project's modules, in the order a refusal names them.</param>
+    /// <returns>The module and procedure the program starts at, or why the project has none (<see cref="ProgramEntryPointResolution.Refusal"/>).</returns>
+    public static ProgramEntryPointResolution InSession(IRuntimeSession session, IEnumerable<VBModuleSymbol> modules)
+    {
+        ArgumentNullException.ThrowIfNull(session);
+        ArgumentNullException.ThrowIfNull(modules);
+
+        return Of(session.Build, modules.Select(module => (module, (IEnumerable<VBTypeMemberSymbol>)session.Symbols.MembersOf(module.Uri))));
     }
 }
 

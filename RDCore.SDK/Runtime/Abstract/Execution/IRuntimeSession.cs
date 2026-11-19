@@ -34,6 +34,16 @@ public interface IRuntimeSession
     SDK.Runtime.Libraries.ILibrarySource? Libraries => null;
 
     /// <summary>
+    /// The <c>build</c> section of the project the session was composed of (<see cref="Workspace.RDCoreProject.Build"/>), which names the procedure a run of
+    /// the project starts with and says whether the project is run at all; <see langword="null"/> for a project file that has none, or a session composed of
+    /// no project.
+    /// </summary>
+    /// <remarks>
+    /// The entry point of the session's project is read from it (<see cref="Workspace.ProgramEntryPoint.InSession"/>).
+    /// </remarks>
+    Workspace.ProjectBuild? Build => null;
+
+    /// <summary>
     /// The session's memory allocator: tracks allocation size and fragmentation, MSVBVM-style.
     /// </summary>
     ISessionMemoryAllocator Memory { get; }
