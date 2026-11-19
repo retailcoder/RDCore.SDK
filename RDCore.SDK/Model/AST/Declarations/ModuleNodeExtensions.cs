@@ -16,20 +16,32 @@ public static class ModuleNodeExtensions
     /// The module name declared by the module-level <c>Attribute VB_Name</c> directive, or
     /// <c>null</c> when the module declares none.
     /// </summary>
+    /// <param name="module">The module.</param>
     /// <remarks>
     /// This is the authoritative programmatic name of a module; callers that also need the file-name
-    /// fallback should route through <c>ModuleName.Resolve</c>. A member-qualified attribute
-    /// (<c>Attribute Foo.VB_Description</c>) carries a <see cref="AttributeDirectiveNode.Binding"/>
-    /// and is not a module name.
+    /// fallback should route through <c>ModuleName.Resolve</c>. The name is the value of the directive
+    /// <see cref="GetDeclaredNameDirective"/> gives, a string literal unquoted.
     /// </remarks>
     public static string? GetDeclaredName(this ModuleNode module)
+        => module.GetDeclaredNameDirective() is { } attribute ? Unquote(attribute.Value) : null;
+
+    /// <summary>
+    /// The module-level <c>Attribute VB_Name</c> directive that declares the module's name (<strong>MS-VBAL §4.2</strong>), or <c>null</c> when the
+    /// module declares none: the first such directive the module writes.
+    /// </summary>
+    /// <param name="module">The module.</param>
+    /// <remarks>
+    /// Where the module says its name, as a diagnostic about that name reports it. A member-qualified attribute (<c>Attribute Foo.VB_Description</c>)
+    /// carries a <see cref="AttributeDirectiveNode.Binding"/> and does not declare a module name.
+    /// </remarks>
+    public static AttributeDirectiveNode? GetDeclaredNameDirective(this ModuleNode module)
     {
         foreach (var child in module.Children)
         {
             if (child is AttributeDirectiveNode { Binding: null } attribute
                 && string.Equals(attribute.Name, Tokens.VB_Name, StringComparison.OrdinalIgnoreCase))
             {
-                return Unquote(attribute.Value);
+                return attribute;
             }
         }
 
