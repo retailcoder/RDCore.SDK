@@ -88,6 +88,22 @@ public sealed class WorkspaceSettingsConfigurationTests
         Assert.IsNull(configuration["Configuration:Platform:Transport:PipeConfig:PipeName"]);
     }
 
+    // one value for the installation: the deployed configuration's, whatever a user's settings or a workspace's say.
+    [TestMethod]
+    public void WhetherWin64IsSetOnWindowsOnly_IsTheDeploymentsAlone()
+    {
+        Assert.IsTrue(SettingsSchema.Platform.TryFind("Environment.Win64OnlySetOnWindows", out var setting));
+        Assert.AreEqual(SettingReach.Deployment, setting.Reach);
+        var user = new UserSettingsStore(new MockFileSystem(), Path.Combine(_folder, "user.json"), SettingsSchema.Platform);
+        Assert.AreEqual(UserSettingProblem.NotSettable, user.Set("Environment.Win64OnlySetOnWindows", "true").Problem);
+
+        var configuration = Configuration(
+            """{ "Configuration": { "Environment": { "Win64OnlySetOnWindows": true } } }""",
+            """{ "Configuration": { "Environment": { "Win64OnlySetOnWindows": true } } }""");
+
+        Assert.IsNull(configuration["Configuration:Environment:Win64OnlySetOnWindows"]);
+    }
+
     [TestMethod]
     public void AListAWorkspaceSets_AddsItsItemsToTheListBelowIt_AndIsNotLaidOverItIndexByIndex()
     {

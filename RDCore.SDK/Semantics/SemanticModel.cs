@@ -134,6 +134,24 @@ public sealed record class ModuleSemanticModel(
     public ImmutableArray<string> UndefinedConditionalConstants { get; init; } = [];
 
     /// <summary>
+    /// The conditional-compilation constants that the project defines, by a <c>.rdproj</c> <c>#Const</c> or a <c>--define</c> argument, with the value the
+    /// host's session gives each (<see cref="ConditionalConstantFact"/>): what a directive of the module reads of a name the module does not define itself.
+    /// </summary>
+    /// <remarks>
+    /// A <c>--define</c> argument wins over the <c>.rdproj</c>, and either wins over a predefined constant
+    /// (<see cref="SDK.Runtime.PredefinedConditionalConstants"/>): a predefined constant that the project defines is listed, with the project's value.
+    /// Empty when the project defines none, or when the host does not say.
+    /// </remarks>
+    public ImmutableArray<ConditionalConstantFact> ProjectConditionalConstants { get; init; } = [];
+
+    /// <summary>
+    /// Whether <c>Win64</c> is <c>1</c> on 64-bit Windows only in the host's sessions
+    /// (<see cref="SDK.Runtime.Abstract.Execution.IRuntimeEnvironmentProfile.Win64OnlySetOnWindows"/>): the one value of the installation, as the host
+    /// states it. <see langword="false"/> when the host does not say.
+    /// </summary>
+    public bool Win64OnlySetOnWindows { get; init; }
+
+    /// <summary>
     /// Every compile error of the module: those of its declarations, then those of each procedure.
     /// </summary>
     public ImmutableArray<VBCompileErrorInfo> CompileErrors => [.. DeclarationErrors, .. Procedures.SelectMany(procedure => procedure.CompileErrors)];

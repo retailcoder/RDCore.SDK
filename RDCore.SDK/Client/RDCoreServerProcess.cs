@@ -168,7 +168,7 @@ public class RDCoreServerProcess(
         var verbose = true; //Options.Value.Server.Verbose;
 
         var arguments = ServerArguments(
-            Environment.ProcessId, pipeName, workspace, trace, verbose, Options.Value.Workspace.Language);
+            Environment.ProcessId, pipeName, workspace, trace, verbose, Options.Value.Workspace.Language, Options.Value.Workspace.Defines);
         var info = CreateProcessStartInfo(fullPath, arguments);
         if (mode is not null)
         {
@@ -215,20 +215,55 @@ public class RDCoreServerProcess(
     /// <remarks>
     /// The language a client serves is its own to say of the server it starts: an interactive shell is a BASIC, and says so
     /// here, because the servers have to agree on it. It is left out when it is the default, so that a server's own
-    /// settings win.
+    /// settings win. The constants the client's own command line defines (<see cref="SdkWorkspaceOptions.Defines"/>) are passed on as
+    /// <c>--define</c>, so that every component reads the same project-level constants, including the servers that a server starts in turn.
     /// <para>
     /// 👉 <c>-v</c> goes last. It is a switch the argument parser only reads as one at the end of a command line; with
     /// anything after it, it takes the next argument for its value and the server never starts.
     /// </para>
     /// </remarks>
+    /// <param name="clientProcessId">The process identifier of the client that starts the server.</param>
+    /// <param name="pipeName">The name of the pipe the server connects to.</param>
+    /// <param name="workspace">The root folder of the workspace.</param>
+    /// <param name="trace">The minimum level the server logs at.</param>
+    /// <param name="verbose">Whether the server logs verbosely.</param>
+    /// <param name="language">The identifier of the language the client serves; <see langword="null"/> for the default.</param>
+    /// <param name="defines">The project-level constants the client's command line defines, by name; <see langword="null"/> or empty for none.</param>
     internal static string ServerArguments(
-        int clientProcessId, string pipeName, string workspace, LogLevel trace, bool verbose, string? language = null)
+        int clientProcessId, string pipeName, string workspace, LogLevel trace, bool verbose, string? language = null,
+        IReadOnlyDictionary<string, string>? defines = null)
     {
         var languageArgument = language is null || string.Equals(language, Workspace.SupportedLanguages.RDVBA.Id, StringComparison.OrdinalIgnoreCase)
             ? null
             : $"--language {language} ";
 
-        return $"-p {clientProcessId} -n {pipeName} -w \"{workspace}\" {languageArgument}-t {trace} {(verbose ? "-v" : null)}";
+        // the parser takes the switch once, with every value after it.
+        var definesArgument = defines is { Count: > 0 }
+            ? $"--define {string.Join(" ", defines.Select(define => Quoted($"{define.Key}={define.Value}")))} "
+            : null;
+
+        return $"-p {clientProcessId} -n {pipeName} -w \"{workspace}\" {languageArgument}{definesArgument}-t {trace} {(verbose ? "-v" : null)}";
+    }
+
+    // one argument, quoted so the process reads it back as written: a backslash stands for itself, except before a quote, where the backslashes are
+    // doubled and one more escapes the quote, and before the closing quote, where they are doubled.
+    private static string Quoted(string argument)
+    {
+        var quoted = new System.Text.StringBuilder("\"");
+        var backslashes = 0;
+        foreach (var character in argument)
+        {
+            if (character == '\\')
+            {
+                backslashes++;
+                continue;
+            }
+
+            quoted.Append('\\', character == '"' ? backslashes * 2 + 1 : backslashes).Append(character);
+            backslashes = 0;
+        }
+
+        return quoted.Append('\\', backslashes * 2).Append('"').ToString();
     }
 
     // the child's input is closed (nothing it reads is the owner's) and what it writes is logged, so that none of it reaches a stream of ours.
