@@ -47,6 +47,31 @@ public static class RefactoringTitles
         => Say(count switch { 0 => "CodeLens_References_None", 1 => "CodeLens_References_One", _ => "CodeLens_References_Many" }, culture, count);
 
     /// <summary>
+    /// The title of the code lens that counts the procedures that implement a member of a class that other classes implement as an interface (MS-VBAL
+    /// §5.2.4.2): <c>2 implementations</c>.
+    /// </summary>
+    /// <param name="count">The number of procedures that implement the member.</param>
+    /// <param name="culture">The language of the reader; the current UI culture by default.</param>
+    /// <remarks>Each language says none, one and more its own way, as <see cref="References"/> does.</remarks>
+    public static string Implementations(int count, CultureInfo? culture = null)
+        => Say(count switch
+        {
+            0 => "CodeLens_Implementations_None",
+            1 => "CodeLens_Implementations_One",
+            _ => "CodeLens_Implementations_Many",
+        }, culture, count);
+
+    /// <summary>
+    /// The title of the code lens of a procedure that implements a member of an interface (MS-VBAL §5.3.1.9): <c>implements IShape.Area</c>. A procedure
+    /// that implements several members has one lens for each.
+    /// </summary>
+    /// <param name="interfaceName">The name of the class implemented as an interface: <c>IShape</c>.</param>
+    /// <param name="memberName">The name of the member of that class the procedure implements: <c>Area</c>.</param>
+    /// <param name="culture">The language of the reader; the current UI culture by default.</param>
+    public static string Implements(string interfaceName, string memberName, CultureInfo? culture = null)
+        => Say("CodeLens_Implements", culture, interfaceName, memberName);
+
+    /// <summary>
     /// The label of a rename's edits of the strings a library calls the symbol by (<c>RenameEdit.IsInString</c>): <c>Called by its name in a string</c>.
     /// A client that takes change annotations shows it with the edits it asks its user to confirm (<strong>LSP 3.17</strong> <c>ChangeAnnotation.label</c>).
     /// </summary>

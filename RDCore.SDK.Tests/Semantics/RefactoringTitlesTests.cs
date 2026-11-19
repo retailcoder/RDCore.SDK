@@ -92,4 +92,20 @@ public sealed class RefactoringTitlesTests
     public void AUserFormControlTheWriterDoesNotRename_NamesTheControl_AndTheWritersReason(string language, string expected)
         => Assert.AreEqual(expected,
             RefactoringTitles.RenameRefusal(RenameRefusalKind.UserFormControlNotWritten, "OkButton", "the reason.", culture: CultureInfo.GetCultureInfo(language)));
+
+    [TestMethod]
+    [DataRow("en", 0, "0 implementations")]
+    [DataRow("en", 1, "1 implementation")]
+    [DataRow("en", 3, "3 implementations")]
+    [DataRow("fr", 0, "0 implémentation")]
+    [DataRow("fr", 1, "1 implémentation")]
+    [DataRow("fr", 3, "3 implémentations")]
+    public void TheLensOfAnInterfaceMember_CountsItsImplementations_AsEachLanguageCountsThem(string language, int count, string expected)
+        => Assert.AreEqual(expected, RefactoringTitles.Implementations(count, CultureInfo.GetCultureInfo(language)));
+
+    [TestMethod]
+    [DataRow("en", "implements IShape.Area")]
+    [DataRow("fr", "implémente IShape.Area")]
+    public void TheLensOfAnImplementation_NamesTheInterfaceAndTheMemberItImplements(string language, string expected)
+        => Assert.AreEqual(expected, RefactoringTitles.Implements("IShape", "Area", CultureInfo.GetCultureInfo(language)));
 }

@@ -169,6 +169,20 @@
   <data name="CodeLens_References_Many" xml:space="preserve">
     <value>{0} références</value>
   </data>
+  <!-- The title of the code lens that counts the implementations of a member of an interface (RefactoringTitles.Implementations): {0} is the count. -->
+  <data name="CodeLens_Implementations_None" xml:space="preserve">
+    <value>{0} implémentation</value>
+  </data>
+  <data name="CodeLens_Implementations_One" xml:space="preserve">
+    <value>{0} implémentation</value>
+  </data>
+  <data name="CodeLens_Implementations_Many" xml:space="preserve">
+    <value>{0} implémentations</value>
+  </data>
+  <!-- The title of the code lens of a procedure that implements an interface member (RefactoringTitles.Implements): {0} is the interface, {1} its member. -->
+  <data name="CodeLens_Implements" xml:space="preserve">
+    <value>implémente {0}.{1}</value>
+  </data>
   <!-- What a hover says declares a symbol (SymbolTexts.MemberOf): {0} is its module, procedure, Enum or Type. -->
   <data name="Hover_MemberOf" xml:space="preserve">
     <value>Membre de {0}</value>
