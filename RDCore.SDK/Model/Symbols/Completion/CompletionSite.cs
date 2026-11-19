@@ -70,7 +70,7 @@ public sealed record class CompletionSite(CompletionSiteKind Kind, string Prefix
     /// <para>
     /// In a directive (<strong>MS-VBAL §3.4</strong>), a name written in the condition of a <c>#If</c> or a <c>#ElseIf</c>, or after the <c>=</c> of a
     /// <c>#Const</c>, is a conditional-compilation constant (<see cref="CompletionSiteKind.ConditionalConstant"/>). The name a <c>#Const</c> declares, and
-    /// anything written after <c>Then</c>, is offered nothing.
+    /// anything written after <c>Then</c>, are offered nothing.
     /// </para>
     /// </remarks>
     /// <param name="text">The text of the line, up to the cursor.</param>

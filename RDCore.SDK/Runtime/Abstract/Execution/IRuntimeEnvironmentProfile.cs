@@ -16,7 +16,8 @@ public interface IRuntimeEnvironmentProfile
 {
     /// <summary>
     /// <c>true</c> for a 64-bit environment: the bitness of the environment host's process. Determines <c>LongPtr</c> width and the value of the
-    /// <c>Is64BitEnv</c> conditional-compilation constant, and of <c>Win64</c> on the operating systems that define it (<see cref="OperatingSystem"/>).
+    /// <c>Is64BitEnv</c> conditional-compilation constant, and of <c>Win64</c> on the operating systems where it can be <c>1</c>
+    /// (<see cref="OperatingSystem"/>).
     /// </summary>
     bool Is64Bit { get; }
 

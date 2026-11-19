@@ -24,7 +24,7 @@ namespace RDCore.SDK.Runtime;
 /// <param name="ErlAfterErrClear">What <c>Err.Clear</c> does to the line <c>Erl</c> reports; it resets it unless said otherwise.</param>
 /// <param name="OperatingSystem">The operating system the environment runs on; Windows unless said otherwise (<see cref="Running"/> is the one this process runs on).</param>
 /// <param name="Win64OnlySetOnWindows">
-/// Whether <c>Win64</c> is <c>1</c> on 64-bit Windows only; <c>false</c> unless said otherwise, and it is on a 64-bit Mac too.
+/// Whether <c>Win64</c> is <c>1</c> on 64-bit Windows only; <c>false</c> unless said otherwise, and then it is <c>1</c> on a 64-bit Mac too.
 /// </param>
 public sealed record class RuntimeEnvironmentProfile(
     bool Is64Bit,
