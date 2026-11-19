@@ -14,16 +14,26 @@ public sealed class ScopeTree
     // entirely in the fragment (workspace#Module.Member).
     private readonly IReadOnlyDictionary<string, LexicalScope> _scopeByUri;
 
-    internal ScopeTree(LexicalScope global, IReadOnlyDictionary<string, LexicalScope> scopeByUri)
+    internal ScopeTree(LexicalScope global, IReadOnlyDictionary<string, LexicalScope> scopeByUri, IReadOnlyList<LexicalScope>? projects = null)
     {
         Global = global;
         _scopeByUri = scopeByUri;
+        Projects = projects ?? [];
     }
 
     /// <summary>
     /// The root scope: every lookup that is not bound sooner ends here.
     /// </summary>
     public LexicalScope Global { get; }
+
+    /// <summary>
+    /// The project scopes, one for each workspace root the modules are under (<strong>MS-VBAL §5.6.10</strong>), in the order the set has the first module
+    /// of each; empty when the set has no modules.
+    /// </summary>
+    /// <remarks>
+    /// A name resolver reads the scope of the project a lookup is from, and decides which of the others it sees: a project the lookup's project references.
+    /// </remarks>
+    public IReadOnlyList<LexicalScope> Projects { get; }
 
     /// <summary>
     /// The scope a name lookup should start from when it originates at <paramref name="uri"/>: the

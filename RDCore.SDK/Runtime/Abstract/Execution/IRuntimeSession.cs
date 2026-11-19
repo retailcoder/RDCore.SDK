@@ -377,6 +377,21 @@ public interface ISessionSymbols
     bool TryGetModule(string moduleName, [NotNullWhen(true)] out VBModuleSymbol? module);
 
     /// <summary>
+    /// Finds the module whose <see cref="Symbol.Uri"/> is <paramref name="moduleUri"/>, a standard module or a class module, of whichever project it is
+    /// in.
+    /// </summary>
+    /// <remarks>
+    /// A name does not always say which module it is: a session defines the modules of the projects its project references
+    /// (<see cref="SymbolProperties.Library"/>) beside its own, and a module of each may have the same name, which the overload that takes a name finds
+    /// as the session's own. Of two modules with the same name, this finds the one at <paramref name="moduleUri"/>. The address is compared with its
+    /// fragment, which holds the module's name: <see cref="Uri"/> equality ignores it.
+    /// </remarks>
+    /// <param name="moduleUri">The <see cref="Symbol.Uri"/> of the module symbol.</param>
+    /// <param name="module">The module symbol, when the session has one at that address.</param>
+    /// <returns><see langword="false"/>, and a <see langword="null"/> <paramref name="module"/>, if the session has no module at that address.</returns>
+    bool TryGetModule(Uri moduleUri, [NotNullWhen(true)] out VBModuleSymbol? module);
+
+    /// <summary>
     /// Resolves <paramref name="name"/> visible from <paramref name="scope"/> in the default binding
     /// context (<see cref="ISymbolResolver.ResolveValue"/>) — the context of a simple name expression.
     /// </summary>

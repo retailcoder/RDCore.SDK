@@ -15,7 +15,7 @@ namespace RDCore.SDK.Model.Symbols;
 /// The enclosing project's symbol has no <see cref="SymbolProperties.Library"/>. A referenced library is a project symbol of its own, named for
 /// the library, with <see cref="SymbolProperties.Library"/> set to that name, as are the symbols it declares (<c>LibrarySymbolReader</c>, and
 /// the standard library's symbol provider). The property is what tells a library's types from those of the enclosing project, and from
-/// those of another library (<see cref="ISymbolResolver.ResolveProjectType"/>).
+/// those of another library (<see cref="ISymbolResolver.ResolveProjectType(VBProjectSymbol, string)"/>).
 /// </remarks>
 /// <param name="WorkspaceRoot">A <c>Uri</c> representing the absolute path to the workspace.</param>
 /// <param name="Name">The project's own name (its <c>.rdproj</c>/VBA project name).</param>
@@ -34,17 +34,25 @@ public sealed record class VBProjectSymbol(Uri WorkspaceRoot, string Name)
     /// candidate, since neither can contain a type. A <c>Type</c> of the enclosing module that shares the project's
     /// name therefore does not stand in for the project in <c>Project.ClassName</c>, though it is still what the bare
     /// name <c>Project</c> means. When the qualifier is a project, the enclosing one or a referenced library,
-    /// <paramref name="name"/> is looked up among that project's types (<see cref="ISymbolResolver.ResolveProjectType"/>), not from
-    /// <paramref name="handle"/>, so nothing declared in the enclosing module can hide the project's module or type it names. When the qualifier
-    /// is a module, <paramref name="name"/> is a <c>Type</c> or an <c>Enum</c> of that module (<strong>MS-VBAL §5.6.12</strong>). A qualifier that
+    /// <paramref name="name"/> is looked up among that project's types as the code at <paramref name="handle"/> sees them
+    /// (<see cref="ISymbolResolver.ResolveProjectType(VBProjectSymbol, string, Uri)"/>), and not in the scope of <paramref name="handle"/>, so nothing
+    /// declared in the enclosing module can hide the project's module or type it names. When the qualifier
+    /// is a module, <paramref name="name"/> is a <c>Type</c> or an <c>Enum</c> of that module (<strong>MS-VBAL §5.6.12</strong>): any of the module's own
+    /// from within the module, and from outside it one that <paramref name="visibility"/> says <paramref name="originProject"/> sees. A qualifier that
     /// resolves to neither a project nor a module stays unbound.
     /// </remarks>
     /// <param name="resolver">The resolver names are bound by.</param>
     /// <param name="qualifier">The qualifier, a project's or a module's name; <see langword="null"/> for a bare name.</param>
     /// <param name="name">The name of the type.</param>
     /// <param name="handle">The address of the symbol whose scope a bare name, and the qualifier, are bound from.</param>
+    /// <param name="visibility">
+    /// Decides which types of a module the code outside it sees (<see cref="IProjectVisibility.IsVisibleFrom"/>); <see langword="null"/> binds a
+    /// module-qualified type only from within its module.
+    /// </param>
+    /// <param name="originProject">The root of the project of the code at <paramref name="handle"/>; <see langword="null"/> when it is not known.</param>
     /// <returns>The type, or <see cref="SymbolResolutionResult.Unbound"/>.</returns>
-    public static SymbolResolutionResult ResolveQualifiedType(ISymbolResolver resolver, string? qualifier, string name, Uri handle)
+    public static SymbolResolutionResult ResolveQualifiedType(
+        ISymbolResolver resolver, string? qualifier, string name, Uri handle, IProjectVisibility? visibility = null, Uri? originProject = null)
     {
         if (qualifier is null)
         {
@@ -53,8 +61,8 @@ public sealed record class VBProjectSymbol(Uri WorkspaceRoot, string Name)
 
         return resolver.ResolveQualifier(qualifier, ScopeKind.Global, handle).Symbol switch
         {
-            VBProjectSymbol project => resolver.ResolveProjectType(project, name),
-            VBModuleSymbol module => ResolveTypeOfModule(resolver, module, name, handle),
+            VBProjectSymbol project => resolver.ResolveProjectType(project, name, handle),
+            VBModuleSymbol module => ResolveTypeOfModule(resolver, module, name, handle, visibility, originProject),
             _ => SymbolResolutionResult.Unbound,
         };
     }
@@ -117,8 +125,9 @@ public sealed record class VBProjectSymbol(Uri WorkspaceRoot, string Name)
 
     // MS-VBAL §5.6.12: "<l-expression> is classified as a procedural module or a type referencing a class defined in a class module", and the module has an
     // accessible UDT or Enum definition of the name. The type is the module's own: a type that the module's scope reaches by being the project's is not the
-    // module's, and one that is Private to the module is not accessible to anything outside it.
-    private static SymbolResolutionResult ResolveTypeOfModule(ISymbolResolver resolver, VBModuleSymbol module, string name, Uri handle)
+    // module's, and what the code outside the module sees of it is the visibility's to say.
+    private static SymbolResolutionResult ResolveTypeOfModule(
+        ISymbolResolver resolver, VBModuleSymbol module, string name, Uri handle, IProjectVisibility? visibility, Uri? originProject)
     {
         var found = resolver.ResolveType(name, ScopeKind.Global, module.Uri);
         if (found.Symbol is not { } type || !string.Equals(type.ParentUri.AbsoluteUri, module.Uri.AbsoluteUri, StringComparison.OrdinalIgnoreCase))
@@ -126,7 +135,7 @@ public sealed record class VBProjectSymbol(Uri WorkspaceRoot, string Name)
             return SymbolResolutionResult.Unbound;
         }
 
-        return IsWithin(handle, module) || ScopeTreeBuilder.IsProjectVisible(type) ? found : SymbolResolutionResult.Unbound;
+        return IsWithin(handle, module) || visibility?.IsVisibleFrom(type, module, originProject) is true ? found : SymbolResolutionResult.Unbound;
     }
 
     // the symbol at the handle is the module, or declared in it: a symbol's address is its parent's with the fragment extended by its own name.

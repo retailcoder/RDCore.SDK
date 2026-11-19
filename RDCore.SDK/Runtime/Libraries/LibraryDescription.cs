@@ -239,6 +239,26 @@ public sealed record class ClassDescription
     /// </remarks>
     public string? TypeName { get; init; }
 
+    /// <summary>
+    /// The classes, of this library or of one it depends on (<see cref="LibraryDescription.DependsOn"/>), that an object of the class is as well: an object
+    /// of RDForms' <c>Font</c> is an OLE Automation <c>StdFont</c> too, so <c>TypeOf f Is stdole.StdFont</c> and <c>TypeOf f Is RDForms.Font</c> both
+    /// hold, and a variable of either type takes the object. A class of another library is qualified with that library's name
+    /// (<c>stdole.StdFont</c>), and one of this library is not (<c>Font</c>). Empty for a class whose objects are of no other class.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <see cref="LibrarySymbolReader"/> reads each as one of the class symbol's <see cref="Model.Symbols.VBClassModuleSymbol.ImplementedInterfaces"/>,
+    /// after its <see cref="DefaultInterface"/>, and the class's type has the type of each among its
+    /// <see cref="Model.Types.Complex.VBClassType.Supertypes"/>, whatever the order of the libraries it is given: the classes named are read first. A name
+    /// that names none of the classes read, or names the class itself, is left out, and a class named twice is there once.
+    /// </para>
+    /// <para>
+    /// A type library states the interfaces a class implements, not the classes its objects are, so a description exported from one has none. A file states
+    /// it from format version 6 (<see cref="LibraryJson.CurrentFormatVersion"/>).
+    /// </para>
+    /// </remarks>
+    public ImmutableArray<string> Implements { get; init; } = [];
+
     /// <summary>The members of the class, in declaration order.</summary>
     public ImmutableArray<MemberDescription> Members { get; init; } = [];
 

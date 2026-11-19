@@ -17,7 +17,7 @@ public sealed class CompletionSnippetsTests
 {
     private static readonly Uri Root = new("file://rdcore-test");
     private static readonly VBClassModuleSymbol Class1 = new(Root, Root, "Class1");
-    private static readonly ScopeTree Tree = ScopeTreeBuilder.Build([Class1]);
+    private static readonly ScopeTree Tree = ScopeTreeBuilder.Build([Class1], AccessModifierVisibility.Instance);
 
     private static readonly string[] Procedure = ["Sub DoSomething()", "        ", "End Sub"];
 
