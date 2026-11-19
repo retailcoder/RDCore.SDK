@@ -220,7 +220,8 @@ public enum DeclarationRole
 /// <list type="bullet">
 /// <item>a declaration that code outside the project can refer to: a <c>Public</c> member of a standard module without <c>Option Private Module</c>, or of a
 /// class that another project can use. In a library project it counts as used (<see cref="IsUsedByReferencingProjects"/>). A program, whose run starts at
-/// its entry point (<see cref="DeclarationRole.EntryPoint"/>), is referred to by no other project: its <c>Public</c> members are counted;</item>
+/// its entry point (<see cref="DeclarationRole.EntryPoint"/>), is referred to by no other project: the references to its <c>Public</c> members are
+/// counted over its own modules;</item>
 /// <item>a declaration called through what it is bound to (<see cref="Binding"/>) or through the object it is a member of: an event handler, a member that
 /// implements an interface;</item>
 /// <item>a declaration named in a string, or reached by a member access that is bound only when the code runs.</item>
@@ -258,7 +259,7 @@ public sealed record class DeclarationFact(
     /// <summary>
     /// Whether the declaration counts as used by the projects that reference this one, whether or not one does: a member of a library project
     /// (<see cref="Workspace.ProjectOutputType.Library"/>) that a referencing project can name, or reach through an object of its class
-    /// (<strong>MS-VBAL §5.3.1</strong>). <see cref="References"/> is then <see langword="null"/>: what those projects refer to is not known.
+    /// (<strong>MS-VBAL §5.3.1.1</strong>). <see cref="References"/> is then <see langword="null"/>: what those projects refer to is not known.
     /// </summary>
     public bool IsUsedByReferencingProjects { get; init; }
 
