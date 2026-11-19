@@ -1,4 +1,5 @@
 using RDCore.SDK.Client;
+using RDCore.SDK.Platform;
 
 namespace RDCore.Tests.Client;
 
@@ -19,7 +20,8 @@ public sealed class RDCoreDebugAdapterLaunchTests
     [TestInitialize]
     public void CreateRoot()
     {
-        _folder = Path.Combine(Path.GetTempPath(), "RDCore", "dap-launch", Guid.NewGuid().ToString("N"));
+        // macOS: the temporary folder is reached through a link (/var is /private/var), and the launch names the real path of what it starts.
+        _folder = PlatformRootConfinement.RealPath(Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), "RDCore", "dap-launch", Guid.NewGuid().ToString("N"))).FullName);
         _root = Path.Combine(_folder, "platform");
         _outside = Path.Combine(_folder, "outside");
         Directory.CreateDirectory(Path.Combine(_root, "RDCore.LanguageServer"));

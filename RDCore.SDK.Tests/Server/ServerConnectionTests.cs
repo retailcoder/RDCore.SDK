@@ -88,7 +88,8 @@ public sealed class ServerConnectionTests
         using var timeout = new CancellationTokenSource(Hung);
 
         // a named pipe, opened overlapped on both ends, as a component and its parent open theirs (RDCorePlatformDefaultTransportLayer).
-        var name = "rdcore-server-input-" + Guid.NewGuid().ToString("N");
+        // macOS: a pipe is a socket under $TMPDIR, and a socket path is at most 104 characters.
+        var name = "rdc-input-" + Guid.NewGuid().ToString("N")[..12];
         using var serverPipe = new System.IO.Pipes.NamedPipeServerStream(name, System.IO.Pipes.PipeDirection.InOut, 1, System.IO.Pipes.PipeTransmissionMode.Byte, System.IO.Pipes.PipeOptions.Asynchronous);
         using var clientPipe = new System.IO.Pipes.NamedPipeClientStream(".", name, System.IO.Pipes.PipeDirection.InOut, System.IO.Pipes.PipeOptions.Asynchronous);
         await Task.WhenAll(serverPipe.WaitForConnectionAsync(timeout.Token), clientPipe.ConnectAsync(timeout.Token));

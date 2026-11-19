@@ -18,11 +18,11 @@ public sealed class CallChannelTests
         private readonly NamedPipeServerStream _server;
         private readonly NamedPipeClientStream _client;
 
-        private Ends(NamedPipeServerStream server, NamedPipeClientStream client)
+        private Ends(NamedPipeServerStream server, NamedPipeClientStream client, Func<Stream, Stream> serving)
         {
             _server = server;
             _client = client;
-            Serving = new CallChannel(server);
+            Serving = new CallChannel(serving(server));
             Calling = new CallChannel(client);
         }
 
@@ -30,15 +30,17 @@ public sealed class CallChannelTests
 
         public CallChannel Calling { get; }
 
-        public static async Task<Ends> ConnectAsync()
+        // the serving end's channel goes over what `serving` makes of its end of the pipe.
+        public static async Task<Ends> ConnectAsync(Func<Stream, Stream>? serving = null)
         {
-            var name = $"rdcore-channel-test-{Guid.NewGuid():N}";
+            // macOS: a pipe is a socket under $TMPDIR, and a socket path is at most 104 characters.
+            var name = "rdc-channel-" + Guid.NewGuid().ToString("N")[..12];
             var server = new NamedPipeServerStream(name, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
             var client = new NamedPipeClientStream(".", name, PipeDirection.InOut, PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
             var accepted = server.WaitForConnectionAsync();
             await client.ConnectAsync(10_000);
             await accepted;
-            return new Ends(server, client);
+            return new Ends(server, client, serving ?? (pipe => pipe));
         }
 
         public void Start()
@@ -53,6 +55,65 @@ public sealed class CallChannelTests
             Serving.Dispose();
             _client.Dispose();
             _server.Dispose();
+        }
+    }
+
+    // an end of a pipe that takes no write longer than `most` bytes, as a pipe takes none longer than the system can lock for it, and that breaks for good
+    // once it has taken `breaksAfter` bytes, in the middle of a write.
+    private sealed class Narrow(Stream pipe, int most, long breaksAfter = long.MaxValue) : Stream
+    {
+        private long _taken;
+
+        public override bool CanRead => true;
+
+        public override bool CanSeek => false;
+
+        public override bool CanWrite => true;
+
+        public override long Length => throw new NotSupportedException();
+
+        public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+
+        public override int Read(byte[] buffer, int offset, int count) => pipe.Read(buffer, offset, count);
+
+        public override int Read(Span<byte> buffer) => pipe.Read(buffer);
+
+        public override void Write(byte[] buffer, int offset, int count) => Write(buffer.AsSpan(offset, count));
+
+        public override void Write(ReadOnlySpan<byte> buffer)
+        {
+            if (buffer.Length > most)
+            {
+                throw new IOException("Insufficient system resources exist to complete the requested service.");
+            }
+
+            var left = breaksAfter - _taken;
+            if (buffer.Length > left)
+            {
+                pipe.Write(buffer[..(int)left]);
+                pipe.Flush();
+                _taken = breaksAfter;
+                throw new IOException("The pipe has been ended.");
+            }
+
+            pipe.Write(buffer);
+            _taken += buffer.Length;
+        }
+
+        public override void Flush() => pipe.Flush();
+
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+
+        public override void SetLength(long value) => throw new NotSupportedException();
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                pipe.Dispose();
+            }
+
+            base.Dispose(disposing);
         }
     }
 
@@ -157,5 +218,35 @@ public sealed class CallChannelTests
         await Assert.ThrowsExactlyAsync<CallChannelException>(() => stalled.WaitAsync(Patience));
         await ends.Calling.Closed.WaitAsync(Patience);
         Assert.ThrowsExactly<CallChannelException>(() => ends.Calling.Call<int, int>("stall", 2));
+    }
+
+    // the answer of a whole column of a worksheet is 115 MB, more than a busy system can lock for one write to a pipe: a frame is written in pieces a
+    // pipe takes.
+    [TestMethod]
+    public async Task AnAnswerLongerThanAPipeTakesAtOnce_GoesInWritesItTakes()
+    {
+        using var ends = await Ends.ConnectAsync(pipe => new Narrow(pipe, most: 1024 * 1024));
+        ends.Serving.Handle<int, string>("column", rows => new string('1', rows));
+        ends.Start();
+
+        var answer = await OnAThreadOfItsOwn(() => ends.Calling.Call<int, string>("column", 4 * 1024 * 1024)).WaitAsync(Patience);
+
+        Assert.AreEqual(4 * 1024 * 1024, answer.Length);
+    }
+
+    // a frame that a failed write cut short leaves the other end waiting for the rest of it: the end that failed to write it closes the pipe, and the call
+    // that waits for the answer fails.
+    [TestMethod]
+    public async Task AnAnswerCutShort_FailsTheCall_AndClosesBothEnds()
+    {
+        using var ends = await Ends.ConnectAsync(pipe => new Narrow(pipe, most: int.MaxValue, breaksAfter: 1000));
+        ends.Serving.Handle<int, string>("column", rows => new string('1', rows));
+        ends.Start();
+
+        var call = OnAThreadOfItsOwn(() => ends.Calling.Call<int, string>("column", 4000));
+
+        await Assert.ThrowsExactlyAsync<CallChannelException>(() => call.WaitAsync(Patience));
+        await ends.Serving.Closed.WaitAsync(Patience);
+        await ends.Calling.Closed.WaitAsync(Patience);
     }
 }

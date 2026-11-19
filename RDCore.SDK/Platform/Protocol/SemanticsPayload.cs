@@ -435,6 +435,17 @@ public record class DeclarationBindingDto(Uri Source, Uri? Bound);
 /// The names of the document modules a name written in the module can refer to (<see cref="ModuleSemanticModel.DocumentModules"/>); <see langword="null"/>
 /// when there are none.
 /// </param>
+/// <param name="UndefinedConditionalConstants">
+/// The names of the conditional-compilation constants the module's directives read and nothing defines
+/// (<see cref="ModuleSemanticModel.UndefinedConditionalConstants"/>); <see langword="null"/> when there are none.
+/// </param>
+/// <param name="ProjectConditionalConstants">
+/// The conditional-compilation constants the project defines, with their values (<see cref="ModuleSemanticModel.ProjectConditionalConstants"/>);
+/// <see langword="null"/> when there are none.
+/// </param>
+/// <param name="Win64OnlySetOnWindows">
+/// Whether <c>Win64</c> is <c>1</c> on 64-bit Windows only in the host's sessions (<see cref="ModuleSemanticModel.Win64OnlySetOnWindows"/>).
+/// </param>
 public record class ModuleSemanticsDto(
     Uri Module,
     bool? OptionExplicit,
@@ -445,7 +456,10 @@ public record class ModuleSemanticsDto(
     ClassModuleSemanticFlags? Class = null,
     DocumentModuleFact? Document = null,
     ImmutableArray<ClassFact>? Classes = null,
-    ImmutableArray<string>? DocumentModules = null)
+    ImmutableArray<string>? DocumentModules = null,
+    ImmutableArray<string>? UndefinedConditionalConstants = null,
+    ImmutableArray<ConditionalConstantFact>? ProjectConditionalConstants = null,
+    bool Win64OnlySetOnWindows = false)
 {
     /// <summary>
     /// Describes a model for the wire.
@@ -473,7 +487,10 @@ public record class ModuleSemanticsDto(
         model.Class,
         model.Document,
         model.Classes.IsDefaultOrEmpty ? null : model.Classes,
-        model.DocumentModules.IsDefaultOrEmpty ? null : model.DocumentModules);
+        model.DocumentModules.IsDefaultOrEmpty ? null : model.DocumentModules,
+        model.UndefinedConditionalConstants.IsDefaultOrEmpty ? null : model.UndefinedConditionalConstants,
+        model.ProjectConditionalConstants.IsDefaultOrEmpty ? null : model.ProjectConditionalConstants,
+        model.Win64OnlySetOnWindows);
 
     private static CompileErrorDto ErrorOf(VBCompileErrorInfo error) => CompileErrorDto.From(error);
 }

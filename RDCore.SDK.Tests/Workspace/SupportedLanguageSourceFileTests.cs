@@ -23,4 +23,18 @@ public sealed class SupportedLanguageSourceFileTests
     [DataRow("vba", "Module1.bas.bak", false, DisplayName = "a copy of a module")]
     public void AFile_IsWrittenInALanguage_WhenItsExtensionIsOneOfTheLanguages(string language, string path, bool expected)
         => Assert.AreEqual(expected, SupportedLanguages.Get(language).IsSourceFile(path));
+
+    // a BASIC's modules are RD-VBA's, without the code of an RDForms form; any other language's are its own files.
+    [TestMethod]
+    [DataRow("basic", "Module1.bas", true, DisplayName = "a standard module, in BASIC")]
+    [DataRow("basic", "Class1.cls", true, DisplayName = "a class module, in BASIC")]
+    [DataRow("basic", "UserForm1.frm", true, DisplayName = "a UserForm, in BASIC")]
+    [DataRow("basic", "Sheet1.doccls", true, DisplayName = "a document module, in BASIC")]
+    [DataRow("basic", "Program.rdc", false, DisplayName = "a BASIC program")]
+    [DataRow("basic", "Form1.rdform", false, DisplayName = "an RDForms form, in BASIC")]
+    [DataRow("vba", "Form1.rdform", true, DisplayName = "an RDForms form, in VBA")]
+    [DataRow("vb6", "UserControl1.ctl", true, DisplayName = "a VB6 UserControl")]
+    [DataRow("vb6", "ThisWorkbook.doccls", false, DisplayName = "a VBA document module, in VB6")]
+    public void AFile_IsAModuleOfAWorkspace_WhenItsExtensionIsOneOfTheLanguagesModules(string language, string path, bool expected)
+        => Assert.AreEqual(expected, SupportedLanguages.Get(language).IsModuleFile(path));
 }

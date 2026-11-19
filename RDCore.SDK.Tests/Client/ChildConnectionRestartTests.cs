@@ -60,6 +60,58 @@ public sealed class ChildConnectionRestartTests
         Assert.AreEqual(1, child.RequestsReceivedBy(1), "the request in flight is not sent again to the next process");
     }
 
+    // a request sent as the child exits, once it was told to: a pull of diagnostics that a client sends as it shuts the platform down, which the server does
+    // not read. The request fails as one the shutdown abandoned, and nothing is logged as a fault of the child.
+    [TestMethod]
+    [Timeout(60_000, CooperativeCancellation = true)]
+    [DataRow(false, DisplayName = "a request of the connection, sent as the child exits")]
+    [DataRow(true, DisplayName = "a request on the channel, sent as the child exits")]
+    public async Task ARequestSentAsTheChildExits_WhenTheConnectionShutsItDown_IsAbandoned_AndNoFault(bool onTheChannel)
+    {
+        var log = new MonitorLog();
+        using var child = new InProcessChild { ExitsWhenTold = true };
+        using var connection = await child.ConnectAsync(log: log);
+        using var hang = new CancellationTokenSource(HangGuard);
+        Task? inFlight = null;
+        child.Exiting = () => inFlight = onTheChannel
+            ? connection.Channel.SendRequestAsync(Held, null, CancellationToken.None)
+            : connection.SendRequestAsync<HeldParams, HeldResult>(new HeldParams(), CancellationToken.None);
+
+        await connection.ShutdownAsync().WaitAsync(hang.Token);
+
+        Assert.IsNotNull(inFlight, "the child exits as it is told to");
+        var lost = await Assert.ThrowsExactlyAsync<ServerProtocolSdkException>(() => inFlight.WaitAsync(hang.Token));
+        StringAssert.Contains(lost.Message, Held);
+        StringAssert.Contains(lost.Message, "shut the child process down");
+        CollectionAssert.AreEqual(Array.Empty<string>(), log.Warnings, string.Join(Environment.NewLine, log.Warnings));
+        Assert.AreEqual(0, child.ShutdownsOf(1), "the child exits as it is told to, and is not killed");
+        Assert.AreEqual(ConnectionStateValue.Exited, connection.State.Value);
+    }
+
+    // the control: a child that exits on its own with a request in flight is at fault, and the request's failure says so.
+    [TestMethod]
+    [Timeout(60_000, CooperativeCancellation = true)]
+    [DataRow(false, DisplayName = "a request of the connection, the child crashing")]
+    [DataRow(true, DisplayName = "a request on the channel, the child crashing")]
+    public async Task ARequestInFlight_WhenTheChildExitsOnItsOwn_IsAFault(bool onTheChannel)
+    {
+        var log = new MonitorLog();
+        using var child = new InProcessChild();
+        using var connection = await child.ConnectAsync(log: log);
+        using var hang = new CancellationTokenSource(HangGuard);
+
+        Task inFlight = onTheChannel
+            ? connection.Channel.SendRequestAsync(Held, null, CancellationToken.None)
+            : connection.SendRequestAsync<HeldParams, HeldResult>(new HeldParams(), CancellationToken.None);
+        await child.FirstRequestReceived.WaitAsync(hang.Token);
+        child.Crash();
+
+        var lost = await Assert.ThrowsExactlyAsync<ServerProtocolSdkException>(() => inFlight.WaitAsync(hang.Token));
+        StringAssert.Contains(lost.Message, "exited before it answered");
+        Assert.IsTrue(log.Warnings.Any(warning => warning.Contains($"← {Held} faulted", StringComparison.Ordinal)),
+            string.Join(Environment.NewLine, log.Warnings));
+    }
+
     [TestMethod]
     [Timeout(60_000, CooperativeCancellation = true)]
     public async Task ARequestInFlightOnTheChannel_WhenTheChildExits_Fails_AndTheRestartedChildAnswersTheNext()
@@ -305,8 +357,20 @@ public sealed class ChildConnectionRestartTests
 
         private readonly TaskCompletionSource<string> _monitorEnded = new(TaskCreationOptions.RunContinuationsAsynchronously);
         private readonly List<string> _failures = [];
+        private readonly List<string> _warnings = [];
 
         public Task<string> MonitorEnded => _monitorEnded.Task;
+
+        public string[] Warnings
+        {
+            get
+            {
+                lock (_warnings)
+                {
+                    return [.. _warnings];
+                }
+            }
+        }
 
         public string[] Failures
         {
@@ -322,6 +386,14 @@ public sealed class ChildConnectionRestartTests
         public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
         {
             var message = formatter(state, exception);
+            if (logLevel == LogLevel.Warning)
+            {
+                lock (_warnings)
+                {
+                    _warnings.Add($"{message} {exception?.Message}");
+                }
+            }
+
             if (logLevel >= LogLevel.Error || message.StartsWith(RestartFailed, StringComparison.Ordinal))
             {
                 lock (_failures)
@@ -376,6 +448,12 @@ public sealed class ChildConnectionRestartTests
 
         public int HoldLspInitializeOf { get; init; }
 
+        // the process exits once the server is told to exit (LSP exit), as a language server does; otherwise it is up until it crashes or is killed.
+        public bool ExitsWhenTold { get; init; }
+
+        // called once the process is told to exit, before it goes down: what is sent to it then is not read.
+        public Action? Exiting { get; set; }
+
         public Task LspInitializeHeld => _lspInitializeHeld.Task;
 
         public Task StartHeld => _startHeld.Task;
@@ -429,7 +507,8 @@ public sealed class ChildConnectionRestartTests
             await connection.ConnectAsync(new ChildConnectionRequest
             {
                 ServerExecutablePath = "child.exe",
-                PipeName = $"RDCore.Tests.ChildConnectionRestart.{Guid.NewGuid():N}",
+                // macOS: a pipe is a socket under $TMPDIR, and a socket path is at most 104 characters.
+                PipeName = "rdc-restart-" + Guid.NewGuid().ToString("N")[..12],
                 ExpectedComponent = CoreServerComponent.ParsingServer,
                 ConfigureClient = _ => { },
                 OnPeerExited = () => Interlocked.Increment(ref _peerExitsTold),
@@ -528,6 +607,28 @@ public sealed class ChildConnectionRestartTests
             {
                 LetGo(made);
             }
+            else if (ExitsWhenTold)
+            {
+                // the server's exit notification: the process ends as a language server's does when it is told to, with code 0.
+                _ = made.WaitForExit.ContinueWith(_ => ExitAsTold(incarnation), CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default);
+            }
+        }
+
+        private void ExitAsTold(int incarnation)
+        {
+            lock (_gate)
+            {
+                if (incarnation != _incarnation || incarnation <= _downTo)
+                {
+                    return;
+                }
+            }
+
+            Exiting?.Invoke();
+            GoDown();
+            ExitCode = 0;
+            HasExited = true;
+            _exit.TrySetResult();
         }
 
         // the process dies as a process does: its end of the pipe closes, and it exits with a code that is not 0.
