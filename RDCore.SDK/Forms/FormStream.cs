@@ -10,7 +10,8 @@ namespace RDCore.SDK.Forms;
 /// class table ([MS-OFORMS] 2.4.1).</param>
 /// <param name="Depth">How deep the control is nested under its parent's other sites ([MS-OFORMS] 2.2.10.7).</param>
 /// <param name="Site">The site's properties.</param>
-internal sealed record class RawSite(string Name, int Id, ushort ClsidCacheIndex, int Depth, MSFormsSite Site);
+/// <param name="Block">The site's stored values, with where the site and its strings are in the form stream.</param>
+internal sealed record class RawSite(string Name, int Id, ushort ClsidCacheIndex, int Depth, MSFormsSite Site, Block Block);
 
 /// <summary>
 /// A parent control's form stream (<c>f</c>), read: its <c>FormControl</c>'s properties, the class table, and the sites
@@ -19,7 +20,10 @@ internal sealed record class RawSite(string Name, int Id, ushort ClsidCacheIndex
 /// <param name="Block">The <c>FormControl</c>'s stored values.</param>
 /// <param name="Sites">The sites, in the order the stream stores them.</param>
 /// <param name="ClassTable">The class table's CLSIDs ([MS-OFORMS] 2.2.10.10), <c>null</c> for an entry that has none.</param>
-internal sealed record class FormStream(Block Block, IReadOnlyList<RawSite> Sites, IReadOnlyList<Guid?> ClassTable)
+/// <param name="CountOfBytesAt">Where <c>FormSiteData</c>'s <c>CountOfBytes</c> is in the stream ([MS-OFORMS] 2.2.10.6).</param>
+/// <param name="DepthsAt">Where <c>SiteDepthsAndTypes</c> starts in the stream, the first byte <c>CountOfBytes</c> counts.</param>
+/// <param name="SitesEnd">Where the last site ends in the stream, after the last byte <c>CountOfBytes</c> counts.</param>
+internal sealed record class FormStream(Block Block, IReadOnlyList<RawSite> Sites, IReadOnlyList<Guid?> ClassTable, int CountOfBytesAt, int DepthsAt, int SitesEnd)
 {
     // FormFlags ([MS-OFORMS] 2.5.6.1): FORM_FLAG_ENABLED, FORM_FLAG_DONTSAVECLASSTABLE
     private const uint FormEnabled = 1u << 2;
@@ -102,6 +106,7 @@ internal sealed record class FormStream(Block Block, IReadOnlyList<RawSite> Site
         }
 
         var countOfSites = reader.ReadUInt32();
+        var countOfBytesAt = reader.Position;
         reader.ReadUInt32(); // CountOfBytes
         if (countOfSites > stream.Length)
         {
@@ -138,7 +143,7 @@ internal sealed record class FormStream(Block Block, IReadOnlyList<RawSite> Site
         }
 
         // what follows the sites (FormDesignExData, 2.2.10.11) is the design surface's alone
-        return new FormStream(block, sites, classTable);
+        return new FormStream(block, sites, classTable, countOfBytesAt, depthsStart, reader.Position);
     }
 
     /// <summary>
@@ -239,6 +244,6 @@ internal sealed record class FormStream(Block Block, IReadOnlyList<RawSite> Site
             RuntimeLicenseKey: Value<string>("RuntimeLicKey"),
             GroupId: Value<int>("GroupID"),
             ObjectStreamSize: Value<int>("ObjectStreamSize"));
-        return new RawSite(Value<string>("Name"), Value<int>("ID"), (ushort)Value<int>("ClsidCacheIndex"), depth, site);
+        return new RawSite(Value<string>("Name"), Value<int>("ID"), (ushort)Value<int>("ClsidCacheIndex"), depth, site, block);
     }
 }

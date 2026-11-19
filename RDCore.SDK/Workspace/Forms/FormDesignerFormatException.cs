@@ -59,11 +59,26 @@ public enum FormDesignerFormatProblem
     /// stream's length ([MS-OFORMS] 2.1.2.2.1).
     /// </summary>
     InvalidObjectStream,
+
+    /// <summary>
+    /// An RDForms form's document (<see cref="FormDesigner.RDFormsDocumentOf"/>), which holds its controls, is not there.
+    /// </summary>
+    MissingDocument,
+
+    /// <summary>
+    /// No <see cref="IFormDocumentReader"/> is registered for an RDForms form's document (<see cref="FormDesigner.Register"/>).
+    /// </summary>
+    NoDocumentReader,
+
+    /// <summary>
+    /// An RDForms form's document holds no form, as its <see cref="IFormDocumentReader"/> reads it.
+    /// </summary>
+    InvalidDocument,
 }
 
 /// <summary>
-/// The exception that is thrown when a form's designer data, in its module's text or in its companion <c>.frx</c> file,
-/// cannot be read.
+/// The exception that is thrown when a form's designer data, in its module's text, in its companion <c>.frx</c> file or in its
+/// RDForms document, cannot be read.
 /// </summary>
 public sealed class FormDesignerFormatException : SdkException
 {
@@ -112,6 +127,9 @@ public sealed class FormDesignerFormatException : SdkException
         FormDesignerFormatProblem.UnsupportedVersion => Exceptions.FormDesigner_UnsupportedVersion,
         FormDesignerFormatProblem.InvalidControl => Exceptions.FormDesigner_InvalidControl,
         FormDesignerFormatProblem.InvalidObjectStream => Exceptions.FormDesigner_InvalidObjectStream,
+        FormDesignerFormatProblem.MissingDocument => Exceptions.FormDesigner_MissingDocument,
+        FormDesignerFormatProblem.NoDocumentReader => Exceptions.FormDesigner_NoDocumentReader,
+        FormDesignerFormatProblem.InvalidDocument => Exceptions.FormDesigner_InvalidDocument,
         _ => Exceptions.FormDesigner_Truncated,
     };
 }

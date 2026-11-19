@@ -32,7 +32,7 @@ public sealed class BaseClassNamesTests
         userControl1 = new VBClassModuleSymbol(Root, Root, "UserControl1") { BaseClass = new FormControlClass("VB", "UserControl") };
         class1 = new VBClassModuleSymbol(Root, Root, "Class1");
         var caption = Field(userControl1.Uri, "Caption", AccessModifier.Private);
-        return ScopeTreeBuilder.Build([library, backColor, resize, userControl1, caption, class1]);
+        return ScopeTreeBuilder.Build([library, backColor, resize, userControl1, caption, class1], AccessModifierVisibility.Instance);
     }
 
     private static string[] Labels(ScopeTree tree, Uri origin) => [.. CompletionCandidates.Names(tree, origin).Select(candidate => candidate.Label)];

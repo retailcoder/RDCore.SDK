@@ -122,5 +122,59 @@ namespace RDCore.SDK.Forms {
                 return ResourceManager.GetString("InvalidObjectStream", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   Looks up a localized string similar to The designer data has no control named '{0}'..
+        /// </summary>
+        internal static string ControlNotFound {
+            get {
+                return ResourceManager.GetString("ControlNotFound", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to More than one control of the designer data is named '{0}'..
+        /// </summary>
+        internal static string ControlNotUnique {
+            get {
+                return ResourceManager.GetString("ControlNotUnique", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to A control of the designer data is named '{0}' already..
+        /// </summary>
+        internal static string NameTaken {
+            get {
+                return ResourceManager.GetString("NameTaken", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to The site of '{0}' cannot hold the name '{1}': a site holds at most 65,535 bytes..
+        /// </summary>
+        internal static string SiteTooLarge {
+            get {
+                return ResourceManager.GetString("SiteTooLarge", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to The designer data cannot grow: its compound file would need more FAT sectors than its header lists..
+        /// </summary>
+        internal static string FileTooLarge {
+            get {
+                return ResourceManager.GetString("FileTooLarge", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to The .frx file holds data after the form's designer data, which designer data of another length would move..
+        /// </summary>
+        internal static string DataAfterForm {
+            get {
+                return ResourceManager.GetString("DataAfterForm", resourceCulture);
+            }
+        }
     }
 }
