@@ -113,8 +113,8 @@ public record class SdkAppCommandLineArgs
     /// (e.g. <c>--define RDDEBUG=1 TRACE=0</c>). Overrides the <c>.rdproj</c> and the built-in host constants.
     /// </summary>
     /// <remarks>
-    /// The constants are the configuration's <see cref="SdkWorkspaceOptions.Defines"/> (<see cref="ToConfigurationOverrides"/>), which a client passes on to the
-    /// servers it starts.
+    /// The constants are the configuration's <see cref="SdkWorkspaceOptions.Defines"/> (<see cref="ToConfigurationOverrides"/>), which a client passes
+    /// on to the servers it starts.
     /// </remarks>
     [Option('D', "define")]
     public IEnumerable<string>? Define { get; set; }

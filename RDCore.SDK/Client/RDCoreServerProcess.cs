@@ -215,13 +215,20 @@ public class RDCoreServerProcess(
     /// <remarks>
     /// The language a client serves is its own to say of the server it starts: an interactive shell is a BASIC, and says so
     /// here, because the servers have to agree on it. It is left out when it is the default, so that a server's own
-    /// settings win. So are the constants the client's own command line defines (<see cref="SdkWorkspaceOptions.Defines"/>): every component reads the
-    /// same project-level constants, the servers a server starts in turn too.
+    /// settings win. The constants the client's own command line defines (<see cref="SdkWorkspaceOptions.Defines"/>) are passed on as
+    /// <c>--define</c>, so that every component reads the same project-level constants, the servers a server starts in turn too.
     /// <para>
     /// 👉 <c>-v</c> goes last. It is a switch the argument parser only reads as one at the end of a command line; with
     /// anything after it, it takes the next argument for its value and the server never starts.
     /// </para>
     /// </remarks>
+    /// <param name="clientProcessId">The process identifier of the client that starts the server.</param>
+    /// <param name="pipeName">The name of the pipe the server connects to.</param>
+    /// <param name="workspace">The root folder of the workspace.</param>
+    /// <param name="trace">The minimum level the server logs at.</param>
+    /// <param name="verbose">Whether the server logs verbosely.</param>
+    /// <param name="language">The identifier of the language the client serves; <see langword="null"/> for the default.</param>
+    /// <param name="defines">The project-level constants the client's command line defines, by name; <see langword="null"/> or empty for none.</param>
     internal static string ServerArguments(
         int clientProcessId, string pipeName, string workspace, LogLevel trace, bool verbose, string? language = null,
         IReadOnlyDictionary<string, string>? defines = null)

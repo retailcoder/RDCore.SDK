@@ -94,8 +94,8 @@ public sealed class WorkspaceSettingsConfigurationTests
     {
         Assert.IsTrue(SettingsSchema.Platform.TryFind("Environment.Win64OnlySetOnWindows", out var setting));
         Assert.AreEqual(SettingReach.Deployment, setting.Reach);
-        Assert.AreEqual(UserSettingProblem.NotSettable, new UserSettingsStore(new MockFileSystem(), Path.Combine(_folder, "user.json"), SettingsSchema.Platform)
-            .Set("Environment.Win64OnlySetOnWindows", "true").Problem);
+        var user = new UserSettingsStore(new MockFileSystem(), Path.Combine(_folder, "user.json"), SettingsSchema.Platform);
+        Assert.AreEqual(UserSettingProblem.NotSettable, user.Set("Environment.Win64OnlySetOnWindows", "true").Problem);
 
         var configuration = Configuration(
             """{ "Configuration": { "Environment": { "Win64OnlySetOnWindows": true } } }""",

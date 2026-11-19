@@ -34,7 +34,11 @@ public sealed class UndefinedConditionalConstantsWireTests
     {
         var read = RoundTrip(new ModuleSemanticModel(Module, [], [])
         {
-            ProjectConditionalConstants = [new ConditionalConstantFact("Win64", new VBLongValue(-1)), new ConditionalConstantFact("MODE", new VBStringValue("debug"))],
+            ProjectConditionalConstants =
+            [
+                new ConditionalConstantFact("Win64", new VBLongValue(-1)),
+                new ConditionalConstantFact("MODE", new VBStringValue("debug")),
+            ],
             Win64OnlySetOnWindows = true,
         });
 
