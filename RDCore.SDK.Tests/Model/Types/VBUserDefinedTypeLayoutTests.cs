@@ -4,6 +4,9 @@ using RDCore.SDK.Model.Symbols.Abstract;
 using RDCore.SDK.Model.Symbols.VBProject;
 using RDCore.SDK.Model.Types;
 using RDCore.SDK.Model.Types.Abstract;
+using RDCore.SDK.Model.Values.Intrinsic;
+using RDCore.SDK.Runtime.Abstract.Execution;
+using NSubstitute;
 
 namespace RDCore.Tests.Model.Types;
 
@@ -162,5 +165,44 @@ public sealed class VBUserDefinedTypeLayoutTests
         var layout = VBUserDefinedTypeLayout.Of(Udt("Named", ("S", VBStringType.TypeInfo)), pointerWidth: 8);
 
         Assert.AreEqual(8, layout.Size);
+    }
+
+    [TestMethod]
+    public void AType_IsLaidOutOnce_ForEachPointerWidth()
+    {
+        var named = Udt("Named", ("S", VBStringType.TypeInfo));
+
+        Assert.AreSame(VBUserDefinedTypeLayout.Of(named), VBUserDefinedTypeLayout.Of(named));
+        Assert.AreSame(VBUserDefinedTypeLayout.Of(named, pointerWidth: 8), VBUserDefinedTypeLayout.Of(named, pointerWidth: 8));
+        Assert.AreEqual((4, 8), (VBUserDefinedTypeLayout.Of(named).Size, VBUserDefinedTypeLayout.Of(named, pointerWidth: 8).Size));
+    }
+
+    [TestMethod]
+    public void ATypeGivenAnotherField_IsLaidOutAgain_ThoughItEqualsTheTypeItWas()
+    {
+        var point = Udt("Point", ("X", VBLongType.TypeInfo));
+        var before = VBUserDefinedTypeLayout.Of(point);
+        var edited = (VBUserDefinedType)point.WithMembers([.. point.Members, Field("Point", "Y", VBLongType.TypeInfo)]);
+
+        Assert.AreEqual(point, edited, "a type equals another of its name");
+        Assert.AreEqual((4, 8), (before.Size, VBUserDefinedTypeLayout.Of(edited).Size));
+    }
+
+    [TestMethod]
+    public void ARecordWithAFixedSizeArrayField_IsLaidOutFromItsElements_AndOneNestingIt()
+    {
+        var holder = Udt("Holder", ("Tag", VBByteType.TypeInfo), ("Items", new VBFixedSizeArrayType(VBLongType.TypeInfo)));
+        var outer = Udt("Outer", ("H", holder));
+        var defaults = Substitute.For<IVariableDefaults>();
+        defaults.DefaultValueOf(Arg.Any<Symbol>()).Returns(call => ((ITypedSymbol)call.Arg<Symbol>()).ResolvedType switch
+        {
+            VBFixedSizeArrayType array => new VBFixedSizeArrayValue([(0, 2)], array.ItemType),
+            VBUserDefinedType nested => new VBUserDefinedTypeValue(nested, defaults),
+            var type => type.DefaultValue,
+        });
+
+        Assert.AreEqual(4, VBUserDefinedTypeLayout.Of(holder).Size, "the type alone: Tag, then Items at 4, with no elements");
+        Assert.AreEqual(16, VBUserDefinedTypeLayout.Of(new VBUserDefinedTypeValue(holder, defaults)).Size, "Tag, then 3 Longs at 4");
+        Assert.AreEqual(16, VBUserDefinedTypeLayout.Of(new VBUserDefinedTypeValue(outer, defaults)).Size, "the nested record's own elements");
     }
 }
