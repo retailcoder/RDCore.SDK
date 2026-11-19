@@ -160,9 +160,9 @@ public sealed class AssistantToolsWireTests
         yield return (new RenameToolArguments { Path = "src/Module1.bas", Line = 2, Column = 17, NewName = "FullName" },
             """{"newName":"FullName","accept":[],"path":"src/Module1.bas","line":2,"column":17}""");
         yield return (new PreviewFixToolResult { Title = "Remove the variable", Files = [new ToolFileChange { Path = "src/Module1.bas", Diff = "--- src/Module1.bas\n" }] },
-            """{"title":"Remove the variable","files":[{"path":"src/Module1.bas","diff":"--- src/Module1.bas\n"}],"questions":[]}""");
-        yield return (new EditToolResult { Files = [new ToolFileChange { Path = "src/Module1.bas", Diff = "" }], Questions = [new ToolEditQuestion { Id = "inString", Label = "Called by its name in a string" }] },
-            """{"applied":false,"files":[{"path":"src/Module1.bas","diff":""}],"questions":[{"id":"inString","label":"Called by its name in a string","description":null}]}""");
+            """{"title":"Remove the variable","files":[{"path":"src/Module1.bas","newPath":null,"diff":"--- src/Module1.bas\n"}],"questions":[]}""");
+        yield return (new EditToolResult { Files = [new ToolFileChange { Path = "src/Module1.bas", NewPath = "src/Totals.bas" }], Questions = [new ToolEditQuestion { Id = "inString", Label = "Called by its name in a string" }] },
+            """{"applied":false,"files":[{"path":"src/Module1.bas","newPath":"src/Totals.bas","diff":""}],"questions":[{"id":"inString","label":"Called by its name in a string","description":null}]}""");
     }
 
     [TestMethod]
