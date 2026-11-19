@@ -3,9 +3,9 @@ using RDCore.SDK.Model;
 namespace RDCore.Tests.Model;
 
 /// <summary>
-/// The keywords of the language (<strong>MS-VBAL §3.3.5.2</strong>): every <c>reserved-identifier</c> is one, and so is a <c>reserved-type-identifier</c>, which
-/// the production of <c>reserved-identifier</c> does not name. Only a <c>reserved-type-identifier</c> that is no <c>reserved-name</c> is a name the
-/// specification allows.
+/// The keywords of the language (<strong>MS-VBAL §3.3.5.2</strong>): every <c>reserved-identifier</c> is one, and so is a
+/// <c>reserved-type-identifier</c>, which the production of <c>reserved-identifier</c> does not name. Only a <c>reserved-type-identifier</c> that is no
+/// <c>reserved-name</c> is a name the specification allows.
 /// </summary>
 [TestClass]
 public sealed class VBIdentifierTests
