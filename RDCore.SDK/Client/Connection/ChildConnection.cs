@@ -305,7 +305,10 @@ public sealed class ChildConnection(
     /// <typeparam name="TResult">The response type.</typeparam>
     /// <param name="request">The request parameters.</param>
     /// <param name="token">Cancels the request.</param>
-    /// <exception cref="ServerProtocolSdkException">The child process exited before it answered: a connection that restarts does not send the request again.</exception>
+    /// <exception cref="ServerProtocolSdkException">
+    /// The child process exited before it answered: a connection that restarts does not send the request again. A request that <see cref="ShutdownAsync"/>
+    /// abandons fails the same way, and is logged as no fault of the child.
+    /// </exception>
     public async Task<TResult> SendRequestAsync<TParams, TResult>(TParams request, CancellationToken token) where TParams : IRequest<TResult>
     {
         var method = typeof(TParams).GetCustomAttribute<OmniSharp.Extensions.JsonRpc.MethodAttribute>()?.Method ?? typeof(TParams).Name;
@@ -328,6 +331,12 @@ public sealed class ChildConnection(
         {
             // a request the server refused (a rename to a keyword), or that an edit overtook, is answered: the caller is told why, and decides what to say.
             logger.LogDebug("← {method} answered {code}: {message}", method, exception.ErrorCode, exception.Message);
+            throw;
+        }
+        catch (Exception exception) when (_shuttingDown)
+        {
+            // the owner shuts the child down with the request unanswered (a pull of diagnostics as the client exits): the caller is told, and nothing failed.
+            logger.LogDebug("← {method} abandoned: {message}", method, exception.Message);
             throw;
         }
         catch (Exception exception)
@@ -482,7 +491,16 @@ public sealed class ChildConnection(
             // only once the next process is. Both at once: whoever is told its request was lost and waits for the connection waits for the next process.
             lock (_gate)
             {
-                _lost.TrySetResult();
+                // a process the connection shut down was asked to exit: what it did not answer is abandoned, which the requests tell from a crash.
+                if (_shuttingDown)
+                {
+                    _lost.TrySetCanceled();
+                }
+                else
+                {
+                    _lost.TrySetResult();
+                }
+
                 if (!State.IsTerminal && _ready.Task.IsCompletedSuccessfully)
                 {
                     _ready = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
