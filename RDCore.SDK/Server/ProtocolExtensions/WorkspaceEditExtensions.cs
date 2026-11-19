@@ -213,9 +213,50 @@ public static class WorkspaceEditExtensions
 
     // a file created, renamed or deleted, of a kind the client said it does.
     private static bool TakesResourceOperation(ClientCapabilities? client, WorkspaceEditDocumentChange change)
+        => client.TakesResourceOperation(change.IsCreateFile ? ResourceOperationKind.Create : change.IsRenameFile ? ResourceOperationKind.Rename : ResourceOperationKind.Delete);
+
+    /// <summary>
+    /// Whether the client said it creates, renames or deletes files, as the <c>documentChanges</c> of a <see cref="WorkspaceEdit"/> say.
+    /// </summary>
+    /// <param name="client">What the client said it can do, as it initialized; none when it is not known.</param>
+    /// <param name="kind">What is done to a file.</param>
+    /// <returns>
+    /// <see langword="true"/> when it said <c>documentChanges</c> and <c>resourceOperations</c> with <paramref name="kind"/>; <see langword="false"/> when it
+    /// did not, or is not known.
+    /// </returns>
+    public static bool TakesResourceOperation(this ClientCapabilities? client, ResourceOperationKind kind)
+        => client?.Workspace?.WorkspaceEdit is { IsSupported: true, Value: { DocumentChanges: true, ResourceOperations: { } kinds } } && kinds.Contains(kind);
+
+    /// <summary>
+    /// Whether the client said it applies the edits a server asks it to (<c>workspace/applyEdit</c>).
+    /// </summary>
+    /// <param name="client">What the client said it can do, as it initialized; none when it is not known.</param>
+    /// <returns><see langword="true"/> when it said <c>workspace.applyEdit</c>; <see langword="false"/> when it did not, or is not known.</returns>
+    public static bool AppliesEdits(this ClientCapabilities? client) => client?.Workspace?.ApplyEdit is { IsSupported: true, Value: true };
+
+    /// <summary>
+    /// The edit without the files it renames, for a client that does not rename files: the documents keep their names, and their texts are edited where they
+    /// are.
+    /// </summary>
+    /// <param name="edit">The edit.</param>
+    /// <returns>
+    /// The edit without its <c>RenameFile</c> changes, nor the <c>TextDocumentEdit</c>s of the documents they rename to: those are edits of a document once it
+    /// is renamed, which a document that keeps its name does not have. The edit itself when it renames no file.
+    /// </returns>
+    public static WorkspaceEdit WithoutFileRenames(this WorkspaceEdit edit)
     {
-        var kind = change.IsCreateFile ? ResourceOperationKind.Create : change.IsRenameFile ? ResourceOperationKind.Rename : ResourceOperationKind.Delete;
-        return client?.Workspace?.WorkspaceEdit is { IsSupported: true, Value.ResourceOperations: { } kinds } && kinds.Contains(kind);
+        ArgumentNullException.ThrowIfNull(edit);
+        if (edit.DocumentChanges is not { } changes || !changes.Any(change => change.IsRenameFile))
+        {
+            return edit;
+        }
+
+        var renamedTo = changes.Where(change => change.IsRenameFile).Select(change => change.RenameFile!.NewUri).ToHashSet();
+        return edit with
+        {
+            DocumentChanges = new Container<WorkspaceEditDocumentChange>(changes.Where(change
+                => !change.IsRenameFile && !(change.IsTextDocumentEdit && renamedTo.Contains(change.TextDocumentEdit!.TextDocument.Uri)))),
+        };
     }
 }
 

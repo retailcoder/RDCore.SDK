@@ -12,8 +12,8 @@ namespace RDCore.SDK.Assistant;
 /// </summary>
 public static class ToolEdits
 {
-    // what the edit does to a document: its text before, its text after, and the document it is renamed to.
-    private sealed record class Change(string Before, string After, DocumentUri? RenamedTo);
+    // what the edit does to a document: its text before, its text after, the document it is renamed to, and whether it creates or deletes it.
+    private sealed record class Change(string Before, string After, DocumentUri? RenamedTo, bool CreatesOrDeletes = false);
 
     /// <summary>
     /// The change of each document an edit makes, by path.
@@ -22,9 +22,9 @@ public static class ToolEdits
     /// <param name="textOf">The text of a document before the edit; <see langword="null"/> for one that does not exist.</param>
     /// <param name="pathOf">The path of a document, as <see cref="ToolFileChange.Path"/> says it.</param>
     /// <returns>
-    /// Each document the edit changes, once: the text edits of its <c>TextDocumentEdit</c>s made in order, each to the text the one before it left. A document
-    /// it renames has the path it is renamed to (<see cref="ToolFileChange.NewPath"/>), and the edits made to it after its rename are made to it. A document
-    /// it creates is a diff from an empty text; one it deletes, a diff to one.
+    /// Each document the edit changes, once: the text edits of its <c>TextDocumentEdit</c>s made in order, each to the text the one before it left. A
+    /// document it renames has the path it is renamed to (<see cref="ToolFileChange.NewPath"/>), and the edits made to it after its rename are made to it. A
+    /// document it creates is a diff from an empty text; one it deletes, a diff to one. A document whose edits leave its text as it was is left out.
     /// </returns>
     /// <exception cref="ArgumentException">A text edit does not fit the text it is made to.</exception>
     public static IReadOnlyList<ToolFileChange> FilesOf(WorkspaceEdit edit, Func<DocumentUri, string?> textOf, Func<DocumentUri, string> pathOf)
@@ -68,12 +68,12 @@ public static class ToolEdits
             }
             else if (change.IsCreateFile)
             {
-                changes[change.CreateFile!.Uri] = new Change(string.Empty, string.Empty, null);
+                changes[change.CreateFile!.Uri] = new Change(string.Empty, string.Empty, null, CreatesOrDeletes: true);
             }
             else if (change.IsDeleteFile)
             {
                 var key = Key(change.DeleteFile!.Uri);
-                changes[key] = Held(key) with { After = string.Empty };
+                changes[key] = Held(key) with { After = string.Empty, CreatesOrDeletes = true };
             }
         }
 
@@ -87,12 +87,14 @@ public static class ToolEdits
 
         return [.. changes
             .Select(change => (Path: pathOf(change.Key), change.Value))
-            .Select(change => new ToolFileChange
+            .Select(change => (File: new ToolFileChange
             {
                 Path = change.Path,
                 NewPath = change.Value.RenamedTo is { } renamedTo ? pathOf(renamedTo) : null,
                 Diff = UnifiedDiff.Of(change.Path, change.Value.Before, change.Value.After),
-            })
+            }, change.Value.CreatesOrDeletes))
+            .Where(change => change.File.Diff.Length > 0 || change.File.NewPath is not null || change.CreatesOrDeletes)
+            .Select(change => change.File)
             .OrderBy(change => change.Path, StringComparer.OrdinalIgnoreCase)];
     }
 

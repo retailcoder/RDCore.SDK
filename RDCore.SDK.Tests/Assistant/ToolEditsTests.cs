@@ -104,6 +104,17 @@ public sealed class ToolEditsTests
     }
 
     [TestMethod]
+    public void ADocumentItsEditsLeaveAsItWas_IsLeftOut()
+    {
+        var edit = new WorkspaceEdit
+        {
+            DocumentChanges = new Container<WorkspaceEditDocumentChange>(Edited(Module1, Edit(1, 11, 15, "Main")), Edited(Helpers)),
+        };
+
+        Assert.IsEmpty(FilesOf(edit));
+    }
+
+    [TestMethod]
     public void TheQuestionsOfAnEdit_AreItsAnnotationsThatNeedConfirmation()
     {
         var edit = new WorkspaceEdit
