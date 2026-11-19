@@ -152,8 +152,8 @@ public sealed partial class ModuleFileText
     /// it holds.
     /// </summary>
     /// <remarks>
-    /// The text is written as it is given, its line endings included: unlike <see cref="Edit"/>, nothing of it is changed. A text that is the file's own leaves
-    /// the file as it is, byte for byte.
+    /// The text is written as it is given, its line endings included: unlike <see cref="Edit"/>, nothing of it is changed. A text that is the file's own
+    /// leaves the file as it is, byte for byte.
     /// </remarks>
     /// <param name="text">The whole text of the file.</param>
     /// <returns>The file with that text.</returns>

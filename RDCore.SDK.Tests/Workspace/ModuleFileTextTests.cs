@@ -71,7 +71,7 @@ public sealed class ModuleFileTextTests
     public void AFileGivenAnotherText_IsWrittenInItsEncoding_WithTheTextsOwnLineEndings(string encoding)
     {
         var file = ModuleFileText.Decode(BytesOf(encoding, Text), ModuleFileText.DefaultAnsiCodePage);
-        // a line ending of its own, unlike its neighbours', and a newline at the end the file did not have.
+        // a line ending of its own, unlike its neighbors', and a newline at the end the file did not have.
         var saved = Text.Replace("Café()\n", "Thé()\r") + "\n";
 
         CollectionAssert.AreEqual(BytesOf(encoding, saved), file.WithText(saved).Encode());
