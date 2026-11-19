@@ -716,7 +716,9 @@ public static class CompletionCandidates
         var candidates = new Candidates();
         IEnumerable<Symbol> declared = owner switch
         {
-            VBProjectSymbol project => tree.Global.Declarations.Concat(ProjectScopeOf(tree)?.Declarations ?? []).Where(symbol => IsOfProject(symbol, project)),
+            // each project's declared types are in its own project's scope.
+            VBProjectSymbol project
+                => tree.Global.Declarations.Concat(tree.Projects.SelectMany(scope => scope.Declarations)).Where(symbol => IsOfProject(symbol, project)),
             VBModuleSymbol module when tree.TryGetScope(module.Uri, out var scope) && scope.Kind == LexicalScopeKind.Module => scope.Declarations,
             _ => [],
         };
@@ -898,11 +900,6 @@ public static class CompletionCandidates
         => tree.TryGetScope(module.Uri, out var scope) && scope.Kind == LexicalScopeKind.Module && scope.Uri.AbsoluteUri == module.Uri.AbsoluteUri
             ? scope.Declarations
             : module.Members;
-
-    private static LexicalScope? ProjectScopeOf(ScopeTree tree)
-        => tree.Global.Declarations.OfType<VBModuleSymbol>()
-            .Select(module => tree.TryGetScope(module.Uri, out var scope) ? scope.Parent : null)
-            .FirstOrDefault(scope => scope?.Kind == LexicalScopeKind.Project);
 
     private static bool IsOfProject(Symbol symbol, VBProjectSymbol project)
         => string.Equals(symbol.GetProperty(SymbolProperties.Library) ?? string.Empty, project.GetProperty(SymbolProperties.Library) ?? string.Empty, StringComparison.Ordinal);
