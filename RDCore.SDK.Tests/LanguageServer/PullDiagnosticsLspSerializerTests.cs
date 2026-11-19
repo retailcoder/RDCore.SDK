@@ -175,4 +175,64 @@ public sealed class PullDiagnosticsLspSerializerTests
         Assert.AreEqual("rdcore.rename.inString", identifier.Identifier);
         Assert.AreEqual("Called by its name in a string", annotation.Label);
     }
+
+    private static ClientCapabilities ListingCodeActionKinds(params CodeActionKind[] valueSet) => new()
+    {
+        TextDocument = new TextDocumentClientCapabilities
+        {
+            CodeAction = new CodeActionCapability
+            {
+                CodeActionLiteralSupport = new CodeActionLiteralSupportOptions
+                {
+                    CodeActionKind = new CodeActionKindCapabilityOptions { ValueSet = new Container<CodeActionKind>(valueSet) },
+                },
+            },
+        },
+    };
+
+    // what OmniSharp does on initialize, then the actions written as the output handler writes a response.
+    private static string KindsOnTheWire(ClientCapabilities? client)
+    {
+        var serializer = new PullDiagnosticsLspSerializer();
+        if (client is not null)
+        {
+            serializer.SetClientCapabilities(client);
+        }
+
+        var actions = new CommandOrCodeActionContainer(
+            new CommandOrCodeAction(new CodeAction { Title = "fix", Kind = CodeActionKind.QuickFix }),
+            new CommandOrCodeAction(new CodeAction { Title = "rename", Kind = new CodeActionKind("refactor.rename") }),
+            new CommandOrCodeAction(new CodeAction { Title = "extract", Kind = new CodeActionKind("refactor.extract.method") }));
+        var json = ((ISerializer)serializer).SerializeObject(actions);
+        return string.Join(", ", JArray.Parse(json).Select(action => (string?)action["kind"]));
+    }
+
+    [TestMethod]
+    [DataRow("refactor.rename", "quickfix", DisplayName = "the value set in another order")]
+    [DataRow("quickfix", "refactor", DisplayName = "the base kinds")]
+    [DataRow("quickfix", null, DisplayName = "one kind")]
+    public void ACodeAction_KeepsItsKind_WhateverKindsTheClientLists(string first, string? second)
+    {
+        CodeActionKind[] listed = second is null ? [new(first)] : [new(first), new(second)];
+
+        Assert.AreEqual("quickfix, refactor.rename, refactor.extract.method", KindsOnTheWire(ListingCodeActionKinds(listed)));
+    }
+
+    [TestMethod]
+    public void ACodeAction_KeepsItsKind_WhenTheClientListsNone()
+    {
+        Assert.AreEqual("quickfix, refactor.rename, refactor.extract.method", KindsOnTheWire(new ClientCapabilities()));
+        Assert.AreEqual("quickfix, refactor.rename, refactor.extract.method", KindsOnTheWire(null));
+    }
+
+    [TestMethod]
+    public void ACodeActionsKind_IsReadAsItIsWritten()
+    {
+        var serializer = new PullDiagnosticsLspSerializer();
+        serializer.SetClientCapabilities(ListingCodeActionKinds(CodeActionKind.QuickFix));
+
+        var read = (CodeAction)((ISerializer)serializer).DeserializeObject("""{"title":"rename","kind":"refactor.rename"}""", typeof(CodeAction))!;
+
+        Assert.AreEqual("refactor.rename", read.Kind.ToString());
+    }
 }

@@ -95,18 +95,21 @@ public sealed class ProtocolProjectFileTests
     }
 
     // a project file's version is the version of its format, major.minor; what follows them is not compared. The first builds stamped 1.0.0, the next 0.1.x,
-    // and the format 1.0 came before 1.1, which adds the build section.
+    // and the format 1.0 came before 1.1, which adds the build section, 1.2, which adds KeepSystemTheme and the Make section, and 1.3, which adds the
+    // references to projects.
     [TestMethod]
     [DataRow(null, ProjectFileSchemaMatch.Unstamped)]
     [DataRow("", ProjectFileSchemaMatch.Unstamped)]
-    [DataRow("1.1", ProjectFileSchemaMatch.Same)]
-    [DataRow("1.1.0-rc3", ProjectFileSchemaMatch.Same)]
+    [DataRow("1.3", ProjectFileSchemaMatch.Same)]
+    [DataRow("1.3.0-rc3", ProjectFileSchemaMatch.Same)]
+    [DataRow("1.2", ProjectFileSchemaMatch.Older, DisplayName = "1.2, the format before the references to projects")]
+    [DataRow("1.1", ProjectFileSchemaMatch.Older, DisplayName = "1.1, the format before KeepSystemTheme and the Make section")]
     [DataRow("1.0", ProjectFileSchemaMatch.Older, DisplayName = "1.0, the format before the build section")]
     [DataRow("1.0.0", ProjectFileSchemaMatch.Older, DisplayName = "1.0.0, as the first builds stamped it")]
     [DataRow("0.1.3", ProjectFileSchemaMatch.Older, DisplayName = "0.1.3, as the next builds stamped it")]
     [DataRow("0.87.2-rc3", ProjectFileSchemaMatch.Older)]
-    [DataRow("1.2", ProjectFileSchemaMatch.NewerMinor)]
-    [DataRow("1.2.0+abc", ProjectFileSchemaMatch.NewerMinor)]
+    [DataRow("1.4", ProjectFileSchemaMatch.NewerMinor)]
+    [DataRow("1.4.0+abc", ProjectFileSchemaMatch.NewerMinor)]
     [DataRow("2.0", ProjectFileSchemaMatch.NewerMajor)]
     [DataRow("2", ProjectFileSchemaMatch.NewerMajor, DisplayName = "a lone number is a major")]
     [DataRow("v1.0", ProjectFileSchemaMatch.Unparseable)]
@@ -133,7 +136,7 @@ public sealed class ProtocolProjectFileTests
     {
         const string json = """
             {
-              "Version": "1.2",
+              "Version": "1.3",
               "Theme": { "Accent": "teal" },
               "ProjectInfo": {
                 "Name": "Newer",
@@ -148,7 +151,7 @@ public sealed class ProtocolProjectFileTests
         var project = await ReadAsync(json);
         var written = System.Text.Json.Nodes.JsonNode.Parse(JsonSerializer.Serialize(project.WithSchemaVersion()))!;
 
-        Assert.AreEqual("1.2", written["Version"]!.GetValue<string>(), "the newer format's stamp is kept, since what it added is");
+        Assert.AreEqual("1.3", written["Version"]!.GetValue<string>(), "the newer format's stamp is kept, since what it added is");
         Assert.AreEqual("""{"Accent":"teal"}""", written["Theme"]!.ToJsonString());
         var info = written["ProjectInfo"]!;
         Assert.AreEqual("Library", info["Kind"]!.GetValue<string>());
@@ -164,6 +167,9 @@ public sealed class ProtocolProjectFileTests
     [DataRow("""{ "outputType": "Library" }""", ProjectOutputType.Library, null)]
     [DataRow("""{ "outputType": "library" }""", ProjectOutputType.Library, null, DisplayName = "Library, whatever its case")]
     [DataRow("""{ "outputType": "Application", "entryPoint": "Module1.Main" }""", ProjectOutputType.Application, "Module1.Main")]
+    [DataRow("""{ "outputType": "ConsoleApplication", "entryPoint": "Game.Main" }""", ProjectOutputType.ConsoleApplication, "Game.Main")]
+    [DataRow("""{ "outputType": "consoleapplication" }""", ProjectOutputType.ConsoleApplication, null, DisplayName = "ConsoleApplication, whatever its case")]
+    [DataRow("""{ "outputType": "Console" }""", ProjectOutputType.Application, null, DisplayName = "Console alone, a value it does not know, is a program")]
     [DataRow("""{ "entryPoint": "Start" }""", ProjectOutputType.Application, "Start", DisplayName = "a program unless it says Library")]
     [DataRow("""{ "outputType": "Exe" }""", ProjectOutputType.Application, null, DisplayName = "an output type it does not know is a program")]
     [DataRow("""{ "outputType": 1, "entryPoint": 2 }""", ProjectOutputType.Application, null, DisplayName = "what is no string says nothing")]
@@ -176,6 +182,7 @@ public sealed class ProtocolProjectFileTests
         Assert.IsNotNull(project.ProjectInfo.Build);
         Assert.AreEqual(outputType, project.ProjectInfo.Build.OutputType);
         Assert.AreEqual(outputType is ProjectOutputType.Library, project.ProjectInfo.Build.IsLibrary);
+        Assert.AreEqual(outputType is ProjectOutputType.ConsoleApplication, project.ProjectInfo.Build.IsConsoleApplication);
         Assert.AreEqual(entryPoint, project.ProjectInfo.Build.EntryPoint);
         Assert.IsFalse(project.ProjectInfo.ExtensionData?.ContainsKey("build") ?? false, "a member this model knows");
     }
@@ -210,7 +217,24 @@ public sealed class ProtocolProjectFileTests
         Assert.IsNull(System.Text.Json.Nodes.JsonNode.Parse(JsonSerializer.Serialize(new RDCoreProject { Name = "P" }))!["build"]);
     }
 
-    // a file of the format 1.0 that has a build section - a member it did not know - reads it, and is stamped 1.1 when it is written.
+    // a console program's output type is written as ConsoleApplication, whatever case it was read in, and reads back as one.
+    [TestMethod]
+    [DataRow("ConsoleApplication")]
+    [DataRow("CONSOLEAPPLICATION", DisplayName = "read in another case")]
+    public async Task AConsoleProgramsOutputType_IsWritten_AndReadsBack(string read)
+    {
+        var project = await ReadAsync($$"""{ "Version": "1.2", "ProjectInfo": { "Name": "P", "build": { "outputType": "{{read}}" } } }""");
+
+        var json = JsonSerializer.Serialize(project.WithSchemaVersion());
+        var again = await ReadAsync(json);
+
+        Assert.AreEqual("""{"outputType":"ConsoleApplication"}""", System.Text.Json.Nodes.JsonNode.Parse(json)!["ProjectInfo"]!["build"]!.ToJsonString());
+        Assert.AreEqual(ProjectOutputType.ConsoleApplication, again.ProjectInfo.Build?.OutputType);
+        Assert.IsTrue(again.ProjectInfo.Build!.IsConsoleApplication);
+        Assert.IsFalse(again.ProjectInfo.Build.IsLibrary, "a console program is run");
+    }
+
+    // a file of the format 1.0 that has a build section, a member that format did not know, reads it, and is stamped with this format when it is written.
     [TestMethod]
     public async Task AFileOfTheFormatBeforeTheBuildSection_ReadsItsSection_AndIsWrittenInThisFormat()
     {
@@ -223,15 +247,272 @@ public sealed class ProtocolProjectFileTests
 
     // a file in an older format, or no format, is in this one once it is written: only a newer one keeps its stamp.
     [TestMethod]
-    [DataRow("1.0", "1.1")]
-    [DataRow("1.0.0", "1.1")]
-    [DataRow("0.1.3", "1.1")]
-    [DataRow("v1", "1.1")]
-    [DataRow("", "1.1")]
+    [DataRow("1.2", "1.3")]
+    [DataRow("1.1", "1.3")]
+    [DataRow("1.0", "1.3")]
+    [DataRow("1.0.0", "1.3")]
+    [DataRow("0.1.3", "1.3")]
+    [DataRow("v1", "1.3")]
+    [DataRow("", "1.3")]
     [DataRow("1.4", "1.4")]
     [DataRow("3.0", "3.0")]
     public void AWrittenFile_IsStampedWithThisPlatformsFormat_UnlessItIsInANewerOne(string version, string stamped)
         => Assert.AreEqual(stamped, new ProjectFile().WithVersion(version).WithSchemaVersion().Version);
+
+    // KeepSystemTheme, as files have it: true is set, and anything else, or nothing, is not; a project file is never refused for it.
+    [TestMethod]
+    [DataRow("""{ "Name": "P", "KeepSystemTheme": true }""", true)]
+    [DataRow("""{ "Name": "P", "KeepSystemTheme": false }""", false)]
+    [DataRow("""{ "Name": "P" }""", false, DisplayName = "a project that does not have it")]
+    [DataRow("""{ "Name": "P", "KeepSystemTheme": null }""", false, DisplayName = "null")]
+    [DataRow("""{ "Name": "P", "KeepSystemTheme": "true" }""", false, DisplayName = "a string")]
+    [DataRow("""{ "Name": "P", "KeepSystemTheme": 1 }""", false, DisplayName = "a number")]
+    [DataRow("""{ "Name": "P", "KeepSystemTheme": { "Value": true } }""", false, DisplayName = "an object")]
+    public async Task KeepSystemTheme_IsReadAsFilesHaveIt(string info, bool keepSystemTheme)
+    {
+        var project = await ReadAsync($$"""{ "Version": "1.2", "ProjectInfo": {{info}} }""");
+
+        Assert.AreEqual(keepSystemTheme, project.ProjectInfo.KeepSystemTheme);
+        Assert.AreEqual("P", project.ProjectInfo.Name);
+        Assert.IsFalse(project.ProjectInfo.ExtensionData?.ContainsKey(nameof(RDCoreProject.KeepSystemTheme)) ?? false, "a member this model knows");
+    }
+
+    // it is written only when it is set, and reads back as it was written.
+    [TestMethod]
+    [DataRow(true)]
+    [DataRow(false)]
+    public async Task KeepSystemTheme_IsWrittenOnlyWhenItIsSet_AndReadsBack(bool keepSystemTheme)
+    {
+        var project = new ProjectFile(Root, new RDCoreProject { Name = "P" }).WithKeepSystemTheme(keepSystemTheme).WithSchemaVersion();
+
+        var json = JsonSerializer.Serialize(project);
+        var info = System.Text.Json.Nodes.JsonNode.Parse(json)!["ProjectInfo"]!.AsObject();
+        var read = await ReadAsync(json);
+
+        Assert.AreEqual(keepSystemTheme, info.ContainsKey(nameof(RDCoreProject.KeepSystemTheme)), json);
+        Assert.AreEqual(keepSystemTheme ? "true" : null, info[nameof(RDCoreProject.KeepSystemTheme)]?.ToJsonString());
+        Assert.AreEqual(keepSystemTheme, read.ProjectInfo.KeepSystemTheme);
+        Assert.AreEqual(ProjectFile.SchemaVersion, read.Version);
+    }
+
+    // a file of the format 1.1, which has no KeepSystemTheme, loads with the light colors, and is written in this format without the member.
+    [TestMethod]
+    public async Task AFileOfTheFormatBeforeKeepSystemTheme_ReadsItAsNotSet_AndIsWrittenInThisFormat()
+    {
+        var project = await ReadAsync("""{ "Version": "1.1", "ProjectInfo": { "Name": "P", "Modules": [ "Module1.bas" ], "build": { "entryPoint": "Module1.Main" } } }""");
+
+        Assert.AreEqual(ProjectFileSchemaMatch.Older, ProjectFile.SchemaOf(project.Version));
+        Assert.IsFalse(project.ProjectInfo.KeepSystemTheme);
+        Assert.AreEqual("Module1.Main", project.ProjectInfo.Build?.EntryPoint);
+        var written = System.Text.Json.Nodes.JsonNode.Parse(JsonSerializer.Serialize(project.WithSchemaVersion()))!;
+        Assert.AreEqual(ProjectFile.SchemaVersion, written["Version"]!.GetValue<string>());
+        Assert.IsNull(written["ProjectInfo"]!["KeepSystemTheme"]);
+    }
+
+    // the Make section, as files have it: each member that says something is read, and the others are none.
+    [TestMethod]
+    public async Task TheMakeSection_IsReadAsFilesHaveIt()
+    {
+        var project = await ReadAsync("""
+            {
+              "Version": "1.2",
+              "ProjectInfo": {
+                "Name": "P",
+                "Make": {
+                  "Title": "Naval", "Major": 2, "Minor": 10, "Revision": 9999,
+                  "Comments": "c", "CompanyName": "Contoso", "FileDescription": "d",
+                  "LegalCopyright": "(c)", "LegalTrademarks": "tm", "ProductName": "Naval Game"
+                }
+              }
+            }
+            """);
+
+        var make = project.ProjectInfo.Make;
+        Assert.IsNotNull(make);
+        Assert.AreEqual(("Naval", (short)2, (short)10, (short)9999), (make.Title, make.Major, make.Minor, make.Revision),
+            "9999, the highest the Make tab takes");
+        CollectionAssert.AreEqual(new[] { "c", "Contoso", "d", "(c)", "tm", "Naval Game" },
+            new[] { make.Comments, make.CompanyName, make.FileDescription, make.LegalCopyright, make.LegalTrademarks, make.ProductName });
+        Assert.IsNull(make.ExtensionData);
+        Assert.IsFalse(project.ProjectInfo.ExtensionData?.ContainsKey(nameof(RDCoreProject.Make)) ?? false, "a member this model knows");
+    }
+
+    // what is not what a member is says nothing, and a project file is never refused for it.
+    [TestMethod]
+    [DataRow("""{ "Major": "1" }""", DisplayName = "a version number that is a string")]
+    [DataRow("""{ "Major": 1.5 }""", DisplayName = "a version number with a fraction")]
+    [DataRow("""{ "Major": -1 }""", DisplayName = "a negative version number")]
+    [DataRow("""{ "Major": 10000 }""", DisplayName = "a major version above 9999")]
+    [DataRow("""{ "Minor": 10000 }""", DisplayName = "a minor version above 9999")]
+    [DataRow("""{ "Revision": 32767 }""", DisplayName = "a revision above 9999")]
+    [DataRow("""{ "Major": 32768 }""", DisplayName = "a version number no Integer holds")]
+    [DataRow("""{ "Major": null }""", DisplayName = "a null version number")]
+    [DataRow("""{ "Title": 1 }""", DisplayName = "a title that is a number")]
+    [DataRow("""{ "CompanyName": true }""", DisplayName = "a version string that is a Boolean")]
+    [DataRow("""{ "ProductName": [ "P" ] }""", DisplayName = "a version string that is an array")]
+    [DataRow("""{ }""", DisplayName = "an empty section")]
+    public async Task AMemberOfTheMakeSection_ThatIsNotWhatItIs_IsNone(string make)
+    {
+        var project = await ReadAsync($$"""{ "Version": "1.2", "ProjectInfo": { "Name": "P", "Make": {{make}} } }""");
+
+        Assert.IsNotNull(project.ProjectInfo.Make);
+        Assert.IsNull(project.ProjectInfo.Make.Major);
+        Assert.IsNull(project.ProjectInfo.Make.Minor);
+        Assert.IsNull(project.ProjectInfo.Make.Revision);
+        Assert.IsNull(project.ProjectInfo.Make.Title);
+        Assert.IsNull(project.ProjectInfo.Make.CompanyName);
+        Assert.IsNull(project.ProjectInfo.Make.ProductName);
+        Assert.IsNull(project.ProjectInfo.Make.ExtensionData, "a member this model knows");
+    }
+
+    // a project file with no Make section, or one that is not an object, has none.
+    [TestMethod]
+    [DataRow("""{ "Name": "P" }""", DisplayName = "no section")]
+    [DataRow("""{ "Name": "P", "Make": null }""", DisplayName = "a null section")]
+    [DataRow("""{ "Name": "P", "Make": "Naval" }""", DisplayName = "a section that is a string")]
+    [DataRow("""{ "Name": "P", "Make": [ { "Title": "Naval" } ] }""", DisplayName = "an array")]
+    public async Task AProjectWithNoMakeSection_HasNone(string info)
+    {
+        var project = await ReadAsync($$"""{ "Version": "1.2", "ProjectInfo": {{info}} }""");
+
+        Assert.IsNull(project.ProjectInfo.Make);
+        Assert.AreEqual("P", project.ProjectInfo.Name);
+    }
+
+    // the section is written only when the project has one, with only the members it says, a string kept as it is, empty or not; it reads back as it was
+    // written, and what a newer format adds to it is kept.
+    [TestMethod]
+    public async Task TheMakeSection_IsWrittenOnlyWhenItIsSet_WithWhatItSays_AndReadsBack()
+    {
+        var make = new ProjectMake { Title = "Naval", Major = 1, Minor = 0, CompanyName = "" };
+        var project = new ProjectFile(Root, new RDCoreProject { Name = "P" }).WithMake(make).WithSchemaVersion();
+
+        var json = JsonSerializer.Serialize(project);
+        var read = await ReadAsync(json);
+        var none = System.Text.Json.Nodes.JsonNode.Parse(JsonSerializer.Serialize(new RDCoreProject { Name = "P" }))!.AsObject();
+        var newer = await ReadAsync("""{ "Version": "1.3", "ProjectInfo": { "Name": "P", "Make": { "Title": "Naval", "Icon": "duck.ico" } } }""");
+
+        Assert.AreEqual("""{"Title":"Naval","Major":1,"Minor":0,"CompanyName":""}""",
+            System.Text.Json.Nodes.JsonNode.Parse(json)!["ProjectInfo"]!["Make"]!.ToJsonString());
+        Assert.AreEqual(make, read.ProjectInfo.Make with { ExtensionData = null });
+        Assert.AreEqual(ProjectFile.SchemaVersion, read.Version);
+        Assert.IsFalse(none.ContainsKey(nameof(RDCoreProject.Make)), none.ToJsonString());
+        Assert.AreEqual("""{"Title":"Naval","Icon":"duck.ico"}""",
+            System.Text.Json.Nodes.JsonNode.Parse(JsonSerializer.Serialize(newer.WithSchemaVersion()))!["ProjectInfo"]!["Make"]!.ToJsonString());
+    }
+
+    // a file of the format 1.1, which has no Make section, has none, and is written in this format without one.
+    [TestMethod]
+    public async Task AFileOfTheFormatBeforeTheMakeSection_HasNone_AndIsWrittenInThisFormat()
+    {
+        var project = await ReadAsync("""{ "Version": "1.1", "ProjectInfo": { "Name": "P", "Modules": [ "Module1.bas" ] } }""");
+
+        Assert.AreEqual(ProjectFileSchemaMatch.Older, ProjectFile.SchemaOf(project.Version));
+        Assert.IsNull(project.ProjectInfo.Make);
+        var written = System.Text.Json.Nodes.JsonNode.Parse(JsonSerializer.Serialize(project.WithSchemaVersion()))!;
+        Assert.AreEqual(ProjectFile.SchemaVersion, written["Version"]!.GetValue<string>());
+        Assert.IsNull(written["ProjectInfo"]!["Make"]);
+    }
+
+    // a platform of the format 1.1, whose model has no Make, keeps the section as a member it does not know, and writes it back as it was read.
+    [TestMethod]
+    public void TheMakeSection_IsKeptAsRead_ByAModelThatDoesNotKnowIt()
+    {
+        const string json = """{"Name":"P","Make":{"Title":"Naval","Major":3,"Extra":[1]}}""";
+
+        var older = JsonSerializer.Deserialize<ProjectOfTheFormat11>(json)!;
+
+        Assert.IsTrue(older.ExtensionData!.ContainsKey(nameof(RDCoreProject.Make)));
+        Assert.AreEqual(json, JsonSerializer.Serialize(older));
+    }
+
+    // what a platform of the format 1.1 has of a project, for what it does not know: its name, and the members it keeps as they were read.
+    private sealed record class ProjectOfTheFormat11
+    {
+        public string Name { get; init; } = string.Empty;
+
+        [System.Text.Json.Serialization.JsonExtensionData]
+        public Dictionary<string, JsonElement>? ExtensionData { get; init; }
+    }
+
+    // a reference to a project, as files have it: true is one, and anything else, or nothing, is a reference to a library; a project file is never
+    // refused for it.
+    [TestMethod]
+    [DataRow("""{ "Name": "NavalLib", "IsProject": true }""", true)]
+    [DataRow("""{ "Name": "NavalLib", "IsProject": false }""", false)]
+    [DataRow("""{ "Name": "NavalLib" }""", false, DisplayName = "a reference that does not have it")]
+    [DataRow("""{ "Name": "NavalLib", "IsProject": null }""", false, DisplayName = "null")]
+    [DataRow("""{ "Name": "NavalLib", "IsProject": "true" }""", false, DisplayName = "a string")]
+    [DataRow("""{ "Name": "NavalLib", "IsProject": 1 }""", false, DisplayName = "a number")]
+    [DataRow("""{ "Name": "NavalLib", "IsProject": [ true ] }""", false, DisplayName = "an array")]
+    public async Task AReferenceToAProject_IsReadAsFilesHaveIt(string reference, bool isProject)
+    {
+        var project = await ReadAsync($$"""{ "Version": "1.3", "ProjectInfo": { "Name": "P", "References": [ {{reference}} ] } }""");
+
+        var read = project.ProjectInfo.References.Single();
+        Assert.AreEqual("NavalLib", read.Name);
+        Assert.AreEqual(isProject, read.IsProject);
+        Assert.IsFalse(read.ExtensionData?.ContainsKey(nameof(RDCoreReference.IsProject)) ?? false, "a member this model knows");
+    }
+
+    // it is written only for a reference to a project, and reads back as it was written.
+    [TestMethod]
+    [DataRow(true)]
+    [DataRow(false)]
+    public async Task AReferenceToAProject_IsWrittenOnlyWhenItIsOne_AndReadsBack(bool isProject)
+    {
+        var project = new ProjectFile(Root, new RDCoreProject { Name = "P" }.WithReference(new RDCoreReference { Name = "NavalLib", IsProject = isProject }))
+            .WithSchemaVersion();
+
+        var json = JsonSerializer.Serialize(project);
+        var written = System.Text.Json.Nodes.JsonNode.Parse(json)!["ProjectInfo"]!["References"]![0]!.AsObject();
+        var read = await ReadAsync(json);
+
+        Assert.AreEqual(isProject, written.ContainsKey(nameof(RDCoreReference.IsProject)), json);
+        Assert.AreEqual(isProject ? "true" : null, written[nameof(RDCoreReference.IsProject)]?.ToJsonString());
+        Assert.AreEqual(isProject, read.ProjectInfo.References.Single().IsProject);
+        Assert.AreEqual(ProjectFile.SchemaVersion, read.Version);
+    }
+
+    // the references to projects, among the references to libraries, in the order of the references.
+    [TestMethod]
+    public void AProjectsReferencesToProjects_AreTheOnesThatAreProjects_InTheirPriorityOrder()
+    {
+        var project = new RDCoreProject
+        {
+            Name = "NavalWindow",
+            References =
+            [
+                new RDCoreReference { Name = "VB" },
+                new RDCoreReference { Name = "NavalLib", IsProject = true },
+                new RDCoreReference { Name = "MSForms" },
+                new RDCoreReference { Name = "NavalShared", IsProject = true },
+            ],
+        };
+
+        CollectionAssert.AreEqual(new[] { "NavalLib", "NavalShared" }, project.ProjectReferences.Select(reference => reference.Name).ToArray());
+    }
+
+    // a platform of the format 1.2, whose model of a reference has no IsProject, keeps it as a member it does not know, and writes it back as it was read.
+    [TestMethod]
+    public void AReferenceToAProject_IsKeptAsRead_ByAModelThatDoesNotKnowIt()
+    {
+        const string json = """{"Name":"NavalLib","IsProject":true}""";
+
+        var older = JsonSerializer.Deserialize<ReferenceOfTheFormat12>(json)!;
+
+        Assert.IsTrue(older.ExtensionData!.ContainsKey(nameof(RDCoreReference.IsProject)));
+        Assert.AreEqual(json, JsonSerializer.Serialize(older));
+    }
+
+    // what a platform of the format 1.2 has of a reference, for what it does not know: its name, and the members it keeps as they were read.
+    private sealed record class ReferenceOfTheFormat12
+    {
+        public string Name { get; init; } = string.Empty;
+
+        [System.Text.Json.Serialization.JsonExtensionData]
+        public Dictionary<string, JsonElement>? ExtensionData { get; init; }
+    }
 
     [TestMethod]
     [DataRow(null, "Attribute VB_Name = \"Module1\"\r\n", ProjectModuleKind.Standard)]

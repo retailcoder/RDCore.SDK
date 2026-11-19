@@ -25,6 +25,13 @@ public enum SettingValueKind
 
     /// <summary>A list of texts, written separated by commas.</summary>
     TextList = 4,
+
+    /// <summary>
+    /// A list of codes of diagnostics that can be disabled, written separated by commas: <c>RDC01001, XYZ00042</c>. A code of the language's own errors is none
+    /// (<see cref="Extensibility.Diagnostics.RDCoreDiagnosticCode.CanBeDisabled"/>). A setting of this kind is a list of texts that
+    /// <see cref="DiagnosticCodeListAttribute"/> says it is.
+    /// </summary>
+    DiagnosticCodeList = 5,
 }
 
 /// <summary>
@@ -241,6 +248,16 @@ public sealed class SettingsSchema
                 value = trimmed.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
                 return true;
 
+            case SettingValueKind.DiagnosticCodeList:
+                var codes = trimmed.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries).Select(SdkAnalysisOptions.DisablableCodeOf).ToArray();
+                if (codes.Any(code => code is null))
+                {
+                    return false;
+                }
+
+                value = codes.Select(code => code!.Value.ToString()).Distinct().ToArray();
+                return true;
+
             default:
                 return false;
         }
@@ -261,8 +278,9 @@ public sealed class SettingsSchema
             var propertyIsTrustSensitive = isTrustSensitive || property.IsDefined(typeof(TrustSensitiveSettingAttribute));
             var valueType = Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType;
 
-            if (KindOf(valueType) is { } kind)
+            if (KindOf(valueType) is { } typed)
             {
+                var kind = typed == SettingValueKind.TextList && property.IsDefined(typeof(DiagnosticCodeListAttribute)) ? SettingValueKind.DiagnosticCodeList : typed;
                 var range = property.GetCustomAttribute<RangeAttribute>();
                 settings.Add(new SettingDescriptor
                 {

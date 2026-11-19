@@ -1,8 +1,11 @@
+using System.Collections.Immutable;
+using RDCore.SDK.Model;
 using RDCore.SDK.Model.AST.Abstract;
 using RDCore.SDK.Model.AST.Expressions;
 using RDCore.SDK.Model.Errors.Abstract;
 using RDCore.SDK.Model.Source;
 using RDCore.SDK.Model.Types.Abstract;
+using RDCore.SDK.Model.Values.Abstract;
 using RDCore.SDK.Runtime;
 using RDCore.SDK.Semantics.Flags;
 using RDCore.SDK.Semantics.Runtime.Operators;
@@ -82,7 +85,46 @@ public sealed record class ComparisonOperatorFact(
     VBErrorInfo? Error,
     ComparisonOperatorSemanticFlags Flags,
     StringComparisonRules Comparison)
-    : OperatorFact(Node, Location, Operator, EffectiveType, IsValueKnown, Error);
+    : OperatorFact(Node, Location, Operator, EffectiveType, IsValueKnown, Error)
+{
+    /// <summary>
+    /// The <c>String</c> operand of a comparison of a <c>String</c> with a number, Let-coerced both ways (<see cref="StringOperandFact"/>);
+    /// <see langword="null"/> for any other comparison.
+    /// </summary>
+    public StringOperandFact? StringOperand { get; init; }
+}
+
+/// <summary>
+/// The <c>String</c> operand of a relational operation that compares a <c>String</c>, or a <c>Variant</c> holding one, with a number
+/// (<strong>MS-VBAL 5.6.9.5</strong>): its value Let-coerced (<strong>MS-VBAL 5.5.1.2</strong>) to a <c>Double</c>, and to the effective type that the
+/// table of MS-VBAL 5.6.9.5 gives the two operands.
+/// </summary>
+/// <remarks>
+/// Each Let-coercion has a value or raises a run-time error. When the <c>String</c> is not known, neither is stated: the value and the error are both
+/// <see langword="null"/>.
+/// </remarks>
+/// <param name="IsLeft">Whether the <c>String</c> is the left operand of the operation.</param>
+/// <param name="SpecifiedEffectiveType">The name of the effective type that the table of MS-VBAL 5.6.9.5 gives the two operands.</param>
+/// <param name="AsDouble">
+/// The <c>String</c> Let-coerced to a <c>Double</c>; <see langword="null"/> when the <c>String</c> is not known, or the Let-coercion raises an error.
+/// </param>
+/// <param name="AsDoubleError">The number of the run-time error that the Let-coercion to a <c>Double</c> raises; <see langword="null"/> when it raises none.</param>
+/// <param name="AsSpecified">
+/// The <c>String</c> Let-coerced to <paramref name="SpecifiedEffectiveType"/>; <see langword="null"/> when the <c>String</c> is not known, or the
+/// Let-coercion raises an error.
+/// </param>
+/// <param name="AsSpecifiedError">
+/// The number of the run-time error that the Let-coercion to <paramref name="SpecifiedEffectiveType"/> raises; <see langword="null"/> when it raises none.
+/// </param>
+/// <param name="Number">The value of the other operand, the number, as it is held; <see langword="null"/> when it is not known.</param>
+public sealed record class StringOperandFact(
+    bool IsLeft,
+    string SpecifiedEffectiveType,
+    VBTypedValue? AsDouble,
+    int? AsDoubleError,
+    VBTypedValue? AsSpecified,
+    int? AsSpecifiedError,
+    VBTypedValue? Number);
 
 /// <summary>
 /// An operation of a logical operator (<strong>MS-VBAL 5.6.9.8</strong>).
@@ -152,4 +194,25 @@ public sealed record class MemberAccessFact(
     VBErrorInfo? Error,
     string? Member,
     MemberAccessOperationSemanticFlags Flags)
-    : OperatorFact(Node, Location, Operator, EffectiveType, IsValueKnown, Error);
+    : OperatorFact(Node, Location, Operator, EffectiveType, IsValueKnown, Error)
+{
+    /// <summary>
+    /// For a late-bound access (<see cref="MemberAccessOperationSemanticFlags.LateBound"/>, <strong>MS-VBAL §5.6.12</strong>), the members its name
+    /// may resolve to when it runs (<strong>MS-VBAL §5.6.3</strong>): each member of that name of a class the object may be of, that is accessible from
+    /// the code of the access (<strong>MS-VBAL §5.3.1.1</strong>: a <c>Friend</c> member from the code of its own project only).
+    /// </summary>
+    /// <remarks>
+    /// <see langword="null"/> when the classes the object may be of are not known: an object given as an argument, returned by a function, or read from a
+    /// collection. An empty array when they are all known and none has an accessible member of the name, so that the access raises run-time error 438.
+    /// Always <see langword="null"/> for an access that is not late-bound.
+    /// </remarks>
+    public ImmutableArray<LateBoundCandidate>? LateBoundCandidates { get; init; }
+}
+
+/// <summary>
+/// A member that a late-bound member access may resolve to when it runs (<see cref="MemberAccessFact.LateBoundCandidates"/>,
+/// <strong>MS-VBAL §5.6.3</strong>).
+/// </summary>
+/// <param name="Member">The address of the member, as a declaration's fact gives it (<see cref="Platform.Protocol.DeclarationFactDto.Symbol"/>).</param>
+/// <param name="Access">The access modifier the member is declared with (<strong>MS-VBAL §5.3.1.1</strong>, <strong>MS-VBAL §5.2.3.1</strong>).</param>
+public sealed record class LateBoundCandidate(Uri Member, AccessModifier Access);

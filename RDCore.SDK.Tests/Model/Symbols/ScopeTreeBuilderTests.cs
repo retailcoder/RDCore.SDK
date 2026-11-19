@@ -33,10 +33,12 @@ public sealed class ScopeTreeBuilderTests
     private static PrecompilerConstantSymbol PrecompilerConst(string name)
         => new(name, VBEmptyValue.Empty);
 
+    private static ScopeTree Build(IEnumerable<Symbol> symbols) => ScopeTreeBuilder.Build(symbols, AccessModifierVisibility.Instance);
+
     [TestMethod]
     public void ModuleSymbolsAndPrecompilerConstants_LandInTheGlobalScope()
     {
-        var tree = ScopeTreeBuilder.Build([Module("Mod1"), PrecompilerConst("RDDEBUG")]);
+        var tree = Build([Module("Mod1"), PrecompilerConst("RDDEBUG")]);
 
         Assert.ContainsSingle(tree.Global.DeclaredAs("Mod1"));
         Assert.ContainsSingle(tree.Global.DeclaredAs("RDDEBUG"));
@@ -50,7 +52,7 @@ public sealed class ScopeTreeBuilderTests
         var module = Module("Mod1");
         var field = Field(module.Uri, "Total");
 
-        var tree = ScopeTreeBuilder.Build([module, field]);
+        var tree = Build([module, field]);
         var moduleScope = tree.ScopeFor(module.Uri);
 
         Assert.AreSame(field, moduleScope.DeclaredAs("Total").Single());
@@ -67,7 +69,7 @@ public sealed class ScopeTreeBuilderTests
         var procedure = declared with { Parameters = [parameter] };
         var local = Local(procedure.Uri, "temp");
 
-        var tree = ScopeTreeBuilder.Build([module, procedure, local]);
+        var tree = Build([module, procedure, local]);
         var procedureScope = tree.ScopeFor(procedure.Uri);
 
         Assert.AreSame(parameter, procedureScope.DeclaredAs("value").Single());
@@ -86,7 +88,7 @@ public sealed class ScopeTreeBuilderTests
         var local = Local(declared.Uri, "temp");
         var procedure = declared with { Locals = [local] };
 
-        var tree = ScopeTreeBuilder.Build([module, procedure]);
+        var tree = Build([module, procedure]);
         var procedureScope = tree.ScopeFor(procedure.Uri);
 
         Assert.AreSame(local, procedureScope.DeclaredAs("temp").Single());
@@ -100,7 +102,7 @@ public sealed class ScopeTreeBuilderTests
         var local = Local(procedure.Uri, "temp");
         var field = Field(module.Uri, "Total");
 
-        var tree = ScopeTreeBuilder.Build([module, procedure, local, field]);
+        var tree = Build([module, procedure, local, field]);
 
         Assert.AreSame(tree.ScopeFor(procedure.Uri), tree.ScopeFor(local.Uri), "a local resolves from its procedure scope");
         Assert.AreSame(tree.ScopeFor(module.Uri), tree.ScopeFor(field.Uri), "a field resolves from its module scope");
@@ -112,7 +114,7 @@ public sealed class ScopeTreeBuilderTests
         var module = Module("Mod1");
         var procedure = Procedure(module.Uri, "DoWork");
 
-        var tree = ScopeTreeBuilder.Build([module, procedure]);
+        var tree = Build([module, procedure]);
         var chain = tree.ScopeFor(procedure.Uri).SelfAndAncestors().ToArray();
 
         CollectionAssert.AreEqual(
@@ -127,7 +129,7 @@ public sealed class ScopeTreeBuilderTests
         var module = Module("Mod1");
         var field = Field(module.Uri, "Total");
 
-        var tree = ScopeTreeBuilder.Build([module, field]);
+        var tree = Build([module, field]);
 
         Assert.AreSame(field, tree.ScopeFor(module.Uri).DeclaredAs("tOtAl").Single());
     }
@@ -143,7 +145,7 @@ public sealed class ScopeTreeBuilderTests
         var module = Module("Mod1");
         var (@enum, red) = Enum(module.Uri, "Colours", "Red");
 
-        var tree = ScopeTreeBuilder.Build([module, @enum, red]);
+        var tree = Build([module, @enum, red]);
 
         Assert.AreSame(@enum, tree.ScopeFor(module.Uri).DeclaredAs("Colours").Single(), "the Enum itself is a module member");
         Assert.AreSame(red, tree.ScopeFor(module.Uri).DeclaredAs("Red").Single());
@@ -155,7 +157,7 @@ public sealed class ScopeTreeBuilderTests
         var module = Module("Mod1");
         var (@enum, red) = Enum(module.Uri, "Colours", "Red", AccessModifier.Public);
 
-        var tree = ScopeTreeBuilder.Build([module, @enum, red]);
+        var tree = Build([module, @enum, red]);
 
         Assert.AreSame(red, tree.ScopeFor(module.Uri).Parent!.DeclaredAs("Red").Single());
     }
@@ -166,7 +168,7 @@ public sealed class ScopeTreeBuilderTests
         var module = Module("Mod1");
         var (@enum, red) = Enum(module.Uri, "Colours", "Red", AccessModifier.Private);
 
-        var tree = ScopeTreeBuilder.Build([module, @enum, red]);
+        var tree = Build([module, @enum, red]);
 
         Assert.AreSame(red, tree.ScopeFor(module.Uri).DeclaredAs("Red").Single(), "accessible within the enclosing module");
         Assert.IsEmpty(tree.ScopeFor(module.Uri).Parent!.DeclaredAs("Red"));
@@ -181,7 +183,7 @@ public sealed class ScopeTreeBuilderTests
         var (@enum, red) = Enum(classModule.Uri, "Colours", "Red", AccessModifier.Public);
         var field = Field(classModule.Uri, "Total", AccessModifier.Public);
 
-        var project = ScopeTreeBuilder.Build([classModule, @enum, red, field]).ScopeFor(classModule.Uri).Parent!;
+        var project = Build([classModule, @enum, red, field]).ScopeFor(classModule.Uri).Parent!;
 
         Assert.AreSame(@enum, project.DeclaredAs("Colours").Single());
         Assert.AreSame(red, project.DeclaredAs("Red").Single());
@@ -195,7 +197,7 @@ public sealed class ScopeTreeBuilderTests
         var classModule = ClassModule("Class1");
         var udt = new VBUserDefinedTypeMemberSymbol(Root, classModule.Uri, "Point", ScopeKind.Module, R, R, AccessModifier.Public);
 
-        var project = ScopeTreeBuilder.Build([classModule, udt]).ScopeFor(classModule.Uri).Parent!;
+        var project = Build([classModule, udt]).ScopeFor(classModule.Uri).Parent!;
 
         Assert.AreSame(udt, project.DeclaredAs("Point").Single());
     }
@@ -209,7 +211,7 @@ public sealed class ScopeTreeBuilderTests
         var module = Module("Mod1");
         var (_, red) = Enum(module.Uri, "Colours", "Red", AccessModifier.Public);
 
-        var tree = ScopeTreeBuilder.Build([module, red]);
+        var tree = Build([module, red]);
 
         Assert.IsEmpty(tree.ScopeFor(module.Uri).DeclaredAs("Red"));
         Assert.IsEmpty(tree.Global.DeclaredAs("Red"));
@@ -222,7 +224,7 @@ public sealed class ScopeTreeBuilderTests
         // of the project, so `vbSunday` comes off the global scope.
         var (@enum, sunday) = Enum(StaticSymbol.GlobalUri, "VbDayOfWeek", "vbSunday", AccessModifier.Public);
 
-        var tree = ScopeTreeBuilder.Build([Module("Mod1"), @enum, sunday]);
+        var tree = Build([Module("Mod1"), @enum, sunday]);
 
         Assert.AreSame(sunday, tree.Global.DeclaredAs("vbSunday").Single());
     }
@@ -242,7 +244,7 @@ public sealed class ScopeTreeBuilderTests
         var absentModuleUri = Module("Ghost").Uri;
         var procedure = Procedure(absentModuleUri, "Orphan");
 
-        var tree = ScopeTreeBuilder.Build([procedure]);
+        var tree = Build([procedure]);
 
         Assert.AreSame(tree.Global, tree.ScopeFor(procedure.Uri).Parent);
     }
@@ -250,7 +252,7 @@ public sealed class ScopeTreeBuilderTests
     [TestMethod]
     public void AnEmptySymbolSet_YieldsAGlobalScopeOnly()
     {
-        var tree = ScopeTreeBuilder.Build([]);
+        var tree = Build([]);
 
         Assert.IsNotNull(tree.Global);
         Assert.IsFalse(tree.TryGetScope(new Uri("file://rdcore-test#Nope"), out _));
@@ -262,11 +264,50 @@ public sealed class ScopeTreeBuilderTests
     {
         var module = Module("Mod1");
 
-        var tree = ScopeTreeBuilder.Build([module]);
+        var tree = Build([module]);
         var project = tree.ScopeFor(module.Uri).Parent;
 
         Assert.AreEqual(LexicalScopeKind.Project, project!.Kind);
         Assert.AreSame(tree.Global, project.Parent);
+    }
+
+    private static readonly Uri OtherRoot = new("file://rdcore-test-lib");
+
+    // MS-VBAL §5.6.10: each project is a namespace of its own.
+    [TestMethod]
+    public void ModulesUnderTwoRoots_AreEachUnderTheProjectScopeOfTheirOwnRoot()
+    {
+        var module = Module("Mod1");
+        var library = new VBStandardModuleSymbol(OtherRoot, OtherRoot, "LibMod");
+
+        var tree = Build([library, module]);
+        var project = tree.ScopeFor(module.Uri).Parent!;
+        var libraryProject = tree.ScopeFor(library.Uri).Parent!;
+
+        Assert.AreEqual(LexicalScopeKind.Project, project.Kind);
+        Assert.AreEqual(LexicalScopeKind.Project, libraryProject.Kind);
+        Assert.AreNotSame(project, libraryProject);
+        Assert.AreSame(tree.Global, libraryProject.Parent);
+        Assert.AreSame(project, tree.ScopeFor(Root), "keyed on its root");
+        Assert.AreSame(libraryProject, tree.ScopeFor(OtherRoot));
+        CollectionAssert.AreEqual(new[] { libraryProject, project }, tree.Projects.ToArray(), "in the order of the first module of each");
+    }
+
+    [TestMethod]
+    public void APublicMemberOfAModuleUnderAnotherRoot_IsInThatRootsProjectScope_Only()
+    {
+        var module = Module("Mod1");
+        var library = new VBStandardModuleSymbol(OtherRoot, OtherRoot, "LibMod");
+        var api = new VBProcedureMemberSymbol(OtherRoot, library.Uri, "DoWork", ScopeKind.Module, SymbolKindExt.Procedure, VBVoidType.TypeInfo, R, R,
+            AccessModifier.Public);
+        var (colour, red) = Enum(library.Uri, "Colour", "Red");
+
+        var tree = Build([module, library, api, colour, red]);
+
+        Assert.AreSame(api, tree.ScopeFor(library.Uri).Parent!.DeclaredAs("DoWork").Single());
+        Assert.AreSame(red, tree.ScopeFor(library.Uri).Parent!.DeclaredAs("Red").Single());
+        Assert.IsEmpty(tree.ScopeFor(module.Uri).Parent!.DeclaredAs("DoWork"));
+        Assert.IsEmpty(tree.ScopeFor(module.Uri).Parent!.DeclaredAs("Red"));
     }
 
     [TestMethod]
@@ -275,7 +316,7 @@ public sealed class ScopeTreeBuilderTests
         var module = Module("Mod1");
         var api = Procedure(module.Uri, "DoWork", AccessModifier.Public);
 
-        var tree = ScopeTreeBuilder.Build([module, api]);
+        var tree = Build([module, api]);
         var projectScope = tree.ScopeFor(module.Uri).Parent!;
 
         Assert.AreSame(api, projectScope.DeclaredAs("DoWork").Single());
@@ -288,7 +329,7 @@ public sealed class ScopeTreeBuilderTests
         var module = Module("Mod1");
         var secret = Field(module.Uri, "State", AccessModifier.Private);
 
-        var tree = ScopeTreeBuilder.Build([module, secret]);
+        var tree = Build([module, secret]);
 
         Assert.AreSame(secret, tree.ScopeFor(module.Uri).DeclaredAs("State").Single());
         Assert.IsEmpty(tree.ScopeFor(module.Uri).Parent!.DeclaredAs("State"));
@@ -301,7 +342,7 @@ public sealed class ScopeTreeBuilderTests
         var field = Field(module.Uri, "Counter");           // implicit variable -> Private
         var procedure = Procedure(module.Uri, "Reset");     // implicit procedure -> Public
 
-        var tree = ScopeTreeBuilder.Build([module, field, procedure]);
+        var tree = Build([module, field, procedure]);
         var projectScope = tree.ScopeFor(module.Uri).Parent!;
 
         Assert.IsEmpty(projectScope.DeclaredAs("Counter"));
@@ -314,7 +355,7 @@ public sealed class ScopeTreeBuilderTests
         var @class = ClassModule("Widget");
         var api = Procedure(@class.Uri, "Refresh", AccessModifier.Public);
 
-        var tree = ScopeTreeBuilder.Build([@class, api]);
+        var tree = Build([@class, api]);
 
         Assert.AreSame(api, tree.ScopeFor(@class.Uri).DeclaredAs("Refresh").Single(), "still an instance member");
         Assert.IsEmpty(tree.ScopeFor(@class.Uri).Parent!.DeclaredAs("Refresh"), "but not surfaced to sibling modules");
@@ -325,7 +366,7 @@ public sealed class ScopeTreeBuilderTests
     {
         var module = Module("Mod1") with { Directives = new ModuleDirectives(Explicit: true) };
 
-        var tree = ScopeTreeBuilder.Build([module]);
+        var tree = Build([module]);
 
         Assert.AreEqual(new ModuleDirectives(Explicit: true), tree.ScopeFor(module.Uri).Directives);
     }
@@ -336,7 +377,7 @@ public sealed class ScopeTreeBuilderTests
         var module = Module("Mod1") with { Directives = new ModuleDirectives(Explicit: true) };
         var procedure = Procedure(module.Uri, "DoWork");
 
-        var tree = ScopeTreeBuilder.Build([module, procedure]);
+        var tree = Build([module, procedure]);
 
         Assert.AreEqual(new ModuleDirectives(Explicit: true), tree.ScopeFor(procedure.Uri).EnclosingModuleDirectives());
     }
@@ -344,41 +385,29 @@ public sealed class ScopeTreeBuilderTests
     [TestMethod]
     public void EnclosingModuleDirectives_IsNull_OutsideAnyModuleScope()
     {
-        var tree = ScopeTreeBuilder.Build([]);
+        var tree = Build([]);
 
         Assert.IsNull(tree.Global.EnclosingModuleDirectives());
     }
 
     [TestMethod]
-    public void AMemberDeclaredPublicGlobalOrFriend_IsProjectVisible_AndOneDeclaredPrivateIsNot()
+    public void WhatTheVisibilityDoesNotShowToTheProject_IsOnlyInItsModulesScope()
     {
         var module = Module("Mod1");
+        var procedure = Procedure(module.Uri, "DoWork", AccessModifier.Public);
+        var (colour, red) = Enum(module.Uri, "Colour", "Red", AccessModifier.Public);
 
-        Assert.IsTrue(ScopeTreeBuilder.IsProjectVisible(Field(module.Uri, "Total", AccessModifier.Public)));
-        Assert.IsTrue(ScopeTreeBuilder.IsProjectVisible(Field(module.Uri, "Total", AccessModifier.Global)));
-        Assert.IsTrue(ScopeTreeBuilder.IsProjectVisible(Procedure(module.Uri, "DoWork", AccessModifier.Friend)));
-        Assert.IsFalse(ScopeTreeBuilder.IsProjectVisible(Procedure(module.Uri, "DoWork", AccessModifier.Private)));
+        var tree = ScopeTreeBuilder.Build([module, procedure, colour, red], new NothingVisible());
+
+        Assert.IsFalse(tree.Projects.Single().Declarations.Any());
+        Assert.AreSame(procedure, tree.ScopeFor(module.Uri).DeclaredAs("DoWork").Single());
+        Assert.AreSame(red, tree.ScopeFor(module.Uri).DeclaredAs("Red").Single());
     }
 
-    [TestMethod]
-    public void AMemberDeclaredWithNoAccessModifier_IsProjectVisible_ExceptAModuleVariableOrAConstant()
+    private sealed class NothingVisible : IProjectVisibility
     {
-        var module = Module("Mod1");
-        var constant = new VBConstantMemberSymbol(Root, module.Uri, "Limit", ScopeKind.Module, VBLongType.TypeInfo, R, R, AccessModifier.Implicit);
+        public bool IsProjectVisible(Symbol member, VBModuleSymbol module) => false;
 
-        Assert.IsTrue(ScopeTreeBuilder.IsProjectVisible(Procedure(module.Uri, "DoWork")));
-        Assert.IsTrue(ScopeTreeBuilder.IsProjectVisible(Enum(module.Uri, "Colour", "Red").Enum));
-        Assert.IsFalse(ScopeTreeBuilder.IsProjectVisible(Field(module.Uri, "Total")));
-        Assert.IsFalse(ScopeTreeBuilder.IsProjectVisible(constant));
-    }
-
-    [TestMethod]
-    public void ASymbolWithNoAccessModifier_IsNotProjectVisible()
-    {
-        var module = Module("Mod1");
-        var procedure = Procedure(module.Uri, "DoWork");
-
-        Assert.IsFalse(ScopeTreeBuilder.IsProjectVisible(module));
-        Assert.IsFalse(ScopeTreeBuilder.IsProjectVisible(Local(procedure.Uri, "temp")));
+        public bool IsVisibleFrom(Symbol member, VBModuleSymbol module, Uri? originProject) => false;
     }
 }

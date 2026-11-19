@@ -92,6 +92,35 @@ public class SupportedLanguage
     /// </remarks>
     public IReadOnlyList<string> ImplicitReferences { get; init; } = [];
 
+    /// <summary>
+    /// The libraries a project of the language with these modules references without its project file listing them, by name, in their order of reference
+    /// precedence: the language's (<see cref="ImplicitReferences"/>), then RDForms (<see cref="ProjectModuleKinds.RDFormsLibraryName"/>) when a module is
+    /// the code of an RDForms form (<see cref="ProjectModuleKinds.IsRDFormsModule"/>).
+    /// </summary>
+    /// <remarks>
+    /// A project sees the forms and controls of its forms the way a VB6 project sees VB's: a project that has an RDForms form references RDForms, and its
+    /// project file does not list it. RDForms comes after the language's own, so in a VB6 project a name both <c>VB</c> and RDForms declare is
+    /// <c>VB</c>'s.
+    /// </remarks>
+    /// <param name="modulePaths">The paths or relative URIs of the project's modules (<see cref="RDCoreFile.RelativeUri"/>).</param>
+    /// <returns>The names; <see cref="ImplicitReferences"/> when no module is the code of an RDForms form, or when the language already has RDForms.</returns>
+    public IReadOnlyList<string> ImplicitReferencesOf(IEnumerable<string?> modulePaths)
+        => modulePaths.Any(ProjectModuleKinds.IsRDFormsModule)
+           && !ImplicitReferences.Contains(ProjectModuleKinds.RDFormsLibraryName, StringComparer.OrdinalIgnoreCase)
+            ? [.. ImplicitReferences, ProjectModuleKinds.RDFormsLibraryName]
+            : ImplicitReferences;
+
+    /// <summary>
+    /// Whether a file is written in the language: whether its extension is the extension of one of its <see cref="FileTypes"/>.
+    /// </summary>
+    /// <param name="path">The file's path, or its name.</param>
+    /// <returns><see langword="true"/> when the extension is one of the language's, compared without regard to case.</returns>
+    public bool IsSourceFile(string path)
+    {
+        var extension = Path.GetExtension(path);
+        return extension.Length > 0 && FileTypes.Any(fileType => string.Equals(fileType.TrimStart('*'), extension, StringComparison.OrdinalIgnoreCase));
+    }
+
     /// <summary>The patterns of the files written in the language, as a document filter pattern.</summary>
     public string FilterString => string.Join(";", FileTypes.Select(fileType => $"**/{fileType}").ToArray());
 
@@ -115,13 +144,24 @@ public static class SupportedLanguages
     /// <summary>
     /// RD-VBA: the platform's own implementation of <strong>MS-VBAL</strong>, and the default.
     /// </summary>
+    /// <remarks>
+    /// Its modules are standard modules (<c>.bas</c>), class modules (<c>.cls</c>), UserForms (<c>.frm</c>), document modules (<c>.doccls</c>), and the code
+    /// of RDForms forms (<c>.rdform</c>, <see cref="ProjectModuleKinds.RDFormsModuleExtension"/>), whose RDForms document (<c>.xaml</c>) is not a module.
+    /// </remarks>
     public static SupportedLanguage RDVBA { get; } = new(
-        "vba", "Microsoft Visual Basic for Applications", "*.bas", "*.cls", "*.frm", "*.doccls");
+        "vba", "Microsoft Visual Basic for Applications", "*.bas", "*.cls", "*.frm", "*.doccls", "*.rdform");
 
     /// <summary>
     /// VB6.
     /// </summary>
-    public static SupportedLanguage VB6 { get; } = new("vb6", "Microsoft Visual Basic 6.0", "*.bas", "*.cls", "*.frm")
+    /// <remarks>
+    /// Its modules are standard modules (<c>.bas</c>), class modules (<c>.cls</c>), and designed modules: forms (<c>.frm</c>), UserControls (<c>.ctl</c>),
+    /// PropertyPages (<c>.pag</c>) and UserDocuments (<c>.dob</c>). The code of a UserControl, a PropertyPage or a UserDocument is built on the class its
+    /// designer block names (<see cref="Forms.FormDescriptor.BaseClass"/>). A Designer (<c>.dsr</c>) is not a module: its designer's objects are in its
+    /// binary <c>.dsx</c>. A form ported to RDForms is the code of an RDForms form (<c>.rdform</c>, <see cref="ProjectModuleKinds.RDFormsModuleExtension"/>),
+    /// whose RDForms document (<c>.xaml</c>) is not a module.
+    /// </remarks>
+    public static SupportedLanguage VB6 { get; } = new("vb6", "Microsoft Visual Basic 6.0", "*.bas", "*.cls", "*.frm", "*.ctl", "*.pag", "*.dob", "*.rdform")
     {
         ImplicitReferences = ["VBRUN", "VB"],
     };
@@ -151,6 +191,20 @@ public static class SupportedLanguages
     public static TextDocumentSelector DocumentSelector { get; } = new(All
         .SelectMany(language => language.FileTypes).Distinct()
         .Select(fileType => new TextDocumentFilter { Pattern = $"**/{fileType}" }));
+
+    /// <summary>
+    /// The language a project's file says the project is written in: <see cref="VB6"/> for a project imported from a Visual Basic 6 project
+    /// (<see cref="RDCoreProject.SourceProject"/>, a <c>.vbp</c>).
+    /// </summary>
+    /// <remarks>
+    /// A server takes it when its client names no language in the <c>initializationOptions</c> of its <c>initialize</c> request
+    /// (<see cref="Platform.Protocol.RDCoreInitializationOptions.Language"/>): what the client names wins. A project that was not imported from a <c>.vbp</c> says
+    /// no language, and the server's own setting stands.
+    /// </remarks>
+    /// <param name="project">The project.</param>
+    /// <returns>The language, or <see langword="null"/> when the project's file says none.</returns>
+    public static SupportedLanguage? OfProject(RDCoreProject project)
+        => project.SourceProject is { } source && string.Equals(Path.GetExtension(source), ".vbp", StringComparison.OrdinalIgnoreCase) ? VB6 : null;
 
     /// <summary>
     /// The language with the given identifier.

@@ -26,6 +26,16 @@ public record class ModuleParseResult
     public ImmutableArray<VBSyntaxErrorInfo> SyntaxErrors { get; init; } = [];
 
     /// <summary>
+    /// The characters the lines of the module's text end with: <c>"\r\n"</c>, <c>"\n"</c> or <c>"\r"</c>, as the first line of the text ends; <c>"\r\n"</c>
+    /// for a text of one line.
+    /// </summary>
+    /// <remarks>
+    /// An edit that writes lines of its own ends them with it, so that they end the way the lines around them do (<see cref="Extensibility.Diagnostics.LineEdits"/>).
+    /// A text whose lines do not all end the same way has the ending of its first line. The parser sets it, from the text it reads.
+    /// </remarks>
+    public string LineEnding { get; init; } = "\r\n";
+
+    /// <summary>
     /// What the module's designer declares, when the module is a form module: the form's class and its controls, read from the module's designer block and
     /// its companion <c>.frx</c> file (<see cref="FormDesigner.Read"/>); <c>null</c> for any other module, and for a form whose designer data cannot be read.
     /// </summary>

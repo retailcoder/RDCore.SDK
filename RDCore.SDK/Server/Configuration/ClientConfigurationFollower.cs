@@ -70,12 +70,22 @@ internal sealed class ClientConfigurationFollower : IDisposable
     /// <summary>
     /// Starts following: the client's answers set the settings from now on.
     /// </summary>
-    public void Start() => _subscription ??= ChangeToken.OnChange(_server.Configuration.GetReloadToken, () => _ = FollowAsync());
+    /// <remarks>
+    /// Each change is followed as it comes in, while an earlier one may still wait for the client's answer: the newer change has the last word
+    /// (<see cref="FollowAsync"/>), and an answer the client holds back keeps no change from being followed.
+    /// </remarks>
+    public void Start()
+        // the consumer is an Action, which starts a follow and returns: the overload that takes a Func<Task> waits for each follow before it listens again,
+        // so a change that came in while the client held an answer back would be followed only after that answer.
+        => _subscription ??= ChangeToken.OnChange(_server.Configuration.GetReloadToken, () => { _ = FollowAsync(); });
 
     /// <summary>
     /// Sets the live settings the client said, with the editor's tab size for an indentation the user never set.
     /// </summary>
-    /// <returns>Whether the settings were set: not when a newer change came in while the editor's tab size was asked, nor when the follower was disposed.</returns>
+    /// <returns>
+    /// Whether the settings were set and this change has the last word: not when a newer change came in while the editor's tab size was asked or as the settings
+    /// were set, nor when the follower was disposed. Unless the follower was disposed, each change logs what became of it.
+    /// </returns>
     public async Task<bool> FollowAsync()
     {
         int version;
@@ -117,13 +127,22 @@ internal sealed class ClientConfigurationFollower : IDisposable
             }
 
             // what is told is told once the listeners were told of the change, and of the change that is the last word: one that a newer change came after has been set, and
-            // the newer one is the one that says so.
+            // the newer one is the one that says it was applied. Each change that asked the editor still says what became of it, so that one overtaken here says the newer one replaces it.
+            bool overtaken;
             lock (_gate)
             {
-                if (_disposed == 1 || version != _version)
+                if (_disposed == 1)
                 {
                     return false;
                 }
+
+                overtaken = version != _version;
+            }
+
+            if (overtaken)
+            {
+                _log("⚙️ A newer change of the client's settings came in as this one was set; the newer one replaces it and has the last word.");
+                return false;
             }
 
             _log($"⚙️ The client's live settings were applied ({said.Count} value(s)){(adopted.Count > 0 ? $"; the indentation is the client's tab size ({adopted.Values.Single()}), which no setting overrides" : string.Empty)}.");

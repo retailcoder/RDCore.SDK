@@ -1,3 +1,4 @@
+using RDCore.SDK.Assistant;
 using RDCore.SDK.Platform.Protocol;
 
 namespace RDCore.SDK.Client;
@@ -14,8 +15,9 @@ namespace RDCore.SDK.Client;
 /// </para>
 /// <para>
 /// The requests the language server sends a client are answered only by a client that registered for them (<see cref="OnMessageBox"/>, <see cref="OnInputBox"/>,
-/// <see cref="OnRubberduckIndenterSettings"/>, <see cref="OnRubberduckIndenterSettingsApply"/>), and should be registered before the handshake says the client expects
-/// them: the language server may send one as soon as it is told. The same goes for the stops it tells a client of (<see cref="OnDebugStopped"/>).
+/// <see cref="OnRubberduckIndenterSettings"/>, <see cref="OnRubberduckIndenterSettingsApply"/>, <see cref="OnListSettingValue"/>), and should be registered before the
+/// handshake says the client expects them: the language server may send one as soon as it is told. The same goes for the stops it tells a client of
+/// (<see cref="OnDebugStopped"/>).
 /// </para>
 /// </remarks>
 /// <param name="channel">The connection to the language server.</param>
@@ -182,6 +184,24 @@ public sealed class RDCorePlatformClient(IRDCorePlatformChannel channel)
         => Send<RefactorIdentifierCheckParams, RefactorIdentifierCheckResult>(RDCorePlatformProtocol.RefactorCheckIdentifier, request, token);
 
     /// <summary>
+    /// Lists the tools the language server serves an assistant (<see cref="RDCorePlatformProtocol.ToolsList"/>), in the language of the client's user
+    /// interface.
+    /// </summary>
+    /// <param name="token">Cancels the request.</param>
+    /// <returns>Each tool.</returns>
+    public Task<ToolsListResult> ListToolsAsync(CancellationToken token)
+        => Send<ToolsListParams, ToolsListResult>(RDCorePlatformProtocol.ToolsList, new ToolsListParams(), token);
+
+    /// <summary>
+    /// Calls a tool the language server serves an assistant (<see cref="RDCorePlatformProtocol.ToolsCall"/>).
+    /// </summary>
+    /// <param name="request">The tool, and its arguments.</param>
+    /// <param name="token">Cancels the call.</param>
+    /// <returns>What the tool answers; a refusal is a result whose <see cref="ToolCallResult.IsError"/> is <see langword="true"/>.</returns>
+    public Task<ToolCallResult> CallToolAsync(ToolCallParams request, CancellationToken token)
+        => Send<ToolCallParams, ToolCallResult>(RDCorePlatformProtocol.ToolsCall, request, token);
+
+    /// <summary>
     /// Shows the program's <c>MsgBox</c> calls (<see cref="RDCorePlatformProtocol.SessionMessageBox"/>), for a client that expects <see cref="SessionInteraction"/>.
     /// </summary>
     /// <param name="handler">Shows a message box and answers the button the user chose; <see cref="MessageBoxResult.NotHandled"/> when it showed none.</param>
@@ -223,6 +243,15 @@ public sealed class RDCorePlatformClient(IRDCorePlatformChannel channel)
     /// <returns>The registration; disposing it stops answering.</returns>
     public IDisposable OnRubberduckIndenterSettingsApply(Func<RubberduckIndenterSettingsApplyParams, CancellationToken, Task<RubberduckIndenterSettingsApplyResult>> handler)
         => Channel.OnRequest(RDCorePlatformProtocol.RubberduckIndenterSettingsApply, handler);
+
+    /// <summary>
+    /// Adds an item to the list of a setting, or removes one from it, as a change of the client's own (<see cref="RDCorePlatformProtocol.ListSettingValue"/>), for a
+    /// client that expects <see cref="ListSettingValue"/>.
+    /// </summary>
+    /// <param name="handler">Changes the list where <see cref="ListSettingValueParams.Scope"/> says it is kept, and says whether it did.</param>
+    /// <returns>The registration; disposing it stops answering.</returns>
+    public IDisposable OnListSettingValue(Func<ListSettingValueParams, CancellationToken, Task<ListSettingValueResult>> handler)
+        => Channel.OnRequest(RDCorePlatformProtocol.ListSettingValue, handler);
 
     private Task<TResult> Send<TParams, TResult>(string method, TParams request, CancellationToken token)
         => Channel.SendRequestAsync<TParams, TResult>(method, request, token);

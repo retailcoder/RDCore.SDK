@@ -4,7 +4,8 @@ using System.Resources;
 namespace RDCore.SDK.Semantics.Refactoring;
 
 /// <summary>
-/// What the platform's code actions are called, in the language of the reader.
+/// The titles and the messages of the platform's refactorings, in the language of the reader: what its code actions and code lenses are called, what a
+/// rename asks its user and how it labels the edits it asks about, and why a rename is refused.
 /// </summary>
 public static class RefactoringTitles
 {
@@ -20,6 +21,23 @@ public static class RefactoringTitles
     /// <param name="newName">The name it is renamed to.</param>
     /// <param name="culture">The language of the reader; the current UI culture by default.</param>
     public static string RenameTo(string name, string newName, CultureInfo? culture = null) => Say("CodeAction_RenameTo", culture, name, newName);
+
+    /// <summary>
+    /// The title of the code action that disables the diagnostics of a code (<c>Analysis.DisabledDiagnostics</c>): <c>Disable RDC01001 in every workspace</c>,
+    /// or <c>Disable RDC01001 in this workspace</c>.
+    /// </summary>
+    /// <param name="code">The code.</param>
+    /// <param name="scope">Where the code is disabled: the user's settings of the platform, or the workspace's.</param>
+    /// <param name="culture">The language of the reader; the current UI culture by default.</param>
+    public static string DisableDiagnostic(Extensibility.Diagnostics.RDCoreDiagnosticCode code, Platform.Protocol.SettingScope scope, CultureInfo? culture = null)
+        => Say(scope == Platform.Protocol.SettingScope.Workspace ? "CodeAction_DisableDiagnostic_Workspace" : "CodeAction_DisableDiagnostic_Platform", culture, code);
+
+    /// <summary>
+    /// Why the language server does not change a list of the client's settings: the client does not accept such changes from it
+    /// (<see cref="Client.ListSettingValue"/>).
+    /// </summary>
+    /// <param name="culture">The language of the reader; the current UI culture by default.</param>
+    public static string SettingListNotTaken(CultureInfo? culture = null) => Say("SettingList_NotTaken", culture);
 
     /// <summary>The title of the code lens that counts the references of a member: <c>3 references</c>.</summary>
     /// <param name="count">The number of references.</param>
@@ -113,6 +131,63 @@ public static class RefactoringTitles
     /// </summary>
     /// <param name="culture">The language of the reader; the current UI culture by default.</param>
     public static string RenameLateBoundLeave(CultureInfo? culture = null) => Say("Rename_LateBound_Leave", culture);
+
+    /// <summary>
+    /// The label of the edits of a rename of a <c>Public</c> procedure of a standard module, which something outside the code may call by its name (a
+    /// list of macros, a button, another project): <c>May be called by its name from outside the code</c>. A client that takes change annotations shows it
+    /// with the edits it asks its user to confirm (<strong>LSP 3.17</strong> <c>ChangeAnnotation.label</c>); declining them cancels the rename.
+    /// </summary>
+    /// <param name="culture">The language of the reader; the current UI culture by default.</param>
+    public static string RenameOutsideCallersLabel(CultureInfo? culture = null) => Say("Rename_OutsideCallers_Label", culture);
+
+    /// <summary>
+    /// What the edits of <see cref="RenameOutsideCallersLabel"/> are, less prominently than the label (<strong>LSP 3.17</strong>
+    /// <c>ChangeAnnotation.description</c>): why the user is asked, and that declining them cancels the rename.
+    /// </summary>
+    /// <param name="name">The name the procedure is declared with.</param>
+    /// <param name="culture">The language of the reader; the current UI culture by default.</param>
+    public static string RenameOutsideCallersDescription(string name, CultureInfo? culture = null) => Say("Rename_OutsideCallers_Description", culture, name);
+
+    /// <summary>
+    /// What the user of a client that does not take change annotations is asked, before the edits of a rename of a <c>Public</c> procedure of a standard
+    /// module are sent to it: <c>'Foo' is a Public procedure of a standard module: […] Rename it anyway?</c>
+    /// </summary>
+    /// <param name="name">The name the procedure is declared with.</param>
+    /// <param name="culture">The language of the reader; the current UI culture by default.</param>
+    public static string RenameOutsideCallersQuestion(string name, CultureInfo? culture = null) => Say("Rename_OutsideCallers_Question", culture, name);
+
+    /// <summary>
+    /// The answer to <see cref="RenameOutsideCallersQuestion"/> that renames the procedure.
+    /// </summary>
+    /// <param name="culture">The language of the reader; the current UI culture by default.</param>
+    public static string RenameOutsideCallersRename(CultureInfo? culture = null) => Say("Rename_OutsideCallers_Rename", culture);
+
+    /// <summary>
+    /// The answer to <see cref="RenameOutsideCallersQuestion"/> that renames nothing: the whole rename is canceled.
+    /// </summary>
+    /// <param name="culture">The language of the reader; the current UI culture by default.</param>
+    public static string RenameOutsideCallersCancel(CultureInfo? culture = null) => Say("Rename_OutsideCallers_Cancel", culture);
+
+    /// <summary>
+    /// Why a rename is refused, as the user is told: <c>'Foo' already means Module1.Foo at Module2 4:12: the rename would change what the code refers to.</c>
+    /// </summary>
+    /// <param name="kind">Why the rename is refused.</param>
+    /// <param name="name">The name the rename is asked for: the symbol's for a refused symbol, the new name for a refused name
+    /// (<see cref="RenameRefusalKind.Empty"/>, <see cref="RenameRefusalKind.NotAnIdentifier"/>, <see cref="RenameRefusalKind.Reserved"/>,
+    /// <see cref="RenameRefusalKind.Conflict"/>, <see cref="RenameRefusalKind.ModuleNameTooLong"/>).</param>
+    /// <param name="other">What else the refusal names: the interface of a <see cref="RenameRefusalKind.InterfaceMember"/>, what the new name already means for
+    /// a <see cref="RenameRefusalKind.Conflict"/>, the most characters a module's name has for a <see cref="RenameRefusalKind.ModuleNameTooLong"/>, the
+    /// property that holds the name for a <see cref="RenameRefusalKind.ControlNamedByProperty"/> (<c>UpDown1.BuddyControl</c>). Unused by the other
+    /// kinds.</param>
+    /// <param name="where">Where the refusal is, as the client names a position: the conflict of a <see cref="RenameRefusalKind.Conflict"/>, the name of an
+    /// <see cref="RenameRefusalKind.Unresolved"/>. Unused by the other kinds.</param>
+    /// <param name="culture">The language of the reader; the current UI culture by default.</param>
+    /// <returns>The text, formatted with <paramref name="culture"/>; the name of <paramref name="kind"/> for a kind the platform has no text for.</returns>
+    public static string RenameRefusal(RenameRefusalKind kind, string name, string? other = null, string? where = null, CultureInfo? culture = null)
+    {
+        culture ??= CultureInfo.CurrentUICulture;
+        return string.Format(culture, Messages.GetString($"Rename_{kind}", culture) ?? kind.ToString(), name, other ?? string.Empty, where ?? string.Empty);
+    }
 
     private static string Say(string key, CultureInfo? culture, params object[] arguments)
     {

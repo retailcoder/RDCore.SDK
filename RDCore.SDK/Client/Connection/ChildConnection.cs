@@ -576,7 +576,7 @@ public sealed class ChildConnection(
     {
         options
             .WithInput(PipeReader.Create(_pipe!))
-            .WithOutput(PipeWriter.Create(_pipe!));
+            .WithOutput(new ConnectionOutput(PipeWriter.Create(_pipe!)));
         options.Services.AddSingleton<ILanguageClientFacade>(_ => _client!);
         _request!.ConfigureClient(options);
     }

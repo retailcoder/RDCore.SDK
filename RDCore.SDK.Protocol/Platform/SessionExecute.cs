@@ -79,6 +79,13 @@ public record class ExecuteResult
     public IReadOnlyList<string> Output { get; init; } = [];
 
     /// <summary>
+    /// How long the program ran, in milliseconds: from its first statement to the end of the run, or to where it waits when <see cref="Outcome"/> is
+    /// <see cref="ExecutionOutcome.Suspended"/>. <c>0</c> for a run that did not start (<see cref="ExecutionOutcome.SyntaxError"/>,
+    /// <see cref="ExecutionOutcome.NotFound"/>).
+    /// </summary>
+    public long DurationMilliseconds { get; init; }
+
+    /// <summary>
     /// How many lines the host has said by notification (<c>rdcore/host/output</c>) since it started, when this answer was given. A run that streams has
     /// said its lines before it answers, and they are not in <see cref="Output"/>; this is what lets the receiver wait for them.
     /// </summary>
@@ -171,6 +178,13 @@ public record class ExecuteResult
     /// <see cref="VBErrorDetails.MaxFrames"/> of them, the innermost ones, with <see cref="VBErrorDetails.FramesTruncated"/> set when there were more.
     /// </remarks>
     public VBErrorDetails? ErrorDetails { get; init; }
+
+    /// <summary>
+    /// Whether the program completed with a form of the session still shown. The form stays loaded, and the handlers of its events run in the session as the
+    /// person uses it, until it is unloaded. A debugger can stay attached to the session meanwhile, until no form is loaded
+    /// (<see cref="SessionStatusResult.FormsLoaded"/>). Always <see langword="false"/> for a run that is not under a debugger, and for one that runs unattended.
+    /// </summary>
+    public bool FormsShown { get; init; }
 }
 
 /// <summary>

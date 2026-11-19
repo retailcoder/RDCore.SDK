@@ -31,7 +31,10 @@ public enum VbpImportNoteKind
     /// </summary>
     AbsolutePath,
 
-    /// <summary>A UserControl, a PropertyPage, a UserDocument or a Designer, which the platform does not compile: it is listed as a file of the project.</summary>
+    /// <summary>
+    /// A Designer (a <c>.dsr</c>: a DataEnvironment, a DataReport), which the platform does not compile: it is listed as a file of the project. Its
+    /// designer's objects are in its binary <c>.dsx</c>, which the platform does not read.
+    /// </summary>
     NotAModule,
 
     /// <summary>The <c>Startup</c> of the project, which a <c>.rdproj</c> does not say yet.</summary>
@@ -201,8 +204,8 @@ public sealed record class VbpImport(RDCoreProject Project, IReadOnlyList<VbpImp
 }
 
 /// <summary>
-/// Makes a <c>.rdproj</c> project of a VB6 project file (<c>.vbp</c>): its name, its modules, classes and forms, the libraries it references, and its
-/// conditional compilation arguments.
+/// Makes a <c>.rdproj</c> project of a VB6 project file (<c>.vbp</c>): its name, its modules, classes, forms, UserControls, PropertyPages and
+/// UserDocuments, the libraries it references, and its conditional compilation arguments.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -268,10 +271,11 @@ public static class VbpProjectImporter
                     // Module=Module1; Module1.bas: the name is the module's own, its Attribute VB_Name.
                     AddFile(PathOf(value[(value.IndexOf(';') + 1)..]), asModule: true);
                     break;
-                case "FORM":
+                case "FORM" or "USERCONTROL" or "PROPERTYPAGE" or "USERDOCUMENT":
+                    // a designed module, whose designer block names its class: a UserControl's code is built on VB.UserControl (FormDescriptor.BaseClass).
                     AddFile(PathOf(value), asModule: true);
                     break;
-                case "USERCONTROL" or "PROPERTYPAGE" or "USERDOCUMENT" or "DESIGNER":
+                case "DESIGNER":
                     if (AddFile(PathOf(value), asModule: false) is { } file)
                     {
                         notes.Add(new VbpImportNote(VbpImportNoteKind.NotAModule, file));

@@ -304,7 +304,7 @@ public abstract class RDCoreServerApp(
             // OmniSharp completes both as it handles exit, under the loops that read and write them: the input then ends, and a message still being
             // written is no longer cancelled through the writer that was completed. Neither disposes the pipe, which this app does as it is disposed.
             .WithInput(new ServerInput(PipeReader.Create(_incomingChanges.Tap(_namedPipe))))
-            .WithOutput(ServerOutput.Over(_namedPipe))
+            .WithOutput(ConnectionOutput.Over(_namedPipe))
             // basic server app information:
             .WithServerInfo(GetServerInfo())
             // wire-up lifecycle delegates:
@@ -527,6 +527,19 @@ public abstract class RDCoreServerApp(
     protected internal static bool ClientRunsUnattended(InitializeParams request) => ReadInitializationOptions(request.InitializationOptions)?.Unattended == true;
 
     /// <summary>
+    /// The language the client of an <c>initialize</c> request says the workspace is written in
+    /// (<see cref="Platform.Protocol.RDCoreInitializationOptions.Language"/>), when it names one the platform serves.
+    /// </summary>
+    /// <remarks>
+    /// What the client names is already the server's setting when the server's own handler runs. A server that can tell the language from the workspace
+    /// itself, such as from its project file (<see cref="Workspace.SupportedLanguages.OfProject"/>), asks this first: what the client names wins.
+    /// </remarks>
+    /// <param name="request">The request.</param>
+    /// <returns>The language, or <see langword="null"/> when the client names none, or one the platform does not serve.</returns>
+    protected internal static Workspace.SupportedLanguage? ClientLanguage(InitializeParams request)
+        => Workspace.SupportedLanguages.TryGet(ReadInitializationOptions(request.InitializationOptions)?.Language, out var language) ? language : null;
+
+    /// <summary>
     /// Whether the client of an <c>initialize</c> request answers what the server asks its user before the request is answered
     /// (<see cref="Platform.Protocol.RDCoreInitializationOptions.AnswersDuringInitialize"/>): it says it does, and does not run unattended.
     /// </summary>
@@ -611,6 +624,12 @@ public abstract class RDCoreServerApp(
     private async Task HandleLanguageServerInitializedAsync(ILanguageServer server, InitializeParams request, InitializeResult response, CancellationToken cancellationToken)
     {
         ServerStateProvider.OnInitialized();
+        // a server that serves assistant tools says so in its answer, whatever the application adds to it.
+        if (Assistant.AssistantToolsCapability.Declare(response.Capabilities, server.Services.GetService<Assistant.AssistantToolCatalog>() ?? ExternalServices?.GetService<Assistant.AssistantToolCatalog>()))
+        {
+            LogIfEnabled(LogLevel.Information, $"The server declares its assistant tools ({RDCorePlatformProtocol.ChatToolsCapability}).");
+        }
+
         await OnLanguageServerInitializedAsync(server, request, response, cancellationToken);
     }
     /// <summary>

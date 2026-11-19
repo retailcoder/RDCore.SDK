@@ -22,4 +22,11 @@ namespace RDCore.SDK.Model.AST.Declarations;
 /// <param name="IsStatic"><c>true</c> if the declaration has an explicit <c>Static</c> token (MS-VBAL &#167;5.4.3.1).</param>
 /// <param name="NameRange">Where the name is written, with its type-declaration character; <see langword="null"/> when it is not known.</param>
 public record class VariableDeclarationNode(SyntaxNodeId Identity, SourceLocation SourceLocation, string Name, ImmutableArray<SyntaxNode> Children, AccessModifier AccessModifier = AccessModifier.Implicit, string? TypeHint = default, bool IsWithEvents = false, bool IsStatic = false, SourceRange? NameRange = null)
-    : SyntaxNode(Identity, SourceLocation, Children);
+    : SyntaxNode(Identity, SourceLocation, Children)
+{
+    /// <summary>
+    /// Where the <see cref="TypeHint"/> is written, at the end of the name (the <c>%</c> of <c>Dim n%</c>); <see langword="null"/> when the name is written
+    /// without one, or when it is not known.
+    /// </summary>
+    public SourceRange? TypeHintRange { get; init; }
+}

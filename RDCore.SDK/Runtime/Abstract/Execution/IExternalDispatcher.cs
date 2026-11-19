@@ -63,6 +63,16 @@ public sealed record class ExternalCallRequest(
     public bool IsCreation => Creates is not null;
 
     /// <summary>
+    /// Whether the platform itself answers this call: a member of a form it hosts, or of one of the form's controls, rather than a library of the machine's.
+    /// The runtime sets it when it builds the request; it is <see langword="false"/> for a creation and for a call that obtains an object by name.
+    /// </summary>
+    /// <remarks>
+    /// An interceptor that refuses automation is to let such a call through, and one that fakes calls is to leave it to the platform: the call is part of
+    /// the program's own user interface, even when <see cref="IsAutomation"/> is <see langword="true"/> because the form's classes belong to a referenced library.
+    /// </remarks>
+    public bool IsAnsweredByPlatform { get; init; }
+
+    /// <summary>
     /// The request that creates an object of <paramref name="classModule"/>.
     /// </summary>
     /// <param name="classModule">The class of a referenced library to create an object of.</param>

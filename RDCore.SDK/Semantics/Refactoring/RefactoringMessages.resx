@@ -20,10 +20,16 @@
     <value>'{0}' is not declared by the workspace: only what the workspace declares can be renamed.</value>
   </data>
   <data name="Rename_Type" xml:space="preserve">
-    <value>'{0}' is a type: renaming a module, a class, a Type or an Enum is not supported yet.</value>
+    <value>'{0}' is a document module, whose name is given by its document: it is not renamed.</value>
   </data>
-  <data name="Rename_NamedByConvention" xml:space="preserve">
-    <value>'{0}' is named after an event or an interface member that it handles or implements: renamed, it would be neither.</value>
+  <data name="Rename_ModuleNameTooLong" xml:space="preserve">
+    <value>'{0}' is too long for the name of a module, which is at most {1} characters long.</value>
+  </data>
+  <data name="Rename_BoundHandlerOrImplementation" xml:space="preserve">
+    <value>'{0}' handles an event or implements an interface member: renamed, it would do neither. Rename its source, or the event or member it is bound to, and it is renamed with them.</value>
+  </data>
+  <data name="Rename_UnknownDocumentHost" xml:space="preserve">
+    <value>'{0}' is a procedure of a document module whose host is not known: what the host calls it for is not known, and the rename could make that call fail.</value>
   </data>
   <data name="Rename_Event" xml:space="preserve">
     <value>'{0}' is an event, and its handlers are named after it: renaming an event is not supported yet.</value>
@@ -33,6 +39,18 @@
   </data>
   <data name="Rename_Control" xml:space="preserve">
     <value>'{0}' is a control, which its form's designer names: renaming a control is not supported yet.</value>
+  </data>
+  <data name="Rename_UserFormControl" xml:space="preserve">
+    <value>'{0}' is a control of a UserForm, whose name is kept in the form's .frx file, which the server could not read as it is on disk: the control is not renamed.</value>
+  </data>
+  <data name="Rename_ControlNamedByProperty" xml:space="preserve">
+    <value>'{0}' is the value of {1}, which may name the control: renaming a control that a property of its form names is not supported yet.</value>
+  </data>
+  <data name="Rename_UserFormControlNotWritten" xml:space="preserve">
+    <value>'{0}' cannot be renamed in its form's .frx file: {1}</value>
+  </data>
+  <data name="Rename_FileChangeNotUndoable" xml:space="preserve">
+    <value>Renaming '{0}' replaces its form's .frx file, and this editor cannot undo a file change if the rename fails: the control is not renamed.</value>
   </data>
   <data name="Rename_ExternalProcedure" xml:space="preserve">
     <value>'{0}' is an external procedure, which its library names: it cannot be renamed.</value>
@@ -105,7 +123,23 @@
   <data name="Rename_LateBound_Leave" xml:space="preserve">
     <value>Leave the late-bound accesses</value>
   </data>
-  <!-- What a client is told of the references of a symbol (SymbolNavigationTarget.Unresolved): {0} is its name, {1} where the first such name is written. -->
+  <!-- A rename of a Public procedure of a standard module (RefactoringTitles.RenameOutsideCallers*): {0} is its name. -->
+  <data name="Rename_OutsideCallers_Label" xml:space="preserve">
+    <value>May be called by its name from outside the code</value>
+  </data>
+  <data name="Rename_OutsideCallers_Description" xml:space="preserve">
+    <value>'{0}' is a Public procedure of a standard module: something outside the code, such as a list of macros, a button or another project, may call it by its name, and will no longer find it. Declining these edits cancels the rename.</value>
+  </data>
+  <data name="Rename_OutsideCallers_Question" xml:space="preserve">
+    <value>'{0}' is a Public procedure of a standard module: something outside the code, such as a list of macros, a button or another project, may call it by its name, and will no longer find it. Rename it anyway?</value>
+  </data>
+  <data name="Rename_OutsideCallers_Rename" xml:space="preserve">
+    <value>Rename it</value>
+  </data>
+  <data name="Rename_OutsideCallers_Cancel" xml:space="preserve">
+    <value>Cancel the rename</value>
+  </data>
+  <!-- What a client is told of the references of a symbol (SymbolTexts.ReferencesIncomplete): {0} is its name, {1} where the first such name is written. -->
   <data name="References_Incomplete" xml:space="preserve">
     <value>The references of '{0}' may be incomplete: what '{0}' refers to at {1} is not known.</value>
   </data>
@@ -114,6 +148,16 @@
   </data>
   <data name="CodeAction_RenameTo" xml:space="preserve">
     <value>Rename '{0}' to '{1}'</value>
+  </data>
+  <!-- The titles of the code actions that disable the diagnostics of a code (RefactoringTitles.DisableDiagnostic): {0} is the code. -->
+  <data name="CodeAction_DisableDiagnostic_Platform" xml:space="preserve">
+    <value>Disable {0} in every workspace</value>
+  </data>
+  <data name="CodeAction_DisableDiagnostic_Workspace" xml:space="preserve">
+    <value>Disable {0} in this workspace</value>
+  </data>
+  <data name="SettingList_NotTaken" xml:space="preserve">
+    <value>This client does not accept changes to its settings from the language server.</value>
   </data>
   <!-- The title of the code lens that counts the references of a member (RefactoringTitles.References): {0} is the count. -->
   <data name="CodeLens_References_None" xml:space="preserve">
@@ -125,12 +169,17 @@
   <data name="CodeLens_References_Many" xml:space="preserve">
     <value>{0} references</value>
   </data>
-  <!-- What a hover says declares a symbol (SymbolHover): {0} is its module, procedure, Enum or Type. -->
+  <!-- What a hover says declares a symbol (SymbolTexts.MemberOf): {0} is its module, procedure, Enum or Type. -->
   <data name="Hover_MemberOf" xml:space="preserve">
     <value>Member of {0}</value>
   </data>
-  <!-- What a hover says a Visual Basic 6.0 control array is (SymbolHover.ControlArrayOf): {0} is the class of its controls, VB.CommandButton. -->
+  <!-- What a hover says a Visual Basic 6.0 control array is (SymbolTexts.ControlArrayOf): {0} is the class of its controls, VB.CommandButton. -->
   <data name="Hover_ControlArrayOf" xml:space="preserve">
     <value>Control array of {0}</value>
+  </data>
+  <!-- What a completion item or a hover says of a member RD-VBA adds to a library (SymbolTexts.LibraryAddition, SymbolProperties.LibraryAddition):
+       {0} is the library, VB. -->
+  <data name="Symbol_LibraryAddition" xml:space="preserve">
+    <value>RD-VBA addition: the type library of {0} does not declare it.</value>
   </data>
 </root>

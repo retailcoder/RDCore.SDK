@@ -82,6 +82,12 @@ public class EnvironmentHostCapabilities
     public ProjectReload ProjectReload { get; set; } = new();
 
     /// <summary>
+    /// If supported, the environment host composes the other projects of the workspace for analysis only, over <c>rdcore/host/project/analyze</c>, and drops
+    /// them over <c>rdcore/host/project/release</c>: the modules of each are defined and analyzed, and never run.
+    /// </summary>
+    public ProjectAnalysis ProjectAnalysis { get; set; } = new();
+
+    /// <summary>
     /// If supported, the environment host can run a program so that it stops and waits where a <c>Stop</c> or a break puts it, and resumes, steps or ends it
     /// over <c>rdcore/host/debug/*</c>.
     /// </summary>
@@ -185,11 +191,23 @@ public class LanguageServerCapabilities
     public RubberduckIndenterSettings RubberduckIndenterSettings { get; set; } = new();
 
     /// <summary>
+    /// If supported, the language server asks the client to add an item to the list of a setting, or to remove one from it, over
+    /// <c>rdcore/settings/listValue</c>: what the code actions that disable a diagnostic, or allow a name, do.
+    /// </summary>
+    public ListSettingValue ListSettingValue { get; set; } = new();
+
+    /// <summary>
     /// If supported, the language server says what a refactoring asks its user before it is applied, over <c>rdcore/refactor/prepare</c>, what an identifier
     /// the user is typing raises, over <c>rdcore/refactor/checkIdentifier</c>, and answers the edit it makes with the user's answers, over <c>rdcore/refactor/apply</c>: what a client
     /// that has a dialog of its own asks with. Any client is offered the refactorings as LSP code actions, which complete with their defaults.
     /// </summary>
     public Refactoring Refactoring { get; set; } = new();
+
+    /// <summary>
+    /// If supported, the language server serves an assistant the tools of its catalog, over <c>rdcore/tools/list</c> and <c>rdcore/tools/call</c>: what
+    /// a client that bridges an assistant to the platform (<c>rdc mcp</c>, an IDE's chat) asks with.
+    /// </summary>
+    public AssistantTools AssistantTools { get; set; } = new();
 }
 
 /// <summary>
@@ -201,6 +219,7 @@ public class LanguageServerCapabilities
 [JsonDerivedType(typeof(ParseTokens))]
 [JsonDerivedType(typeof(DefineSymbols))]
 [JsonDerivedType(typeof(ProjectReload))]
+[JsonDerivedType(typeof(ProjectAnalysis))]
 [JsonDerivedType(typeof(CliCommand))]
 [JsonDerivedType(typeof(DiagnoseDocument))]
 [JsonDerivedType(typeof(SessionStatus))]
@@ -218,6 +237,8 @@ public class LanguageServerCapabilities
 [JsonDerivedType(typeof(Unattended))]
 [JsonDerivedType(typeof(Refactoring))]
 [JsonDerivedType(typeof(RubberduckIndenterSettings))]
+[JsonDerivedType(typeof(ListSettingValue))]
+[JsonDerivedType(typeof(AssistantTools))]
 public abstract record class CorePlatformClientCapability(bool IsSupported = true);
 
 /// <summary>
@@ -273,6 +294,17 @@ public record class SessionDiscard(bool IsSupported = false) : CorePlatformClien
 /// is not one until the session is composed again. A program that is running or waits keeps the session it runs in.
 /// </remarks>
 public record class ProjectReload(bool IsSupported = false) : CorePlatformClientCapability(IsSupported);
+
+/// <summary>
+/// Advertises that the declaring component composes the other projects of a workspace for analysis only, over <c>rdcore/host/project/analyze</c> and
+/// <c>rdcore/host/project/release</c> between the language server and the component that owns the runtime session.
+/// </summary>
+/// <remarks>
+/// Each project is composed on its own, with the references its project file lists, as the runtime session is composed: its names bind as they would in a
+/// run. The runtime session is never changed by it, and a program is never run in a project composed for analysis.
+/// </remarks>
+/// <param name="IsSupported">Whether the capability is expected, or provided.</param>
+public record class ProjectAnalysis(bool IsSupported = false) : CorePlatformClientCapability(IsSupported);
 
 /// <summary>
 /// Advertises that the declaring component can run a program under a debugger: the program waits where a <c>Stop</c> or a break puts it
@@ -356,6 +388,17 @@ public record class Unattended(bool IsSupported = false) : CorePlatformClientCap
 public record class RubberduckIndenterSettings(bool IsSupported = false) : CorePlatformClientCapability(IsSupported);
 
 /// <summary>
+/// Advertises that the language server asks the client to add an item to the list of a setting, or to remove one from it (<c>rdcore/settings/listValue</c>);
+/// a client that expects it answers, and keeps the list in the user's settings of the platform or in the workspace's.
+/// </summary>
+/// <remarks>
+/// A client owns its configuration and the platform writes none of it: only a client that expects this is offered the code actions that change a list
+/// (disabling a diagnostic, allowing a name), and it stores what it applies as a change of its own.
+/// </remarks>
+/// <param name="IsSupported">Whether the capability is expected, or provided.</param>
+public record class ListSettingValue(bool IsSupported = false) : CorePlatformClientCapability(IsSupported);
+
+/// <summary>
 /// Advertises that the declaring component runs the semantic analysis pass over the code it holds and answers with its model - <c>rdcore/host/semantics</c>,
 /// which is what a diagnostics extension analyzes.
 /// </summary>
@@ -395,3 +438,16 @@ public record class CliCommand(bool IsSupported = false) : CorePlatformClientCap
 /// </remarks>
 /// <param name="IsSupported">Whether the capability is expected, or provided.</param>
 public record class Refactoring(bool IsSupported = false) : CorePlatformClientCapability(IsSupported);
+
+/// <summary>
+/// Advertises that the language server serves an assistant the tools of its catalog (<c>rdcore/tools/list</c>, <c>rdcore/tools/call</c>), such as the
+/// tools of <see cref="Assistant.CoreAssistantTools"/>, which read the workspace's diagnostics and symbols. A client that expects it lists
+/// the tools and calls them.
+/// </summary>
+/// <remarks>
+/// The tools are shaped as the <strong>Model Context Protocol</strong> shapes them (<see cref="Assistant.ToolDescriptor"/>), so that a client that bridges
+/// them to an assistant passes them through. A tool that edits a document sends the edit to the client (<c>workspace/applyEdit</c>), which applies it: the
+/// language server writes no file of the workspace itself.
+/// </remarks>
+/// <param name="IsSupported">Whether the capability is expected, or provided.</param>
+public record class AssistantTools(bool IsSupported = false) : CorePlatformClientCapability(IsSupported);

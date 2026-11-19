@@ -27,7 +27,7 @@ public sealed record class CompletionCandidate(string Label, CompletionItemKind 
 {
     /// <summary>
     /// What is inserted in place of the word when it is not the label: the name alone of a named argument whose <c>:=</c> is written already
-    /// (<c>Send "a", Cop|:=2</c>); <see langword="null"/> for the label.
+    /// (<c>Send "a", Cop|:=2</c>), or the snippet of the block a keyword starts (<see cref="IsSnippet"/>); <see langword="null"/> for the label.
     /// </summary>
     public string? InsertText { get; init; }
 
@@ -36,6 +36,19 @@ public sealed record class CompletionCandidate(string Label, CompletionItemKind 
     /// named argument (<c>Send "a", Co|pies:=2</c>), so that no part of the name is written twice; 0 for a candidate written at the cursor.
     /// </summary>
     public int ReplacedAfter { get; init; }
+
+    /// <summary>
+    /// Whether <see cref="InsertText"/> is a snippet (<strong>LSP 3.17</strong> §Snippet Syntax), with tab stops and placeholders, rather than plain text
+    /// (<see cref="CompletionSnippets"/>).
+    /// </summary>
+    public bool IsSnippet { get; init; }
+
+    /// <summary>
+    /// How the client treats the whitespace of what the candidate inserts (<strong>LSP 3.17</strong> <c>InsertTextMode</c>):
+    /// <see cref="InsertTextMode.AdjustIndentation"/> for a snippet whose lines are indented relative to its first; <see langword="null"/> for the client's
+    /// default.
+    /// </summary>
+    public InsertTextMode? InsertTextMode { get; init; }
 
     /// <summary>
     /// The candidate as an item of an LSP completion list (<strong>LSP 3.17</strong> §Completion Request).
@@ -50,17 +63,31 @@ public sealed record class CompletionCandidate(string Label, CompletionItemKind 
     /// <see cref="Rank"/>, then by the label in any case: by the name it writes, so a name in brackets (<c>[My Field]</c>) sorts among the others by
     /// <c>My Field</c>.
     /// </para>
+    /// <para>
+    /// A snippet's item says <c>insertTextFormat</c> <c>Snippet</c>, and its <see cref="InsertTextMode"/> when it has one; a plain item says neither, as plain
+    /// text is what a client inserts when nothing says otherwise.
+    /// </para>
     /// </remarks>
     /// <param name="match">How the label matches the word typed (<see cref="CompletionCandidates.MatchOf"/>).</param>
-    public CompletionItem ToCompletionItem(CompletionMatch match = CompletionMatch.Prefix) => new()
+    public CompletionItem ToCompletionItem(CompletionMatch match = CompletionMatch.Prefix)
     {
-        Label = Label,
-        Kind = Kind,
-        InsertText = InsertText,
-        Detail = Detail,
-        Documentation = Documentation is { Length: > 0 } documentation ? new StringOrMarkupContent(documentation) : null,
-        SortText = $"{TierOf(match)}{Rank:D2}{CompletionCandidates.NameOf(Label).ToString().ToLowerInvariant()}",
-    };
+        var item = new CompletionItem
+        {
+            Label = Label,
+            Kind = Kind,
+            InsertText = InsertText,
+            Detail = Detail,
+            Documentation = Documentation is { Length: > 0 } documentation ? new StringOrMarkupContent(documentation) : null,
+            SortText = $"{TierOf(match)}{Rank:D2}{CompletionCandidates.NameOf(Label).ToString().ToLowerInvariant()}",
+        };
+
+        if (IsSnippet)
+        {
+            item = item with { InsertTextFormat = InsertTextFormat.Snippet };
+        }
+
+        return InsertTextMode is { } mode ? item with { InsertTextMode = mode } : item;
+    }
 
     internal static char TierOf(CompletionMatch match) => match switch
     {
@@ -71,7 +98,7 @@ public sealed record class CompletionCandidate(string Label, CompletionItemKind 
 }
 
 /// <summary>
-/// Candidates a completion list ranks before the others, as a tier of their own (<see cref="CompletionCandidates.ListOf"/>).
+/// Candidates a completion list ranks as a tier of their own, before the others or after them (<see cref="CompletionCandidates.ListOf"/>).
 /// </summary>
 /// <param name="Candidates">The candidates, in the order they rank where the word matches them alike.</param>
 /// <param name="IsSelectedWhenNothingIsTyped">
@@ -79,7 +106,11 @@ public sealed record class CompletionCandidate(string Label, CompletionItemKind 
 /// are: one of them is what is most likely written there. The named arguments are not: a value is as likely as a name, and a name is selected once the
 /// word typed matches it.
 /// </param>
-public sealed record class CompletionGroup(IReadOnlyList<CompletionCandidate> Candidates, bool IsSelectedWhenNothingIsTyped = true);
+/// <param name="RanksAfterTheOthers">
+/// Whether the group ranks after every candidate that is in no group, rather than before them. The named arguments do where the argument at the cursor would
+/// be given to a parameter that is not <c>Optional</c>: a value is what is most likely written there (<see cref="CompletionCandidates.NamedArgumentGroup"/>).
+/// </param>
+public sealed record class CompletionGroup(IReadOnlyList<CompletionCandidate> Candidates, bool IsSelectedWhenNothingIsTyped = true, bool RanksAfterTheOthers = false);
 
 /// <summary>
 /// How a label matches the word being typed, which decides whether it is offered and where it ranks (<see cref="CompletionCandidates.MatchOf"/>).
@@ -313,9 +344,10 @@ public static class CompletionCandidates
     /// </summary>
     /// <remarks>
     /// <para>
-    /// A name is offered where an argument starts (<see cref="SignatureSite.IsWhereAnArgumentStarts"/>), when the parameter that argument would be given to by
-    /// position is <c>Optional</c>, or when a named argument is written before it: after one, every argument is named (<strong>MS-VBAL §5.6.13.1</strong>
-    /// <c>positional-or-named-argument-list</c>). No name is offered where a positional argument is written after the cursor, an omitted one included
+    /// A name is offered wherever an argument starts (<see cref="SignatureSite.IsWhereAnArgumentStarts"/>), the first one included, whether or not the parameter
+    /// that argument would be given to by position is <c>Optional</c>: any argument can be named (<strong>MS-VBAL §5.6.13.1</strong>
+    /// <c>positional-or-named-argument-list</c>), and after a named one, every argument is. <see cref="NamedArgumentGroup"/> says where the
+    /// names rank. No name is offered where a positional argument is written after the cursor, an omitted one included
     /// (<see cref="SignatureSite.IsFollowedByAPositionalArgument"/>): it would follow a named one.
     /// </para>
     /// <para>
@@ -344,25 +376,38 @@ public static class CompletionCandidates
         }
 
         var namedBefore = site.NamesBefore;
-        if (namedBefore.Count == 0 && (signature.ActiveParameterOf(site.ArgumentIndex) is not { } active || !signature.Parameters[active].IsOptional))
-        {
-            return [];
-        }
 
         // the rest of the word, then the `:=` that makes it a name.
-        var rest = after.AsSpan();
-        while (rest.Length > 0 && (char.IsLetterOrDigit(rest[0]) || rest[0] == '_'))
-        {
-            rest = rest[1..];
-        }
-
-        var isNamed = rest.TrimStart(" \t").StartsWith(":=", StringComparison.Ordinal);
-        var restOfWord = after.Length - rest.Length;
+        var restOfWord = RestOfWordIn(after);
+        var isNamed = after.AsSpan(restOfWord).TrimStart(" \t").StartsWith(":=", StringComparison.Ordinal);
         var given = namedBefore.Concat(site.NamesAfter(after)).ToHashSet(StringComparer.OrdinalIgnoreCase);
         return [.. signature.Parameters
             .Where((parameter, index) => index >= site.PositionalBefore && !parameter.IsParamArray && !given.Contains(parameter.Name))
             .Select(parameter => new CompletionCandidate($"{parameter.Name}:=", CompletionItemKind.Variable,
                 parameter.TextIn(signature), parameter.Documentation) { InsertText = isNamed ? parameter.Name : null, ReplacedAfter = restOfWord })];
+    }
+
+    /// <summary>
+    /// The named arguments of the call being written (<see cref="NamedArguments"/>), as the group of a completion list (<see cref="ListOf"/>), ranked where
+    /// they are most likely to be written.
+    /// </summary>
+    /// <remarks>
+    /// The names rank before the other candidates where the argument at the cursor would be given to an <c>Optional</c> parameter by position, which is often
+    /// skipped by naming the one after it, and where a named argument is written before the cursor: after one, nothing but a name can be written. Elsewhere a
+    /// value is what is most likely written, and the names rank after every other candidate (<see cref="CompletionGroup.RanksAfterTheOthers"/>). None of them
+    /// is preselected before a word is typed (<see cref="CompletionGroup.IsSelectedWhenNothingIsTyped"/>).
+    /// </remarks>
+    /// <param name="signature">The signature of what is called.</param>
+    /// <param name="site">The call being written.</param>
+    /// <param name="word">What is typed of the name at the cursor.</param>
+    /// <param name="after">The text of the logical line from the cursor on, where named arguments can be written already.</param>
+    /// <returns>The group of the named arguments; it has no candidates where a name cannot be written.</returns>
+    public static CompletionGroup NamedArgumentGroup(SignatureDescription signature, SignatureSite site, string word, string after)
+    {
+        var names = NamedArguments(signature, site, word, after);
+        var isLikely = site.NamesBefore.Count > 0
+            || signature.ActiveParameterOf(site.ArgumentIndex) is { } active && signature.Parameters[active].IsOptional;
+        return new CompletionGroup(names, IsSelectedWhenNothingIsTyped: false, RanksAfterTheOthers: !isLikely);
     }
 
     /// <summary>
@@ -372,7 +417,8 @@ public static class CompletionCandidates
     /// <remarks>
     /// <para>
     /// The groups of <paramref name="first"/> are tiers of their own, in their order, before every other candidate: <c>Paint DR</c> ranks and preselects the
-    /// constant <c>DeepRed</c>, whose humps the word matches, before a function <c>Drum</c> the word starts. In each tier the labels the word starts rank
+    /// constant <c>DeepRed</c>, whose humps the word matches, before a function <c>Drum</c> the word starts. A group that ranks after the others
+    /// (<see cref="CompletionGroup.RanksAfterTheOthers"/>) is a tier after every other candidate instead, in the same order. In each tier the labels the word starts rank
     /// before the ones whose humps it matches; then the candidates of a group keep their order, and the others rank by
     /// <see cref="CompletionCandidate.Rank"/>, then by label in any case. The item that ranks first is the one <c>preselect</c> marks, unless nothing is typed
     /// and its group is not selected then (<see cref="CompletionGroup.IsSelectedWhenNothingIsTyped"/>): the first item that can be is marked instead.
@@ -388,8 +434,8 @@ public static class CompletionCandidates
     /// </remarks>
     /// <param name="word">What is typed of the name; an empty word matches every candidate.</param>
     /// <param name="first">
-    /// The groups of candidates most likely to be written, in the order they rank: the constants of the <c>Enum</c> an argument's parameter is declared as,
-    /// then the named arguments (<see cref="NamedArguments"/>).
+    /// The groups of candidates ranked apart from the others, in the order they rank: the constants of the <c>Enum</c> an argument's parameter is declared as,
+    /// then the named arguments (<see cref="NamedArgumentGroup"/>).
     /// </param>
     /// <param name="candidates">The other candidates; a label of <paramref name="first"/> is not offered again.</param>
     /// <param name="cursor">
@@ -399,7 +445,14 @@ public static class CompletionCandidates
     /// item of a word typed from the opening bracket of a name in brackets, which a client does not take as part of the word. <see langword="null"/> when no position is known; every item
     /// then replaces the word typed only.
     /// </param>
-    public static CompletionList ListOf(string word, IReadOnlyList<CompletionGroup> first, IReadOnlyList<CompletionCandidate> candidates, Position? cursor = null)
+    /// <param name="after">
+    /// What follows the cursor on its line, for a client that takes an item's edit as two ranges (<strong>LSP 3.17</strong> <c>InsertReplaceEdit</c>, which a
+    /// client says it does with <c>insertReplaceSupport</c>); <see langword="null"/> for one that does not. Every item of such a client, with
+    /// <paramref name="cursor"/> known, carries both: the one that inserts, over the word typed and what the candidate replaces after the cursor, and the one that
+    /// replaces, which also takes in the rest of the word the cursor is in (<see cref="RestOfWordIn"/>). The client chooses between them, as its user asks.
+    /// </param>
+    public static CompletionList ListOf(string word, IReadOnlyList<CompletionGroup> first, IReadOnlyList<CompletionCandidate> candidates, Position? cursor = null,
+        string? after = null)
     {
         ArgumentNullException.ThrowIfNull(word);
         ArgumentNullException.ThrowIfNull(first);
@@ -413,8 +466,10 @@ public static class CompletionCandidates
             {
                 if (MatchOf(candidate.Label, word) is var match and not CompletionMatch.None && offered.Add(candidate.Label))
                 {
-                    // a `!` sorts before the digit every other item's sort text starts with; the index is as wide as a group of every name in scope.
-                    items.Add((Placed(candidate.ToCompletionItem(match), candidate, word, cursor) with { SortText = $"!{rank}{CompletionCandidate.TierOf(match)}{index:D6}" },
+                    // a `!` sorts before the digit every other item's sort text starts with, and a `~` after it; the index is as wide as a group of every name
+                    // in scope.
+                    var tier = group.RanksAfterTheOthers ? '~' : '!';
+                    items.Add((Placed(candidate.ToCompletionItem(match), candidate, word, cursor, after) with { SortText = $"{tier}{rank}{CompletionCandidate.TierOf(match)}{index:D6}" },
                         isSelectable));
                 }
             }
@@ -424,7 +479,7 @@ public static class CompletionCandidates
         {
             if (MatchOf(candidate.Label, word) is var match and not CompletionMatch.None && offered.Add(candidate.Label))
             {
-                items.Add((Placed(candidate.ToCompletionItem(match), candidate, word, cursor), true));
+                items.Add((Placed(candidate.ToCompletionItem(match), candidate, word, cursor, after), true));
             }
         }
 
@@ -445,19 +500,49 @@ public static class CompletionCandidates
 
     // an item that replaces more than the word typed says what it replaces, from the start of the word to the end of what it replaces after the cursor: a
     // client replaces the word typed otherwise, and keeps the rest. A client's word has no `[`, so the item of a word typed from one replaces it too, and the
-    // client narrows the list by the text it replaces: an item whose label has no bracket is narrowed by the label after one.
-    private static CompletionItem Placed(CompletionItem item, CompletionCandidate candidate, string word, Position? cursor)
-        => (candidate.ReplacedAfter > 0 || word is ['[', ..]) && cursor is { } at && at.Character >= word.Length
-            ? item with
-            {
-                TextEdit = new TextEdit
+    // client narrows the list by the text it replaces: an item whose label has no bracket is narrowed by the label after one. A client that takes two ranges is
+    // given both for every item: what it inserts over, and what it replaces, the rest of the word after the cursor with it.
+    private static CompletionItem Placed(CompletionItem item, CompletionCandidate candidate, string word, Position? cursor, string? after)
+    {
+        if (cursor is not { } at || at.Character < word.Length || (after is null && candidate.ReplacedAfter == 0 && word is not ['[', ..]))
+        {
+            return item;
+        }
+
+        var start = at.Character - word.Length;
+        var newText = candidate.InsertText ?? candidate.Label;
+        var inserted = new LspRange(at.Line, start, at.Line, at.Character + candidate.ReplacedAfter);
+        return item with
+        {
+            TextEdit = after is null
+                ? new TextEdit { Range = inserted, NewText = newText }
+                : new InsertReplaceEdit
                 {
-                    Range = new LspRange(at.Line, at.Character - word.Length, at.Line, at.Character + candidate.ReplacedAfter),
-                    NewText = candidate.InsertText ?? candidate.Label,
+                    Insert = inserted,
+                    Replace = new LspRange(at.Line, start, at.Line, at.Character + Math.Max(candidate.ReplacedAfter, RestOfWordIn(after))),
+                    NewText = newText,
                 },
-                FilterText = word is ['[', ..] && candidate.Label is not ['[', ..] ? $"[{candidate.Label}" : item.FilterText,
-            }
-            : item;
+            FilterText = word is ['[', ..] && candidate.Label is not ['[', ..] ? $"[{candidate.Label}" : item.FilterText,
+        };
+    }
+
+    /// <summary>
+    /// The length of the rest of the word the cursor is in: the letters, digits and underscores right after it, as a name has them.
+    /// </summary>
+    /// <param name="after">What follows the cursor on its line.</param>
+    /// <returns>The number of characters of <paramref name="after"/> the word goes on for; 0 when the cursor is at its end.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="after"/> is <see langword="null"/>.</exception>
+    public static int RestOfWordIn(string after)
+    {
+        ArgumentNullException.ThrowIfNull(after);
+        var length = 0;
+        while (length < after.Length && (char.IsLetterOrDigit(after[length]) || after[length] == '_'))
+        {
+            length++;
+        }
+
+        return length;
+    }
 
     /// <summary>
     /// Where a name written at <paramref name="position"/> of a module is looked up from: the procedure the position is in, or the module itself when it is in
@@ -502,23 +587,59 @@ public static class CompletionCandidates
 
     /// <summary>
     /// The names that can be written as a simple name expression where <paramref name="origin"/> is: what the procedure, the module, the project, the libraries
-    /// and the language declare, nearest first. The keywords are not names; which of them can be written where is <see cref="CompletionRules"/>' to say.
+    /// and the language declare, nearest first. A class module's names are followed by the members of the library's class it names as its own: a document
+    /// module's host class (<see cref="VBClassModuleSymbol.HostClass"/>), and the base class a designed root's class is built on
+    /// (<see cref="VBClassModuleSymbol.BaseClass"/>). The keywords are not names; which of them can be written where is <see cref="CompletionRules"/>' to say.
     /// </summary>
     /// <param name="tree">The scope tree of the composed workspace.</param>
     /// <param name="origin">Where the lookup originates (<see cref="OriginAt"/>).</param>
     public static IReadOnlyList<CompletionCandidate> Names(ScopeTree tree, Uri origin)
     {
         var candidates = new Candidates();
-        foreach (var scope in tree.ScopeFor(origin).SelfAndAncestors())
+        var scopes = tree.ScopeFor(origin).SelfAndAncestors().ToList();
+        foreach (var scope in scopes)
         {
             var rank = RankOf(scope.Kind);
             foreach (var symbol in scope.Declarations.Where(symbol => IsValueName(symbol, scope.Kind)))
             {
                 candidates.Add(Describe(symbol), rank);
             }
+
+            if (scope.Kind == LexicalScopeKind.Module)
+            {
+                foreach (var member in LibraryClassMembersOf(scopes, scope).Where(member => IsValueName(member, scope.Kind)))
+                {
+                    candidates.Add(Describe(member), rank);
+                }
+            }
         }
 
         return candidates.ToList();
+    }
+
+    // the members of the library classes a class module names as its own (its host class, its base class), found among the classes the scopes declare by
+    // their library's name and their own; events are left out, as an event names no value.
+    private static IEnumerable<VBTypeMemberSymbol> LibraryClassMembersOf(IReadOnlyList<LexicalScope> scopes, LexicalScope moduleScope)
+    {
+        var module = scopes.SelectMany(scope => scope.DeclaredAs(SymbolUri.ModuleNameOf(moduleScope.Uri))).OfType<VBClassModuleSymbol>()
+            .FirstOrDefault(candidate => candidate.Uri.AbsoluteUri == moduleScope.Uri.AbsoluteUri);
+        (string? Library, string? Name)[] named = module is null
+            ? []
+            : [(module.HostClass?.Library, module.HostClass?.ClassName), (module.BaseClass?.Library, module.BaseClass?.Name)];
+        foreach (var (library, name) in named)
+        {
+            if (library is null || name is null)
+            {
+                continue;
+            }
+
+            var found = scopes.SelectMany(scope => scope.DeclaredAs(name)).OfType<VBClassModuleSymbol>()
+                .FirstOrDefault(candidate => string.Equals(candidate.GetProperty(SymbolProperties.Library), library, StringComparison.OrdinalIgnoreCase));
+            foreach (var member in found?.DefaultInterfaceMembers.Where(member => member is not VBEventMemberSymbol) ?? [])
+            {
+                yield return member;
+            }
+        }
     }
 
     /// <summary>
@@ -595,7 +716,9 @@ public static class CompletionCandidates
         var candidates = new Candidates();
         IEnumerable<Symbol> declared = owner switch
         {
-            VBProjectSymbol project => tree.Global.Declarations.Concat(ProjectScopeOf(tree)?.Declarations ?? []).Where(symbol => IsOfProject(symbol, project)),
+            // each project's declared types are in its own project's scope.
+            VBProjectSymbol project
+                => tree.Global.Declarations.Concat(tree.Projects.SelectMany(scope => scope.Declarations)).Where(symbol => IsOfProject(symbol, project)),
             VBModuleSymbol module when tree.TryGetScope(module.Uri, out var scope) && scope.Kind == LexicalScopeKind.Module => scope.Declarations,
             _ => [],
         };
@@ -738,11 +861,6 @@ public static class CompletionCandidates
             ? scope.Declarations
             : module.Members;
 
-    private static LexicalScope? ProjectScopeOf(ScopeTree tree)
-        => tree.Global.Declarations.OfType<VBModuleSymbol>()
-            .Select(module => tree.TryGetScope(module.Uri, out var scope) ? scope.Parent : null)
-            .FirstOrDefault(scope => scope?.Kind == LexicalScopeKind.Project);
-
     private static bool IsOfProject(Symbol symbol, VBProjectSymbol project)
         => string.Equals(symbol.GetProperty(SymbolProperties.Library) ?? string.Empty, project.GetProperty(SymbolProperties.Library) ?? string.Empty, StringComparison.Ordinal);
 
@@ -812,7 +930,20 @@ public static class CompletionCandidates
 
     // the candidate a symbol is: its name as it is written, in brackets when it is no identifier; its kind, and what is said of it.
     private static CompletionCandidate Describe(Symbol symbol)
-        => new(IsIdentifier(symbol.Name) ? symbol.Name : $"[{symbol.Name}]", KindOf(symbol), DetailOf(symbol), symbol.GetProperty(SymbolProperties.DocString), symbol);
+        => new(IsIdentifier(symbol.Name) ? symbol.Name : $"[{symbol.Name}]", KindOf(symbol), DetailOf(symbol), DocumentationOf(symbol), symbol);
+
+    // what is said of a symbol: its doc string, after the mark of what RD-VBA adds to a library that its type library does not declare.
+    private static string? DocumentationOf(Symbol symbol)
+    {
+        var documentation = symbol.GetProperty(SymbolProperties.DocString);
+        if (!symbol.GetProperty(SymbolProperties.LibraryAddition) || symbol.GetProperty(SymbolProperties.Library) is not { Length: > 0 } library)
+        {
+            return documentation;
+        }
+
+        var addition = SymbolTexts.LibraryAddition(library);
+        return documentation is { Length: > 0 } ? $"{addition}\n\n{documentation}" : addition;
+    }
 
     private static CompletionItemKind KindOf(Symbol symbol) => symbol switch
     {

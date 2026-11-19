@@ -202,6 +202,20 @@ public record class SdkAppOptions
     /// and change nothing in a document.
     /// </remarks>
     public SdkFormattingOptions Formatting { get; set; } = new();
+    /// <summary>
+    /// Code analysis options: what the analyzers of the platform and of its extensions report.
+    /// </summary>
+    /// <remarks>
+    /// A change takes effect with the next analysis of a document, while the platform runs.
+    /// </remarks>
+    public SdkAnalysisOptions Analysis { get; set; } = new();
+    /// <summary>
+    /// Inlay hint options: the places an editor shows what the code means without saying it, each on or off.
+    /// </summary>
+    /// <remarks>
+    /// A change takes effect with the next hints a client asks for, while the platform runs.
+    /// </remarks>
+    public SdkInlayHintOptions InlayHints { get; set; } = new();
 }
 
 /// <summary>
@@ -231,7 +245,8 @@ public record class SdkEnvironmentOptions
     /// </summary>
     public int Lcid { get; set; }
     /// <summary>
-    /// The ANSI code page for <c>Byte()</c> ↔ <c>String</c> and non-Unicode <c>Chr</c> / <c>Asc</c>.
+    /// The ANSI code page for <c>Byte()</c> ↔ <c>String</c> and non-Unicode <c>Chr</c> / <c>Asc</c>, and the one a module file without a byte order mark that
+    /// is not UTF-8 is read and written in (<see cref="RDCore.SDK.Workspace.ModuleFileText"/>).
     /// </summary>
     public int AnsiCodePage { get; set; } = 1252;
     /// <summary>

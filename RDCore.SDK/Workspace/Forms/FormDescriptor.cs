@@ -22,6 +22,13 @@ public enum FormDesignerKind
     /// know how to find.
     /// </summary>
     Other,
+
+    /// <summary>
+    /// An RDForms form: the code of the form is a <c>.rdform</c> module (<see cref="ProjectModuleKinds.RDFormsModuleExtension"/>), and its controls are in the
+    /// RDForms document of the same base name beside it (<see cref="FormDesigner.RDFormsDocumentExtension"/>), which an <see cref="IFormDocumentReader"/>
+    /// reads. Its lengths are in device-independent pixels, 96 to an inch.
+    /// </summary>
+    RDForms,
 }
 
 /// <summary>
@@ -93,7 +100,8 @@ public sealed record class FormControlDescriptor(
 /// <param name="Kind">The designer that wrote the form.</param>
 /// <param name="Class">The class of the form itself (<c>MSForms.UserForm</c>, <c>VB.Form</c>).</param>
 /// <param name="Properties">The form's own designer properties, by name (case-insensitive), as written in the module's
-/// designer block: a string value without its quotes, any other value as written, without its trailing comment.</param>
+/// designer block: a string value without its quotes, any other value as written, without its trailing comment. An RDForms form's properties are as its
+/// document writes them, its lengths in device-independent pixels.</param>
 /// <param name="Controls">The form's controls, in the order the designer persisted them; a container's controls are its
 /// <see cref="FormControlDescriptor.Children"/>.</param>
 public sealed record class FormDescriptor(
@@ -132,33 +140,47 @@ public sealed record class FormDescriptor(
     };
 
     /// <summary>
-    /// The form's <c>ClientLeft</c> designer property, in points: the distance of its client area from the left of the desktop. The designer block writes it in twips,
-    /// 20 to a point. <c>null</c> when the designer block does not set it, or sets it to something that is not a number.
+    /// The form's <c>ClientLeft</c> designer property, in points: the distance of its client area from the left of the desktop (<see cref="PointsPerUnit"/>).
+    /// <c>null</c> when the designer does not set it, or sets it to something that is not a number.
     /// </summary>
     public double? ClientLeft => PointsOf("ClientLeft");
 
     /// <summary>
-    /// The form's <c>ClientTop</c> designer property, in points: the distance of its client area from the top of the desktop. The designer block writes it in twips,
-    /// 20 to a point. <c>null</c> when the designer block does not set it, or sets it to something that is not a number.
+    /// The form's <c>ClientTop</c> designer property, in points: the distance of its client area from the top of the desktop (<see cref="PointsPerUnit"/>).
+    /// <c>null</c> when the designer does not set it, or sets it to something that is not a number.
     /// </summary>
     public double? ClientTop => PointsOf("ClientTop");
 
     /// <summary>
-    /// The form's <c>ClientWidth</c> designer property, in points: the width of its window's client area. The designer block writes it in twips, 20 to a point.
-    /// <c>null</c> when the designer block does not set it, or sets it to something that is not a number.
+    /// The form's <c>ClientWidth</c> designer property, in points: the width of its window's client area (<see cref="PointsPerUnit"/>). <c>null</c> when the
+    /// designer does not set it, or sets it to something that is not a number.
     /// </summary>
     public double? ClientWidth => PointsOf("ClientWidth");
 
     /// <summary>
-    /// The form's <c>ClientHeight</c> designer property, in points: the height of its window's client area. The designer block writes it in twips, 20 to a
-    /// point. <c>null</c> when the designer block does not set it, or sets it to something that is not a number.
+    /// The form's <c>ClientHeight</c> designer property, in points: the height of its window's client area (<see cref="PointsPerUnit"/>). <c>null</c> when
+    /// the designer does not set it, or sets it to something that is not a number.
     /// </summary>
     public double? ClientHeight => PointsOf("ClientHeight");
 
-    // a designer property in twips, as points: the designer block writes numbers the same way in every locale.
+    /// <summary>
+    /// How many points one unit of the form's length properties (<see cref="Properties"/>) is: a designer block writes lengths in twips, 20 to a point
+    /// (0.05); an RDForms document in device-independent pixels, 96 to an inch, so a pixel is three quarters of a point (0.75).
+    /// </summary>
+    public double PointsPerUnit => Kind == FormDesignerKind.RDForms ? 0.75 : 0.05;
+
+    /// <summary>
+    /// Whether the form keeps Visual Basic 6.0's form model, as a Visual Basic 6.0 form (<see cref="FormDesignerKind.VisualBasic6"/>) and an RDForms form
+    /// (<see cref="FormDesignerKind.RDForms"/>) do: its handlers are <c>Form_</c>'s, a member of its form loads it, <c>Show</c> with no style shows it
+    /// modeless, its code can draw on it, and a form host that hosts Visual Basic 6.0 forms hosts it. <see langword="false"/> for a UserForm and for any
+    /// other designer's form.
+    /// </summary>
+    public bool HasVisualBasic6FormModel => Kind is FormDesignerKind.VisualBasic6 or FormDesignerKind.RDForms;
+
+    // a length property, as points: a designer writes numbers the same way in every locale.
     private double? PointsOf(string property)
-        => double.TryParse(Properties.GetValueOrDefault(property), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var twips)
-            ? twips / 20
+        => double.TryParse(Properties.GetValueOrDefault(property), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var length)
+            ? length * PointsPerUnit
             : null;
 
     /// <summary>
@@ -175,13 +197,31 @@ public sealed record class FormDescriptor(
     /// <summary>
     /// The text of a Visual Basic 6.0 form's designer: the module's source from its first line through the designer block's <c>End</c> line, with the
     /// <c>VERSION</c> header, the <c>Object</c> lines and the <c>Begin</c> … <c>End</c> block, and without the <c>Attribute</c> lines and the code that
-    /// follow it. <c>null</c> for a VBA UserForm and for another designer.
+    /// follow it. For an RDForms form, the text of its RDForms document. <c>null</c> for a VBA UserForm and for another designer.
     /// </summary>
     /// <remarks>
     /// It travels with the descriptor, with <see cref="State"/>, so that the library that hosts the form reads the form's properties from it where no file
     /// of the workspace is at hand.
     /// </remarks>
     public string? DesignerText { get; init; }
+
+    /// <summary>
+    /// The base class the form's class is built on, when it has one: the class whose members the form's code names unqualified, and which are not members
+    /// of the form's own class. That is a Visual Basic 6.0 <c>VB.UserControl</c>, <c>VB.PropertyPage</c> or <c>VB.UserDocument</c>: in a UserControl's code,
+    /// <c>BackColor</c> and <c>UserControl.BackColor</c> are the base class's, and <c>Me.BackColor</c> is a member the UserControl declares or none. A
+    /// declaration of the module's own of the same name shadows the base class's member. <c>null</c> for any other form: the members of a
+    /// <c>VB.Form</c>, a <c>VB.MDIForm</c> and an <c>MSForms.UserForm</c> are members of the form's own class.
+    /// </summary>
+    public FormControlClass? BaseClass
+        => Kind == FormDesignerKind.VisualBasic6 && Class is { Library: { } library, Name: { } name }
+           && string.Equals(library, VisualBasicLibrary, StringComparison.OrdinalIgnoreCase)
+           && BaseClassNames.Contains(name, StringComparer.OrdinalIgnoreCase)
+            ? Class
+            : null;
+
+    private const string VisualBasicLibrary = "VB";
+
+    private static readonly string[] BaseClassNames = ["UserControl", "PropertyPage", "UserDocument"];
 
     /// <summary>
     /// Every control of the form, at any depth, in the order the designer persisted them.
@@ -199,6 +239,6 @@ public sealed record class FormDescriptor(
     /// </remarks>
     public IEnumerable<FormControlDescriptor> DeclaredControls()
         => AllControls()
-            .Where(control => !(Kind == FormDesignerKind.MSForms && control.Class is { Library: MSFormsDesignerStorage.Library, Name: "Page" }))
+            .Where(control => !(Kind == FormDesignerKind.MSForms && control.Class is { Library: FormDesigner.MSFormsLibrary, Name: "Page" }))
             .DistinctBy(control => control.Name, StringComparer.OrdinalIgnoreCase);
 }

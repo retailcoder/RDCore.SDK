@@ -27,6 +27,33 @@ public readonly record struct SourceRange(SourcePosition Start, SourcePosition E
     public bool IsEmpty => Start == End;
 
     /// <summary>
+    /// Whether a position is in the range: at its <c>Start</c>, or after it and before its <c>End</c>, which is not in it.
+    /// </summary>
+    /// <param name="position">The position.</param>
+    /// <returns><see langword="true"/> when the position is in the range; always <see langword="false"/> for an empty range.</returns>
+    public bool Contains(SourcePosition position) => Start <= position && position < End;
+
+    /// <summary>
+    /// Whether another range is within this one: it starts at or after <see cref="Start"/>, and ends at or before <see cref="End"/>.
+    /// </summary>
+    /// <param name="range">The other range.</param>
+    /// <returns>
+    /// <see langword="true"/> when every character of <paramref name="range"/> is in this range. An empty range is within this one when its position is
+    /// from <see cref="Start"/> to <see cref="End"/>, both included; a range is within itself.
+    /// </returns>
+    public bool Contains(SourceRange range) => Start <= range.Start && range.End <= End;
+
+    /// <summary>
+    /// Whether this range and another share a character: each starts before the other ends.
+    /// </summary>
+    /// <param name="range">The other range.</param>
+    /// <returns>
+    /// <see langword="true"/> when at least one character is in both ranges. A range that ends where the other starts shares no character with it, and an
+    /// empty range shares none with any range.
+    /// </returns>
+    public bool Intersects(SourceRange range) => !IsEmpty && !range.IsEmpty && Start < range.End && range.Start < End;
+
+    /// <summary>
     /// Compares two ranges by where they start, in document order.
     /// </summary>
     /// <param name="other">The range to compare with.</param>

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- Why an entry of a .rdworkspace's folders is not loaded (RefusedWorkspaceFolder): WorkspaceFolder_ and the WorkspaceFolderRefusal. {0} is the entry, as the file writes it; {1} is the path of the .rdworkspace. -->
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="WorkspaceFolder_Absolute" xml:space="preserve">
+    <value>Le dossier « {0} » que liste {1} n'est pas chargé : c'est un chemin absolu, et un espace de travail ne liste que des dossiers placés directement sous sa propre racine.</value>
+  </data>
+  <data name="WorkspaceFolder_OutsideRoot" xml:space="preserve">
+    <value>Le dossier « {0} » que liste {1} n'est pas chargé : il sort de la racine de l'espace de travail avec « .. ».</value>
+  </data>
+  <data name="WorkspaceFolder_NotDirectlyUnderRoot" xml:space="preserve">
+    <value>Le dossier « {0} » que liste {1} n'est pas chargé : un espace de travail liste par leur nom les dossiers placés directement sous sa racine.</value>
+  </data>
+  <data name="WorkspaceFolder_Duplicate" xml:space="preserve">
+    <value>Le dossier « {0} » que liste {1} n'est pas chargé une seconde fois : le fichier le liste plus haut.</value>
+  </data>
+  <data name="WorkspaceFolder_Missing" xml:space="preserve">
+    <value>Le dossier « {0} » que liste {1} n'est pas chargé : il n'y a aucun dossier de ce nom sous la racine de l'espace de travail.</value>
+  </data>
+</root>

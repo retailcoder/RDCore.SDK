@@ -48,13 +48,27 @@ public abstract record class Symbol
     /// <summary>
     /// A <c>Uri</c> that uniquely identifies the symbol.
     /// </summary>
-    public Uri Uri { get; init; }
+    public Uri Uri
+    {
+        get => _uri;
+        init
+        {
+            _uri = value;
+            SemanticId = new(value);
+        }
+    }
+
+    private readonly Uri _uri = default!;
 
     /// <summary>
     /// A <see cref="SemanticId"/> that uniquely identifies this symbol, safe for use as a dictionary
     /// key or set member (unlike <see cref="Uri"/> alone).
     /// </summary>
-    public SemanticId SemanticId => new(Uri);
+    /// <remarks>
+    /// Made once with the <see cref="Uri"/>, and made again when a copy of the symbol is given another one, so the hash of the address is not
+    /// computed at each lookup.
+    /// </remarks>
+    public SemanticId SemanticId { get; private init; }
     /// <summary>
     /// The <c>Uri</c> of the parent symbol.
     /// </summary>

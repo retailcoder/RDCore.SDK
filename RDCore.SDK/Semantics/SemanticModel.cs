@@ -48,6 +48,12 @@ public sealed record class ProcedureSemanticModel(SemanticId Procedure, Immutabl
     public ImmutableArray<Flow.EmptiedControlReadFact> EmptiedControlReads { get; init; } = [];
 
     /// <summary>
+    /// The arguments of the calls of the procedure's body that the pass mapped to a parameter, each with what the procedure called declares of it
+    /// (<see cref="ArgumentFact"/>), in the order the pass met them. An argument that is not in the list was mapped to no parameter the pass knows.
+    /// </summary>
+    public ImmutableArray<ArgumentFact> Arguments { get; init; } = [];
+
+    /// <summary>
     /// What the language core states about the conversions and operations of the procedure's code, or <see langword="null"/> when the procedure has not been
     /// evaluated. A <see langword="null"/> says nothing about the code.
     /// </summary>
@@ -104,6 +110,17 @@ public sealed record class ModuleSemanticModel(
     /// procedures, properties and events, and the variables that were never declared. Empty when the pass had no workspace to resolve names in.
     /// </summary>
     public ImmutableArray<DeclarationFact> Declarations { get; init; } = [];
+
+    /// <summary>
+    /// Each class whose objects the module's code creates, with <c>New</c> or a variable declared <c>As New</c> (<see cref="ClassFact"/>), each listed once.
+    /// </summary>
+    public ImmutableArray<ClassFact> Classes { get; init; } = [];
+
+    /// <summary>
+    /// The names of the document modules a name written in the module can refer to: those of its project, and of the projects it references. In MS-VBA, the
+    /// host makes such a name refer to its document, an object of the host's class; RD-VBA has no host to do so (<see cref="DocumentModuleFact"/>).
+    /// </summary>
+    public ImmutableArray<string> DocumentModules { get; init; } = [];
 
     /// <summary>
     /// Every compile error of the module: those of its declarations, then those of each procedure.

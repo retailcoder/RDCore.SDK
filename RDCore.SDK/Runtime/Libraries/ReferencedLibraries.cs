@@ -85,7 +85,8 @@ public sealed class ReferencedLibraries
     /// references are in the order of the project file (<strong>RD-VBAL §2.3.1.2</strong>): the first library the project references is <c>1</c>, the next
     /// <c>2</c>, and so on, a reference to a provided library, or a second one to the same library, not counted, and a reference that fails to load keeping its
     /// number. A library that is loaded only because another depends on it comes after every library the project references, in the order it was
-    /// loaded. The standard library, which the platform provides and which comes before every reference, is not in it.
+    /// loaded. The standard library, which the platform provides and which comes before every reference, is not in it. A reference to another project of
+    /// the workspace is, by the project's name, with its number in the order: the precedence of that project's members.
     /// </remarks>
     public ImmutableDictionary<string, int> Priorities { get; }
 
@@ -115,36 +116,47 @@ public sealed class ReferencedLibraries
     /// </param>
     /// <param name="provided">The names of the libraries the platform provides itself.</param>
     public static ReferencedLibraries Load(ILibrarySource source, IEnumerable<LibraryIdentity> references, IReadOnlyCollection<string> provided)
+        => Load(source, references, provided, new HashSet<int>());
+
+    // the libraries, among references to other projects of the workspace, which are told by their positions in the references, from 0: a project is not asked
+    // of the source and never makes a problem, and it keeps its place in the order, so its number is the precedence of its members. A project and a library of
+    // one name are one name referenced twice.
+    internal static ReferencedLibraries Load(
+        ILibrarySource source, IEnumerable<LibraryIdentity> references, IReadOnlyCollection<string> provided, IReadOnlySet<int> projects)
     {
-        var first = new Dictionary<string, LibraryIdentity>(StringComparer.OrdinalIgnoreCase);
-        var ordered = new List<LibraryIdentity>();
+        var first = new Dictionary<string, (LibraryIdentity Identity, bool IsProject)>(StringComparer.OrdinalIgnoreCase);
+        var ordered = new List<(LibraryIdentity Identity, bool IsProject)>();
         var duplicates = new List<LibraryProblem>();
-        foreach (var reference in references.Where(reference => !provided.Contains(reference.Name, StringComparer.OrdinalIgnoreCase)))
+        var listed = references.Select((reference, position) => (Identity: reference, IsProject: projects.Contains(position)));
+        foreach (var reference in listed.Where(reference => !provided.Contains(reference.Identity.Name, StringComparer.OrdinalIgnoreCase)))
         {
-            if (first.TryAdd(reference.Name, reference))
+            var name = reference.Identity.Name;
+            if (first.TryAdd(name, reference))
             {
                 ordered.Add(reference);
             }
-            else if (!MeanOneLibrary(source, first[reference.Name], reference))
+            else if (reference.IsProject || first[name].IsProject || !MeanOneLibrary(source, first[name].Identity, reference.Identity))
             {
-                duplicates.Add(new LibraryProblem(reference.Name, LibraryProblemKind.DuplicateName, [first[reference.Name].ToString(), reference.ToString()]));
+                duplicates.Add(new LibraryProblem(name, LibraryProblemKind.DuplicateName, [first[name].Identity.ToString(), reference.Identity.ToString()]));
             }
         }
 
         var referenced = ordered.ToArray();
-        var loader = new Loader(source, provided, first);
-        foreach (var reference in referenced)
+        var libraries = referenced.Where(reference => !reference.IsProject).ToDictionary(
+            reference => reference.Identity.Name, reference => reference.Identity, StringComparer.OrdinalIgnoreCase);
+        var loader = new Loader(source, provided, libraries);
+        foreach (var reference in referenced.Where(reference => !reference.IsProject))
         {
-            loader.Load(reference, []);
+            loader.Load(reference.Identity, []);
         }
 
         var loaded = loader.Loaded.Select(library => library.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
         var priorities = ImmutableDictionary.CreateBuilder<string, int>(StringComparer.OrdinalIgnoreCase);
         for (var i = 0; i < referenced.Length; i++)
         {
-            if (loaded.Contains(referenced[i].Name))
+            if (referenced[i].IsProject || loaded.Contains(referenced[i].Identity.Name))
             {
-                priorities[referenced[i].Name] = i + 1;
+                priorities[referenced[i].Identity.Name] = i + 1;
             }
         }
 

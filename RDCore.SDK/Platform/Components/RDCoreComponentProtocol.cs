@@ -49,6 +49,34 @@ public static class RDCoreComponentProtocol
     public const string HostProjectReload = "rdcore/host/project/reload";
 
     /// <summary>
+    /// Asks the environment host to open a run session of a project, in which its procedures are run one request at a time: what a test runner opens for a
+    /// test module.
+    /// </summary>
+    public const string HostRunSessionOpen = "rdcore/host/runSession/open";
+
+    /// <summary>
+    /// Asks the environment host to run one procedure of a run session's project, unattended, with the arguments of a data row and the fakes of the run.
+    /// </summary>
+    public const string HostRunSessionExecute = "rdcore/host/runSession/execute";
+
+    /// <summary>
+    /// Asks the environment host to close a run session.
+    /// </summary>
+    public const string HostRunSessionClose = "rdcore/host/runSession/close";
+
+    /// <summary>
+    /// Asks the environment host to compose a project of the workspace other than the one it runs, for analysis only (<see cref="HostProjectAnalyzeParams"/>):
+    /// what the language server asks for each other project it loads, before it defines that project's modules.
+    /// </summary>
+    public const string HostProjectAnalyze = "rdcore/host/project/analyze";
+
+    /// <summary>
+    /// Asks the environment host to drop a project it composed for analysis (<see cref="HostProjectReleaseParams"/>): what the language server asks once the
+    /// client took the project's folder out of the workspace.
+    /// </summary>
+    public const string HostProjectRelease = "rdcore/host/project/release";
+
+    /// <summary>
     /// Tells the language server what a program printed, as it prints: a notification from the environment host, sent for a program that was run with its
     /// output streamed (<c>HostExecuteParams.StreamOutput</c>).
     /// </summary>
@@ -123,6 +151,12 @@ public static class RDCoreComponentProtocol
     /// whose handler waits if one does. The language server tells its client with <see cref="RDCorePlatformProtocol.SessionDebugStopped"/>.
     /// </summary>
     public const string HostDebugStopped = "rdcore/host/debug/stopped";
+
+    /// <summary>
+    /// Tells the language server that the session has no form loaded: a notification from the environment host, sent when the last loaded form is
+    /// unloaded, or let go of, or ended with the rest of the session's state by an <c>End</c>.
+    /// </summary>
+    public const string HostFormsUnloaded = "rdcore/host/forms/unloaded";
 
     /// <summary>
     /// Reads one byte of the environment host's runtime session memory. The language-server side of <see cref="RDCorePlatformProtocol.SessionPeek"/>.

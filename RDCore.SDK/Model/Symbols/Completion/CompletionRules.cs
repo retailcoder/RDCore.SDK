@@ -52,19 +52,24 @@ public static class CompletionRules
     /// <param name="site">What is being written.</param>
     /// <param name="placement">Where the line is in its module.</param>
     /// <param name="language">What the module is.</param>
-    public static IReadOnlyList<CompletionCandidate> At(ScopeTree tree, Uri origin, CompletionSite site, CompletionPlacement placement, CompletionLanguage language)
+    /// <param name="snippets">
+    /// The snippets the keywords that start a block or a procedure are offered as, where a statement or a declaration starts; <see langword="null"/> for the
+    /// keywords alone, for a client that takes no snippets (<see cref="CompletionSnippets.For"/>).
+    /// </param>
+    public static IReadOnlyList<CompletionCandidate> At(ScopeTree tree, Uri origin, CompletionSite site, CompletionPlacement placement, CompletionLanguage language,
+        CompletionSnippets? snippets = null)
     {
         var tokens = site.Tokens;
         if (tokens.Count == 0)
         {
-            return placement.IsInProcedure ? StatementStart(tree, origin, placement, language) : DeclarationStart(placement, language);
+            return placement.IsInProcedure ? StatementStart(tree, origin, placement, language, snippets) : DeclarationStart(placement, language, snippets);
         }
 
-        return Statement(tree, origin, site, tokens, placement, language) ?? Expression(tree, origin, site, tokens, language);
+        return Statement(tree, origin, site, tokens, placement, language, snippets) ?? Expression(tree, origin, site, tokens, language);
     }
 
     // a declaration of the module's declarations section: what can be declared there, and nothing else is written there.
-    private static IReadOnlyList<CompletionCandidate> DeclarationStart(CompletionPlacement placement, CompletionLanguage language)
+    private static IReadOnlyList<CompletionCandidate> DeclarationStart(CompletionPlacement placement, CompletionLanguage language, CompletionSnippets? snippets)
     {
         IEnumerable<string> keywords = [.. DeclarationKeywords, .. language.IsClassModule ? ClassDeclarationKeywords : []];
 
@@ -74,11 +79,12 @@ public static class CompletionRules
             keywords = keywords.Prepend("Option");
         }
 
-        return Keywords(keywords);
+        return Snippets(Keywords(keywords), snippets);
     }
 
     // the start of a statement in a procedure: the names a call or an assignment starts with, the statements, and the ones the blocks the line is in have.
-    private static IReadOnlyList<CompletionCandidate> StatementStart(ScopeTree tree, Uri origin, CompletionPlacement placement, CompletionLanguage language)
+    private static IReadOnlyList<CompletionCandidate> StatementStart(ScopeTree tree, Uri origin, CompletionPlacement placement, CompletionLanguage language,
+        CompletionSnippets? snippets)
     {
         var block = new List<string>();
         foreach (var kind in placement.Blocks)
@@ -102,7 +108,7 @@ public static class CompletionRules
         [
             .. block.Distinct(StringComparer.OrdinalIgnoreCase).Select(keyword => new CompletionCandidate(keyword, CompletionItemKind.Keyword, Rank: NearRank)),
             .. CompletionCandidates.Names(tree, origin),
-            .. Keywords(statements.Except(block, StringComparer.OrdinalIgnoreCase)),
+            .. Snippets(Keywords(statements.Except(block, StringComparer.OrdinalIgnoreCase)), snippets),
         ];
     }
 
@@ -116,14 +122,15 @@ public static class CompletionRules
 
     // the statements whose words say what comes next; null for a statement that is an expression from here on.
     private static IReadOnlyList<CompletionCandidate>? Statement(
-        ScopeTree tree, Uri origin, CompletionSite site, IReadOnlyList<string> tokens, CompletionPlacement placement, CompletionLanguage language)
+        ScopeTree tree, Uri origin, CompletionSite site, IReadOnlyList<string> tokens, CompletionPlacement placement, CompletionLanguage language,
+        CompletionSnippets? snippets)
     {
         var first = tokens[0];
         var last = tokens[^1];
         var count = tokens.Count;
 
         // a declaration: the modifiers, the name it declares, and the keyword that goes on with it.
-        if (IsDeclaration(tokens, placement, language, out var declared))
+        if (IsDeclaration(tokens, placement, language, snippets, out var declared))
         {
             return declared;
         }
@@ -217,7 +224,7 @@ public static class CompletionRules
 
         if (first.Is("For"))
         {
-            return ForStatement(tree, origin, tokens, language);
+            return ForStatement(tree, origin, tokens, language, snippets);
         }
 
         if (first.Is("Open") && last.Is("For"))
@@ -235,11 +242,12 @@ public static class CompletionRules
     }
 
     // `For |` is the loop's variable or Each; `For Each x |` goes on with In; `For i = 1 |` with To, and `For i = 1 To 9 |` with Step.
-    private static IReadOnlyList<CompletionCandidate>? ForStatement(ScopeTree tree, Uri origin, IReadOnlyList<string> tokens, CompletionLanguage language)
+    private static IReadOnlyList<CompletionCandidate>? ForStatement(ScopeTree tree, Uri origin, IReadOnlyList<string> tokens, CompletionLanguage language,
+        CompletionSnippets? snippets)
     {
         if (tokens.Count == 1)
         {
-            return [.. Keywords(["Each"]), .. CompletionCandidates.Names(tree, origin)];
+            return [.. Snippets(Keywords(["Each"]), snippets), .. CompletionCandidates.Names(tree, origin)];
         }
 
         var isEach = tokens[1].Is("Each");
@@ -263,7 +271,8 @@ public static class CompletionRules
     }
 
     // a declaration: `Dim`, `Const`, `Static`, a modifier, `Sub`, `Function`, `Property`, `Type`, `Enum`, `Declare`, `Event`, and their parameter lists.
-    private static bool IsDeclaration(IReadOnlyList<string> tokens, CompletionPlacement placement, CompletionLanguage language, out IReadOnlyList<CompletionCandidate> offered)
+    private static bool IsDeclaration(
+        IReadOnlyList<string> tokens, CompletionPlacement placement, CompletionLanguage language, CompletionSnippets? snippets, out IReadOnlyList<CompletionCandidate> offered)
     {
         offered = [];
         var index = 0;
@@ -278,7 +287,8 @@ public static class CompletionRules
         if (index == tokens.Count)
         {
             // only modifiers so far: what they can declare - a variable's name is new, and nothing is offered for it.
-            offered = Keywords(["Const", "Declare", "Enum", "Function", "Property", "Sub", "Type", .. language.IsClassModule ? ["Event", "WithEvents"] : Array.Empty<string>()]);
+            offered = Snippets(
+                Keywords(["Const", "Declare", "Enum", "Function", "Property", "Sub", "Type", .. language.IsClassModule ? ["Event", "WithEvents"] : Array.Empty<string>()]), snippets);
             return true;
         }
 
@@ -461,6 +471,10 @@ public static class CompletionRules
 
     private static IReadOnlyList<CompletionCandidate> Keywords(IEnumerable<string> keywords)
         => [.. keywords.Select(keyword => new CompletionCandidate(keyword, CompletionItemKind.Keyword, Rank: KeywordRank))];
+
+    // the keywords that start a block or a procedure as their snippets, when the client takes them.
+    private static IReadOnlyList<CompletionCandidate> Snippets(IReadOnlyList<CompletionCandidate> keywords, CompletionSnippets? snippets)
+        => snippets is null ? keywords : [.. keywords.Select(keyword => snippets.Of(keyword) ?? keyword)];
 
     private static IReadOnlyList<CompletionCandidate> Labels(CompletionPlacement placement)
         => [.. placement.Labels.Select(label => new CompletionCandidate(label, char.IsAsciiDigit(label[0]) ? CompletionItemKind.Value : CompletionItemKind.Reference, Rank: NearRank))];

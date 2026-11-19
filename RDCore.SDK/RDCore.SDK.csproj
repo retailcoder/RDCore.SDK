@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFramework>net11.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <AssemblyTitle>RDCore SDK</AssemblyTitle>
@@ -14,15 +14,19 @@
 
   <ItemGroup>
     <PackageReference Include="CommandLineParser" Version="2.9.1" />
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.11" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.11" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.11" />
-    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.11" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="11.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="11.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="11.0.0" />
     <PackageReference Include="OmniSharp.Extensions.LanguageClient" Version="0.19.9" />
     <PackageReference Include="OmniSharp.Extensions.LanguageProtocol" Version="0.19.9" />
     <PackageReference Include="OmniSharp.Extensions.LanguageServer" Version="0.19.9" />
     <PackageReference Include="Serilog.Extensions.Logging.File" Version="3.0.0" />
     <PackageReference Include="System.IO.Abstractions" Version="22.2.0" />
+  </ItemGroup>
+
+  <!-- the year of the copyright, which the platform's splash reads from the assembly (PlatformSplash.CopyrightYear); the company is the assembly's own. -->
+  <ItemGroup>
+    <AssemblyMetadata Include="CopyrightYear" Value="$(CopyrightYear)" />
   </ItemGroup>
 
   <!-- the protocol ships inside this package as its own assembly, so it is no package dependency: its assembly, xmldoc and fr resources
@@ -66,6 +70,16 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>TraceMessages.resx</DependentUpon>
     </Compile>
+    <Compile Update="Server\Assistant\AssistantMessages.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>AssistantMessages.resx</DependentUpon>
+    </Compile>
+    <Compile Update="Forms\MSFormsMessages.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>MSFormsMessages.resx</DependentUpon>
+    </Compile>
   </ItemGroup>
 
   <ItemGroup>
@@ -80,6 +94,14 @@
     <EmbeddedResource Update="Server\TraceMessages.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>TraceMessages.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Update="Server\Assistant\AssistantMessages.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>AssistantMessages.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Update="Forms\MSFormsMessages.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>MSFormsMessages.Designer.cs</LastGenOutput>
     </EmbeddedResource>
   </ItemGroup>
 
