@@ -307,7 +307,7 @@ public sealed class ChildConnection(
     /// <param name="token">Cancels the request.</param>
     /// <exception cref="ServerProtocolSdkException">
     /// The child process exited before it answered: a connection that restarts does not send the request again. A request that <see cref="ShutdownAsync"/>
-    /// abandons fails the same way, and is logged as no fault of the child.
+    /// abandons throws it too, its message saying the connection shut the child process down, and is logged at Debug as no fault of the child.
     /// </exception>
     public async Task<TResult> SendRequestAsync<TParams, TResult>(TParams request, CancellationToken token) where TParams : IRequest<TResult>
     {
