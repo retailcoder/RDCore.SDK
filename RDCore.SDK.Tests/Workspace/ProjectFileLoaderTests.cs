@@ -207,7 +207,7 @@ public sealed class ProjectFileLoaderTests
     }
 
     [TestMethod]
-    public async Task LoadOrSynthesizeAsync_TheSourceFilesAreTheLanguages()
+    public async Task LoadOrSynthesizeAsync_TheModulesAreTheLanguages_AndABasicsAreRDVBAs()
     {
         var fs = FolderWith(("Program.bas", Named("Program")), ("Sheet1.doccls", Named("Sheet1")), ("Shell.rdc", "PRINT 1"));
 
@@ -215,7 +215,8 @@ public sealed class ProjectFileLoaderTests
         var basic = await new ProjectFileLoader(fs).LoadOrSynthesizeAsync(Root, SupportedLanguages.BASIC);
 
         CollectionAssert.AreEqual(new[] { "Program.bas" }, vb6.ProjectInfo.Modules.Select(module => module.RelativeUri).ToArray());
-        CollectionAssert.AreEqual(new[] { "Shell.rdc" }, basic.ProjectInfo.Modules.Select(module => module.RelativeUri).ToArray());
+        CollectionAssert.AreEqual(new[] { "Program.bas", "Sheet1.doccls" }, basic.ProjectInfo.Modules.Select(module => module.RelativeUri).ToArray(),
+            "a .rdc is a program of the shell, and no module");
     }
 
     [TestMethod]

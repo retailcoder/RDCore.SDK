@@ -37,8 +37,8 @@ public interface IProjectFileLoader
 
     /// <summary>
     /// Loads the <c>.rdproj</c> under <paramref name="workspaceRoot"/> as <see cref="LoadAsync"/> does, or, when the folder has none, makes up the project
-    /// the folder holds (<see cref="ProjectFile.IsSynthesized"/>): every source file of <paramref name="language"/> under it is a module, and nothing is
-    /// written.
+    /// the folder holds (<see cref="ProjectFile.IsSynthesized"/>): every module file of <paramref name="language"/> under it
+    /// (<see cref="SupportedLanguage.ModuleFileTypes"/>) is a module, and nothing is written.
     /// </summary>
     /// <remarks>
     /// <para>
@@ -60,7 +60,7 @@ public interface IProjectFileLoader
     /// </para>
     /// </remarks>
     /// <param name="workspaceRoot">The absolute path of the workspace root directory.</param>
-    /// <param name="language">The language the workspace is written in, whose <see cref="SupportedLanguage.FileTypes"/> are its source files.</param>
+    /// <param name="language">The language the workspace is written in, whose <see cref="SupportedLanguage.ModuleFileTypes"/> are its modules.</param>
     /// <param name="token">A token that cancels the read.</param>
     /// <exception cref="InvalidDataException">
     /// The <c>.rdproj</c> is not JSON, or not a JSON object; the message says where, as <see cref="LoadAsync"/> says it.
@@ -206,7 +206,7 @@ public sealed class ProjectFileLoader(IFileSystem fileSystem) : IProjectFileLoad
             return;
         }
 
-        foreach (var file in files.Where(language.IsSourceFile))
+        foreach (var file in files.Where(language.IsModuleFile))
         {
             var relativeUri = RelativeUriOf(root, file);
             var name = ModuleName.Resolve(await ReadSourceAsync(file, token), relativeUri);
