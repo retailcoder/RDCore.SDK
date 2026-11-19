@@ -34,7 +34,8 @@ namespace RDCore.SDK.Client.Connection;
 /// <param name="peer">What the client is connected to, as the log names it.</param>
 /// <param name="lost">
 /// Completes when the process the client is connected to exits: a request it has not answered by then fails with a <see cref="ServerProtocolSdkException"/>.
-/// Canceled when the process exits because its owner shut it down: the request fails the same way, and is logged as abandoned rather than faulted.
+/// Canceled when the process exits because its owner shut it down: the request fails with a <see cref="ServerProtocolSdkException"/> that says so, and is
+/// logged at Debug as abandoned.
 /// <see langword="null"/> for a client whose peer is not a process of its own.
 /// </param>
 public sealed class OmniSharpPlatformChannel(ILanguageClient client, ILogger? logger = null, string? peer = null, Task? lost = null) : IRDCorePlatformChannel
