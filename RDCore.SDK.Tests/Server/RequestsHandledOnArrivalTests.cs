@@ -99,6 +99,20 @@ public sealed class RequestsHandledOnArrivalTests
             => program.PauseFails is { } failure ? throw failure : Task.FromResult(program.Paused.TrySetResult());
     }
 
+    [Method("test/note", Direction.ClientToServer)]
+    public sealed record class NoteParams : IRequest;
+
+    // a notification of the protocol has parameters OmniSharp declares, so it is its handler that is marked.
+    [HandledOnArrival]
+    private sealed class NoteHandler(Program program) : IJsonRpcNotificationHandler<NoteParams>
+    {
+        public Task<Unit> Handle(NoteParams request, CancellationToken cancellationToken)
+        {
+            program.Paused.TrySetResult();
+            return Unit.Task;
+        }
+    }
+
     private sealed class InOrderHandler(Program program) : RDCoreRequestHandler<InOrderParams, int>
     {
         protected override Task<int> HandleAsync(InOrderParams request, CancellationToken token) => Task.FromResult(program.Paused.Task.IsCompleted ? 1 : 0);
@@ -120,6 +134,22 @@ public sealed class RequestsHandledOnArrivalTests
         Assert.IsTrue(await client.SendRequest<bool>(new PauseParams(), timeout.Token).WaitAsync(Hung), "the pause is handled while the run runs");
         Assert.AreEqual("suspended", await running.WaitAsync(Hung));
         Assert.AreEqual(1, await inOrder.WaitAsync(Hung), "a request that is not marked still waits for the run before it, which waited for the pause");
+    }
+
+    [TestMethod]
+    public async Task ANotificationWhoseHandlerIsMarked_IsHandledWhileTheRequestBeforeItRuns()
+    {
+        using var timeout = new CancellationTokenSource(Hung);
+        var program = new Program();
+        var (server, client) = await ConnectAsync(program, timeout.Token);
+        using var _server = server;
+        using var _client = client;
+
+        var running = client.SendRequest<string>(new RunParams(), timeout.Token);
+        await program.Started.Task.WaitAsync(Hung);
+        client.SendNotification(new NoteParams());
+
+        Assert.AreEqual("suspended", await running.WaitAsync(Hung), "the notification is handled while the run runs");
     }
 
     [TestMethod]
@@ -189,6 +219,7 @@ public sealed class RequestsHandledOnArrivalTests
             .AddHandler(new InOrderHandler(program))
             .AddHandler(new CountHandler(program))
             .AddHandler(new EchoHandler())
+            .AddHandler(new NoteHandler(program))
             .WithServices(services => services
                 .AddSingleton<ArrivalRequests>()
                 .AddSingleton<IReceiver, RDCoreLifecycleReceiver>()), token);

@@ -1,0 +1,269 @@
+using System.Collections.Concurrent;
+using System.Runtime.ExceptionServices;
+
+namespace RDCore.SDK.Platform;
+
+/// <summary>
+/// The main thread of a process, given by its entry point to the work that must run there while the program runs on another thread: on macOS, AppKit runs a
+/// window's loop on the process's main thread only, and a user interface set up on any other thread fails.
+/// </summary>
+/// <remarks>
+/// <para>
+/// An entry point that runs a program which may show windows serves its main thread with <see cref="Serve"/>: the program runs on a thread of the thread
+/// pool, and the main thread runs the work <see cref="PostAsync"/> is given, one piece at a time, in the order it was posted, until the program ends. Work
+/// that runs for as long as the program does, such as a window's message loop, returns when the token it is given is cancelled, which it is when the program
+/// ends.
+/// </para>
+/// <para>
+/// <see cref="Current"/> is the main thread an entry point serves, or <see langword="null"/> when it serves none: code that needs the main thread asks for it
+/// there, and fails as it sees fit when there is none, without trying another thread.
+/// </para>
+/// <example>
+/// <code>
+/// public static int Main(string[] args) => ProcessMainThread.Serve(() => RunAsync(args));
+/// </code>
+/// </example>
+/// </remarks>
+public sealed class ProcessMainThread
+{
+    private static ProcessMainThread? _current;
+
+    private readonly BlockingCollection<(Action<CancellationToken> Work, TaskCompletionSource Done)> _work = [];
+    private readonly CancellationTokenSource _ending = new();
+    private int _run;
+
+    /// <summary>
+    /// A main thread that no thread serves yet: the thread that calls <see cref="Run"/> serves it. It is not <see cref="Current"/>, which only
+    /// <see cref="Serve"/> makes.
+    /// </summary>
+    public ProcessMainThread()
+    {
+    }
+
+    /// <summary>
+    /// The main thread of this process, while its entry point serves it (<see cref="Serve"/>); <see langword="null"/> before it does, after it is done, and
+    /// in a process whose entry point serves none.
+    /// </summary>
+    public static ProcessMainThread? Current => Volatile.Read(ref _current);
+
+    /// <summary>
+    /// Runs <paramref name="program"/> on a thread of the thread pool, and serves the calling thread as the process's main thread (<see cref="Current"/>)
+    /// until it ends. Called by the process's entry point, on the process's main thread.
+    /// </summary>
+    /// <param name="program">The program: what the entry point would otherwise run on its own thread.</param>
+    /// <returns>What <paramref name="program"/> returned: the process's exit code.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="program"/> is <see langword="null"/>.</exception>
+    /// <exception cref="InvalidOperationException">The process's main thread is served already.</exception>
+    /// <remarks>
+    /// What <paramref name="program"/> throws is thrown, once the work posted to the main thread has returned. <see cref="Current"/> is
+    /// <see langword="null"/> again once this returns.
+    /// </remarks>
+    public static int Serve(Func<Task<int>> program)
+    {
+        ArgumentNullException.ThrowIfNull(program);
+        var main = new ProcessMainThread();
+        if (Interlocked.CompareExchange(ref _current, main, null) is not null)
+        {
+            throw new InvalidOperationException("The process's main thread is served already.");
+        }
+
+        try
+        {
+            return main.Run(program);
+        }
+        finally
+        {
+            Interlocked.CompareExchange(ref _current, null, main);
+        }
+    }
+
+    /// <summary>
+    /// Runs <paramref name="program"/> on a thread of the thread pool, and runs the work posted to this main thread (<see cref="PostAsync"/>) on the calling
+    /// thread until the program ends.
+    /// </summary>
+    /// <param name="program">The program.</param>
+    /// <returns>What <paramref name="program"/> returned.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="program"/> is <see langword="null"/>.</exception>
+    /// <exception cref="InvalidOperationException">This main thread was run already.</exception>
+    /// <remarks>
+    /// <para>
+    /// <see cref="Serve"/> runs the process's own main thread this way. A main thread made with the constructor is served by the thread that runs it, and is
+    /// not <see cref="Current"/>: for a host that has a thread of its own play the part of the main thread, or for a test.
+    /// </para>
+    /// <para>
+    /// When the program ends, the token every piece of work is given is cancelled. Work posted before then that has not begun runs all the same, with that
+    /// token cancelled, and this returns once every piece has returned. Then what the program threw is thrown, or what it returned is returned.
+    /// </para>
+    /// </remarks>
+    public int Run(Func<Task<int>> program)
+    {
+        ArgumentNullException.ThrowIfNull(program);
+        if (Interlocked.Exchange(ref _run, 1) != 0)
+        {
+            throw new InvalidOperationException("This main thread was run already.");
+        }
+
+        var running = Task.Run(program);
+        _ = running.ContinueWith(_ =>
+        {
+            _ending.Cancel();
+            _work.CompleteAdding();
+        }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+
+        foreach (var (work, done) in _work.GetConsumingEnumerable())
+        {
+            try
+            {
+                work(_ending.Token);
+                done.SetResult();
+            }
+            catch (OperationCanceledException cancelled)
+            {
+                done.SetCanceled(cancelled.CancellationToken);
+            }
+            catch (Exception exception)
+            {
+                done.SetException(exception);
+            }
+        }
+
+        // the program has ended: its task is complete, and waiting for it blocks nothing.
+#pragma warning disable VSTHRD002
+        return running.GetAwaiter().GetResult();
+#pragma warning restore VSTHRD002
+    }
+
+    /// <summary>
+    /// Posts <paramref name="work"/> to this main thread, which runs it after the work posted before it, and does not wait for it.
+    /// </summary>
+    /// <param name="work">
+    /// The work. It is given a token that is cancelled when the program ends: work that runs for as long as the program does returns when it is.
+    /// </param>
+    /// <returns>
+    /// A task that completes when the work returns: faulted with what it throws, and cancelled when what it throws is an
+    /// <see cref="OperationCanceledException"/>. What it throws does not stop the main thread, which goes on to the next piece.
+    /// </returns>
+    /// <exception cref="ArgumentNullException"><paramref name="work"/> is <see langword="null"/>.</exception>
+    /// <exception cref="InvalidOperationException">The program has ended, and the main thread runs no more work.</exception>
+    /// <remarks>
+    /// Work posted before the main thread is run waits until it is. The task completes on a thread of the thread pool, never on the main thread, so a
+    /// continuation of it does not wait for the work after it. Work that runs on the main thread must not wait for work it posts there itself.
+    /// </remarks>
+    public Task PostAsync(Action<CancellationToken> work)
+    {
+        ArgumentNullException.ThrowIfNull(work);
+        var done = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        try
+        {
+            _work.Add((work, done));
+        }
+        catch (InvalidOperationException)
+        {
+            throw new InvalidOperationException("The program has ended: the process's main thread runs no more work.");
+        }
+
+        return done.Task;
+    }
+
+    /// <summary>
+    /// Starts a user interface's loop on this main thread: <paramref name="setUp"/> runs there, and once it returns, <paramref name="loop"/> runs there until
+    /// the program ends. Waits for the setup only.
+    /// </summary>
+    /// <typeparam name="T">What the setup makes, which the loop is given: the user interface's dispatcher, say.</typeparam>
+    /// <param name="setUp">Sets the user interface up on the main thread.</param>
+    /// <param name="loop">
+    /// Runs the user interface's loop, given what the setup made and a token that is cancelled when the program ends. It returns when the token is cancelled.
+    /// </param>
+    /// <returns>What <paramref name="setUp"/> returned.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="setUp"/> or <paramref name="loop"/> is <see langword="null"/>.</exception>
+    /// <exception cref="InvalidOperationException">The program has ended, and the main thread runs no more work.</exception>
+    /// <remarks>
+    /// <para>
+    /// Call it from a thread other than this main thread: called on the main thread, it waits for a setup that only the main thread can run.
+    /// </para>
+    /// <para>
+    /// While the loop runs, the main thread runs no other work posted to it. What <paramref name="setUp"/> throws is thrown here, with the stack it was
+    /// thrown with, and the loop is not run. The main thread then goes back to the work posted after it, and the program can end as any other does.
+    /// </para>
+    /// </remarks>
+    public T StartLoop<T>(Func<T> setUp, Action<T, CancellationToken> loop)
+    {
+        ArgumentNullException.ThrowIfNull(setUp);
+        ArgumentNullException.ThrowIfNull(loop);
+        var start = new LoopStart<T>(setUp, loop);
+        _ = PostAsync(start.Run);
+        return start.Made();
+    }
+
+    /// <summary>
+    /// Starts a user interface's loop on a new thread of its own: <paramref name="setUp"/> runs there, and once it returns, <paramref name="loop"/> runs there
+    /// until it returns. Waits for the setup only. For a system whose windows can run on any thread: the loop runs beside the program, and the process's main
+    /// thread is not needed.
+    /// </summary>
+    /// <typeparam name="T">What the setup makes, which the loop is given.</typeparam>
+    /// <param name="name">The name of the thread.</param>
+    /// <param name="setUp">Sets the user interface up on the new thread.</param>
+    /// <param name="loop">
+    /// Runs the user interface's loop, given what the setup made and a token that is never cancelled: the thread is a background thread, which ends with the
+    /// process.
+    /// </param>
+    /// <returns>What <paramref name="setUp"/> returned.</returns>
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="name"/>, <paramref name="setUp"/> or <paramref name="loop"/> is <see langword="null"/>.
+    /// </exception>
+    /// <remarks>
+    /// What <paramref name="setUp"/> throws is thrown here, with the stack it was thrown with, and the loop is not run. On Windows the thread is in a
+    /// single-threaded apartment, which a window's drag and drop, clipboard and accessibility need.
+    /// </remarks>
+    public static T StartLoopOnANewThread<T>(string name, Func<T> setUp, Action<T, CancellationToken> loop)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+        ArgumentNullException.ThrowIfNull(setUp);
+        ArgumentNullException.ThrowIfNull(loop);
+        var start = new LoopStart<T>(setUp, loop);
+        var thread = new Thread(() => start.Run(CancellationToken.None)) { IsBackground = true, Name = name };
+        if (OperatingSystem.IsWindows())
+        {
+            thread.SetApartmentState(ApartmentState.STA);
+        }
+
+        thread.Start();
+        return start.Made();
+    }
+
+    // a loop's start: its setup, which the starting thread waits for, then its loop, on the thread that runs it. The event is not disposed: the thread that
+    // sets it may still be in Set when the waiting one returns, and it holds no kernel handle unless its WaitHandle is asked for.
+    private sealed class LoopStart<T>(Func<T> setUp, Action<T, CancellationToken> loop)
+    {
+        private readonly ManualResetEventSlim _ready = new();
+        private T? _made;
+        private ExceptionDispatchInfo? _failure;
+
+        public void Run(CancellationToken token)
+        {
+            try
+            {
+                _made = setUp();
+            }
+            catch (Exception exception)
+            {
+                _failure = ExceptionDispatchInfo.Capture(exception);
+                return;
+            }
+            finally
+            {
+                _ready.Set();
+            }
+
+            loop(_made, token);
+        }
+
+        // waits for the setup, and answers what it made, or throws what it threw.
+        public T Made()
+        {
+            _ready.Wait();
+            _failure?.Throw();
+            return _made!;
+        }
+    }
+}

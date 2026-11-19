@@ -30,6 +30,14 @@ public static class SymbolTexts
     public static string ControlArrayOf(string controlClass, CultureInfo? culture = null) => Say("Hover_ControlArrayOf", culture, controlClass);
 
     /// <summary>
+    /// What a hover says the default instance variable of a class is (MS-VBAL §5.2.4.1.2), which no statement declares: <c>Class1 (default instance)</c>.
+    /// </summary>
+    /// <param name="className">The name of the class, as the hover writes it: <c>Class1</c> in plain text, <c>`Class1`</c> in Markdown.</param>
+    /// <param name="culture">The language of the reader; the current UI culture by default.</param>
+    /// <returns>The text, formatted with <paramref name="culture"/>.</returns>
+    public static string DefaultInstance(string className, CultureInfo? culture = null) => Say("Hover_DefaultInstance", culture, className);
+
+    /// <summary>
     /// What a hover or a completion item (ahead of its documentation) says of a member RD-VBA adds to a library
     /// (<see cref="Abstract.SymbolProperties.LibraryAddition"/>): <c>RD-VBA addition: the type library of VB does not declare it.</c>
     /// </summary>

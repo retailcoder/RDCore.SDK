@@ -64,6 +64,33 @@ public sealed class ModuleFileTextTests
     }
 
     [TestMethod]
+    [DataRow("utf-8")]
+    [DataRow("utf-8 bom")]
+    [DataRow("windows-1252")]
+    [DataRow("utf-16le bom")]
+    public void AFileGivenAnotherText_IsWrittenInItsEncoding_WithTheTextsOwnLineEndings(string encoding)
+    {
+        var file = ModuleFileText.Decode(BytesOf(encoding, Text), ModuleFileText.DefaultAnsiCodePage);
+        // a line ending of its own, unlike its neighbors', and a newline at the end the file did not have.
+        var saved = Text.Replace("Café()\n", "Thé()\r") + "\n";
+
+        CollectionAssert.AreEqual(BytesOf(encoding, saved), file.WithText(saved).Encode());
+        Assert.AreSame(file, file.WithText(Text));
+    }
+
+    [TestMethod]
+    public void AFileGivenATextItsEncodingCannotWrite_IsRefused()
+    {
+        var file = ModuleFileText.Decode(BytesOf("windows-1252", Text), ModuleFileText.DefaultAnsiCodePage);
+
+        var refused = Assert.ThrowsExactly<ModuleFileTextException>(() => file.WithText(Text + "' →"));
+
+        Assert.AreEqual(ModuleFileTextFailure.NotRepresentable, refused.Failure);
+        Assert.AreEqual(ModuleFileTextFailure.NotLossless,
+            Assert.ThrowsExactly<ModuleFileTextException>(() => ModuleFileText.Decode([0xEF, 0xBB, 0xBF, 0xE9], 1252).WithText("x")).Failure);
+    }
+
+    [TestMethod]
     [DataRow("a\nb\r\nc", 1, "x\ny\rz", "a\nbx\r\ny\r\nz\r\nc")]
     [DataRow("a\r\nb\nc", 2, "x\r\ny", "a\r\nb\ncx\ny")]
     [DataRow("abc", 0, "x\ny", "abcx\r\ny")]

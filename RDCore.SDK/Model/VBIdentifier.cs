@@ -33,9 +33,10 @@ public enum VBIdentifierValidity
 /// </remarks>
 public static class VBIdentifier
 {
-    // MS-VBAL §3.3.5.2, every category of reserved-identifier: statement-keyword, rem-keyword, marker-keyword, operator-identifier, reserved-name,
-    // special-form, reserved-type-identifier, literal-identifier, reserved-for-implementation-use and future-reserved. The specification's own list runs two of
-    // the implementation's names together ("VB_Invoke_PropertyPutRefVB_MemberFlags"): they are the two names VB_Invoke_PropertyPutRef and VB_MemberFlags.
+    // MS-VBAL §3.3.5.2, every category of reserved-identifier (statement-keyword, rem-keyword, marker-keyword, operator-identifier, reserved-name,
+    // special-form, literal-identifier, reserved-for-implementation-use and future-reserved), and the reserved-type-identifiers, which the production
+    // of reserved-identifier does not name and MS-VBA refuses as names all the same. The specification's own list runs two of the implementation's names
+    // together ("VB_Invoke_PropertyPutRefVB_MemberFlags"): they are the two names VB_Invoke_PropertyPutRef and VB_MemberFlags.
     private static readonly FrozenSet<string> _reserved = new[]
     {
         "Call", "Case", "Close", "Const", "Declare", "DefBool", "DefByte", "DefCur", "DefDate", "DefDbl", "DefInt", "DefLng", "DefLngLng", "DefLngPtr", "DefObj",
@@ -56,11 +57,34 @@ public static class VBIdentifier
         "CDecl", "Decimal", "DefDec",
     }.ToFrozenSet(StringComparer.OrdinalIgnoreCase);
 
+    // the reserved-type-identifiers but Date and String, which are reserved-names as well, and so reserved-identifiers.
+    private static readonly FrozenSet<string> _typeIdentifiersOnly = new[]
+    {
+        "Boolean", "Byte", "Currency", "Double", "Integer", "Long", "LongLong", "LongPtr", "Single", "Variant",
+    }.ToFrozenSet(StringComparer.OrdinalIgnoreCase);
+
     /// <summary>
-    /// Whether <paramref name="name"/> is a keyword of the language: a <c>reserved-identifier</c> (<strong>MS-VBAL §3.3.5.2</strong>).
+    /// Whether <paramref name="name"/> is a keyword of the language: a <c>reserved-identifier</c> or a <c>reserved-type-identifier</c>
+    /// (<strong>MS-VBAL §3.3.5.2</strong>), each of which MS-VBA refuses as the name of a declaration.
     /// </summary>
+    /// <remarks>
+    /// A <c>reserved-type-identifier</c> that is no <c>reserved-name</c> (<c>Long</c>, <c>Integer</c>, <c>Variant</c>) is no <c>reserved-identifier</c>, and
+    /// the specification allows it as an <c>IDENTIFIER</c>: <see cref="IsReservedIdentifier"/> says whether the specification reserves a name.
+    /// </remarks>
     /// <param name="name">A name, without a type-declaration character.</param>
     public static bool IsReserved(string name) => _reserved.Contains(name);
+
+    /// <summary>
+    /// Whether <paramref name="name"/> is a <c>reserved-identifier</c> (<strong>MS-VBAL §3.3.5.2</strong>), which no <c>IDENTIFIER</c> is.
+    /// </summary>
+    /// <remarks>
+    /// Every name <see cref="IsReserved"/> says is a keyword, except the <c>reserved-type-identifiers</c> that are no <c>reserved-name</c>: <c>Boolean</c>,
+    /// <c>Byte</c>, <c>Currency</c>, <c>Double</c>, <c>Integer</c>, <c>Long</c>, <c>LongLong</c>, <c>LongPtr</c>, <c>Single</c> and <c>Variant</c>. The
+    /// production of <c>reserved-identifier</c> does not name <c>reserved-type-identifier</c>, so the specification allows each of these as a name, which
+    /// MS-VBA refuses. <c>Date</c> and <c>String</c> are <c>reserved-names</c>, and are reserved.
+    /// </remarks>
+    /// <param name="name">A name, without a type-declaration character.</param>
+    public static bool IsReservedIdentifier(string name) => _reserved.Contains(name) && !_typeIdentifiersOnly.Contains(name);
 
     /// <summary>
     /// Whether code can declare <paramref name="name"/>, and why not when it cannot.

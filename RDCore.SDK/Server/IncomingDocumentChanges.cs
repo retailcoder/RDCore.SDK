@@ -23,6 +23,11 @@ namespace RDCore.SDK.Server;
 /// stops and is answered <c>ContentModified</c>, which LSP 3.17 §Response Message has a server answer "if it detects a content change in its unprocessed
 /// messages". The client asks again for the document as it is now. A change to another document changes nothing for it.
 /// </para>
+/// <para>
+/// A change to a document's file that the client reports (<c>workspace/didChangeWatchedFiles</c>) is read by a server that serves file changes
+/// (<see cref="ServeFileChanges"/>) as the notification arrives, beside the requests that run. A request about the document waits until every such change that
+/// arrived before it is read (<see cref="WhenFileChangesReadAsync"/>), and is then made of the document as the file is.
+/// </para>
 /// </remarks>
 public sealed class IncomingDocumentChanges
 {
@@ -37,6 +42,18 @@ public sealed class IncomingDocumentChanges
 
     // the documents a handler applies a change to: every one, until the server says which.
     private volatile Func<Uri, bool> _serves = static _ => true;
+
+    // the changes to documents' files that arrived and are not read yet, and the requests that wait for them; none until the server serves them.
+    private readonly Dictionary<string, FileChanges> _files = new(StringComparer.OrdinalIgnoreCase);
+    private volatile bool _servesFileChanges;
+
+    // how many changes to a document's file arrived and how many were read, and how many must be read for each request that waits to go on.
+    private sealed class FileChanges
+    {
+        public long Arrived { get; set; }
+        public long Read { get; set; }
+        public List<(long Until, TaskCompletionSource Read)> Waiting { get; } = [];
+    }
 
     /// <summary>
     /// Says which documents the server's handlers apply a change to (<see cref="Applied"/>). A change to any other is no change of the server's: OmniSharp hands
@@ -74,7 +91,7 @@ public sealed class IncomingDocumentChanges
         lock (_gate)
         {
             _unapplied[key] = _unapplied.GetValueOrDefault(key) + 1;
-            changed = [.. _watches.Where(watch => watch.Document is null || string.Equals(watch.Document, key, StringComparison.OrdinalIgnoreCase)).Select(watch => watch.Changed)];
+            changed = Watching(key);
         }
 
         foreach (var source in changed)
@@ -82,6 +99,130 @@ public sealed class IncomingDocumentChanges
             source.Cancel();
         }
     }
+
+    // the requests that run, made of the document: those about it, and those about every document.
+    private CancellationTokenSource[] Watching(string key)
+        => [.. _watches.Where(watch => watch.Document is null || string.Equals(watch.Document, key, StringComparison.OrdinalIgnoreCase)).Select(watch => watch.Changed)];
+
+    /// <summary>
+    /// Says that the server reads the changes to documents' files that its client reports (<c>workspace/didChangeWatchedFiles</c>), and says when each is read
+    /// (<see cref="FileChangeRead"/>): a request about a document then waits for the changes to its file that arrived before it.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The server's handler of the notification is marked <see cref="HandledOnArrivalAttribute"/>, and begins to read the files as it is handled. OmniSharp
+    /// handles a notification it schedules after the requests before it, so a request that waits for the change would wait for itself.
+    /// </para>
+    /// <para>
+    /// Every change the notification names is said to be read, a change to a file the server leaves alone included: one that is never said to be read is
+    /// waited for until the request is cancelled. Until this is called, a change to a file is not waited for.
+    /// </para>
+    /// </remarks>
+    public void ServeFileChanges() => _servesFileChanges = true;
+
+    /// <summary>
+    /// A change to a document's file has arrived from the client (<c>workspace/didChangeWatchedFiles</c>) and is not read yet: a request about the document
+    /// waits for it (<see cref="WhenFileChangesReadAsync"/>), and each that runs, made of the document as it was, is answered <c>ContentModified</c>. A change
+    /// to a document the server does not serve (<see cref="Serve(Func{Uri, bool})"/>) is ignored, and so is every change until the server serves file changes
+    /// (<see cref="ServeFileChanges"/>).
+    /// </summary>
+    /// <param name="document">The document whose file changed.</param>
+    public void FileChangeArrived(Uri document)
+    {
+        if (!_servesFileChanges || !_serves(document))
+        {
+            return;
+        }
+
+        var key = Key(document);
+        CancellationTokenSource[] changed;
+        lock (_gate)
+        {
+            if (!_files.TryGetValue(key, out var file))
+            {
+                _files[key] = file = new FileChanges();
+            }
+
+            file.Arrived++;
+            changed = Watching(key);
+        }
+
+        foreach (var source in changed)
+        {
+            source.Cancel();
+        }
+    }
+
+    /// <summary>
+    /// A change to a document's file has been read: the document is what the file is, or the server leaves the file alone. The requests that wait for it
+    /// go on.
+    /// </summary>
+    /// <param name="document">The document whose file changed.</param>
+    public void FileChangeRead(Uri document)
+    {
+        var key = Key(document);
+        TaskCompletionSource[] read;
+        lock (_gate)
+        {
+            // a change that is not waited for, one that arrived before the server served file changes or to a document it does not serve, owes nothing.
+            if (!_files.TryGetValue(key, out var file))
+            {
+                return;
+            }
+
+            file.Read++;
+            read = [.. file.Waiting.Where(waiting => waiting.Until <= file.Read).Select(waiting => waiting.Read)];
+            file.Waiting.RemoveAll(waiting => waiting.Until <= file.Read);
+            if (file.Read >= file.Arrived)
+            {
+                _files.Remove(key);
+            }
+        }
+
+        foreach (var source in read)
+        {
+            source.TrySetResult();
+        }
+    }
+
+    /// <summary>
+    /// A task that completes once every change to a document's file that has arrived (<see cref="FileChangeArrived"/>) is read
+    /// (<see cref="FileChangeRead"/>). A change that arrives after the task is asked for is not waited for.
+    /// </summary>
+    /// <param name="document">The document.</param>
+    /// <param name="token">Cancels the wait.</param>
+    /// <returns>A task that completes once the changes are read, or is cancelled with <paramref name="token"/>.</returns>
+    public Task WhenFileChangesReadAsync(Uri document, CancellationToken token) => WhenReadAsync(Key(document), token);
+
+    /// <summary>
+    /// A task that completes once every change to a file of any document that has arrived (<see cref="FileChangeArrived"/>) is read
+    /// (<see cref="FileChangeRead"/>). A change that arrives after the task is asked for is not waited for.
+    /// </summary>
+    /// <param name="token">Cancels the wait.</param>
+    /// <returns>A task that completes once the changes are read, or is cancelled with <paramref name="token"/>.</returns>
+    public Task WhenAllFileChangesReadAsync(CancellationToken token) => WhenReadAsync(document: null, token);
+
+    private Task WhenReadAsync(string? document, CancellationToken token)
+    {
+        List<Task> waits = [];
+        lock (_gate)
+        {
+            foreach (var (key, file) in _files)
+            {
+                if (document is null || string.Equals(key, document, StringComparison.OrdinalIgnoreCase))
+                {
+                    var read = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                    file.Waiting.Add((file.Arrived, read));
+                    waits.Add(read.Task);
+                }
+            }
+        }
+
+        return waits.Count == 0 ? Task.CompletedTask : Task.WhenAll(waits).WaitAsync(token);
+    }
+
+    private bool FileChangesUnread(string? document)
+        => document is null ? _files.Count > 0 : _files.ContainsKey(document);
 
     /// <summary>
     /// A change to a document has been applied: the server's handler of the notification has run.
@@ -106,7 +247,8 @@ public sealed class IncomingDocumentChanges
 
     /// <summary>
     /// Answers a request about a document with what <paramref name="answer"/> makes of it, unless a change to the document arrives first: then the request
-    /// stops, and is answered <c>ContentModified</c> (-32801).
+    /// stops, and is answered <c>ContentModified</c> (-32801). The answer is made once the changes to the document's file that arrived are read
+    /// (<see cref="WhenFileChangesReadAsync"/>).
     /// </summary>
     /// <typeparam name="T">What the request answers.</typeparam>
     /// <param name="document">The document the request is about.</param>
@@ -119,7 +261,8 @@ public sealed class IncomingDocumentChanges
 
     /// <summary>
     /// Answers a request about every document of the workspace with what <paramref name="answer"/> makes of them, unless a change to any document arrives
-    /// first: then the request stops, and is answered <c>ContentModified</c> (-32801).
+    /// first: then the request stops, and is answered <c>ContentModified</c> (-32801). The answer is made once the changes to the documents' files that
+    /// arrived are read (<see cref="WhenAllFileChangesReadAsync"/>).
     /// </summary>
     /// <remarks>
     /// A request such as <c>workspace/diagnostic</c> is made of every module; a keystroke in any of them would wait for all of them, and the completion the
@@ -138,10 +281,22 @@ public sealed class IncomingDocumentChanges
         using var changed = new CancellationTokenSource();
         var watch = (document, changed);
         bool modified;
-        lock (_gate)
+
+        // the changes to the files that arrived before the request are read first, and so are those that arrive while it waits for them.
+        while (true)
         {
-            _watches.Add(watch);
-            modified = document is null ? _unapplied.Count > 0 : _unapplied.ContainsKey(document);
+            await WhenReadAsync(document, token);
+            lock (_gate)
+            {
+                if (FileChangesUnread(document))
+                {
+                    continue;
+                }
+
+                _watches.Add(watch);
+                modified = document is null ? _unapplied.Count > 0 : _unapplied.ContainsKey(document);
+                break;
+            }
         }
 
         if (modified)

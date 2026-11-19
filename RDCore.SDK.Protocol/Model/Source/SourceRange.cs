@@ -54,6 +54,16 @@ public readonly record struct SourceRange(SourcePosition Start, SourcePosition E
     public bool Intersects(SourceRange range) => !IsEmpty && !range.IsEmpty && Start < range.End && range.Start < End;
 
     /// <summary>
+    /// Whether this range and another meet: neither ends before the other starts.
+    /// </summary>
+    /// <param name="range">The other range.</param>
+    /// <returns>
+    /// <see langword="true"/> when they share a character (<see cref="Intersects"/>), or one ends where the other starts. An empty range meets every range
+    /// whose start or end is its position, or that holds it: a position at a diagnostic's edge is one the diagnostic is at.
+    /// </returns>
+    public bool Touches(SourceRange range) => Start <= range.End && range.Start <= End;
+
+    /// <summary>
     /// Compares two ranges by where they start, in document order.
     /// </summary>
     /// <param name="other">The range to compare with.</param>
