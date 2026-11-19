@@ -23,10 +23,10 @@ public sealed record class RenameCommandArguments(string DocumentUri, SourcePosi
     /// <summary>
     /// Reads the arguments of a <see cref="RefactoringCommands.Rename"/> command: a string and a position. Arguments after these are ignored.
     /// </summary>
-    /// <param name="arguments">The command's arguments (<strong>LSP 3.17</strong> <c>Command.arguments</c>), or null when it has none.</param>
+    /// <param name="arguments">The command's arguments (<strong>LSP 3.17</strong> <c>Command.arguments</c>), or <see langword="null"/> for none.</param>
     /// <param name="read">The arguments, when they are read.</param>
     /// <param name="failure">
-    /// When they cannot be read, what is wrong, in English, for a log: which argument, and which of its properties is missing or not of its kind.
+    /// When they cannot be read, what is wrong, in English, for a log: which argument, and which of its properties is missing or invalid.
     /// </param>
     /// <returns><see langword="true"/> when the arguments are read.</returns>
     public static bool TryRead(IReadOnlyList<JsonElement>? arguments, [NotNullWhen(true)] out RenameCommandArguments? read,
@@ -52,8 +52,8 @@ public sealed record class RenameCommandArguments(string DocumentUri, SourcePosi
 }
 
 /// <summary>
-/// The arguments of <see cref="RefactoringCommands.ShowReferences"/>: the URI of the document, the position of the member's name, and the places to show,
-/// the arguments of VS Code's <c>editor.action.showReferences</c>.
+/// The arguments of <see cref="RefactoringCommands.ShowReferences"/>: the URI of the document, the position of the member's name, and the places to show.
+/// They are the arguments of VS Code's <c>editor.action.showReferences</c>.
 /// </summary>
 /// <param name="DocumentUri">The URI of the document, exactly as the server wrote it.</param>
 /// <param name="Position">The position of the member's name, zero-based (<strong>LSP 3.17</strong> <c>Position</c>).</param>
@@ -64,11 +64,11 @@ public sealed record class ShowReferencesCommandArguments(string DocumentUri, So
     /// Reads the arguments of a <see cref="RefactoringCommands.ShowReferences"/> command: a string, a position and an array of locations. Arguments after
     /// these are ignored.
     /// </summary>
-    /// <param name="arguments">The command's arguments (<strong>LSP 3.17</strong> <c>Command.arguments</c>), or null when it has none.</param>
+    /// <param name="arguments">The command's arguments (<strong>LSP 3.17</strong> <c>Command.arguments</c>), or <see langword="null"/> for none.</param>
     /// <param name="read">The arguments, when they are read.</param>
     /// <param name="failure">
     /// When they cannot be read, what is wrong, in English, for a log: which argument (and which location of the array), and which of its properties is
-    /// missing or not of its kind.
+    /// missing or invalid.
     /// </param>
     /// <returns><see langword="true"/> when the arguments are read.</returns>
     public static bool TryRead(IReadOnlyList<JsonElement>? arguments, [NotNullWhen(true)] out ShowReferencesCommandArguments? read,
@@ -123,10 +123,10 @@ public sealed record class GoToLocationCommandArguments(string DocumentUri, Sour
     /// <summary>
     /// Reads the arguments of a <see cref="RefactoringCommands.GoToLocation"/> command: a string and a range. Arguments after these are ignored.
     /// </summary>
-    /// <param name="arguments">The command's arguments (<strong>LSP 3.17</strong> <c>Command.arguments</c>), or null when it has none.</param>
+    /// <param name="arguments">The command's arguments (<strong>LSP 3.17</strong> <c>Command.arguments</c>), or <see langword="null"/> for none.</param>
     /// <param name="read">The arguments, when they are read.</param>
     /// <param name="failure">
-    /// When they cannot be read, what is wrong, in English, for a log: which argument, and which of its properties is missing or not of its kind.
+    /// When they cannot be read, what is wrong, in English, for a log: which argument, and which of its properties is missing or invalid.
     /// </param>
     /// <returns><see langword="true"/> when the arguments are read.</returns>
     public static bool TryRead(IReadOnlyList<JsonElement>? arguments, [NotNullWhen(true)] out GoToLocationCommandArguments? read,

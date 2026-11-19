@@ -8,9 +8,10 @@ using RDCore.SDK.Semantics.Refactoring;
 namespace RDCore.SDK.Server.ProtocolExtensions;
 
 /// <summary>
-/// The <see cref="Command"/> of each of the <see cref="RefactoringCommands"/> as OmniSharp carries it: written by a server with its arguments as a client
-/// reads them back (<see cref="RenameCommandArguments.TryRead"/>, <see cref="ShowReferencesCommandArguments.TryRead"/>,
-/// <see cref="GoToLocationCommandArguments.TryRead"/>), and read by an OmniSharp client.
+/// Writes and reads each of the <see cref="RefactoringCommands"/> as an OmniSharp <see cref="Command"/>: a server writes the command with its arguments,
+/// and an OmniSharp client reads them back. The arguments are the JSON that <see cref="RenameCommandArguments.TryRead"/>,
+/// <see cref="ShowReferencesCommandArguments.TryRead"/> and <see cref="GoToLocationCommandArguments.TryRead"/> read, so a client of another library
+/// reads them too.
 /// </summary>
 public static class RefactoringCommandExtensions
 {
