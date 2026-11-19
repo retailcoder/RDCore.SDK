@@ -125,7 +125,7 @@ public static class WorkspaceEditExtensions
     }
 
     /// <summary>
-    /// The edit as its user confirmed the changes of an annotation: they are applied as its other changes are, with nothing asked.
+    /// The edit with the changes of an annotation confirmed: they are applied like its other changes, with nothing asked.
     /// </summary>
     /// <param name="edit">The edit.</param>
     /// <param name="annotation">The annotation of the changes confirmed.</param>
@@ -146,8 +146,8 @@ public static class WorkspaceEditExtensions
     /// <param name="edit">The edit.</param>
     /// <param name="annotation">The annotation of the changes left out.</param>
     /// <returns>
-    /// The edit without the text edits, and the files created, renamed or deleted, that the annotation is of, nor the annotation; a
-    /// <c>TextDocumentEdit</c> left with no edit stays, with none.
+    /// The edit without the annotation and without what it annotates: its text edits, and the files it creates, renames or deletes. A
+    /// <c>TextDocumentEdit</c> left with no edit stays, empty.
     /// </returns>
     public static WorkspaceEdit Without(this WorkspaceEdit edit, ChangeAnnotationIdentifier annotation)
     {
@@ -240,8 +240,8 @@ public static class WorkspaceEditExtensions
     /// </summary>
     /// <param name="edit">The edit.</param>
     /// <returns>
-    /// The edit without its <c>RenameFile</c> changes, nor the <c>TextDocumentEdit</c>s of the documents they rename to: those are edits of a document once it
-    /// is renamed, which a document that keeps its name does not have. The edit itself when it renames no file.
+    /// The edit without its <c>RenameFile</c> changes and without the <c>TextDocumentEdit</c>s of the documents they rename to: those edit a document once it
+    /// is renamed, and a document that keeps its name has none. The edit itself when it renames no file.
     /// </returns>
     public static WorkspaceEdit WithoutFileRenames(this WorkspaceEdit edit)
     {

@@ -7,8 +7,8 @@ using RDCore.SDK.Semantics.Refactoring;
 namespace RDCore.SDK.Assistant;
 
 /// <summary>
-/// A <see cref="WorkspaceEdit"/> (<strong>LSP 3.17</strong> §WorkspaceEdit) as the tools that fix code say it: the change of each document it makes, and the
-/// questions it asks before it is applied.
+/// A <see cref="WorkspaceEdit"/> (<strong>LSP 3.17</strong> <c>WorkspaceEdit</c>) as the tools that fix code say it: the change of each document it
+/// makes, and the questions it asks before it is applied.
 /// </summary>
 public static class ToolEdits
 {
@@ -23,10 +23,13 @@ public static class ToolEdits
     /// <param name="pathOf">The path of a document, as <see cref="ToolFileChange.Path"/> says it.</param>
     /// <returns>
     /// Each document the edit changes, once: the text edits of its <c>TextDocumentEdit</c>s made in order, each to the text the one before it left. A
-    /// document it renames has the path it is renamed to (<see cref="ToolFileChange.NewPath"/>), and the edits made to it after its rename are made to it. A
-    /// document it creates is a diff from an empty text; one it deletes, a diff to one. A document whose edits leave its text as it was is left out.
+    /// document it renames has the path it is renamed to (<see cref="ToolFileChange.NewPath"/>), and the text edits of its new name, after the rename, are
+    /// counted as its own. A document it creates is a diff from an empty text; one it deletes, a diff to one. A document whose edits leave its text as it was
+    /// is left out.
     /// </returns>
-    /// <exception cref="ArgumentException">A text edit does not fit the text it is made to.</exception>
+    /// <exception cref="ArgumentException">
+    /// Two text edits of a document overlap, or one is of a line its text does not have (<see cref="ArgumentOutOfRangeException"/>).
+    /// </exception>
     public static IReadOnlyList<ToolFileChange> FilesOf(WorkspaceEdit edit, Func<DocumentUri, string?> textOf, Func<DocumentUri, string> pathOf)
     {
         ArgumentNullException.ThrowIfNull(edit);
