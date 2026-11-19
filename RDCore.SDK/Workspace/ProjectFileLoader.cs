@@ -1,4 +1,5 @@
 using System.IO.Abstractions;
+using System.Text;
 using System.Text.Json;
 
 namespace RDCore.SDK.Workspace;
@@ -28,7 +29,10 @@ public interface IProjectFileLoader
     /// <param name="workspaceRoot">The absolute path of the workspace root directory.</param>
     /// <param name="token">A token that cancels the read.</param>
     /// <exception cref="FileNotFoundException">No <c>.rdproj</c> exists under the workspace root.</exception>
-    /// <exception cref="InvalidDataException">The <c>.rdproj</c> is not JSON, or is no JSON object; the message says where.</exception>
+    /// <exception cref="InvalidDataException">
+    /// The <c>.rdproj</c> is not JSON, or not a JSON object; the message says where, in the line and the column an editor shows
+    /// (<see cref="JsonErrorPlace.PlaceIn"/>).
+    /// </exception>
     Task<ProjectFile> LoadAsync(string workspaceRoot, CancellationToken token = default);
 
     /// <summary>
@@ -104,7 +108,8 @@ public sealed class ProjectFileLoader(IFileSystem fileSystem) : IProjectFileLoad
             throw new FileNotFoundException($"No {ProjectFile.FileName} was found under the workspace root.", path);
         }
 
-        await using var stream = fileSystem.File.Open(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+        var bytes = await fileSystem.File.ReadAllBytesAsync(path, token);
+        await using var stream = new MemoryStream(bytes, writable: false);
         try
         {
             // read as any client of the platform reads it: what the file leaves out is empty, and the standard library is no reference of it.
@@ -112,10 +117,17 @@ public sealed class ProjectFileLoader(IFileSystem fileSystem) : IProjectFileLoad
         }
         catch (JsonException exception)
         {
-            // where the file stops being a project file (not JSON, or JSON of another shape), in the lines and columns an editor counts from 1.
-            throw new InvalidDataException(string.Format(Exceptions.ProjectFile_InvalidJson, path,
-                (exception.LineNumber ?? 0) + 1, (exception.BytePositionInLine ?? 0) + 1, WhatIsWrong(exception)), exception);
+            // where the file stops being a project file (not JSON, or JSON of another shape), in the lines and columns an editor shows.
+            var (line, column) = exception.PlaceIn(TextOf(bytes)) ?? (1, 1);
+            throw new InvalidDataException(string.Format(Exceptions.ProjectFile_InvalidJson, path, line, column, WhatIsWrong(exception)), exception);
         }
+    }
+
+    // the text the reader read, which starts after the byte order mark.
+    private static string TextOf(byte[] bytes)
+    {
+        var preamble = Encoding.UTF8.Preamble;
+        return Encoding.UTF8.GetString(bytes.AsSpan(bytes.AsSpan().StartsWith(preamble) ? preamble.Length : 0));
     }
 
     // the reader's description of what is wrong, without the place it appends to it ("Path: $.Name | LineNumber: 2 | BytePositionInLine: 4."): the
