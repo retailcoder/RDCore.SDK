@@ -210,7 +210,13 @@ public sealed record class ToolFileChange
     public required string Path { get; init; }
 
     /// <summary>
-    /// The change, as a unified diff of the document's text (<c>UnifiedDiff</c>, RDCore.SDK).
+    /// The path the document is renamed to, said as <see cref="Path"/> is; <see langword="null"/> when it keeps its path. A rename of a module renames the
+    /// file named after it.
+    /// </summary>
+    public string? NewPath { get; init; }
+
+    /// <summary>
+    /// The change of the document's text, as a unified diff (<c>UnifiedDiff</c>, RDCore.SDK); empty when only its path changes.
     /// </summary>
     public string Diff { get; init; } = string.Empty;
 }

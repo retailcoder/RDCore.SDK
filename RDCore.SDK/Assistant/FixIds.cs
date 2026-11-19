@@ -9,7 +9,8 @@ namespace RDCore.SDK.Assistant;
 /// </summary>
 /// <param name="Path">The document the fix was listed for, as the tool's <c>path</c> said it.</param>
 /// <param name="Version">
-/// The version of the document the fix was listed at; <see langword="null"/> for a document no client has open, which is its file as it is on disk.
+/// The version of the document the fix was listed at, which the language server raises at each change of its text; <see langword="null"/> for a server
+/// that numbers none.
 /// </param>
 /// <param name="Range">The range the code action was asked for, 1-based: the diagnostic's, or the range the tool was given.</param>
 /// <param name="Kind">The kind of the code action (<strong>LSP 3.17</strong> <c>CodeActionKind</c>).</param>
