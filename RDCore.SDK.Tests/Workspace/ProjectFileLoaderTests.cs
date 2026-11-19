@@ -106,6 +106,26 @@ public sealed class ProjectFileLoaderTests
         => await Assert.ThrowsExactlyAsync<FileNotFoundException>(
             () => new ProjectFileLoader(new MockFileSystem()).LoadAsync(Root));
 
+    // the message says where the file stops being a project file once, in the lines and columns an editor counts from 1: the JSON reader's own count of them,
+    // from 0, and its path in the document, are not repeated after its description of what is wrong.
+    [TestMethod]
+    [DataRow("{\n  \"Name\": \"A\"\n  \"Modules\": []\n}", "at line 3, position 3: ", DisplayName = "a comma left out")]
+    [DataRow("{\n  \"Version\": \"1.3\",\n  \"ProjectInfo\": { \"Name\": \"A\", \"Modules\": 5 }\n}", "at line 3, position ",
+        DisplayName = "a number where a list is")]
+    public async Task LoadAsync_AFileThatIsNoProjectFile_SaysWhereOnce(string text, string where)
+    {
+        var fileSystem = new MockFileSystem(new Dictionary<string, MockFileData> { [ProjectFilePath] = new MockFileData(text) });
+
+        var thrown = await Assert.ThrowsExactlyAsync<InvalidDataException>(() => new ProjectFileLoader(fileSystem).LoadAsync(Root));
+
+        StringAssert.Contains(thrown.Message, where);
+        Assert.AreEqual(1, thrown.Message.Split("line ").Length - 1, thrown.Message);
+        Assert.DoesNotContain("LineNumber", thrown.Message);
+        Assert.DoesNotContain("BytePositionInLine", thrown.Message);
+        Assert.DoesNotContain("Path: $", thrown.Message);
+        Assert.IsInstanceOfType<JsonException>(thrown.InnerException);
+    }
+
     private static MockFileSystem FolderWith(params (string RelativePath, string Source)[] files)
     {
         var fs = new MockFileSystem();

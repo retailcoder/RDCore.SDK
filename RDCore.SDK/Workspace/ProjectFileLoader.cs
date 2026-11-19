@@ -114,8 +114,22 @@ public sealed class ProjectFileLoader(IFileSystem fileSystem) : IProjectFileLoad
         {
             // where the file stops being JSON, in the lines and columns an editor counts from 1.
             throw new InvalidDataException(string.Format(Exceptions.ProjectFile_InvalidJson, path,
-                (exception.LineNumber ?? 0) + 1, (exception.BytePositionInLine ?? 0) + 1, exception.Message), exception);
+                (exception.LineNumber ?? 0) + 1, (exception.BytePositionInLine ?? 0) + 1, WhatIsWrong(exception)), exception);
         }
+    }
+
+    // the reader's description of what is wrong, without the place it appends to it ("Path: $.Name | LineNumber: 2 | BytePositionInLine: 4."): the
+    // message says where once, counted from 1.
+    private static string WhatIsWrong(JsonException exception)
+    {
+        var message = exception.Message;
+        var place = message.LastIndexOf(" Path: ", StringComparison.Ordinal);
+        if (place < 0)
+        {
+            place = message.LastIndexOf(" LineNumber: ", StringComparison.Ordinal);
+        }
+
+        return place < 0 ? message : message[..place];
     }
 
     /// <inheritdoc/>
