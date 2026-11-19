@@ -43,6 +43,29 @@ public static class CoreAssistantTools
     /// <c>OutlineToolResult</c> (RDCore.SDK).
     /// </summary>
     public const string Outline = "outline";
+
+    /// <summary>
+    /// The fixes of a document, or of a range of it, as <c>textDocument/codeAction</c> finds them: <see cref="ListFixesToolArguments"/>, answered with a
+    /// <see cref="ListFixesToolResult"/>.
+    /// </summary>
+    public const string ListFixes = "list_fixes";
+
+    /// <summary>
+    /// What a fix would change, with nothing changed: <see cref="FixToolArguments"/>, answered with a <see cref="PreviewFixToolResult"/>.
+    /// </summary>
+    public const string PreviewFix = "preview_fix";
+
+    /// <summary>
+    /// A fix applied to the documents, through the client (<c>workspace/applyEdit</c>): <see cref="ApplyFixToolArguments"/>, answered with an
+    /// <see cref="EditToolResult"/>.
+    /// </summary>
+    public const string ApplyFix = "apply_fix";
+
+    /// <summary>
+    /// The symbol named at a position renamed, as <c>textDocument/rename</c> renames it, through the client (<c>workspace/applyEdit</c>):
+    /// <see cref="RenameToolArguments"/>, answered with an <see cref="EditToolResult"/>.
+    /// </summary>
+    public const string Rename = "rename";
 }
 
 /// <summary>

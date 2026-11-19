@@ -148,6 +148,45 @@ public sealed class AssistantToolsWireTests
             """{"symbols":[{"name":"GetName","kind":"Function","container":"Module1","location":{"path":"src/Module1.bas","range":{"start":{"line":2,"column":17},"end":{"line":2,"column":21}}}}],"total":1,"truncated":false}""");
         yield return (new LocationsToolResult { Locations = [At(4, 5)], Total = 1, Incomplete = "a late-bound member may refer to it" },
             """{"locations":[{"path":"src/Module1.bas","range":{"start":{"line":4,"column":5},"end":{"line":4,"column":9}}}],"total":1,"truncated":false,"incomplete":"a late-bound member may refer to it"}""");
+        yield return (new ListFixesToolArguments { Path = "src/Module1.bas", Line = 3, Column = 9 },
+            """{"path":"src/Module1.bas","line":3,"column":9,"endLine":null,"endColumn":null}""");
+        yield return (new ListFixesToolResult
+        {
+            Fixes = [new ToolFix { FixId = "eyJwIjoxfQ", Title = "Remove the variable", Kind = "quickfix", IsPreferred = true, HasEdit = true, Diagnostic = new ToolDiagnostic { Location = At(3, 9), Code = "RDC01011", Severity = ToolDiagnosticSeverity.Warning, Message = "m", HasFix = true } }],
+            Total = 1,
+        }, """{"fixes":[{"fixId":"eyJwIjoxfQ","title":"Remove the variable","kind":"quickfix","isPreferred":true,"hasEdit":true,"diagnostic":{"location":{"path":"src/Module1.bas","range":{"start":{"line":3,"column":9},"end":{"line":3,"column":13}}},"code":"RDC01011","severity":"Warning","message":"m","helpUrl":null,"hasFix":true}}],"total":1,"truncated":false}""");
+        yield return (new FixToolArguments { FixId = "eyJwIjoxfQ" }, """{"fixId":"eyJwIjoxfQ"}""");
+        yield return (new ApplyFixToolArguments { FixId = "eyJwIjoxfQ", Accept = ["inString"] }, """{"accept":["inString"],"fixId":"eyJwIjoxfQ"}""");
+        yield return (new RenameToolArguments { Path = "src/Module1.bas", Line = 2, Column = 17, NewName = "FullName" },
+            """{"newName":"FullName","accept":[],"path":"src/Module1.bas","line":2,"column":17}""");
+        yield return (new PreviewFixToolResult { Title = "Remove the variable", Files = [new ToolFileChange { Path = "src/Module1.bas", Diff = "--- src/Module1.bas\n" }] },
+            """{"title":"Remove the variable","files":[{"path":"src/Module1.bas","diff":"--- src/Module1.bas\n"}],"questions":[]}""");
+        yield return (new EditToolResult { Files = [new ToolFileChange { Path = "src/Module1.bas", Diff = "" }], Questions = [new ToolEditQuestion { Id = "inString", Label = "Called by its name in a string" }] },
+            """{"applied":false,"files":[{"path":"src/Module1.bas","diff":""}],"questions":[{"id":"inString","label":"Called by its name in a string","description":null}]}""");
+    }
+
+    [TestMethod]
+    [DataRow(null, null, null, null, null, DisplayName = "the whole document")]
+    [DataRow(3, null, null, null, "3:1-3:1", DisplayName = "a line: its start")]
+    [DataRow(3, 9, null, null, "3:9-3:9", DisplayName = "a position")]
+    [DataRow(3, 9, null, 14, "3:9-3:14", DisplayName = "a range on the line")]
+    [DataRow(3, 9, 5, null, "3:9-5:1", DisplayName = "a range to a line")]
+    [DataRow(3, 9, 5, 2, "3:9-5:2", DisplayName = "a range")]
+    public void TheRangeTheFixesAreListedFor_IsWhatTheArgumentsSay(int? line, int? column, int? endLine, int? endColumn, string? range)
+    {
+        var arguments = new ListFixesToolArguments { Path = "src/Module1.bas", Line = line, Column = column, EndLine = endLine, EndColumn = endColumn };
+
+        Assert.AreEqual(range, arguments.Range is { } said ? $"{said.Start}-{said.End}" : null);
+    }
+
+    [TestMethod]
+    public void TheInputSchemaOfTheFixTools_RequiresWhatNamesTheFix()
+    {
+        CollectionAssert.AreEquivalent(new[] { "path" }, Required(typeof(ListFixesToolArguments)));
+        CollectionAssert.AreEquivalent(new[] { "fixId" }, Required(typeof(ApplyFixToolArguments)));
+        CollectionAssert.AreEquivalent(new[] { "path", "line", "column", "newName" }, Required(typeof(RenameToolArguments)));
+
+        static string?[] Required(Type arguments) => AssistantToolSchemas.Of(arguments, _ => null)["required"]!.AsArray().Select(name => (string?)name).ToArray();
     }
 
     [TestMethod]
