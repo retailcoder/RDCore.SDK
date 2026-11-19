@@ -31,6 +31,14 @@ public sealed class ProcessMainThread
     private int _run;
 
     /// <summary>
+    /// A main thread that no thread serves yet: the thread that calls <see cref="Run"/> serves it. It is not <see cref="Current"/>, which only
+    /// <see cref="Serve"/> makes.
+    /// </summary>
+    public ProcessMainThread()
+    {
+    }
+
+    /// <summary>
     /// The main thread of this process, while its entry point serves it (<see cref="Serve"/>); <see langword="null"/> before it does, after it is done, and in a
     /// process whose entry point serves none.
     /// </summary>
@@ -77,8 +85,8 @@ public sealed class ProcessMainThread
     /// <exception cref="InvalidOperationException">This main thread was run already.</exception>
     /// <remarks>
     /// <para>
-    /// <see cref="Serve"/> runs the process's own. A main thread made with the constructor and run by a thread of your choosing serves that thread, and is
-    /// not <see cref="Current"/>: a host that gives a thread of its own the part of the main thread, or a test that does.
+    /// <see cref="Serve"/> runs the process's own main thread this way. A main thread made with the constructor is served by the thread that runs it, and is
+    /// not <see cref="Current"/>: for a host that has a thread of its own play the part of the main thread, or for a test.
     /// </para>
     /// <para>
     /// When the program ends, the token every piece of work is given is cancelled. Work posted before then that has not begun runs all the same, with that
