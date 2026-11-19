@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- Why a reference to a project names no project of the workspace (ProjectReferenceResolution): ProjectReference_ and the ProjectReferenceRefusal. {0} is the name of the project that references; {1} is the name the reference gives. -->
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="ProjectReference_NoProject" xml:space="preserve">
+    <value>The project {0} references the project {1}: no project of the workspace has that name.</value>
+  </data>
+  <data name="ProjectReference_SharedName" xml:space="preserve">
+    <value>The project {0} references the project {1}: more than one project of the workspace has that name, in any letter case.</value>
+  </data>
+</root>
