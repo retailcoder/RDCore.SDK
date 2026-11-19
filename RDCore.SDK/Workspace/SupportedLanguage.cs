@@ -37,6 +37,23 @@ public class SupportedLanguage
     public string[] FileTypes { get; }
 
     /// <summary>
+    /// The patterns of the files that are the modules of a workspace of the language: those a folder with no project file is made a project of
+    /// (<see cref="IProjectFileLoader.LoadOrSynthesizeAsync"/>). They are the language's own files (<see cref="FileTypes"/>), unless the language says
+    /// otherwise.
+    /// </summary>
+    /// <remarks>
+    /// A BASIC's are RD-VBA's modules (<see cref="SupportedLanguages.BASIC"/>): its own file, a <c>.rdc</c>, is a program of the shell, which the lines
+    /// typed at its prompt are, and no module of a project.
+    /// </remarks>
+    public string[] ModuleFileTypes
+    {
+        get => _moduleFileTypes ?? FileTypes;
+        init => _moduleFileTypes = value;
+    }
+
+    private readonly string[]? _moduleFileTypes;
+
+    /// <summary>
     /// Where the variable that a reference to an undeclared name declares lives (<strong>MS-VBAL §5.6.10</strong>).
     /// </summary>
     /// <remarks>
@@ -115,10 +132,19 @@ public class SupportedLanguage
     /// </summary>
     /// <param name="path">The file's path, or its name.</param>
     /// <returns><see langword="true"/> when the extension is one of the language's, compared without regard to case.</returns>
-    public bool IsSourceFile(string path)
+    public bool IsSourceFile(string path) => HasExtensionOfOne(FileTypes, path);
+
+    /// <summary>
+    /// Whether a file is a module of a workspace of the language: whether its extension is the extension of one of its <see cref="ModuleFileTypes"/>.
+    /// </summary>
+    /// <param name="path">The file's path, or its name.</param>
+    /// <returns><see langword="true"/> when the extension is one of the language's module files, compared without regard to case.</returns>
+    public bool IsModuleFile(string path) => HasExtensionOfOne(ModuleFileTypes, path);
+
+    private static bool HasExtensionOfOne(string[] fileTypes, string path)
     {
         var extension = Path.GetExtension(path);
-        return extension.Length > 0 && FileTypes.Any(fileType => string.Equals(fileType.TrimStart('*'), extension, StringComparison.OrdinalIgnoreCase));
+        return extension.Length > 0 && fileTypes.Any(fileType => string.Equals(fileType.TrimStart('*'), extension, StringComparison.OrdinalIgnoreCase));
     }
 
     /// <summary>The patterns of the files written in the language, as a document filter pattern.</summary>
@@ -171,10 +197,13 @@ public static class SupportedLanguages
     /// </summary>
     /// <remarks>
     /// Its source is a <c>.rdc</c> file: a program of the shell, a text file of lines. It is not a <c>.bas</c>, which is a module of the BASIC of Visual Basic - a file with
-    /// procedures in it, and a header - and which this is not.
+    /// procedures in it, and a header - and which this is not. The modules of a workspace the shell opens are RD-VBA's
+    /// (<see cref="SupportedLanguage.ModuleFileTypes"/>): standard modules (<c>.bas</c>), class modules (<c>.cls</c>), UserForms (<c>.frm</c>) and
+    /// document modules (<c>.doccls</c>).
     /// </remarks>
     public static SupportedLanguage BASIC { get; } = new("basic", "RDCore BASIC", "*.rdc")
     {
+        ModuleFileTypes = ["*.bas", "*.cls", "*.frm", "*.doccls"],
         ImplicitDeclarationScope = ImplicitDeclarationScope.Module,
         HasBarePrint = true,
         HasOptionExplicit = false,
