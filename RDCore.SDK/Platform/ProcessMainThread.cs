@@ -8,9 +8,10 @@ namespace RDCore.SDK.Platform;
 /// </summary>
 /// <remarks>
 /// <para>
-/// An entry point that runs a program which may show windows serves its main thread with <see cref="Serve"/>: the program runs on a thread of the thread pool,
-/// and the main thread runs the work <see cref="PostAsync"/> is given, one piece at a time, in the order it was posted, until the program ends. Work that runs for
-/// as long as the program does, such as a window's message loop, returns when the token it is given is cancelled, which it is when the program ends.
+/// An entry point that runs a program which may show windows serves its main thread with <see cref="Serve"/>: the program runs on a thread of the thread
+/// pool, and the main thread runs the work <see cref="PostAsync"/> is given, one piece at a time, in the order it was posted, until the program ends. Work
+/// that runs for as long as the program does, such as a window's message loop, returns when the token it is given is cancelled, which it is when the program
+/// ends.
 /// </para>
 /// <para>
 /// <see cref="Current"/> is the main thread an entry point serves, or <see langword="null"/> when it serves none: code that needs the main thread asks for it
@@ -39,22 +40,22 @@ public sealed class ProcessMainThread
     }
 
     /// <summary>
-    /// The main thread of this process, while its entry point serves it (<see cref="Serve"/>); <see langword="null"/> before it does, after it is done, and in a
-    /// process whose entry point serves none.
+    /// The main thread of this process, while its entry point serves it (<see cref="Serve"/>); <see langword="null"/> before it does, after it is done, and
+    /// in a process whose entry point serves none.
     /// </summary>
     public static ProcessMainThread? Current => Volatile.Read(ref _current);
 
     /// <summary>
-    /// Runs <paramref name="program"/> on a thread of the thread pool, and serves the calling thread as the process's main thread (<see cref="Current"/>) until
-    /// it ends. Called by the process's entry point, on the process's main thread.
+    /// Runs <paramref name="program"/> on a thread of the thread pool, and serves the calling thread as the process's main thread (<see cref="Current"/>)
+    /// until it ends. Called by the process's entry point, on the process's main thread.
     /// </summary>
     /// <param name="program">The program: what the entry point would otherwise run on its own thread.</param>
     /// <returns>What <paramref name="program"/> returned: the process's exit code.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="program"/> is <see langword="null"/>.</exception>
     /// <exception cref="InvalidOperationException">The process's main thread is served already.</exception>
     /// <remarks>
-    /// What <paramref name="program"/> throws is thrown, once the work posted to the main thread has returned. <see cref="Current"/> is <see langword="null"/> again
-    /// once this returns.
+    /// What <paramref name="program"/> throws is thrown, once the work posted to the main thread has returned. <see cref="Current"/> is
+    /// <see langword="null"/> again once this returns.
     /// </remarks>
     public static int Serve(Func<Task<int>> program)
     {
@@ -76,8 +77,8 @@ public sealed class ProcessMainThread
     }
 
     /// <summary>
-    /// Runs <paramref name="program"/> on a thread of the thread pool, and runs the work posted to this main thread (<see cref="PostAsync"/>) on the calling thread
-    /// until the program ends.
+    /// Runs <paramref name="program"/> on a thread of the thread pool, and runs the work posted to this main thread (<see cref="PostAsync"/>) on the calling
+    /// thread until the program ends.
     /// </summary>
     /// <param name="program">The program.</param>
     /// <returns>What <paramref name="program"/> returned.</returns>
@@ -138,8 +139,8 @@ public sealed class ProcessMainThread
     /// The work. It is given a token that is cancelled when the program ends: work that runs for as long as the program does returns when it is.
     /// </param>
     /// <returns>
-    /// A task that completes when the work returns: faulted with what it throws, and cancelled when what it throws is an <see cref="OperationCanceledException"/>.
-    /// What it throws does not stop the main thread, which goes on to the next piece.
+    /// A task that completes when the work returns: faulted with what it throws, and cancelled when what it throws is an
+    /// <see cref="OperationCanceledException"/>. What it throws does not stop the main thread, which goes on to the next piece.
     /// </returns>
     /// <exception cref="ArgumentNullException"><paramref name="work"/> is <see langword="null"/>.</exception>
     /// <exception cref="InvalidOperationException">The program has ended, and the main thread runs no more work.</exception>
