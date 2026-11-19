@@ -33,7 +33,8 @@ public sealed class CallChannelTests
         // the serving end's channel goes over what `serving` makes of its end of the pipe.
         public static async Task<Ends> ConnectAsync(Func<Stream, Stream>? serving = null)
         {
-            var name = $"rdcore-channel-test-{Guid.NewGuid():N}";
+            // macOS: a pipe is a socket under $TMPDIR, and a socket path is at most 104 characters.
+            var name = "rdc-channel-" + Guid.NewGuid().ToString("N")[..12];
             var server = new NamedPipeServerStream(name, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
             var client = new NamedPipeClientStream(".", name, PipeDirection.InOut, PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
             var accepted = server.WaitForConnectionAsync();

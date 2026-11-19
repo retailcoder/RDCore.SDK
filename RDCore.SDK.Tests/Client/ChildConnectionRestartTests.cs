@@ -507,7 +507,8 @@ public sealed class ChildConnectionRestartTests
             await connection.ConnectAsync(new ChildConnectionRequest
             {
                 ServerExecutablePath = "child.exe",
-                PipeName = $"RDCore.Tests.ChildConnectionRestart.{Guid.NewGuid():N}",
+                // macOS: a pipe is a socket under $TMPDIR, and a socket path is at most 104 characters.
+                PipeName = "rdc-restart-" + Guid.NewGuid().ToString("N")[..12],
                 ExpectedComponent = CoreServerComponent.ParsingServer,
                 ConfigureClient = _ => { },
                 OnPeerExited = () => Interlocked.Increment(ref _peerExitsTold),
