@@ -158,4 +158,88 @@ public sealed class ProcessMainThreadTests
         Assert.IsTrue(refused);
         Assert.IsNull(ProcessMainThread.Current);
     }
+
+    // what a setup makes, in these tests: the thread it ran on.
+    private sealed record SetUp(Thread Thread);
+
+    // a window's loop on the main thread runs for as long as the program does, and the main thread returns the program's exit code once it ends.
+    [TestMethod]
+    public void ALoopStartedOnTheMainThread_IsSetUpAndRunThere_AndEndsWithTheProgram()
+    {
+        var main = new ProcessMainThread();
+        SetUp? started = null;
+        Thread? looped = null;
+
+        var (result, thread) = RunOnAThreadOfItsOwn(main, () =>
+        {
+            started = main.StartLoop(() => new SetUp(Thread.CurrentThread), (_, token) =>
+            {
+                looped = Thread.CurrentThread;
+                token.WaitHandle.WaitOne();
+            });
+
+            return Task.FromResult(0);
+        });
+
+        Assert.AreEqual(0, result);
+        Assert.AreSame(thread, started?.Thread);
+        Assert.AreSame(thread, looped);
+    }
+
+    // a user interface that cannot be set up (no window server) fails the start, runs no loop, and leaves the main thread to the program, which ends as any
+    // other does.
+    [TestMethod]
+    public void ALoopWhoseSetupFails_OnTheMainThread_FailsTheStart_AndTheProgramEnds()
+    {
+        var main = new ProcessMainThread();
+        Exception? failure = null;
+        var looped = false;
+
+        var (result, _) = RunOnAThreadOfItsOwn(main, () =>
+        {
+            failure = Assert.ThrowsExactly<InvalidOperationException>(() => main.StartLoop<SetUp>(
+                () => throw new InvalidOperationException("no window server"), (_, _) => looped = true));
+            return Task.FromResult(0);
+        });
+
+        Assert.AreEqual(0, result);
+        Assert.AreEqual("no window server", failure?.Message);
+        Assert.IsFalse(looped);
+    }
+
+    [TestMethod]
+    public void ALoopStartedOnANewThread_IsSetUpAndRunThere_OnABackgroundThreadOfItsName()
+    {
+        Thread? looped = null;
+        (string? Name, bool IsBackground) thread = default;
+        using var looping = new ManualResetEventSlim();
+
+        // the thread is read as it runs: once the loop returns, it ends.
+        var started = ProcessMainThread.StartLoopOnANewThread("UI", () =>
+        {
+            thread = (Thread.CurrentThread.Name, Thread.CurrentThread.IsBackground);
+            return new SetUp(Thread.CurrentThread);
+        }, (_, _) =>
+        {
+            looped = Thread.CurrentThread;
+            looping.Set();
+        });
+
+        looping.Wait();
+        Assert.AreNotSame(Thread.CurrentThread, started.Thread);
+        Assert.AreSame(started.Thread, looped);
+        Assert.AreEqual(("UI", true), thread);
+    }
+
+    [TestMethod]
+    public void ALoopWhoseSetupFails_OnANewThread_FailsTheStart()
+    {
+        var looped = false;
+
+        var failure = Assert.ThrowsExactly<InvalidOperationException>(() => ProcessMainThread.StartLoopOnANewThread<SetUp>("UI",
+            () => throw new InvalidOperationException("no display"), (_, _) => looped = true));
+
+        Assert.AreEqual("no display", failure.Message);
+        Assert.IsFalse(looped);
+    }
 }
