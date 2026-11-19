@@ -26,8 +26,8 @@ public sealed record class FixIdParts(string Path, int? Version, TextRange Range
 /// that range again, and takes the one of that kind and title.
 /// </para>
 /// <para>
-/// When the document's version is no longer the id's, or no code action matches, the fix is not found: the document changed since the fixes were listed,
-/// and they are listed again. An id is no secret and no capability: it names a fix, which anyone who can list the fixes can list.
+/// When the document's version differs from the id's, or no code action matches, the fix is not found: the document changed after the fixes were listed,
+/// and they are listed again. An id is not a secret or a capability: it names a fix, which anyone who can list the fixes can list.
 /// </para>
 /// </remarks>
 public static class FixIds

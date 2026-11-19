@@ -44,8 +44,9 @@ public sealed record class ListFixesToolArguments
     [JsonIgnore]
     public TextRange? Range => Line is not { } line ? null : RangeFrom(new TextPosition(line, Column ?? 1));
 
-    private TextRange RangeFrom(TextPosition start)
-        => EndLine is { } endLine ? new(start, new TextPosition(endLine, EndColumn ?? 1)) : new(start, EndColumn is { } endColumn ? start with { Column = endColumn } : start);
+    private TextRange RangeFrom(TextPosition start) => EndLine is { } endLine
+        ? new(start, new TextPosition(endLine, EndColumn ?? 1))
+        : new(start, EndColumn is { } endColumn ? start with { Column = endColumn } : start);
 }
 
 /// <summary>
@@ -98,7 +99,7 @@ public sealed record class ToolFix
 
     /// <summary>
     /// Whether the fix is an edit of the documents, which <see cref="CoreAssistantTools.PreviewFix"/> shows and <see cref="CoreAssistantTools.ApplyFix"/>
-    /// applies. A fix that is no edit is run by its editor's command (a rename to a name the user types, an import), which the tools do not run.
+    /// applies. A fix that is not an edit is run by its editor's command (a rename to a name the user types, an import), which the tools do not run.
     /// </summary>
     public bool HasEdit { get; init; }
 
