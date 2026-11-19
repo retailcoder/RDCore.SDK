@@ -197,9 +197,9 @@ public sealed record class MemberAccessFact(
     : OperatorFact(Node, Location, Operator, EffectiveType, IsValueKnown, Error)
 {
     /// <summary>
-    /// For a late-bound access (<see cref="MemberAccessOperationSemanticFlags.LateBound"/>, <strong>MS-VBAL 5.6.12</strong>), the members its name may
-    /// resolve to when it runs (<strong>MS-VBAL 5.6.3</strong>): each member of that name of a class the object may be of, that is accessible from the
-    /// code of the access (<strong>MS-VBAL 5.3.1.1</strong>: a <c>Friend</c> member from the code of its own project only).
+    /// For a late-bound access (<see cref="MemberAccessOperationSemanticFlags.LateBound"/>, <strong>MS-VBAL §5.6.12</strong>), the members its name
+    /// may resolve to when it runs (<strong>MS-VBAL §5.6.3</strong>): each member of that name of a class the object may be of, that is accessible from
+    /// the code of the access (<strong>MS-VBAL §5.3.1.1</strong>: a <c>Friend</c> member from the code of its own project only).
     /// </summary>
     /// <remarks>
     /// <see langword="null"/> when the classes the object may be of are not known: an object given as an argument, returned by a function, or read from a
@@ -210,8 +210,9 @@ public sealed record class MemberAccessFact(
 }
 
 /// <summary>
-/// A member that a late-bound member access may resolve to when it runs (<see cref="MemberAccessFact.LateBoundCandidates"/>, <strong>MS-VBAL 5.6.3</strong>).
+/// A member that a late-bound member access may resolve to when it runs (<see cref="MemberAccessFact.LateBoundCandidates"/>,
+/// <strong>MS-VBAL §5.6.3</strong>).
 /// </summary>
 /// <param name="Member">The address of the member, as a declaration's fact gives it (<see cref="Platform.Protocol.DeclarationFactDto.Symbol"/>).</param>
-/// <param name="Access">The access modifier the member is declared with (<strong>MS-VBAL 5.3.1.1</strong>, <strong>5.2.3.1</strong>).</param>
+/// <param name="Access">The access modifier the member is declared with (<strong>MS-VBAL §5.3.1.1</strong>, <strong>MS-VBAL §5.2.3.1</strong>).</param>
 public sealed record class LateBoundCandidate(Uri Member, AccessModifier Access);
