@@ -18,10 +18,10 @@ public sealed class DeclarationBindingWireTests
     private static readonly Uri Source = new UriBuilder("file://rdcore-test") { Fragment = "Watcher.source" }.Uri;
     private static readonly Uri Spun = new UriBuilder("file://rdcore-test") { Fragment = "Spinner.Spun" }.Uri;
 
-    private static DeclarationFactDto RoundTrip(DeclarationRole role, DeclarationBinding? binding)
+    private static DeclarationFactDto RoundTrip(DeclarationRole role, DeclarationBinding? binding, bool isUsedByReferencingProjects = false)
     {
         var declaration = new DeclarationFact(new SemanticId(Handler), "source_Spun", DeclarationKind.Procedure, AccessModifier.Private, false,
-            new SourceLocation(Module, SourceRange.Empty), null) { Role = role, Binding = binding };
+            new SourceLocation(Module, SourceRange.Empty), null) { Role = role, Binding = binding, IsUsedByReferencingProjects = isUsedByReferencingProjects };
         var model = new ModuleSemanticModel(Module, [], []) { Declarations = [declaration] };
         return PlatformJson.Deserialize<SemanticsPayload>(PlatformJson.Serialize(new SemanticsPayload([ModuleSemanticsDto.From(model)]))).Modules.Single()
             .Declarations.Single();
@@ -52,4 +52,18 @@ public sealed class DeclarationBindingWireTests
     [TestMethod]
     public void ADeclarationBoundToNothing_HasNoBinding()
         => Assert.IsNull(RoundTrip(DeclarationRole.None, null).Binding);
+
+    // a member of a library that its referencing projects can use counts as used, and its references stay unknown.
+    [TestMethod]
+    public void ADeclarationUsedByReferencingProjects_IsReadBackAsSo()
+    {
+        var read = RoundTrip(DeclarationRole.None, null, isUsedByReferencingProjects: true);
+
+        Assert.IsTrue(read.IsUsedByReferencingProjects);
+        Assert.IsNull(read.References);
+    }
+
+    [TestMethod]
+    public void ADeclarationOfAnyOtherProject_IsNotUsedByReferencingProjects()
+        => Assert.IsFalse(RoundTrip(DeclarationRole.None, null).IsUsedByReferencingProjects);
 }
