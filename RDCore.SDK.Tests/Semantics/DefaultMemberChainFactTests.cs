@@ -11,7 +11,7 @@ using RDCore.SDK.Semantics.Flags;
 namespace RDCore.Tests.Semantics;
 
 /// <summary>
-/// The default members an access of a default member the code does not name goes through (MS-VBAL 5.6.13, 5.6.14), which its fact carries over the wire,
+/// The default members an access of a default member the code does not name goes through (MS-VBAL §5.6.13, §5.6.14), which its fact carries over the wire,
 /// in the order they are called, each with what it is and the arguments it requires.
 /// </summary>
 [TestClass]
