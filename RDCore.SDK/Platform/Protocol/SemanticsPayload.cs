@@ -222,6 +222,10 @@ public record class ConversionFactDto(
 /// classes its object may be of are not known, and for any other operation; an empty array when they are known and none has an accessible member of
 /// the name.
 /// </param>
+/// <param name="DefaultMembers">
+/// The default members an argument list or a dictionary access given to an object goes through, in the order they are called
+/// (<see cref="MemberAccessFact.DefaultMembers"/>): <see langword="null"/> when the classes on the way are not all known, and for any other operation.
+/// </param>
 public record class OperatorFactDto(
     SyntaxNodeId Node,
     SourceLocation Location,
@@ -239,7 +243,8 @@ public record class OperatorFactDto(
     string? Member = null,
     SourceLocation? OperatorLocation = null,
     StringOperandFact? StringOperand = null,
-    ImmutableArray<LateBoundCandidate>? LateBoundCandidates = null)
+    ImmutableArray<LateBoundCandidate>? LateBoundCandidates = null,
+    ImmutableArray<DefaultMemberFact>? DefaultMembers = null)
 {
     /// <summary>
     /// Describes an operation for the wire.
@@ -262,7 +267,8 @@ public record class OperatorFactDto(
         Member: (fact as MemberAccessFact)?.Member,
         OperatorLocation: fact.OperatorLocation,
         StringOperand: (fact as ComparisonOperatorFact)?.StringOperand,
-        LateBoundCandidates: (fact as MemberAccessFact)?.LateBoundCandidates);
+        LateBoundCandidates: (fact as MemberAccessFact)?.LateBoundCandidates,
+        DefaultMembers: (fact as MemberAccessFact)?.DefaultMembers);
 }
 
 /// <summary>
