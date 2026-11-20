@@ -44,6 +44,7 @@ public static class LibraryJson
     /// </summary>
     /// <remarks>
     /// <list type="bullet">
+    /// <item>Version 7 states the members a hidden default member stands for (<see cref="MemberDescription.WrittenAs"/>).</item>
     /// <item>Version 6 states the classes an object of a class is as well (<see cref="ClassDescription.Implements"/>).</item>
     /// <item>Version 5 states what RD-VBA adds to a library that its type library does not declare (<see cref="MemberDescription.IsAddition"/>).</item>
     /// <item>Version 4 states what <c>TypeName</c> says of an object of a class, when it is not the class's name (<see cref="ClassDescription.TypeName"/>).</item>
@@ -53,7 +54,7 @@ public static class LibraryJson
     /// <item>Version 1 states a dependency by its name alone.</item>
     /// </list>
     /// </remarks>
-    public const int CurrentFormatVersion = 6;
+    public const int CurrentFormatVersion = 7;
 
     /// <summary>
     /// The oldest version of the format this reads.
@@ -67,7 +68,7 @@ public static class LibraryJson
     /// <exception cref="InvalidDataException">
     /// The text is not a description this reads: it is not JSON of the format, has no name, is of a format version this does not know, or states what its
     /// format version does not have (a dependency's identity before version 2, modules before version 3, a class's type name before version 4, an addition
-    /// before version 5, the classes an object of a class is as well before version 6).
+    /// before version 5, the classes an object of a class is as well before version 6, the members a hidden default member stands for before version 7).
     /// </exception>
     public static LibraryDescription Read(string json)
     {
@@ -123,6 +124,13 @@ public static class LibraryJson
                 + $"of a class is as well, and states '{implementing.Implements[0]}' for '{implementing.Name}'.");
         }
 
+        if (description.FormatVersion < 7 && WrittenAsOf(description).FirstOrDefault() is { } writtenAs)
+        {
+            throw new InvalidDataException(
+                $"The library description of '{description.Name}' is of format version {description.FormatVersion}, which states no members a hidden "
+                + $"default member stands for, and states them for '{writtenAs}'.");
+        }
+
         // a name is one type or module of the library, whatever its case: VBA names are not case sensitive, and a library that declares one twice is not one a
         // project can be checked against.
         var twice = description.Classes.Select(declared => declared.Name).Concat(description.Enums.Select(declared => declared.Name))
@@ -139,6 +147,13 @@ public static class LibraryJson
     /// </summary>
     /// <param name="description">The description.</param>
     public static string Write(LibraryDescription description) => JsonSerializer.Serialize(description, _options);
+
+    // the names of the members of a description that state what a hidden default member stands for, wherever a member can be.
+    private static IEnumerable<string> WrittenAsOf(LibraryDescription description)
+        => description.Classes.SelectMany(declared => declared.Members.Where(member => member.WrittenAs is not null)
+                .Select(member => $"{declared.Name}.{member.Name}"))
+            .Concat(description.Modules.SelectMany(declared => declared.Members.Where(member => member.WrittenAs is not null)
+                .Select(member => $"{declared.Name}.{member.Name}")));
 
     // the names of what a description states RD-VBA adds, wherever an addition can be.
     private static IEnumerable<string> AdditionsOf(LibraryDescription description)

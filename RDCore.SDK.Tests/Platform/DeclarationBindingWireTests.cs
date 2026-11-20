@@ -39,6 +39,34 @@ public sealed class DeclarationBindingWireTests
         Assert.AreEqual(Spun.AbsoluteUri, read.Binding.Bound?.AbsoluteUri);
     }
 
+    // the library that declares the event or the interface travels with the binding: a type library's, and a referenced source project's, which says so.
+    [TestMethod]
+    [DataRow(null, false, DisplayName = "the session's own project")]
+    [DataRow("Excel", false, DisplayName = "a type library")]
+    [DataRow("Shapes", true, DisplayName = "a referenced source project")]
+    public void TheLibraryOfWhatAHandlerIsBoundTo_IsReadBackAsItWasWritten(string? library, bool isSourceProject)
+    {
+        var read = RoundTrip(DeclarationRole.EventHandler,
+            new DeclarationBinding(new SemanticId(Handler), DeclarationRole.EventHandler, new SemanticId(Source), new SemanticId(Spun))
+            {
+                BoundLibrary = library,
+                IsBoundInSourceProject = isSourceProject,
+            });
+
+        Assert.AreEqual(library, read.Binding?.BoundLibrary);
+        Assert.AreEqual(isSourceProject, read.Binding?.IsBoundInSourceProject);
+    }
+
+    [TestMethod]
+    [DataRow(true)]
+    [DataRow(false)]
+    public void WhetherAHandlersSourceIsAControl_IsReadBackAsItWasWritten(bool isControl)
+        => Assert.AreEqual(isControl, RoundTrip(DeclarationRole.EventHandler,
+            new DeclarationBinding(new SemanticId(Handler), DeclarationRole.EventHandler, new SemanticId(Source), new SemanticId(Spun))
+            {
+                IsSourceAControl = isControl,
+            }).Binding?.IsSourceAControl);
+
     [TestMethod]
     public void AnUnmatchedHandler_IsBoundToItsSource_AndToNoEvent()
     {
@@ -66,4 +94,19 @@ public sealed class DeclarationBindingWireTests
     [TestMethod]
     public void ADeclarationOfAnyOtherProject_IsNotUsedByReferencingProjects()
         => Assert.IsFalse(RoundTrip(DeclarationRole.None, null).IsUsedByReferencingProjects);
+
+    // a parameter of an interface member or of an event: whether an implementation or a handler refers to its own, or that this is not stated.
+    [TestMethod]
+    [DataRow(true)]
+    [DataRow(false)]
+    [DataRow(null)]
+    public void WhetherABoundMemberRefersToAParameter_IsReadBackAsItWasWritten(bool? isReferred)
+    {
+        var parameter = new DeclarationFact(new SemanticId(Spun), "times", DeclarationKind.Parameter, AccessModifier.Private, false,
+            new SourceLocation(Module, SourceRange.Empty), null) { IsReferredToByABoundMember = isReferred };
+        var model = new ModuleSemanticModel(Module, [], []) { Declarations = [parameter] };
+
+        Assert.AreEqual(isReferred, PlatformJson.Deserialize<SemanticsPayload>(PlatformJson.Serialize(new SemanticsPayload([ModuleSemanticsDto.From(model)])))
+            .Modules.Single().Declarations.Single().IsReferredToByABoundMember);
+    }
 }

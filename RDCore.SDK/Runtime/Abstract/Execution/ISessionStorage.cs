@@ -1,3 +1,4 @@
+using RDCore.SDK.Model.Types.Abstract;
 using RDCore.SDK.Model.Values.Bindings;
 using RDCore.SDK.Runtime.Shared;
 using System.Diagnostics.CodeAnalysis;
@@ -38,6 +39,23 @@ public interface ISessionStorage : IObjectPointers
     /// Gets the <see cref="IBindingHandle"/> bound at <paramref name="address"/>.
     /// </summary>
     bool TryRead(MemoryAddress address, [NotNullWhen(true)][MaybeNullWhen(false)] out IBindingHandle? handle);
+
+    /// <summary>
+    /// Gets the <see cref="IBindingHandle"/> of the place at <paramref name="address"/> that holds a value of <paramref name="type"/>: what is bound
+    /// there, or a place inside it that starts at the address, such as a field of a record or an element of an array field of one. A reference
+    /// parameter is bound to the variable its argument is, and a field or an element is a variable too (<strong>MS-VBAL §5.3.1.11</strong>). A record's first
+    /// field starts at the record's own address; the type tells the two apart.
+    /// </summary>
+    /// <param name="address">The address of the place.</param>
+    /// <param name="type">The type of the value the place holds; <see langword="null"/> reads what is bound at the address.</param>
+    /// <param name="handle">The binding of the place, if successful.</param>
+    /// <returns><see langword="false"/> when nothing is bound at the address and no place of <paramref name="type"/> starts there.</returns>
+    /// <remarks>
+    /// The default implementation reads what is bound at the address (<see cref="TryRead(MemoryAddress, out IBindingHandle?)"/>), whatever
+    /// <paramref name="type"/> is.
+    /// </remarks>
+    bool TryRead(MemoryAddress address, VBType? type, [NotNullWhen(true)][MaybeNullWhen(false)] out IBindingHandle? handle)
+        => TryRead(address, out handle);
 
     /// <summary>
     /// Frees the binding and the underlying storage at <paramref name="address"/>.

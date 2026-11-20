@@ -28,7 +28,7 @@ public record class VBUserDefinedTypeValue : VBTypedValue,
     private readonly VBTypedValue[] _fields;
 
     public VBUserDefinedTypeValue(IBindingHandle handle, VBUserDefinedType typeInfo)
-        : this(handle, typeInfo, field => field.ResolvedType?.DefaultValue ?? VBEmptyValue.Empty) { }
+        : this(handle, typeInfo, fieldDefaults: null) { }
 
     /// <summary>
     /// A record of <paramref name="typeInfo"/> whose fields each start as <paramref name="fieldDefaults"/> says a variable declared as the field
@@ -42,14 +42,20 @@ public record class VBUserDefinedTypeValue : VBTypedValue,
     /// <param name="typeInfo">The type of the record.</param>
     /// <param name="fieldDefaults">What each field, a typed symbol, starts as.</param>
     public VBUserDefinedTypeValue(VBUserDefinedType typeInfo, IVariableDefaults fieldDefaults)
-        : this(new ValueBindingHandle(new VBRuntimeReference(MemoryAddress.Zero)), typeInfo, fieldDefaults.DefaultValueOf) { }
+        : this(new ValueBindingHandle(new VBRuntimeReference(MemoryAddress.Zero)), typeInfo, fieldDefaults) { }
 
-    private VBUserDefinedTypeValue(IBindingHandle handle, VBUserDefinedType typeInfo, Func<VBUserDefinedTypeFieldSymbol, VBTypedValue> fieldDefault)
+    // without defaults, each field starts as its type's default.
+    private VBUserDefinedTypeValue(IBindingHandle handle, VBUserDefinedType typeInfo, IVariableDefaults? fieldDefaults)
         : base(typeInfo)
     {
         Handle = handle;
-        Fields = [.. typeInfo.Fields()];
-        _fields = [.. Fields.Select(field => Fresh(fieldDefault(field)))];
+        Fields = typeInfo.DeclaredFields;
+        _fields = new VBTypedValue[Fields.Length];
+        for (var index = 0; index < _fields.Length; index++)
+        {
+            var field = Fields[index];
+            _fields[index] = Fresh(fieldDefaults is null ? field.ResolvedType?.DefaultValue ?? VBEmptyValue.Empty : fieldDefaults.DefaultValueOf(field));
+        }
     }
 
     public VBUserDefinedTypeValue(MemoryAddress reference, VBUserDefinedType typeInfo)
@@ -67,7 +73,11 @@ public record class VBUserDefinedTypeValue : VBTypedValue,
     protected VBUserDefinedTypeValue(VBUserDefinedTypeValue original) : base(original)
     {
         Fields = original.Fields;
-        _fields = [.. original._fields.Select(field => field is VBUserDefinedTypeValue nested ? nested with { } : field)];
+        _fields = new VBTypedValue[original._fields.Length];
+        for (var index = 0; index < _fields.Length; index++)
+        {
+            _fields[index] = original._fields[index] is VBUserDefinedTypeValue nested ? nested with { } : original._fields[index];
+        }
     }
 
     /// <summary>

@@ -142,4 +142,25 @@ public sealed class ClassLifecycleInterfaceTests
 
         Assert.IsNull(widget.FindImplementation(ClassLifecycleInterface.Interface, ClassLifecycleInterface.Initialize));
     }
+
+    [TestMethod]
+    [DataRow("Class_InitializeX", DisplayName = "a longer name")]
+    [DataRow("Class_Initializ", DisplayName = "a shorter name")]
+    [DataRow("ClassXInitialize", DisplayName = "no underscore between the two names")]
+    [DataRow("Clas_sInitialize", DisplayName = "the underscore elsewhere")]
+    [DataRow("_ClassInitialize", DisplayName = "the underscore first")]
+    public void ANameThatIsNotTheInterfaceNameAndTheMemberName_IsNotTheHandler(string name)
+    {
+        var widget = new VBClassModuleSymbol(Root, Root, "Widget");
+        widget = widget with { Members = [Sub(widget.Uri, name)] };
+
+        Assert.IsNull(widget.FindImplementation(ClassLifecycleInterface.Interface, ClassLifecycleInterface.Initialize));
+    }
+
+    [TestMethod]
+    public void TheInterfaceMembers_AreTheSameSymbolsEachTimeTheyAreAskedFor()
+    {
+        Assert.AreSame(ClassLifecycleInterface.Initialize, ClassLifecycleInterface.Initialize);
+        Assert.AreSame(ClassLifecycleInterface.Interface.Members.Single(member => member.Name == "Terminate"), ClassLifecycleInterface.Terminate);
+    }
 }

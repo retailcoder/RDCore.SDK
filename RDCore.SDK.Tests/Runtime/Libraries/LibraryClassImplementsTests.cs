@@ -295,8 +295,9 @@ public sealed class LibraryClassImplementsTests
         var written = LibraryJson.Write(Forms);
         var read = LibraryJson.Read(written);
 
-        Assert.AreEqual(6, read.FormatVersion);
-        StringAssert.Contains(written, "\"formatVersion\": 6");
+        // written in the current format, which states them from version 6
+        Assert.AreEqual(LibraryJson.CurrentFormatVersion, read.FormatVersion);
+        StringAssert.Contains(written, $"\"formatVersion\": {LibraryJson.CurrentFormatVersion}");
         Assert.AreEqual(2, written.Split("\"implements\"").Length - 1);
         CollectionAssert.AreEqual(new[] { "stdole.StdFont" }, read.Classes.Single(declared => declared.Name == "Font").Implements.ToArray());
         CollectionAssert.AreEqual(new[] { "Brush" }, read.Classes.Single(declared => declared.Name == "SolidBrush").Implements.ToArray());

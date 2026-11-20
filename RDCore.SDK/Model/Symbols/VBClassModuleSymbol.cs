@@ -159,10 +159,23 @@ public record class VBClassModuleSymbol : VBModuleSymbol
     public VBTypeMemberSymbol? FindImplementation(
         VBClassModuleSymbol implemented, VBTypeMemberSymbol interfaceMember, ImplementationAccess access)
     {
-        var name = $"{implemented.Name}_{interfaceMember.Name}";
-        return Members.FirstOrDefault(member => string.Equals(member.Name, name, StringComparison.OrdinalIgnoreCase)
-            && ImplementsKindOf(interfaceMember, member, access));
+        foreach (var member in Members)
+        {
+            if (IsNamedFor(member.Name, implemented.Name, interfaceMember.Name) && ImplementsKindOf(interfaceMember, member, access))
+            {
+                return member;
+            }
+        }
+
+        return null;
     }
+
+    // whether a declaration's name is InterfaceName_MemberName, compared as VBA compares identifiers, without building that name.
+    private static bool IsNamedFor(string name, string interfaceName, string memberName)
+        => name.Length == interfaceName.Length + 1 + memberName.Length
+            && name[interfaceName.Length] == '_'
+            && name.AsSpan(0, interfaceName.Length).Equals(interfaceName, StringComparison.OrdinalIgnoreCase)
+            && name.AsSpan(interfaceName.Length + 1).Equals(memberName, StringComparison.OrdinalIgnoreCase);
 
     // Property Get, Let and Set derive from the function's and the subroutine's symbols, and are not the kinds of
     // declaration they derive from.

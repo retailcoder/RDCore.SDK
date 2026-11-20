@@ -70,10 +70,21 @@ public enum MemberAccessOperationSemanticFlags
     /// </para>
     /// </remarks>
     ArgumentList = 1 << 9,
+    /// <summary>
+    /// The member access operation names a member that the class its object is declared as does not declare, and that class is a class of a referenced
+    /// library, which is extensible: the member is bound where the code runs, to a member of that name the object has (<strong>MS-VBAL §5.6.12</strong>).
+    /// <c>ws.Rnage</c> of a variable declared as Excel's <c>Worksheet</c> is such an access; so is <c>c.Nope</c> of a <c>Collection</c>.
+    /// </summary>
+    /// <remarks>
+    /// It is stated with <see cref="LateBound"/>. The object of a form's control is wrapped in its extender, whose members the control's class does not
+    /// declare: an access to a member of a control does not have this flag, and neither does one on an object declared as a class module of the workspace,
+    /// <c>VB_Extensible</c> or not.
+    /// </remarks>
+    NotOnDeclaredInterface = 1 << 10,
 
     /// <summary>
     /// Every flag.
     /// </summary>
     All = Explicit | Implicit | WithBlockVariable | DictionaryAccess | CallByNameAccess | LateBound
-        | DefaultMember | NewEnumMember | Recursive | ArgumentList
+        | DefaultMember | NewEnumMember | Recursive | ArgumentList | NotOnDeclaredInterface
 }

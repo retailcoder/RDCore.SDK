@@ -99,4 +99,25 @@ public sealed class VBUserDefinedTypeTests
 
         Assert.IsNotNull(text);
     }
+
+    private static VBUserDefinedTypeFieldSymbol Field(string typeName, string name)
+    {
+        var uri = TestUri.TestUserDefinedTypeMemberUri(name, typeName);
+        return new VBUserDefinedTypeFieldSymbol(uri, uri, name, VBLongType.TypeInfo, SourceRange.Empty, SourceRange.Empty, AccessModifier.Public);
+    }
+
+    [TestMethod]
+    public void ACopyWithOtherMembers_HasItsOwnFields()
+    {
+        var udt = Udt("Foo") with { Members = [Field("Foo", "A"), Field("Foo", "B")] };
+        Assert.AreEqual("A,B", string.Join(",", udt.Fields().Select(field => field.Name)));
+
+        var other = udt with { Members = [Field("Foo", "C")] };
+
+        Assert.AreEqual("C", string.Join(",", other.Fields().Select(field => field.Name)));
+        Assert.AreEqual("C", other.Field("c")?.Name);
+        Assert.IsNull(other.Field("A"));
+        Assert.AreEqual("A,B", string.Join(",", udt.Fields().Select(field => field.Name)));
+        Assert.AreEqual("C", string.Join(",", ((VBUserDefinedTypeValue)other.DefaultValue).Fields.Select(field => field.Name)));
+    }
 }

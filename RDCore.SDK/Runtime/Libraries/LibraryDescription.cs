@@ -106,6 +106,44 @@ public sealed record class LibraryDescription
         return this with { Classes = classes };
     }
 
+    /// <summary>
+    /// This description, with what <paramref name="replaced"/> states that a type library cannot: the members each hidden default member stands for
+    /// (<see cref="MemberDescription.WrittenAs"/>), taken from the member of <paramref name="replaced"/> of the same class, name and kind, ignoring case.
+    /// </summary>
+    /// <remarks>
+    /// Call it on a description exported from a type library that replaces the file of an earlier export, as <see cref="KeepingDesignTimeOnly"/> is.
+    /// </remarks>
+    /// <param name="replaced">The description this one replaces; <see langword="null"/> for none, which leaves this one as it is.</param>
+    /// <param name="lost">
+    /// The members of <paramref name="replaced"/> that state what they stand for and that this description does not declare, as <c>Class.Member</c>,
+    /// sorted; empty when none.
+    /// </param>
+    /// <returns>The description, with what its hidden default members stand for, as <paramref name="replaced"/> states it.</returns>
+    public LibraryDescription KeepingWrittenAs(LibraryDescription? replaced, out IReadOnlyList<string> lost)
+    {
+        if (replaced is null)
+        {
+            lost = [];
+            return this;
+        }
+
+        var stated = replaced.Classes
+            .SelectMany(owner => owner.Members.Where(member => member.WrittenAs is not null)
+                .Select(member => (Key: KeyOf(owner, member), Shown: $"{owner.Name}.{member.Name}", member.WrittenAs)))
+            .ToDictionary(entry => entry.Key, entry => (entry.Shown, entry.WrittenAs), StringComparer.OrdinalIgnoreCase);
+        var kept = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        ImmutableArray<ClassDescription> classes = [.. Classes.Select(owner => owner with
+        {
+            Members = [.. owner.Members.Select(member => stated.TryGetValue(KeyOf(owner, member), out var entry) && kept.Add(KeyOf(owner, member))
+                ? member with { WrittenAs = entry.WrittenAs }
+                : member)],
+        })];
+
+        lost = [.. stated.Where(entry => !kept.Contains(entry.Key)).Select(entry => entry.Value.Shown).Order(StringComparer.OrdinalIgnoreCase)];
+        return this with { Classes = classes };
+    }
+
     // the accessors of a property share its name: the kind tells them apart.
     private static string KeyOf(ClassDescription owner, MemberDescription member) => $"{owner.Name}.{member.Name}/{member.Kind}";
 }
@@ -406,6 +444,18 @@ public sealed record class MemberDescription
     /// (<see cref="LibraryJson.CurrentFormatVersion"/>).
     /// </remarks>
     public bool IsAddition { get; init; }
+
+    /// <summary>
+    /// The members of the class that the member stands for, when it is a hidden default member (<see cref="DispId"/> <c>0</c>) whose name the code does not
+    /// write: Excel's <c>Range._Default</c> is <c>Item</c> given arguments and <c>Value</c> given none. A code fix that writes a default member access out
+    /// in full names them (<see cref="RDCore.SDK.Semantics.DefaultMemberFact.WrittenAs"/>). <see langword="null"/> when the file states none.
+    /// </summary>
+    /// <remarks>
+    /// A type library cannot state it, so it is stated in the file (<c>"writtenAs": { "withArguments": "Item", "withoutArguments": "Value" }</c>), which a
+    /// description exported again keeps through <see cref="LibraryDescription.KeepingWrittenAs"/>. A file states it from format version 7
+    /// (<see cref="LibraryJson.CurrentFormatVersion"/>).
+    /// </remarks>
+    public RDCore.SDK.Semantics.DefaultMemberNames? WrittenAs { get; init; }
 
     /// <summary>The parameters of the member, in declaration order.</summary>
     public ImmutableArray<ParameterDescription> Parameters { get; init; } = [];

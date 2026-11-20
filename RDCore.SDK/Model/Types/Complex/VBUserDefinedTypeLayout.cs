@@ -99,11 +99,50 @@ public sealed class VBUserDefinedTypeLayout
     /// <remarks>
     /// A record whose type has no fixed-size array field, and nests no type that has one, is laid out as its type is: the layout
     /// <see cref="Of(VBUserDefinedType, int)"/> returns.
+    /// <para>
+    /// A record of a type that has one is laid out from its own fields. For a pointer width of 4 and of 8, the type keeps the layout of the last
+    /// record laid out whose arrays all have their elements, and returns it for a record whose arrays have the same number of elements, array by
+    /// array, nested records included. The bounds are the declaration's, so the records of one session share the layout kept. A record whose
+    /// arrays have other lengths is laid out from its fields, and its layout is kept instead. A record with an array that has no elements is laid
+    /// out from its fields and not kept.
+    /// </para>
     /// </remarks>
     public static VBUserDefinedTypeLayout Of(VBUserDefinedTypeValue record, int pointerWidth = DefaultPointerWidth)
     {
         var type = (VBUserDefinedType)record.TypeInfo;
-        return LaidOf(type).ByRecord ? Of(type, record, pointerWidth, [type]) : Of(type, pointerWidth);
+        var laid = LaidOf(type);
+        if (!laid.ByRecord)
+        {
+            return Of(type, pointerWidth);
+        }
+
+        if (pointerWidth is not (DefaultPointerWidth or WidePointerWidth))
+        {
+            return Of(type, record, pointerWidth, [type]);
+        }
+
+        var kept = pointerWidth == DefaultPointerWidth ? laid.NarrowRecord : laid.WideRecord;
+        if (kept is not null && HasLengths(type, record, kept.Lengths))
+        {
+            return kept.Layout;
+        }
+
+        var layout = Of(type, record, pointerWidth, [type]);
+        var lengths = new List<int>();
+        if (CollectLengths(type, record, lengths))
+        {
+            var dimensioned = new Dimensioned([.. lengths], layout);
+            if (pointerWidth == DefaultPointerWidth)
+            {
+                laid.NarrowRecord = dimensioned;
+            }
+            else
+            {
+                laid.WideRecord = dimensioned;
+            }
+        }
+
+        return layout;
     }
 
     // the pointer width of a 64-bit host, the other layout a type keeps.
@@ -114,7 +153,8 @@ public sealed class VBUserDefinedTypeLayout
 
     private static Laid LaidOf(VBUserDefinedType type) => Layouts.GetValue(type, static type => new Laid(HoldsFixedSizeArrays(type, [type])));
 
-    // a type's layout for each pointer width it was laid out for, and whether a record of it is laid out from its own fields (ByRecord).
+    // a type's layout for each pointer width it was laid out for, and whether a record of it is laid out from its own fields (ByRecord). A type laid out
+    // by record keeps the fields that layout depends on (Probes), and the layout of a record whose arrays have their elements, for each pointer width.
     private sealed class Laid(bool byRecord)
     {
         public bool ByRecord { get; } = byRecord;
@@ -122,6 +162,103 @@ public sealed class VBUserDefinedTypeLayout
         public VBUserDefinedTypeLayout? Narrow { get; set; }
 
         public VBUserDefinedTypeLayout? Wide { get; set; }
+
+        public Probe[]? Probes { get; set; }
+
+        public Dimensioned? NarrowRecord { get; set; }
+
+        public Dimensioned? WideRecord { get; set; }
+    }
+
+    // a field a record's layout depends on, by its position in declaration order: a fixed-size array field (Nested is null), or a record field of a type
+    // laid out by record.
+    private readonly record struct Probe(int Index, VBUserDefinedType? Nested);
+
+    // a record's layout, and the lengths of the fixed-size arrays it was measured with, in the order CollectLengths finds them.
+    private sealed record Dimensioned(int[] Lengths, VBUserDefinedTypeLayout Layout);
+
+    private static Probe[] ProbesOf(VBUserDefinedType type)
+    {
+        var laid = LaidOf(type);
+        if (laid.Probes is { } probes)
+        {
+            return probes;
+        }
+
+        var found = new List<Probe>();
+        var index = 0;
+        foreach (var field in type.Fields())
+        {
+            if (field.ResolvedType is VBFixedSizeArrayType)
+            {
+                found.Add(new Probe(index, Nested: null));
+            }
+            else if (field.ResolvedType is VBUserDefinedType nested && LaidOf(nested).ByRecord)
+            {
+                found.Add(new Probe(index, nested));
+            }
+
+            index++;
+        }
+
+        Probe[] made = [.. found];
+        laid.Probes = made;
+        return made;
+    }
+
+    // the lengths of the fixed-size arrays of record, and of the records it nests, field by field: false when one has no elements, or a record field holds no
+    // record, which leaves the layout nothing to keep.
+    private static bool CollectLengths(VBUserDefinedType type, VBUserDefinedTypeValue record, List<int> lengths)
+    {
+        foreach (var probe in ProbesOf(type))
+        {
+            var held = record.StoredFieldAt(probe.Index);
+            if (probe.Nested is { } nested)
+            {
+                if (held is not VBUserDefinedTypeValue inner || !CollectLengths(nested, inner, lengths))
+                {
+                    return false;
+                }
+            }
+            else if (held is VBArrayValue { Length: > 0 } array)
+            {
+                lengths.Add(array.Length);
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    // whether the fixed-size arrays of record, and of the records it nests, have the lengths a layout kept was measured with; allocates nothing.
+    private static bool HasLengths(VBUserDefinedType type, VBUserDefinedTypeValue record, int[] lengths)
+    {
+        var at = 0;
+        return HasLengths(type, record, lengths, ref at) && at == lengths.Length;
+    }
+
+    private static bool HasLengths(VBUserDefinedType type, VBUserDefinedTypeValue record, int[] lengths, ref int at)
+    {
+        foreach (var probe in ProbesOf(type))
+        {
+            var held = record.StoredFieldAt(probe.Index);
+            if (probe.Nested is { } nested)
+            {
+                if (held is not VBUserDefinedTypeValue inner || !HasLengths(nested, inner, lengths, ref at))
+                {
+                    return false;
+                }
+            }
+            else if (at == lengths.Length || held is not VBArrayValue array || array.Length != lengths[at++])
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     // whether type has a fixed-size array field, or nests a type that has one: a record of it is then as wide as the elements its own arrays have, which

@@ -55,6 +55,19 @@ public sealed class LateBoundCandidateFactTests
         => Assert.IsNull(RoundTrip(null).LateBoundCandidates);
 
     [TestMethod]
+    public void AnAccessToAMemberALibraryClassDoesNotDeclare_SaysSoOverTheWire()
+    {
+        const MemberAccessOperationSemanticFlags flags = MemberAccessOperationSemanticFlags.Explicit | MemberAccessOperationSemanticFlags.LateBound
+            | MemberAccessOperationSemanticFlags.NotOnDeclaredInterface;
+        var fact = new MemberAccessFact(Node, Location, Tokens.MemberAccess, null, true, null, "Rnage", flags);
+
+        var read = PlatformJson.Deserialize<OperatorFactDto>(PlatformJson.Serialize(OperatorFactDto.From(fact)));
+
+        Assert.AreEqual(flags, read.MemberAccessOpSemanticFlags);
+        Assert.IsTrue(MemberAccessOperationSemanticFlags.All.HasFlag(MemberAccessOperationSemanticFlags.NotOnDeclaredInterface));
+    }
+
+    [TestMethod]
     public void AnOperationThatIsNoMemberAccess_HasNoCandidates()
     {
         var fact = new ArithmeticOperatorFact(Node, Location, Tokens.AdditionOp, null, true, null, default);

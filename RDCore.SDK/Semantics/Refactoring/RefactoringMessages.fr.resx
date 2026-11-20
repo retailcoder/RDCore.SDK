@@ -26,7 +26,7 @@
     <value>« {0} » est trop long pour le nom d'un module, qui compte au plus {1} caractères.</value>
   </data>
   <data name="Rename_BoundHandlerOrImplementation" xml:space="preserve">
-    <value>« {0} » gère un événement ou implémente un membre d'interface : renommé, il ne ferait ni l'un ni l'autre. Renommez sa source, ou l'événement ou le membre auquel il est lié, et il est renommé avec eux.</value>
+    <value>« {0} » gère un événement ou implémente un membre d'interface : renommé, il ne ferait ni l'un ni l'autre. L'espace de travail ne déclare ni la source par laquelle son nom commence, ni l'événement ou le membre auquel il est lié.</value>
   </data>
   <data name="Rename_UnknownDocumentHost" xml:space="preserve">
     <value>« {0} » est une procédure d'un module de document dont l'hôte n'est pas connu : ce pour quoi l'hôte l'appelle n'est pas connu, et le renommage pourrait faire échouer cet appel.</value>

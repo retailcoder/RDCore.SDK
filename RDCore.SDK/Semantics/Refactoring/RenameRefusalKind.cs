@@ -22,8 +22,11 @@ public enum RenameRefusalKind
 
     /// <summary>
     /// The name is a procedure's that is bound to the event it handles or the interface member it implements (<see cref="DeclarationBinding"/>,
-    /// <strong>MS-VBAL §5.3.1.8</strong>, <strong>§5.3.1.9</strong>, <strong>§5.3.1.10</strong>): renamed whole, it would be bound to neither. Its source
-    /// and what it is bound to are renamed instead, and it with them.
+    /// <strong>MS-VBAL §5.3.1.8</strong>, <strong>§5.3.1.9</strong>, <strong>§5.3.1.10</strong>), and the workspace declares neither part of its name:
+    /// neither the source the name begins with (the interface, the variable or the control; the <c>Class</c> and <c>UserForm</c> of a module's own
+    /// handlers name no declaration), nor the event or member it is bound to. Renamed whole, it would be bound to neither. When the workspace declares a
+    /// part, a rename of the procedure is a rename of a part (the one it declares, or, when it declares both, the one the rename starts at), and the
+    /// procedure is renamed with it.
     /// </summary>
     BoundHandlerOrImplementation,
 

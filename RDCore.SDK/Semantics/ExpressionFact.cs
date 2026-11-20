@@ -130,6 +130,13 @@ public sealed record class ExpressionFact(
     public bool IsLetCoerced { get; init; }
 
     /// <summary>
+    /// The Set-coercion of the expression's value to a class, when both its declared type and the destination's are classes of the workspace's projects
+    /// (<see cref="SetCoercionFact"/>): the value of a <c>Set</c> statement (<strong>MS-VBAL §5.4.3.9</strong>), or an argument given to a parameter
+    /// declared as a class (<strong>MS-VBAL §5.3.1.11</strong>). <see langword="null"/> for any other expression.
+    /// </summary>
+    public SetCoercionFact? SetCoercion { get; init; }
+
+    /// <summary>
     /// For an expression bound to a procedure declared by a <c>Declare</c> statement (<strong>MS-VBAL §5.2.3.5</strong>), the platforms the expression is
     /// compiled on and those the procedure is declared on, in all and by each of its statements (<see cref="DeclarationFact.CompiledOn"/>,
     /// <see cref="DeclarationFact.StatementsCompiledOn"/>). An analyzer of the module the call is in needs both, and is given neither the module the procedure

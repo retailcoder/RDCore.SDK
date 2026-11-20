@@ -205,4 +205,54 @@ public sealed class VBUserDefinedTypeLayoutTests
         Assert.AreEqual(16, VBUserDefinedTypeLayout.Of(new VBUserDefinedTypeValue(holder, defaults)).Size, "Tag, then 3 Longs at 4");
         Assert.AreEqual(16, VBUserDefinedTypeLayout.Of(new VBUserDefinedTypeValue(outer, defaults)).Size, "the nested record's own elements");
     }
+
+    // the defaults of a session that gives each fixed-size array the bounds 0 To upper, or no elements when upper is null.
+    private static IVariableDefaults Defaults(int? upper)
+    {
+        var defaults = Substitute.For<IVariableDefaults>();
+        defaults.DefaultValueOf(Arg.Any<Symbol>()).Returns(call => ((ITypedSymbol)call.Arg<Symbol>()).ResolvedType switch
+        {
+            VBFixedSizeArrayType array when upper is { } bound => new VBFixedSizeArrayValue([(0, bound)], array.ItemType),
+            VBUserDefinedType nested => new VBUserDefinedTypeValue(nested, defaults),
+            var type => type.DefaultValue,
+        });
+        return defaults;
+    }
+
+    [TestMethod]
+    public void RecordsWithAFixedSizeArrayField_AreLaidOutOnce_ForTheLengthsOfTheirArrays()
+    {
+        var holder = Udt("Holder", ("Tag", VBByteType.TypeInfo), ("Items", new VBFixedSizeArrayType(VBLongType.TypeInfo)));
+        var three = Defaults(upper: 2);
+        var first = new VBUserDefinedTypeValue(holder, three);
+        var once = VBUserDefinedTypeLayout.Of(first);
+
+        Assert.AreSame(once, VBUserDefinedTypeLayout.Of(new VBUserDefinedTypeValue(holder, three)), "another record, its array of 3 Longs");
+        Assert.AreSame(VBUserDefinedTypeLayout.Of(first, pointerWidth: 8), VBUserDefinedTypeLayout.Of(first, pointerWidth: 8));
+        Assert.AreEqual(24, VBUserDefinedTypeLayout.Of(new VBUserDefinedTypeValue(holder, Defaults(upper: 4))).Size, "Tag, then 5 Longs at 4");
+        Assert.AreEqual(16, VBUserDefinedTypeLayout.Of(first).Size, "Tag, then 3 Longs at 4, after a record of other lengths");
+    }
+
+    [TestMethod]
+    public void ARecordWhoseArrayHasNoElements_IsLaidOutAsItIs_AndNotKept()
+    {
+        var holder = Udt("Holder", ("Tag", VBByteType.TypeInfo), ("Items", new VBFixedSizeArrayType(VBLongType.TypeInfo)));
+        var kept = VBUserDefinedTypeLayout.Of(new VBUserDefinedTypeValue(holder, Defaults(upper: 2)));
+        var empty = new VBUserDefinedTypeValue(holder, Defaults(upper: null));
+
+        Assert.AreEqual(4, VBUserDefinedTypeLayout.Of(empty).Size, "Tag, then Items at 4, with no elements");
+        Assert.AreSame(kept, VBUserDefinedTypeLayout.Of(new VBUserDefinedTypeValue(holder, Defaults(upper: 2))));
+    }
+
+    [TestMethod]
+    public void RecordsNestingOneWithAFixedSizeArrayField_AreLaidOutOnce_ForTheLengthsOfTheNestedArrays()
+    {
+        var holder = Udt("Holder", ("Tag", VBByteType.TypeInfo), ("Items", new VBFixedSizeArrayType(VBLongType.TypeInfo)));
+        var outer = Udt("Outer", ("H", holder), ("After", VBIntegerType.TypeInfo));
+        var once = VBUserDefinedTypeLayout.Of(new VBUserDefinedTypeValue(outer, Defaults(upper: 2)));
+
+        Assert.AreSame(once, VBUserDefinedTypeLayout.Of(new VBUserDefinedTypeValue(outer, Defaults(upper: 2))));
+        Assert.AreEqual(20, once.Size, "H of 16, then After at 16, padded to 4");
+        Assert.AreEqual(28, VBUserDefinedTypeLayout.Of(new VBUserDefinedTypeValue(outer, Defaults(upper: 4))).Size, "H of 24, then After at 24");
+    }
 }

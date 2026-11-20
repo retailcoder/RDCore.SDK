@@ -55,9 +55,11 @@ public sealed class RefactoringTitlesTests
     }
 
     [TestMethod]
-    [DataRow("en", "'Class1_Foo' handles an event or implements an interface member: renamed, it would do neither. Rename its source, or the event or member it is bound to, and it is renamed with them.")]
-    [DataRow("fr", "« Class1_Foo » gère un événement ou implémente un membre d'interface : renommé, il ne ferait ni l'un ni l'autre. Renommez sa source, ou l'événement ou le membre auquel il est lié, et il est renommé avec eux.")]
-    public void ABoundHandlerOrImplementation_SaysWhatItIsBoundTo_AndWhatToRenameInstead(string language, string expected)
+    [DataRow("en", "'Class1_Foo' handles an event or implements an interface member: renamed, it would do neither. "
+        + "The workspace declares neither the source its name begins with, nor the event or member it is bound to.")]
+    [DataRow("fr", "« Class1_Foo » gère un événement ou implémente un membre d'interface : renommé, il ne ferait ni l'un ni l'autre. "
+        + "L'espace de travail ne déclare ni la source par laquelle son nom commence, ni l'événement ou le membre auquel il est lié.")]
+    public void ABoundHandlerOrImplementation_SaysWhatItIsBoundTo_AndThatTheWorkspaceDeclaresNeitherPart(string language, string expected)
         => Assert.AreEqual(expected, RefactoringTitles.RenameRefusal(RenameRefusalKind.BoundHandlerOrImplementation, "Class1_Foo", culture: CultureInfo.GetCultureInfo(language)));
 
     [TestMethod]

@@ -49,14 +49,44 @@ public record class VBUserDefinedType(Symbol Symbol, ImmutableArray<VBTypeMember
     /// part that matters: it is the order <strong>MS-VBAL §5.4.5.11</strong> writes a record in, and the order
     /// <see cref="VBUserDefinedTypeLayout"/> assigns offsets in.
     /// </remarks>
-    public IEnumerable<VBUserDefinedTypeFieldSymbol> Fields() => Members.OfType<VBUserDefinedTypeFieldSymbol>();
+    public IEnumerable<VBUserDefinedTypeFieldSymbol> Fields() => DeclaredFields;
+
+    // the fields, narrowed from the members once and held with the members they were narrowed from: a copy made with other members narrows its own.
+    private sealed record class NarrowedFields(ImmutableArray<VBTypeMemberSymbol> From, ImmutableArray<VBUserDefinedTypeFieldSymbol> Fields);
+
+    private NarrowedFields? _fields;
+
+    // the fields each record of this type is made with: narrowed once for the type's members, which every record shares.
+    internal ImmutableArray<VBUserDefinedTypeFieldSymbol> DeclaredFields
+    {
+        get
+        {
+            if (_fields is not { } held || held.From != Members)
+            {
+                held = new NarrowedFields(Members, [.. Members.OfType<VBUserDefinedTypeFieldSymbol>()]);
+                _fields = held;
+            }
+
+            return held.Fields;
+        }
+    }
 
     /// <summary>
     /// The field named <paramref name="name"/>, or <c>null</c> when this type has no such field.
     /// </summary>
     /// <param name="name">The field name, compared case-insensitively as VBA compares identifiers.</param>
     public VBUserDefinedTypeFieldSymbol? Field(string name)
-        => Fields().FirstOrDefault(field => field.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+    {
+        foreach (var field in DeclaredFields)
+        {
+            if (field.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
+            {
+                return field;
+            }
+        }
+
+        return null;
+    }
 
     /// <remarks>
     /// Compares by the declaring symbol's <c>Uri</c> instead of the compiler-generated deep

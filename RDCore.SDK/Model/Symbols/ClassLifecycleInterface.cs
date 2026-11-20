@@ -55,12 +55,12 @@ public static class ClassLifecycleInterface
     /// <summary>
     /// The <c>Initialize</c> member of <see cref="Interface"/>.
     /// </summary>
-    public static VBTypeMemberSymbol Initialize => Member(InitializeName);
+    public static VBTypeMemberSymbol Initialize { get; } = Member(InitializeName);
 
     /// <summary>
     /// The <c>Terminate</c> member of <see cref="Interface"/>.
     /// </summary>
-    public static VBTypeMemberSymbol Terminate => Member(TerminateName);
+    public static VBTypeMemberSymbol Terminate { get; } = Member(TerminateName);
 
     private static VBTypeMemberSymbol Member(string name)
         => Interface.Members.Single(member => string.Equals(member.Name, name, StringComparison.Ordinal));

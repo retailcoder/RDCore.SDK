@@ -26,7 +26,7 @@
     <value>'{0}' is too long for the name of a module, which is at most {1} characters long.</value>
   </data>
   <data name="Rename_BoundHandlerOrImplementation" xml:space="preserve">
-    <value>'{0}' handles an event or implements an interface member: renamed, it would do neither. Rename its source, or the event or member it is bound to, and it is renamed with them.</value>
+    <value>'{0}' handles an event or implements an interface member: renamed, it would do neither. The workspace declares neither the source its name begins with, nor the event or member it is bound to.</value>
   </data>
   <data name="Rename_UnknownDocumentHost" xml:space="preserve">
     <value>'{0}' is a procedure of a document module whose host is not known: what the host calls it for is not known, and the rename could make that call fail.</value>
