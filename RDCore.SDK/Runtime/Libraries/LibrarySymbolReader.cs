@@ -481,6 +481,12 @@ public sealed class LibrarySymbolReader(Uri workspaceRoot, bool is64Bit = true)
             member = member.With(SymbolProperties.DesignTimeOnly, true);
         }
 
+        // the members a hidden default member stands for, which a code fix names when it writes an access of it out in full.
+        if (description.WrittenAs is { } writtenAs)
+        {
+            member = member.With(SymbolProperties.WrittenAs, writtenAs);
+        }
+
         member = Added(member, description.IsAddition);
         return (VBTypeMemberSymbol)(description.IsHidden
             ? member.With(SymbolProperties.MemberFlags, member.GetProperty(SymbolProperties.MemberFlags) | SymbolProperties.HiddenMemberFlag)

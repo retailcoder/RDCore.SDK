@@ -244,6 +244,12 @@ public static class SymbolProperties
     /// "'<em>name</em>' property is read-only". <see langword="false"/> when unset.
     /// </summary>
     public static readonly SymbolProperty<bool> DesignTimeOnly = new(nameof(DesignTimeOnly));
+    /// <summary>
+    /// The members of its class that a hidden default member of a library's class stands for (<see cref="RDCore.SDK.Semantics.DefaultMemberNames"/>,
+    /// <see cref="RDCore.SDK.Runtime.Libraries.MemberDescription.WrittenAs"/>): what the code names when it writes an access of it out in full. Unset for any
+    /// other member.
+    /// </summary>
+    public static readonly SymbolProperty<RDCore.SDK.Semantics.DefaultMemberNames> WrittenAs = new(nameof(WrittenAs));
 
     /// <summary>
     /// What <c>TypeName</c> says of an object of a class of the standard library or of a referenced library, when it is not the class's name (<c>Object</c>,
