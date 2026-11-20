@@ -43,7 +43,8 @@ public sealed class DefaultMemberChainFactTests
         var read = RoundTrip([inner, child, item]).DefaultMembers;
 
         Assert.IsNotNull(read);
-        CollectionAssert.AreEqual(new[] { inner, child, item }, read.Value.ToArray(), "each with its name, what it is, its accessors and its required arguments");
+        CollectionAssert.AreEqual(
+            new[] { inner, child, item }, read.Value.ToArray(), "each with its name, what it is, its accessors and its required arguments");
     }
 
     [TestMethod]
