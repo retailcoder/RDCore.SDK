@@ -44,6 +44,7 @@ public static class LibraryJson
     /// </summary>
     /// <remarks>
     /// <list type="bullet">
+    /// <item>Version 7 states the members a hidden default member stands for (<see cref="MemberDescription.WrittenAs"/>).</item>
     /// <item>Version 6 states the classes an object of a class is as well (<see cref="ClassDescription.Implements"/>).</item>
     /// <item>Version 5 states what RD-VBA adds to a library that its type library does not declare (<see cref="MemberDescription.IsAddition"/>).</item>
     /// <item>Version 4 states what <c>TypeName</c> says of an object of a class, when it is not the class's name (<see cref="ClassDescription.TypeName"/>).</item>
@@ -53,7 +54,7 @@ public static class LibraryJson
     /// <item>Version 1 states a dependency by its name alone.</item>
     /// </list>
     /// </remarks>
-    public const int CurrentFormatVersion = 6;
+    public const int CurrentFormatVersion = 7;
 
     /// <summary>
     /// The oldest version of the format this reads.
