@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using RDCore.SDK.Model.Symbols.VBProject;
 using RDCore.SDK.Model.Types.Abstract;
 using RDCore.SDK.Model.Types.Complex;
@@ -72,9 +73,21 @@ public sealed class VBUserDefinedTypeLayout
     /// <remarks>
     /// A type does not know how many elements a fixed-size array field has: its bounds are reduced where a record of it is allocated, and a
     /// field laid out from the type alone has none. <see cref="Of(VBUserDefinedTypeValue, int)"/> lays out a record that has them.
+    /// <para>
+    /// A type is laid out once for a pointer width of 4 and once for 8, and each call returns that same layout. A type is immutable: an
+    /// edit to its fields makes another instance, which is laid out again, although it equals this one.
+    /// </para>
     /// </remarks>
     public static VBUserDefinedTypeLayout Of(VBUserDefinedType type, int pointerWidth = DefaultPointerWidth)
-        => Of(type, record: null, pointerWidth, [type]);
+    {
+        var laid = LaidOf(type);
+        return pointerWidth switch
+        {
+            DefaultPointerWidth => laid.Narrow ??= Of(type, record: null, pointerWidth, [type]),
+            WidePointerWidth => laid.Wide ??= Of(type, record: null, pointerWidth, [type]),
+            _ => Of(type, record: null, pointerWidth, [type]),
+        };
+    }
 
     /// <summary>
     /// Lays <paramref name="record"/> out: as its type is, each fixed-size array field as wide as the elements the record's own has, and each
@@ -83,8 +96,58 @@ public sealed class VBUserDefinedTypeLayout
     /// <param name="record">The record to lay out.</param>
     /// <param name="pointerWidth">The host's pointer width in bytes; <see cref="DefaultPointerWidth"/>
     /// unless the caller knows better.</param>
+    /// <remarks>
+    /// A record whose type has no fixed-size array field, and nests no type that has one, is laid out as its type is: the layout
+    /// <see cref="Of(VBUserDefinedType, int)"/> returns.
+    /// </remarks>
     public static VBUserDefinedTypeLayout Of(VBUserDefinedTypeValue record, int pointerWidth = DefaultPointerWidth)
-        => Of((VBUserDefinedType)record.TypeInfo, record, pointerWidth, [(VBUserDefinedType)record.TypeInfo]);
+    {
+        var type = (VBUserDefinedType)record.TypeInfo;
+        return LaidOf(type).ByRecord ? Of(type, record, pointerWidth, [type]) : Of(type, pointerWidth);
+    }
+
+    // the pointer width of a 64-bit host, the other layout a type keeps.
+    private const int WidePointerWidth = 8;
+
+    // the layouts of each type, held by the instance: types equal by name may have other fields.
+    private static readonly ConditionalWeakTable<VBUserDefinedType, Laid> Layouts = new();
+
+    private static Laid LaidOf(VBUserDefinedType type) => Layouts.GetValue(type, static type => new Laid(HoldsFixedSizeArrays(type, [type])));
+
+    // a type's layout for each pointer width it was laid out for, and whether a record of it is laid out from its own fields (ByRecord).
+    private sealed class Laid(bool byRecord)
+    {
+        public bool ByRecord { get; } = byRecord;
+
+        public VBUserDefinedTypeLayout? Narrow { get; set; }
+
+        public VBUserDefinedTypeLayout? Wide { get; set; }
+    }
+
+    // whether type has a fixed-size array field, or nests a type that has one: a record of it is then as wide as the elements its own arrays have, which
+    // the type does not know. A type that nests itself is measured as MeasureNested measures it, the nested one adding nothing.
+    private static bool HoldsFixedSizeArrays(VBUserDefinedType type, HashSet<VBUserDefinedType> nesting)
+    {
+        foreach (var field in type.Fields())
+        {
+            if (field.ResolvedType is VBFixedSizeArrayType)
+            {
+                return true;
+            }
+
+            if (field.ResolvedType is VBUserDefinedType nested && nesting.Add(nested))
+            {
+                var holds = HoldsFixedSizeArrays(nested, nesting);
+                nesting.Remove(nested);
+                if (holds)
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
 
     private static VBUserDefinedTypeLayout Of(VBUserDefinedType type, VBUserDefinedTypeValue? record, int pointerWidth, HashSet<VBUserDefinedType> nesting)
     {
@@ -151,7 +214,8 @@ public sealed class VBUserDefinedTypeLayout
     /// A record is as wide as its type's layout, padding included; one whose fields are fixed-size arrays is as wide as a record of it says
     /// (<see cref="Of(VBUserDefinedTypeValue, int)"/>), which a type alone does not know.
     /// </remarks>
-    public static int WidthOf(VBType type, int pointerWidth) => MeasureOf(type, held: null, pointerWidth, []).Width;
+    public static int WidthOf(VBType type, int pointerWidth)
+        => type is VBUserDefinedType udt ? Of(udt, pointerWidth).Size : MeasureOf(type, held: null, pointerWidth, []).Width;
 
     /// <summary>
     /// The offset of the field named <paramref name="name"/>, or <c>null</c> when the type has no such field.

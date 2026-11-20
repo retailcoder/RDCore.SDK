@@ -207,6 +207,23 @@ public sealed record class MemberAccessFact(
     /// Always <see langword="null"/> for an access that is not late-bound.
     /// </remarks>
     public ImmutableArray<LateBoundCandidate>? LateBoundCandidates { get; init; }
+
+    /// <summary>
+    /// For an argument list or a dictionary access given to an object (<see cref="MemberAccessOperationSemanticFlags.Implicit"/> and
+    /// <see cref="MemberAccessOperationSemanticFlags.DefaultMember"/>, with <see cref="MemberAccessOperationSemanticFlags.ArgumentList"/> or
+    /// <see cref="MemberAccessOperationSemanticFlags.DictionaryAccess"/>), the default members it goes through, in the order they are called: the default
+    /// member of the object first and, while one takes no argument and returns an object (<see cref="MemberAccessOperationSemanticFlags.Recursive"/>), the
+    /// default member of the object it returns. The last one is given the arguments of the access, or the name of a dictionary access
+    /// (<strong>MS-VBAL §5.6.13</strong>, <strong>§5.6.14</strong>, <strong>§5.6.2.3</strong>).
+    /// </summary>
+    /// <remarks>
+    /// The first member is <see cref="Member"/>. <c>t(1)</c>, where the default member <c>Child</c> of <c>t</c> returns an object whose default member is
+    /// <c>Item</c>, goes through <c>Child</c> and <c>Item</c>: the code that names them is <c>t.Child().Item(1)</c>. <see langword="null"/> when the
+    /// classes the chain goes through are not all known (an <c>Object</c> or a <c>Variant</c> on the way, or a member whose type did not resolve), when
+    /// the arguments index an array that a member returns, when a default member returns a class the chain already went through, and for any other
+    /// access.
+    /// </remarks>
+    public ImmutableArray<DefaultMemberFact>? DefaultMembers { get; init; }
 }
 
 /// <summary>

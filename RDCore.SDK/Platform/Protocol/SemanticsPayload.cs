@@ -222,6 +222,10 @@ public record class ConversionFactDto(
 /// classes its object may be of are not known, and for any other operation; an empty array when they are known and none has an accessible member of
 /// the name.
 /// </param>
+/// <param name="DefaultMembers">
+/// The default members an argument list or a dictionary access given to an object goes through, in the order they are called
+/// (<see cref="MemberAccessFact.DefaultMembers"/>): <see langword="null"/> when the classes on the way are not all known, and for any other operation.
+/// </param>
 public record class OperatorFactDto(
     SyntaxNodeId Node,
     SourceLocation Location,
@@ -239,7 +243,8 @@ public record class OperatorFactDto(
     string? Member = null,
     SourceLocation? OperatorLocation = null,
     StringOperandFact? StringOperand = null,
-    ImmutableArray<LateBoundCandidate>? LateBoundCandidates = null)
+    ImmutableArray<LateBoundCandidate>? LateBoundCandidates = null,
+    ImmutableArray<DefaultMemberFact>? DefaultMembers = null)
 {
     /// <summary>
     /// Describes an operation for the wire.
@@ -262,7 +267,8 @@ public record class OperatorFactDto(
         Member: (fact as MemberAccessFact)?.Member,
         OperatorLocation: fact.OperatorLocation,
         StringOperand: (fact as ComparisonOperatorFact)?.StringOperand,
-        LateBoundCandidates: (fact as MemberAccessFact)?.LateBoundCandidates);
+        LateBoundCandidates: (fact as MemberAccessFact)?.LateBoundCandidates,
+        DefaultMembers: (fact as MemberAccessFact)?.DefaultMembers);
 }
 
 /// <summary>
@@ -400,11 +406,15 @@ public record class ProcedureSemanticsDto(
 /// <param name="Binding">
 /// What it is bound to, for a handler or an implementation (<see cref="DeclarationFact.Binding"/>); <see langword="null"/> for any other declaration.
 /// </param>
+/// <param name="IsUsedByReferencingProjects">
+/// Whether it counts as used by the projects that reference a library project (<see cref="DeclarationFact.IsUsedByReferencingProjects"/>).
+/// </param>
 public record class DeclarationFactDto(
     Uri Symbol, string Name, DeclarationKind Kind, AccessModifier Access, bool IsImplicit, SourceLocation Location, DeclarationReferences? References,
     DeclarationRole Role = DeclarationRole.None, LocalDeclarationKind? DeclaredBy = null, HiddenDeclaration? Hides = null,
     ImmutableArray<DeclarationReference>? ReferencedFrom = null, DeclaredTypeKind? TypeKind = null, bool IsArray = false, Uri? AutoInstantiates = null,
-    CompiledPlatforms? CompiledOn = null, ImmutableArray<CompiledPlatforms>? StatementsCompiledOn = null, DeclarationBindingDto? Binding = null);
+    CompiledPlatforms? CompiledOn = null, ImmutableArray<CompiledPlatforms>? StatementsCompiledOn = null, DeclarationBindingDto? Binding = null,
+    bool IsUsedByReferencingProjects = false);
 
 /// <summary>
 /// A <see cref="DeclarationBinding"/>, as it travels: the member it binds is the declaration it is the binding of, and its role is the declaration's
@@ -482,7 +492,8 @@ public record class ModuleSemanticsDto(
             declaration.Symbol.Uri, declaration.Name, declaration.Kind, declaration.Access, declaration.IsImplicit, declaration.Location, declaration.References, declaration.Role,
             declaration.DeclaredBy, declaration.Hides, declaration.ReferencedFrom, declaration.TypeKind, declaration.IsArray,
             declaration.AutoInstantiates?.Uri, declaration.CompiledOn, declaration.StatementsCompiledOn.IsDefault ? null : declaration.StatementsCompiledOn,
-            declaration.Binding is { } binding ? new DeclarationBindingDto(binding.Source.Uri, binding.Bound?.Uri) : null))],
+            declaration.Binding is { } binding ? new DeclarationBindingDto(binding.Source.Uri, binding.Bound?.Uri) : null,
+            declaration.IsUsedByReferencingProjects))],
         model.Language,
         model.Class,
         model.Document,

@@ -459,6 +459,8 @@ public sealed class RDCorePlatformJsonWireTests
             typeof(PlatformManifest), typeof(PlatformVersion),
             typeof(PlatformReleaseManifest), typeof(PlatformReleasePackage), typeof(PlatformReleaseRuntime),
             typeof(SharedPlatformRoot), typeof(DeployedPlatform),
+            // the arguments of the refactoring commands travel as the JSON of an LSP Command's arguments: RefactoringCommandArgumentsTests has them all.
+            typeof(CommandLocation), typeof(RenameCommandArguments), typeof(ShowReferencesCommandArguments), typeof(GoToLocationCommandArguments),
         ];
         // the project file model is a workspace's .rdproj, which a client reads from disk: it is no message either.
         var projectFileModel = typeof(ProjectFile).Namespace;

@@ -4,7 +4,9 @@ using RDCore.SDK.Model.Symbols;
 using RDCore.SDK.Model.Symbols.Abstract;
 using RDCore.SDK.Model.Symbols.VBProject;
 using RDCore.SDK.Model.Types.Complex;
+using RDCore.SDK.Runtime.Abstract.Execution;
 using RDCore.SDK.Workspace;
+using NSubstitute;
 
 namespace RDCore.Tests.Workspace;
 
@@ -114,6 +116,45 @@ public sealed class ProgramEntryPointTests
         var module = new VBStandardModuleSymbol(WorkspaceRoot, WorkspaceRoot, "Program");
 
         Assert.IsTrue(ProgramEntryPoint.IsDeclaredBy(module, [SubMain(module.Uri)]));
+    }
+
+    // a session composed of a project with that build section, which defined those members for the modules.
+    private static IRuntimeSession Session(ProjectBuild? build, params (VBModuleSymbol Module, IEnumerable<VBTypeMemberSymbol> Members)[] modules)
+    {
+        var session = Substitute.For<IRuntimeSession>();
+        session.Build.Returns(build);
+        foreach (var (module, members) in modules)
+        {
+            // a Uri's fragment is where a module's identity lives, and Uri equality ignores it.
+            var address = module.Uri.AbsoluteUri;
+            session.Symbols.MembersOf(Arg.Is<Uri>(uri => uri.AbsoluteUri == address)).Returns([.. members]);
+        }
+
+        return session;
+    }
+
+    // the session's build section names the procedure, and the session says what each module declares.
+    [TestMethod]
+    public void TheEntryPointInASession_IsTheProcedureItsBuildSectionNames_AmongTheMembersItDefined()
+    {
+        (VBModuleSymbol Module, IEnumerable<VBTypeMemberSymbol> Members)[] modules = [Standard("Program", "Main", "Start"), Standard("Tools", "Begin")];
+
+        var named = ProgramEntryPoint.InSession(Session(new ProjectBuild { EntryPoint = "Program.Start" }, modules), modules.Select(each => each.Module));
+        var unnamed = ProgramEntryPoint.InSession(Session(null, modules), modules.Select(each => each.Module));
+
+        Assert.AreEqual("Start", named.Procedure?.Name);
+        Assert.AreEqual("Program", named.Module?.Name);
+        Assert.AreEqual("Main", unnamed.Procedure?.Name, "a session of a project file with no build section starts at the one Sub Main");
+    }
+
+    [TestMethod]
+    public void TheProjectOfASessionThatIsALibrary_HasNoEntryPoint()
+    {
+        var program = Standard("Program", "Main");
+
+        var resolved = ProgramEntryPoint.InSession(Session(new ProjectBuild { OutputType = ProjectOutputType.Library }, program), [program.Module]);
+
+        Assert.AreEqual(ProgramEntryPointRefusal.Library, resolved.Refusal);
     }
 
     [TestMethod]
