@@ -71,7 +71,10 @@ public sealed class WrittenAsMemberTests
         var range = library.Classes.Single();
         return library with
         {
-            Classes = [range with { Members = [.. range.Members.Where(member => members.Contains(member.Name)).Select(member => member with { WrittenAs = null })] }],
+            Classes =
+            [
+                range with { Members = [.. range.Members.Where(member => members.Contains(member.Name)).Select(member => member with { WrittenAs = null })] },
+            ],
         };
     }
 
