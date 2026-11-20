@@ -107,19 +107,18 @@ public sealed record class LibraryDescription
     }
 
     /// <summary>
-    /// This description, with what <paramref name="replaced"/> states that a type library cannot: each member that <paramref name="replaced"/> says it is
-    /// written as (<see cref="MemberDescription.WrittenAs"/>) is written as the same members here, matched by its class's name, its name and its kind,
-    /// ignoring case.
+    /// This description, with what <paramref name="replaced"/> states that a type library cannot: the members each hidden default member stands for
+    /// (<see cref="MemberDescription.WrittenAs"/>), taken from the member of <paramref name="replaced"/> of the same class, name and kind, ignoring case.
     /// </summary>
     /// <remarks>
     /// Call it on a description exported from a type library that replaces the file of an earlier export, as <see cref="KeepingDesignTimeOnly"/> is.
     /// </remarks>
     /// <param name="replaced">The description this one replaces; <see langword="null"/> for none, which leaves this one as it is.</param>
     /// <param name="lost">
-    /// The members that <paramref name="replaced"/> says are written as others and that this description does not declare, as <c>Class.Member</c>, sorted;
-    /// empty when none.
+    /// The members of <paramref name="replaced"/> that state what they stand for and that this description does not declare, as <c>Class.Member</c>,
+    /// sorted; empty when none.
     /// </param>
-    /// <returns>The description, with the members that <paramref name="replaced"/> says are written as others stated as such.</returns>
+    /// <returns>The description, with what its hidden default members stand for, as <paramref name="replaced"/> states it.</returns>
     public LibraryDescription KeepingWrittenAs(LibraryDescription? replaced, out IReadOnlyList<string> lost)
     {
         if (replaced is null)

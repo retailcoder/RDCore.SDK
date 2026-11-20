@@ -51,7 +51,7 @@ public sealed record class DefaultMemberFact(string Name, ExpressionClassificati
 }
 
 /// <summary>
-/// The members of its class that a hidden default member of a library's class stands for (<strong>MS-VBAL §5.6.2.3</strong>): what the code names when it
+/// The members of its class that a hidden default member of a library's class stands for (<strong>MS-VBAL §5.6.2.2</strong>, <strong>§5.6.13</strong>): what the code names when it
 /// writes the access out in full. A type library does not state them; a library's file does
 /// (<see cref="RDCore.SDK.Runtime.Libraries.MemberDescription.WrittenAs"/>).
 /// </summary>
