@@ -365,13 +365,20 @@ public sealed class FormattingTabSizeTests
 
         private readonly bool _declaresDidChangeConfiguration;
 
+        private readonly bool _followsReloads;
+
         /// <param name="declaresDidChangeConfiguration">
         /// Whether the client declares <c>workspace.didChangeConfiguration</c> as well as <c>workspace.configuration</c>; a client may send the notification
         /// without declaring that it registers for it dynamically.
         /// </param>
-        public Wire(bool declaresDidChangeConfiguration = true)
+        /// <param name="followsReloads">
+        /// Whether the follower is started, as a server app starts it, and follows each reload of the server's configuration; when not, it follows only the
+        /// changes a test asks it to follow (<see cref="ClientConfigurationFollower.FollowAsync"/>), and none is followed as the server starts.
+        /// </param>
+        public Wire(bool declaresDidChangeConfiguration = true, bool followsReloads = true)
         {
             _declaresDidChangeConfiguration = declaresDidChangeConfiguration;
+            _followsReloads = followsReloads;
             var schema = SettingsSchema.Platform;
             Live = new LiveSettings([new LiveSettingsTarget(schema, string.Empty, Options)], schema, Path.Combine(Path.GetTempPath(), "rdcore-nowhere", UserSettingsStore.FileName));
             Live.Changed += (_, _) =>
@@ -397,11 +404,12 @@ public sealed class FormattingTabSizeTests
                 .WithClientConfiguration(LiveSettingsProtocol.Section)
                 .OnStarted((ILanguageServer started, CancellationToken cancellation) =>
                 {
-                    Follower = ClientConfigurationFollower.StartFollowing(services, started, () =>
+                    Func<Task> changed = () =>
                     {
                         Followed();
                         return Task.CompletedTask;
-                    }, line =>
+                    };
+                    Action<string> log = line =>
                     {
                         lock (Log)
                         {
@@ -409,7 +417,10 @@ public sealed class FormattingTabSizeTests
                         }
 
                         _logged.Release();
-                    });
+                    };
+                    Follower = _followsReloads
+                        ? ClientConfigurationFollower.StartFollowing(services, started, changed, log)
+                        : new ClientConfigurationFollower(started, Live, changed, log);
                     return Task.CompletedTask;
                 }));
 
@@ -919,9 +930,12 @@ public sealed class FormattingTabSizeTests
     [Timeout(60_000, CooperativeCancellation = true)]
     public async Task OfTwoChangesThatOverlap_TheNewerHasTheLastWord()
     {
-        await using var wire = new Wire();
+        // the follower follows only the test's two changes. A server pulls its configuration more than once as it starts: OmniSharp pulls it once it is
+        // started, and again once a throttle lets the items WithClientConfiguration added through. A pull that reloads after the newer change began is newer
+        // still, and has the last word in its stead.
+        await using var wire = new Wire(followsReloads: false);
         await wire.StartAsync();
-        Assert.IsTrue(await wire.FollowedAsync());
+        Assert.IsTrue(await wire.Follower!.FollowAsync());
 
         // the second change of the editor's tab size is asked while the first is held back; the first answer, 5, comes after the second, 8.
         var firstAsked = new TaskCompletionSource();
