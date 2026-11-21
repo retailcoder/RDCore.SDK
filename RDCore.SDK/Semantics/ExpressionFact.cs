@@ -149,6 +149,13 @@ public sealed record class ExpressionFact(
     /// evaluated.
     /// </remarks>
     public NativeCallPlatforms? NativeCall { get; init; }
+
+    /// <summary>
+    /// For an expression bound to a function of a library that returns a <c>Variant</c>, the name of the member that is functionally identical to it except
+    /// that it returns a <c>String</c>, as the function's symbol states it (<see cref="Model.Symbols.Abstract.SymbolProperties.StringForm"/>,
+    /// <strong>MS-VBAL §6.1.2</strong>); <see langword="null"/> for an expression bound to anything else.
+    /// </summary>
+    public string? StringForm { get; init; }
 }
 
 /// <summary>

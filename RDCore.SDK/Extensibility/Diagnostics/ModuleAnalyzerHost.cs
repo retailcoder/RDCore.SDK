@@ -45,36 +45,8 @@ public static class ModuleAnalyzerHost
         var findings = new List<AnalyzerFinding>();
         foreach (var analyzer in analyzers.Where(analyzer => phase.HasFlag(analyzer.Phase) && ShouldRun(analyzer, context)))
         {
-            List<AnalyzerFinding> found;
-            try
-            {
-                found = [.. analyzer.Analyze(context)];
-            }
-            catch (Exception exception)
-            {
-                // one analyzer failing must not sink the others' findings.
-                logger.LogWarning(exception, "❌ {analyzer} failed for {uri}.", analyzer.GetType().Name, context.Document);
-                continue;
-            }
-
-            foreach (var finding in found)
-            {
-                // a code the analyzer does not declare would not keep it running were the ones it declares all disabled: it is reported, and so is the analyzer.
-                if (analyzer.Codes.Count > 0 && !analyzer.Codes.Contains(finding.Code))
-                {
-                    logger.LogWarning("⚠️ {analyzer} reported {code}, which is not among the codes it declares.", analyzer.GetType().Name, finding.Code);
-                }
-
-                if (context.IsEnabled(finding.Code))
-                {
-                    findings.Add(finding);
-                }
-                else
-                {
-                    logger.LogWarning("⚠️ {analyzer} reported {code}, which is disabled for {uri}: the finding is dropped.",
-                        analyzer.GetType().Name, finding.Code, context.Document);
-                }
-            }
+            AnalyzerRun.Collect(
+                analyzer.GetType().Name, analyzer.Codes, () => analyzer.Analyze(context), context.IsEnabled, context.Document, logger, findings);
         }
 
         return findings;
@@ -86,5 +58,5 @@ public static class ModuleAnalyzerHost
     /// <param name="analyzer">The analyzer.</param>
     /// <param name="context">The module, and the codes that are disabled for it.</param>
     public static bool ShouldRun(IModuleAnalyzer analyzer, ModuleAnalysisContext context)
-        => analyzer.Codes.Count == 0 || analyzer.Codes.Any(context.IsEnabled);
+        => AnalyzerRun.ShouldRun(analyzer.Codes, context.IsEnabled);
 }

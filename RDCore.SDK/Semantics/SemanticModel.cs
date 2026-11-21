@@ -48,6 +48,18 @@ public sealed record class ProcedureSemanticModel(SemanticId Procedure, Immutabl
     public ImmutableArray<Flow.EmptiedControlReadFact> EmptiedControlReads { get; init; } = [];
 
     /// <summary>
+    /// The reads of the procedure's automatic local variables that the variable's initial value may reach (<see cref="Flow.InitialValueReadFact"/>), in the
+    /// order they are written in. The list is empty when the language core could not tell, so an empty list says nothing about the procedure's reads.
+    /// </summary>
+    public ImmutableArray<Flow.InitialValueReadFact> InitialValueReads { get; init; } = [];
+
+    /// <summary>
+    /// The assignments of the procedure whose value no code path reads (<see cref="Flow.UnreadAssignmentFact"/>), in the order they are written in. The
+    /// list is empty when the language core could not tell, so an empty list says nothing about the procedure's assignments.
+    /// </summary>
+    public ImmutableArray<Flow.UnreadAssignmentFact> UnreadAssignments { get; init; } = [];
+
+    /// <summary>
     /// The arguments of the calls of the procedure's body that the pass mapped to a parameter, each with what the procedure called declares of it
     /// (<see cref="ArgumentFact"/>), in the order the pass met them. An argument that is not in the list was mapped to no parameter the pass knows.
     /// </summary>
@@ -150,6 +162,14 @@ public sealed record class ModuleSemanticModel(
     /// states it. <see langword="false"/> when the host does not say.
     /// </summary>
     public bool Win64OnlySetOnWindows { get; init; }
+
+    /// <summary>
+    /// What the static pass found out about each expression of the module's declarations outside any procedure (a constant's value, an array's
+    /// bounds), by the expression, as <see cref="ProcedureSemanticModel.Expressions"/> holds those of a procedure's body. A name there is bound as it is
+    /// in a procedure (<see cref="ExpressionFact.Binding"/>), to a declaration of the module or of another (<c>Const C = Globals.N + 1</c>). Empty when
+    /// the pass had no workspace to resolve names in, and when the host does not say.
+    /// </summary>
+    public ImmutableDictionary<SyntaxNodeId, ExpressionFact> Expressions { get; init; } = ImmutableDictionary<SyntaxNodeId, ExpressionFact>.Empty;
 
     /// <summary>
     /// Every compile error of the module: those of its declarations, then those of each procedure.

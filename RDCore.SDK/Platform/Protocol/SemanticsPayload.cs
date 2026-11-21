@@ -96,6 +96,10 @@ public record class CompileErrorDto(RDCoreDiagnosticCode Code, SourceLocation Lo
 /// (<strong>MS-VBAL §5.4.3.9</strong>), or an argument given to a parameter declared as a class (<strong>MS-VBAL §5.3.1.11</strong>);
 /// <see langword="null"/> otherwise.
 /// </param>
+/// <param name="StringForm">
+/// For an expression bound to a function of a library that returns a <c>Variant</c>, the name of the member that is functionally identical to it except
+/// that it returns a <c>String</c> (<see cref="ExpressionFact.StringForm"/>); <see langword="null"/> otherwise.
+/// </param>
 public record class ExpressionFactDto(
     SyntaxNodeId Node,
     SourceLocation Location,
@@ -114,7 +118,8 @@ public record class ExpressionFactDto(
     bool IsLetCoerced = false,
     DeclaredTypeKind? LetValueTypeKind = null,
     NativeCallPlatforms? NativeCall = null,
-    SetCoercionFact? SetCoercion = null)
+    SetCoercionFact? SetCoercion = null,
+    string? StringForm = null)
 {
     /// <summary>
     /// Describes a fact for the wire.
@@ -126,7 +131,7 @@ public record class ExpressionFactDto(
         return new(fact.Node, fact.Location, fact.DeclaredType?.Name, fact.Classification, fact.Binding?.Uri, fact.Flags,
             fact.Error is null ? null : CompileErrorDto.From(fact.Error), fact.Creates, kind, isArray, fact.ConstantValue,
             fact.Accessors, fact.LetValueType?.Name, fact.DefaultMember, fact.IsLetCoerced, DeclaredTypeKinds.Of(fact.LetValueType).Kind, fact.NativeCall,
-            fact.SetCoercion);
+            fact.SetCoercion, fact.StringForm);
     }
 }
 
@@ -377,9 +382,18 @@ public record class RuntimeFactsDto(
 /// <param name="Arguments">
 /// The arguments of its calls that the pass mapped to a parameter, with what the procedure called declares of it; <see langword="null"/> when there are none.
 /// </param>
+/// <param name="InitialValueReads">
+/// The reads of its automatic local variables that the variable's initial value may reach (<see cref="ProcedureSemanticModel.InitialValueReads"/>);
+/// <see langword="null"/> when there are none, and when the language core could not tell.
+/// </param>
+/// <param name="UnreadAssignments">
+/// Its assignments whose value no code path reads (<see cref="ProcedureSemanticModel.UnreadAssignments"/>); <see langword="null"/> when there are none,
+/// and when the language core could not tell.
+/// </param>
 public record class ProcedureSemanticsDto(
     Uri Procedure, bool IsFullyAnalyzed, ImmutableArray<CompileErrorDto> CompileErrors, ImmutableArray<ExpressionFactDto> Expressions, ReturnValueFact? ReturnValue = null,
-    RuntimeFactsDto? Runtime = null, ImmutableArray<EmptiedControlReadFact>? EmptiedControlReads = null, ImmutableArray<ArgumentFact>? Arguments = null);
+    RuntimeFactsDto? Runtime = null, ImmutableArray<EmptiedControlReadFact>? EmptiedControlReads = null, ImmutableArray<ArgumentFact>? Arguments = null,
+    ImmutableArray<InitialValueReadFact>? InitialValueReads = null, ImmutableArray<UnreadAssignmentFact>? UnreadAssignments = null);
 
 /// <summary>
 /// A <see cref="DeclarationFact"/>, as it travels.
@@ -420,12 +434,16 @@ public record class ProcedureSemanticsDto(
 /// For a parameter of an interface member or of an event, whether an implementation or a handler refers to its parameter at the same position
 /// (<see cref="DeclarationFact.IsReferredToByABoundMember"/>); <see langword="null"/> when that is not stated.
 /// </param>
+/// <param name="IsWrittenByABoundMember">
+/// For a parameter of an interface member or of an event, whether an implementation or a handler writes its parameter at the same position, or passes it on
+/// by reference (<see cref="DeclarationFact.IsWrittenByABoundMember"/>); <see langword="null"/> when that is not stated.
+/// </param>
 public record class DeclarationFactDto(
     Uri Symbol, string Name, DeclarationKind Kind, AccessModifier Access, bool IsImplicit, SourceLocation Location, DeclarationReferences? References,
     DeclarationRole Role = DeclarationRole.None, LocalDeclarationKind? DeclaredBy = null, HiddenDeclaration? Hides = null,
     ImmutableArray<DeclarationReference>? ReferencedFrom = null, DeclaredTypeKind? TypeKind = null, bool IsArray = false, Uri? AutoInstantiates = null,
     CompiledPlatforms? CompiledOn = null, ImmutableArray<CompiledPlatforms>? StatementsCompiledOn = null, DeclarationBindingDto? Binding = null,
-    bool IsUsedByReferencingProjects = false, bool? IsReferredToByABoundMember = null);
+    bool IsUsedByReferencingProjects = false, bool? IsReferredToByABoundMember = null, bool? IsWrittenByABoundMember = null);
 
 /// <summary>
 /// A <see cref="DeclarationBinding"/>, as it travels: the member it binds is the declaration it is the binding of, and its role is the declaration's
@@ -476,6 +494,10 @@ public record class DeclarationBindingDto(
 /// <param name="Win64OnlySetOnWindows">
 /// Whether <c>Win64</c> is <c>1</c> on 64-bit Windows only in the host's sessions (<see cref="ModuleSemanticModel.Win64OnlySetOnWindows"/>).
 /// </param>
+/// <param name="Expressions">
+/// What the static pass found out about each expression of the module's declarations outside any procedure, such as a constant's value or an array's
+/// bounds (<see cref="ModuleSemanticModel.Expressions"/>). <see langword="null"/> when there are none, and when the host does not say.
+/// </param>
 public record class ModuleSemanticsDto(
     Uri Module,
     bool? OptionExplicit,
@@ -489,7 +511,8 @@ public record class ModuleSemanticsDto(
     ImmutableArray<string>? DocumentModules = null,
     ImmutableArray<string>? UndefinedConditionalConstants = null,
     ImmutableArray<ConditionalConstantFact>? ProjectConditionalConstants = null,
-    bool Win64OnlySetOnWindows = false)
+    bool Win64OnlySetOnWindows = false,
+    ImmutableArray<ExpressionFactDto>? Expressions = null)
 {
     /// <summary>
     /// Describes a model for the wire.
@@ -507,7 +530,9 @@ public record class ModuleSemanticsDto(
             procedure.ReturnValue,
             procedure.Runtime is null ? null : RuntimeFactsDto.From(procedure.Runtime),
             procedure.EmptiedControlReads.IsDefaultOrEmpty ? null : procedure.EmptiedControlReads,
-            procedure.Arguments.IsDefaultOrEmpty ? null : procedure.Arguments))],
+            procedure.Arguments.IsDefaultOrEmpty ? null : procedure.Arguments,
+            procedure.InitialValueReads.IsDefaultOrEmpty ? null : procedure.InitialValueReads,
+            procedure.UnreadAssignments.IsDefaultOrEmpty ? null : procedure.UnreadAssignments))],
         [.. model.Declarations.Select(declaration => new DeclarationFactDto(
             declaration.Symbol.Uri, declaration.Name, declaration.Kind, declaration.Access, declaration.IsImplicit, declaration.Location, declaration.References, declaration.Role,
             declaration.DeclaredBy, declaration.Hides, declaration.ReferencedFrom, declaration.TypeKind, declaration.IsArray,
@@ -516,7 +541,7 @@ public record class ModuleSemanticsDto(
                 ? new DeclarationBindingDto(
                     binding.Source.Uri, binding.Bound?.Uri, binding.BoundLibrary, binding.IsBoundInSourceProject, binding.IsSourceAControl)
                 : null,
-            declaration.IsUsedByReferencingProjects, declaration.IsReferredToByABoundMember))],
+            declaration.IsUsedByReferencingProjects, declaration.IsReferredToByABoundMember, declaration.IsWrittenByABoundMember))],
         model.Language,
         model.Class,
         model.Document,
@@ -524,7 +549,8 @@ public record class ModuleSemanticsDto(
         model.DocumentModules.IsDefaultOrEmpty ? null : model.DocumentModules,
         model.UndefinedConditionalConstants.IsDefaultOrEmpty ? null : model.UndefinedConditionalConstants,
         model.ProjectConditionalConstants.IsDefaultOrEmpty ? null : model.ProjectConditionalConstants,
-        model.Win64OnlySetOnWindows);
+        model.Win64OnlySetOnWindows,
+        model.Expressions.IsEmpty ? null : ImmutableArray.CreateRange(model.Expressions.Values.Select(ExpressionFactDto.From)));
 
     private static CompileErrorDto ErrorOf(VBCompileErrorInfo error) => CompileErrorDto.From(error);
 }

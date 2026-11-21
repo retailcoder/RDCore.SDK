@@ -445,10 +445,11 @@ public interface ISessionSymbols
 
     /// <summary>
     /// Creates a new <see cref="IObjectInstance"/> for a freshly-created object of
-    /// <paramref name="classModule"/>, allocating storage for every instance field the class declares
-    /// (<strong>RD-VBAL §2.3.1.2</strong>'s instance heap tier) and registering it for later lookup by
-    /// <paramref name="objectId"/>. This only allocates the instance's field storage: the object's
-    /// reference-counted lifetime is tracked separately, by <see cref="IRuntimeSession.Objects"/>.
+    /// <paramref name="classModule"/>, holding every instance field the class declares at its declared type's default
+    /// (<strong>RD-VBAL §2.3.1.2</strong>'s instance heap tier), and registers it for later lookup by
+    /// <paramref name="objectId"/>. A field is given an address only when one is asked for
+    /// (<see cref="IObjectInstance.TryGetAddress"/>). The object's reference-counted lifetime is tracked
+    /// separately, by <see cref="IRuntimeSession.Objects"/>.
     /// </summary>
     /// <param name="objectId">The object's identity, minted by <see cref="ISessionObjects.CreateObject"/>.</param>
     /// <param name="classModule">The class module being instantiated.</param>
@@ -459,8 +460,8 @@ public interface ISessionSymbols
     /// the class while the object lives - an edit made while the program waits.
     /// </summary>
     /// <remarks>
-    /// What <see cref="CreateInstance"/> allocates for a new object, allocated for one made before the edit. A field removed from the class keeps its
-    /// storage until the object is released: nothing names it any more.
+    /// What <see cref="CreateInstance"/> gives a new object, given to one made before the edit (<see cref="IObjectInstance.Push"/>). A field removed from
+    /// the class is held until the object is released: nothing names it any more.
     /// </remarks>
     /// <returns>How many fields were given, over every object.</returns>
     int ExtendLiveInstances();
@@ -473,10 +474,11 @@ public interface ISessionSymbols
     bool TryGetInstance(VBRuntimeObjectId objectId, [NotNullWhen(true)][MaybeNullWhen(false)] out IObjectInstance? instance);
 
     /// <summary>
-    /// Frees every field <paramref name="objectId"/>'s instance allocated and forgets it. Called once
+    /// Frees the addresses the fields of <paramref name="objectId"/>'s instance were given, and forgets the instance. Called once
     /// the object's reference count reaches zero and <see cref="ISessionObjects.TryRemoveObject"/>
     /// succeeds.
     /// </summary>
+    /// <param name="objectId">The object's identity.</param>
     /// <returns><c>false</c> if no instance is registered for <paramref name="objectId"/>.</returns>
     bool DestroyInstance(VBRuntimeObjectId objectId);
 }

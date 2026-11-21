@@ -222,6 +222,7 @@ public class LanguageServerCapabilities
 [JsonDerivedType(typeof(ProjectAnalysis))]
 [JsonDerivedType(typeof(CliCommand))]
 [JsonDerivedType(typeof(DiagnoseDocument))]
+[JsonDerivedType(typeof(DiagnoseProject))]
 [JsonDerivedType(typeof(SessionStatus))]
 [JsonDerivedType(typeof(SessionExecute))]
 [JsonDerivedType(typeof(SessionDiscard))]
@@ -414,6 +415,17 @@ public record class SemanticAnalysis(bool IsSupported = false) : CorePlatformCli
 /// <c>rdcore/platform/initialize</c> for this capability.
 /// </remarks>
 public record class DiagnoseDocument(bool IsSupported = false) : CorePlatformClientCapability(IsSupported);
+
+/// <summary>
+/// Advertises that the declaring extension answers <c>rdcore/diagnostics/project</c>: it has project analyzers. The language server asks it about each project
+/// of the workspace, and reports the findings against the project's <c>.rdproj</c>.
+/// </summary>
+/// <remarks>
+/// Declared via <c>[assembly: ProvidesCorePlatformClientCapability&lt;DiagnoseProject&gt;]</c>, and read from the extension's manifest as
+/// <see cref="DiagnoseDocument"/> is.
+/// </remarks>
+/// <param name="IsSupported">Whether the capability is provided.</param>
+public record class DiagnoseProject(bool IsSupported = false) : CorePlatformClientCapability(IsSupported);
 
 /// <summary>
 /// Advertises that the declaring component contributes <c>rdc.exe</c> command-line verbs.

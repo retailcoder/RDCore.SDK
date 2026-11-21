@@ -9,18 +9,33 @@ namespace RDCore.SDK.Server.Configuration;
 /// Every platform application parses the same arguments the same way, and every one of them has to tell
 /// a command line that <em>asked a question</em> apart from one that configures a run: the parser answers
 /// <c>--help</c> and <c>--version</c> by writing the text itself, then reports the request as a parse
-/// error and hands back a default instance. Reading that instance as configuration is what made
-/// <c>rdc --help</c> print its help, then a stack trace underneath it, and exit -1.
+/// error and hands back no configuration. An application asks <see cref="TryAnswer(string[], out int)"/>
+/// first, and goes on to <see cref="Parse(string[])"/> only when it returns <c>false</c>.
 /// </remarks>
-internal static class SdkCommandLine
+public static class SdkCommandLine
 {
     /// <summary>
     /// Parses <paramref name="args"/> as <see cref="SdkAppCommandLineArgs"/>.
     /// </summary>
+    /// <remarks>
+    /// A relative <see cref="SdkAppCommandLineArgs.WorkspaceUri"/> is read against the current directory, as the shell that started the
+    /// application reads it, and becomes the full path. A full path and a URI are kept as written.
+    /// </remarks>
     /// <param name="args">The command-line arguments as received.</param>
-    /// <returns>The parsed arguments.</returns>
+    /// <returns>
+    /// The parsed arguments; <see langword="null"/> when <paramref name="args"/> does not parse, a help or version request
+    /// included (<see cref="TryAnswer(string[], out int)"/>).
+    /// </returns>
     public static SdkAppCommandLineArgs Parse(string[] args)
-        => Parser.Default.ParseArguments<SdkAppCommandLineArgs>(args).Value;
+        => Parser.Default.ParseArguments<SdkAppCommandLineArgs>(args).Value is { } parsed
+            ? parsed with { WorkspaceUri = FullWorkspace(parsed.WorkspaceUri) }
+            : null!;
+
+    // read as a URI, as the platform reads a workspace, a relative path is rooted at "/": "." is the root, and "Ledger" a folder there.
+    private static string? FullWorkspace(string? workspace)
+        => workspace is not { Length: > 0 } || Path.IsPathFullyQualified(workspace) || Uri.TryCreate(workspace, UriKind.Absolute, out _)
+            ? workspace
+            : Path.GetFullPath(workspace);
 
     /// <summary>
     /// Answers <paramref name="args"/> when it is not a command line to run with: one that asked only
@@ -39,9 +54,8 @@ internal static class SdkCommandLine
     /// Writing the text, or the list of what it did not understand, is the parser's own side effect of
     /// being asked. It reports a help or version request as a parse <em>error</em> because there is
     /// nothing left for it to parse, not because anything is wrong with what it was given, so an
-    /// application has to ask this before it decides it has failed. Either way what the parser hands back
-    /// is a default instance, and reading that as configuration is what turned both cases into a
-    /// <c>NullReferenceException</c> printed under the parser's own output.
+    /// application has to ask this before it decides it has failed. In either case the parser hands back
+    /// no configuration to run with: <see cref="Parse(string[])"/> returns <see langword="null"/>.
     /// </remarks>
     public static bool TryAnswer(string[] args, out int exitCode)
     {

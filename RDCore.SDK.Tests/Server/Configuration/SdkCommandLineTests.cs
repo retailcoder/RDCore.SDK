@@ -49,6 +49,29 @@ public sealed class SdkCommandLineTests
         => Assert.AreEqual("C:/ws", SdkCommandLine.Parse(["--workspace", "C:/ws"]).WorkspaceUri);
 
     [TestMethod]
+    [DataRow(".", DisplayName = "the current folder")]
+    [DataRow("Ledger", DisplayName = "a folder in the current one")]
+    [DataRow("../Ledger", DisplayName = "a folder beside the current one")]
+    public void ARelativeWorkspace_IsReadAgainstTheCurrentDirectory(string workspace)
+        // read as a URI, it would be rooted at "/": "." would be the root of the drive, and "Ledger" a folder there.
+        => Assert.AreEqual(Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), workspace)),
+            SdkCommandLine.Parse(["--workspace", workspace]).WorkspaceUri);
+
+    [TestMethod]
+    [DataRow("file:///C:/ws/Ledger", DisplayName = "a file URI")]
+    [DataRow("rdcore://workspaces/Ledger", DisplayName = "a URI of another scheme")]
+    public void AWorkspaceURI_IsKeptAsWritten(string workspace)
+        => Assert.AreEqual(workspace, SdkCommandLine.Parse(["--workspace", workspace]).WorkspaceUri);
+
+    [TestMethod]
+    public void AFullPath_IsKeptAsWritten()
+    {
+        var workspace = Path.Combine(Path.GetTempPath(), "Ledger");
+
+        Assert.AreEqual(workspace, SdkCommandLine.Parse(["-w", workspace]).WorkspaceUri);
+    }
+
+    [TestMethod]
     [DataRow("basic")]
     [DataRow("vb6")]
     public void TheLanguage_Parses_AndBecomesAConfigurationOverride(string argument)

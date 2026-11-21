@@ -140,6 +140,7 @@ public sealed class RDCorePlatformJsonWireTests
 
         // declared by an extension's assembly and read from its manifest, in no capability group: written as they are.
         yield return Same(new DiagnoseDocument(true));
+        yield return Same(new DiagnoseProject(true));
         yield return Same(new CliCommand(true));
 
         // a client's opt-out of the dialogs, as the handshake carries it.
@@ -294,6 +295,7 @@ public sealed class RDCorePlatformJsonWireTests
         ("PlatformInitializeParams", """{"expectedComponent":1,"expected":{"languageServer":{"sessionStatus":{"isSupported":false},"sessionExecute":{"isSupported":false},"programDebugging":{"isSupported":false},"sessionDiscard":{"isSupported":false},"sessionAnalyze":{"isSupported":false},"sessionCompletion":{"isSupported":false},"sessionSignatureHelp":{"isSupported":false},"sessionSemanticTokens":{"isSupported":false},"sessionMemoryAccess":{"isSupported":false},"sessionInteraction":{"isSupported":false},"sessionStops":{"isSupported":false},"unattended":{"isSupported":false},"rubberduckIndenterSettings":{"isSupported":false},"listSettingValue":{"isSupported":false},"refactoring":{"isSupported":false},"assistantTools":{"isSupported":false}}}}"""),
         ("PlatformInitializeResult", """{"component":1,"provided":["SessionExecute","SessionStatus"]}"""),
         ("DiagnoseDocument", """{"isSupported":true}"""),
+        ("DiagnoseProject", """{"isSupported":true}"""),
         ("CliCommand", """{"isSupported":true}"""),
         ("Unattended", """{"isSupported":true}"""),
         ("SourceLocation", """{"uri":"file:///c:/workspace/Module1.bas","range":{"start":{"line":1,"character":2},"end":{"line":3,"character":4},"isEmpty":false}}"""),

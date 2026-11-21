@@ -109,4 +109,23 @@ public sealed class DeclarationBindingWireTests
         Assert.AreEqual(isReferred, PlatformJson.Deserialize<SemanticsPayload>(PlatformJson.Serialize(new SemanticsPayload([ModuleSemanticsDto.From(model)])))
             .Modules.Single().Declarations.Single().IsReferredToByABoundMember);
     }
+
+    // the same parameter: whether an implementation or a handler writes its own, or passes it on by reference, or that this is not stated.
+    [TestMethod]
+    [DataRow(true)]
+    [DataRow(false)]
+    [DataRow(null)]
+    public void WhetherABoundMemberWritesAParameter_IsReadBackAsItWasWritten(bool? isWritten)
+    {
+        var parameter = new DeclarationFact(new SemanticId(Spun), "times", DeclarationKind.Parameter, AccessModifier.Private, false,
+            new SourceLocation(Module, SourceRange.Empty), null)
+        {
+            IsReferredToByABoundMember = isWritten is null ? null : true,
+            IsWrittenByABoundMember = isWritten,
+        };
+        var model = new ModuleSemanticModel(Module, [], []) { Declarations = [parameter] };
+
+        Assert.AreEqual(isWritten, PlatformJson.Deserialize<SemanticsPayload>(PlatformJson.Serialize(new SemanticsPayload([ModuleSemanticsDto.From(model)])))
+            .Modules.Single().Declarations.Single().IsWrittenByABoundMember);
+    }
 }

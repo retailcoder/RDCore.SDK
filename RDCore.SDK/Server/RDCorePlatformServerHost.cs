@@ -44,8 +44,7 @@ public class RDCorePlatformServerHost<TApp>() : AppHost<TApp>()
 
     protected override void Configure(IConfigurationBuilder configuration, IServiceCollection services, string[] args)
     {
-        var result = CommandLine.Parser.Default.ParseArguments<SdkAppCommandLineArgs>(args);
-        var parsed = result.Value
+        var parsed = SdkCommandLine.Parse(args)
             ?? throw new ArgumentException($"Could not parse command-line arguments: {string.Join(" ", args)}");
 
         // a server app cannot start without a pipe name and a workspace:

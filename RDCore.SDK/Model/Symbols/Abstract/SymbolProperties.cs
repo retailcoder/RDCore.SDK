@@ -193,6 +193,16 @@ public static class SymbolProperties
     /// </remarks>
     public static readonly SymbolProperty<bool> DefaultsToOptionCompare = new(nameof(DefaultsToOptionCompare));
     /// <summary>
+    /// For a function of a library that returns a <c>Variant</c>, the name of the member of its module that is functionally identical to it, except that it
+    /// returns a <c>String</c>: <c>Left$</c> for <c>Left</c>, <c>Hex$</c> for <c>Hex</c> (<strong>MS-VBAL §6.1.2</strong>).
+    /// </summary>
+    /// <remarks>
+    /// Set by whatever contributed the symbol: the standard library's reader, for each pair whose <c>$</c> form has the same runtime semantics and returns a
+    /// <c>String</c>. Absent on a member with no such form, and on one whose <c>$</c> form does something else: <c>Date</c> returns a <c>Variant</c> that
+    /// holds a <c>Date</c>, and <c>Date$</c> a <c>String</c> of a fixed form (<strong>MS-VBAL §6.1.2.4.2.2</strong>).
+    /// </remarks>
+    public static readonly SymbolProperty<string> StringForm = new(nameof(StringForm));
+    /// <summary>
     /// Whether the <c>VBA</c> type library declares a library parameter by reference - a <c>VARIANT*</c> for every <c>Variant</c> parameter, and a few others
     /// (<c>StdLibTypeLibraryByRefAttribute</c>) - where the platform passes it by value: a call-site <c>ByVal</c> written for it is a compile error, as it is
     /// for any parameter that is <c>ByRef</c> (<strong>MS-VBA</strong>, recorded in Excel; RD-VBAL §5.6.13.1).

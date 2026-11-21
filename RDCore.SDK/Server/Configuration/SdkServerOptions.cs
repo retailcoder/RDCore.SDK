@@ -97,7 +97,8 @@ public record class SdkAppCommandLineArgs
     /// A <em>command-line argument</em> that overrides the <see cref="SdkWorkspaceOptions.WorkspaceUri"/> setting.
     /// </summary>
     /// <remarks>
-    /// 👉 This argument is required for starting a language server app.
+    /// 👉 This argument is required for starting a language server app. A relative path is read against the current directory
+    /// (<see cref="SdkCommandLine.Parse(string[])"/>).
     /// </remarks>
     [Option('w', "workspace")]
     public string? WorkspaceUri { get; set; }
