@@ -864,7 +864,8 @@ public static partial class ModuleIndenter
         {
             var range = label.SourceLocation.Range;
             var text = module.Lines[range.Start.Line];
-            if (range.Start.Line == range.End.Line && range.Start.Character == text.Length - text.TrimStart(Blanks.Characters).Length && IsLabel(label, module))
+            if (range.Start.Line == range.End.Line && range.Start.Character == text.Length - text.TrimStart(Blanks.Characters).Length
+                && IsLabel(label, module))
             {
                 labels[range.Start.Line] = range.End.Character;
             }

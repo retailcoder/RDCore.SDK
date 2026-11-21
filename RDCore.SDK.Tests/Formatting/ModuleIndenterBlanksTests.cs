@@ -26,10 +26,8 @@ public sealed class ModuleIndenterBlanksTests
     {
         var text = $"Public Sub Main()\r\n{body}\r\nEnd Sub\r\n";
         SyntaxNode[] statements = isStatement ? [new KeywordStatementNode(Id(), At(1, 0, 1, body.Length), body, [])] : [];
-        var parse = new ModuleParseResult
-        {
-            SyntaxTree = new ModuleNode(Id(), At(0, 0, 3, 0), [new MemberDeclarationNode(Id(), At(0, 0, 2, 7), [.. statements], "Main", MemberKind.Procedure)]),
-        };
+        var main = new MemberDeclarationNode(Id(), At(0, 0, 2, 7), [.. statements], "Main", MemberKind.Procedure);
+        var parse = new ModuleParseResult { SyntaxTree = new ModuleNode(Id(), At(0, 0, 3, 0), [main]) };
 
         return ModuleIndenter.Apply(text, ModuleIndenter.Indent(parse, text, options)).Split("\r\n")[1];
     }
