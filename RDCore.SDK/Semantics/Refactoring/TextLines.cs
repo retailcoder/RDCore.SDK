@@ -164,7 +164,9 @@ public sealed partial class TextLines
     /// </param>
     /// <returns>The text of the range, edited.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="edits"/> is <see langword="null"/>.</exception>
-    /// <exception cref="ArgumentException">Two of the edits overlap, or an edit is not within <paramref name="range"/>.</exception>
+    /// <exception cref="ArgumentException">
+    /// Two of the edits overlap, an edit ends before it starts, or an edit is not within <paramref name="range"/>.
+    /// </exception>
     public string Of(SourceRange range, IEnumerable<RefactorTextEdit> edits)
     {
         ArgumentNullException.ThrowIfNull(edits);
@@ -195,7 +197,7 @@ public sealed partial class TextLines
     /// </param>
     /// <returns>The edited text, and the range of the edited text each edit writes, in the order of <paramref name="edits"/>.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="text"/> or <paramref name="edits"/> is <see langword="null"/>.</exception>
-    /// <exception cref="ArgumentException">Two of the edits overlap.</exception>
+    /// <exception cref="ArgumentException">Two of the edits overlap, or an edit ends before it starts.</exception>
     public static EditedText Apply(string text, IReadOnlyList<RefactorTextEdit> edits)
     {
         ArgumentNullException.ThrowIfNull(edits);
@@ -266,5 +268,7 @@ public sealed partial class TextLines
 /// A text with edits made (<see cref="TextLines.Apply"/>), and where each edit's text is written in it.
 /// </summary>
 /// <param name="Text">The edited text.</param>
-/// <param name="Written">The range of <paramref name="Text"/> each edit writes, in the order of the edits; empty for an edit that writes nothing.</param>
+/// <param name="Written">
+/// The range of <paramref name="Text"/> each edit writes, in the order of the edits; an empty range, where it was, for an edit that writes nothing.
+/// </param>
 public sealed record class EditedText(string Text, IReadOnlyList<SourceRange> Written);

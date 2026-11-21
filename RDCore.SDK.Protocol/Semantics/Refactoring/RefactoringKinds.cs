@@ -60,7 +60,9 @@ public static class RefactoringKinds
     /// (<see cref="RDCore.SDK.Platform.Protocol.RefactorItem.Location"/>), each with a <see cref="RDCore.SDK.Platform.Protocol.RefactorChoiceKind.Flag"/> that
     /// inlines it and a reason that says the form it is written in; and whether the member is removed, a
     /// <see cref="RDCore.SDK.Platform.Protocol.RefactorChoiceKind.Flag"/> offered when every reference to it is a site that is inlined. A site that is
-    /// refused is a <see cref="RDCore.SDK.Platform.Protocol.RefactorNoticeKind.Refusal"/> of its item, located where the reason is.
+    /// refused is a <see cref="RDCore.SDK.Platform.Protocol.RefactorNoticeKind.Refusal"/> of its item
+    /// (<see cref="RDCore.SDK.Platform.Protocol.RefactorNotice.Choice"/> and <see cref="RDCore.SDK.Platform.Protocol.RefactorNotice.Item"/>), located where
+    /// what refuses it is written.
     /// </para>
     /// <para>
     /// A member that the runtime or a host calls (an event handler, an implemented member, an entry point), a recursive or <c>Static</c> one, and a
