@@ -13,6 +13,11 @@ namespace RDCore.SDK.Semantics.Refactoring;
 /// A line ends at a carriage return and a line feed, a line feed, or a carriage return (<strong>LSP 3.17</strong> §Position). A character counts UTF-16
 /// code units. A position is one of the text's: its line is one the text has, and its character is at most the length of that line. A line that the text
 /// does not have throws <see cref="ArgumentOutOfRangeException"/>.
+/// <para>
+/// A blank is a space or a tab: the white space the parser's lexer reads between tokens. MS-VBAL §3.2.2's <c>WSC</c> also has U+0019, the
+/// ideographic space U+3000 and the other spaces of Unicode class Zs, which the lexer does not read as white space and which are not blanks here. A line end
+/// is never a blank.
+/// </para>
 /// </remarks>
 public sealed partial class TextLines
 {
@@ -67,27 +72,29 @@ public sealed partial class TextLines
     /// </summary>
     public SourcePosition End => new(Count - 1, _lengths[^1]);
 
+    private const string Blanks = " \t";
+
     /// <summary>
-    /// Whether nothing but white space is written on a line.
+    /// Whether nothing but spaces and tabs is written on a line.
     /// </summary>
     /// <param name="line">The line.</param>
-    /// <returns><see langword="true"/> for a line that is empty or white space only.</returns>
-    public bool IsBlank(int line) => _text.AsSpan(_starts[line], _lengths[line]).IsWhiteSpace();
+    /// <returns><see langword="true"/> for a line that is empty or has only spaces and tabs.</returns>
+    public bool IsBlank(int line) => _text.AsSpan(_starts[line], _lengths[line]).TrimStart(Blanks).IsEmpty;
 
     /// <summary>
-    /// Whether nothing but white space is written on a position's line before it: the position starts what is written on the line.
+    /// Whether nothing but spaces and tabs is written on a position's line before it: the position starts what is written on the line.
     /// </summary>
     /// <param name="position">The position.</param>
-    /// <returns><see langword="true"/> when the line has only white space before the position, or nothing.</returns>
-    public bool IsBlankBefore(SourcePosition position) => _text.AsSpan(_starts[position.Line], position.Character).IsWhiteSpace();
+    /// <returns><see langword="true"/> when the line has only spaces and tabs before the position, or nothing.</returns>
+    public bool IsBlankBefore(SourcePosition position) => _text.AsSpan(_starts[position.Line], position.Character).TrimStart(Blanks).IsEmpty;
 
     /// <summary>
-    /// Whether nothing but white space is written on a position's line after it: the position ends what is written on the line.
+    /// Whether nothing but spaces and tabs is written on a position's line after it: the position ends what is written on the line.
     /// </summary>
     /// <param name="position">The position.</param>
-    /// <returns><see langword="true"/> when the line has only white space after the position, or nothing.</returns>
+    /// <returns><see langword="true"/> when the line has only spaces and tabs after the position, or nothing.</returns>
     public bool IsBlankAfter(SourcePosition position)
-        => _text.AsSpan(_starts[position.Line] + position.Character, _lengths[position.Line] - position.Character).IsWhiteSpace();
+        => _text.AsSpan(_starts[position.Line] + position.Character, _lengths[position.Line] - position.Character).TrimStart(Blanks).IsEmpty;
 
     /// <summary>
     /// What is written on a position's line after it, without what ends the line.
@@ -97,20 +104,14 @@ public sealed partial class TextLines
     public string After(SourcePosition position) => _text.Substring(_starts[position.Line] + position.Character, _lengths[position.Line] - position.Character);
 
     /// <summary>
-    /// The white space a line starts with: its indentation.
+    /// The spaces and tabs a line starts with: its indentation.
     /// </summary>
     /// <param name="line">The line.</param>
-    /// <returns>The white space before the first character of the line that is not white space; the whole line, when it is blank.</returns>
+    /// <returns>The spaces and tabs before the first character of the line that is neither; the whole line, when it is blank.</returns>
     public string IndentOf(int line)
     {
         var text = _text.AsSpan(_starts[line], _lengths[line]);
-        var length = 0;
-        while (length < text.Length && char.IsWhiteSpace(text[length]))
-        {
-            length++;
-        }
-
-        return text[..length].ToString();
+        return text[..(text.Length - text.TrimStart(Blanks).Length)].ToString();
     }
 
     /// <summary>
