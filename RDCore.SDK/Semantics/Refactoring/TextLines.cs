@@ -14,9 +14,9 @@ namespace RDCore.SDK.Semantics.Refactoring;
 /// code units. A position is one of the text's: its line is one the text has, and its character is at most the length of that line. A line that the text
 /// does not have throws <see cref="ArgumentOutOfRangeException"/>.
 /// <para>
-/// A blank is a space or a tab: the white space the parser's lexer reads between tokens. MS-VBAL §3.2.2's <c>WSC</c> also has U+0019, the
-/// ideographic space U+3000 and the other spaces of Unicode class Zs, which the lexer does not read as white space and which are not blanks here. A line end
-/// is never a blank.
+/// A blank is a space or a tab: the white space the parser's lexer reads between tokens. The <c>WSC</c> of <strong>MS-VBAL §3.2.2</strong> also has
+/// U+0019, the ideographic space U+3000 and the other spaces of Unicode class Zs, which the lexer does not read as white space and which are not blanks here.
+/// A line end is never a blank.
 /// </para>
 /// </remarks>
 public sealed partial class TextLines
