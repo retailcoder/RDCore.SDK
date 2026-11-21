@@ -25,7 +25,9 @@ public static class ProgramIndenter
     /// <summary>
     /// The statements of a program, each indented by the blocks it is in.
     /// </summary>
-    /// <param name="statements">The statements, in the order of their line numbers, without their numbers; what whitespace they start with is not kept.</param>
+    /// <param name="statements">
+    /// The statements, in the order of their line numbers, without their numbers; the spaces and tabs they start with are not kept.
+    /// </param>
     /// <param name="parse">Parses the text of a module: the program's statements as the body of its procedure.</param>
     /// <param name="options">How code is indented.</param>
     /// <returns>
