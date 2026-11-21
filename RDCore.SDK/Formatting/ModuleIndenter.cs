@@ -9,9 +9,10 @@ using System.Text.RegularExpressions;
 namespace RDCore.SDK.Formatting;
 
 /// <summary>
-/// An edit of the whitespace of a module: what is from <paramref name="Character"/> of line <paramref name="Line"/> to <paramref name="EndCharacter"/> of line
-/// <paramref name="EndLine"/> is replaced by <paramref name="NewText"/>. What is replaced is whitespace, or nothing, and so is what replaces it: a run of it
-/// within a line, or the empty lines between two procedures, from the end of the line before them.
+/// An edit of the spaces, tabs and empty lines of a module: what is from <paramref name="Character"/> of line <paramref name="Line"/> to
+/// <paramref name="EndCharacter"/> of line <paramref name="EndLine"/> is replaced by <paramref name="NewText"/>. What is replaced is spaces and tabs, empty
+/// lines, or nothing, and so is what replaces it: a run of spaces and tabs within a line, or the empty lines between two procedures, from the end of the line
+/// before them. No other white space is a blank: a no-break space is kept where it is.
 /// </summary>
 /// <param name="Line">The line where what is replaced starts, from 0.</param>
 /// <param name="Character">Where what is replaced starts, in UTF-16 code units from the start of its line.</param>
