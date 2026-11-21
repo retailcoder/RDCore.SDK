@@ -1,4 +1,5 @@
 using RDCore.SDK.Model.AST;
+using RDCore.SDK.Model.Source;
 using RDCore.SDK.Workspace;
 
 namespace RDCore.SDK.Formatting;
@@ -48,7 +49,7 @@ public static class ProgramIndenter
             return statements;
         }
 
-        string[] lines = [.. statements.Select(statement => statement.TrimStart())];
+        string[] lines = [.. statements.Select(statement => statement.TrimStart(Blanks.Characters))];
         var text = BasicProgramText.ToModuleSource(string.Join(NewLine, lines) + NewLine);
         var programOptions = options with { IndentEntireProcedureBody = false, VerticallySpaceProcedures = false };
         var edits = ModuleIndenter.Indent(parse(text), text, programOptions);
