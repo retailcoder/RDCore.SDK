@@ -36,10 +36,14 @@ internal sealed partial class TextLines
 
     public SourcePosition End => new(Count - 1, _lengths[^1]);
 
-    public bool IsBlank(int line) => _text.AsSpan(_starts[line], _lengths[line]).IsWhiteSpace();
+    // a blank is a space or a tab: the white space the parser's lexer reads between tokens. MS-VBAL §3.2.2's WSC also has U+0019, the ideographic space
+    // U+3000 and the other spaces of Unicode class Zs, which the lexer does not read as white space; a line end is never a blank.
+    private const string Blanks = " \t";
+
+    public bool IsBlank(int line) => _text.AsSpan(_starts[line], _lengths[line]).TrimStart(Blanks).IsEmpty;
 
     // whether nothing but blanks is written before a position on its line.
-    public bool IsBlankBefore(SourcePosition position) => _text.AsSpan(_starts[position.Line], position.Character).IsWhiteSpace();
+    public bool IsBlankBefore(SourcePosition position) => _text.AsSpan(_starts[position.Line], position.Character).TrimStart(Blanks).IsEmpty;
 
     // what is written after a position on its line.
     public string After(SourcePosition position) => _text.Substring(_starts[position.Line] + position.Character, _lengths[position.Line] - position.Character);
@@ -48,13 +52,7 @@ internal sealed partial class TextLines
     public string IndentOf(int line)
     {
         var text = _text.AsSpan(_starts[line], _lengths[line]);
-        var length = 0;
-        while (length < text.Length && char.IsWhiteSpace(text[length]))
-        {
-            length++;
-        }
-
-        return text[..length].ToString();
+        return text[..(text.Length - text.TrimStart(Blanks).Length)].ToString();
     }
 
     // the position of what ends a line: past its last character.
