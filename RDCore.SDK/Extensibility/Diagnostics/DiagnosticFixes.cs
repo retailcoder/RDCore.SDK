@@ -2,6 +2,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
 using RDCore.SDK.Semantics.Refactoring;
+using Range = OmniSharp.Extensions.LanguageServer.Protocol.Models.Range;
 
 namespace RDCore.SDK.Extensibility.Diagnostics;
 
@@ -94,6 +95,47 @@ public sealed record class DiagnosticFixes
     /// Whether <see cref="Edits"/> is written in the <c>data</c>: not when it is empty.
     /// </summary>
     public bool ShouldSerializeEdits() => Edits.Count > 0;
+
+    /// <summary>
+    /// The edits that fix every diagnostic of a code in one document at once, as a fix of the whole document makes them: of each diagnostic, in the order of
+    /// their ranges, the first of its <see cref="Edits"/>, when it was made of the given version of the document, keeps what the code does
+    /// (<see cref="EditFix.ChangesBehavior"/>), has edits, and none of them overlaps an edit taken before it. A diagnostic whose fix is not taken is left for
+    /// a fix of its own.
+    /// </summary>
+    /// <remarks>
+    /// Two edits overlap when their ranges share a character, or when they start at the same position: the order of two insertions at one position would be
+    /// the client's.
+    /// </remarks>
+    /// <param name="diagnostics">The diagnostics of the document, of any code; those of other codes are not fixed.</param>
+    /// <param name="code">The code whose diagnostics are fixed.</param>
+    /// <param name="version">The version of the document the edits are made of (<see cref="EditFix.Version"/>).</param>
+    /// <returns>The diagnostics whose fixes are taken, and the edits of those fixes, none of them overlapping another.</returns>
+    public static (IReadOnlyList<Diagnostic> Fixed, IReadOnlyList<TextEdit> Edits) OfEvery(
+        IEnumerable<Diagnostic> diagnostics, RDCoreDiagnosticCode code, int version)
+    {
+        var fixedOnes = new List<Diagnostic>();
+        var taken = new List<TextEdit>();
+        foreach (var diagnostic in diagnostics
+            .Where(diagnostic => RDCoreDiagnosticCode.TryParse(diagnostic.Code?.String, out var its) && its == code)
+            .OrderBy(diagnostic => diagnostic.Range.Start.Line).ThenBy(diagnostic => diagnostic.Range.Start.Character))
+        {
+            if (Of(diagnostic)?.Edits is not [{ ChangesBehavior: false, Edits.Count: > 0 } fix, ..] || fix.Version != version
+                || fix.Edits.Any(edit => taken.Any(other => Overlap(edit.Range, other.Range))))
+            {
+                continue;
+            }
+
+            fixedOnes.Add(diagnostic);
+            taken.AddRange(fix.Edits);
+        }
+
+        return (fixedOnes, taken);
+    }
+
+    private static bool Overlap(Range one, Range other)
+        => Before(one.Start, other.End) && Before(other.Start, one.End) || one.Start.Line == other.Start.Line && one.Start.Character == other.Start.Character;
+
+    private static bool Before(Position one, Position other) => one.Line < other.Line || one.Line == other.Line && one.Character < other.Character;
 }
 
 /// <summary>

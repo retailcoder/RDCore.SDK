@@ -162,6 +162,24 @@ public sealed class StdFontObject
     }
 
     /// <summary>
+    /// The size the font is drawn at, in points: what <see cref="Size"/> reads, without keeping it.
+    /// </summary>
+    /// <remarks>
+    /// This is the size for whoever draws the font or copies its values, where reading <see cref="Size"/> would change which size a later
+    /// name snaps from: this read leaves the size <see cref="TrySetName"/> snaps from as it was, and raises no <see cref="Changed"/>.
+    /// </remarks>
+    public decimal SizeAsDrawn
+    {
+        get
+        {
+            lock (_lock)
+            {
+                return _sizeIsDrawn ? _size : DrawnSize(_named ? _name : null, _size);
+            }
+        }
+    }
+
+    /// <summary>
     /// The font's weight, which <c>Weight</c> reads: <see cref="NormalWeight"/> or <see cref="BoldWeight"/>.
     /// </summary>
     public short Weight

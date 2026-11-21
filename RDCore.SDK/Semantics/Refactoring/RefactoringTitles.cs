@@ -33,6 +33,23 @@ public static class RefactoringTitles
         => Say(scope == Platform.Protocol.SettingScope.Workspace ? "CodeAction_DisableDiagnostic_Workspace" : "CodeAction_DisableDiagnostic_Platform", culture, code);
 
     /// <summary>
+    /// The title of the code action that makes the fix of every diagnostic of a code in one module at once: <c>Fix every RDC01025 in this module</c>.
+    /// </summary>
+    /// <param name="code">The code.</param>
+    /// <param name="culture">The language of the reader; the current UI culture by default.</param>
+    public static string FixAllInModule(Extensibility.Diagnostics.RDCoreDiagnosticCode code, CultureInfo? culture = null)
+        => Say("CodeAction_FixAll_Module", culture, code);
+
+    /// <summary>
+    /// The title of the code action that makes the fix of every diagnostic of a code in every module of the workspace at once:
+    /// <c>Fix every RDC01025 in this workspace</c>.
+    /// </summary>
+    /// <param name="code">The code.</param>
+    /// <param name="culture">The language of the reader; the current UI culture by default.</param>
+    public static string FixAllInWorkspace(Extensibility.Diagnostics.RDCoreDiagnosticCode code, CultureInfo? culture = null)
+        => Say("CodeAction_FixAll_Workspace", culture, code);
+
+    /// <summary>
     /// Why the language server does not change a list of the client's settings: the client does not accept such changes from it
     /// (<see cref="Client.ListSettingValue"/>).
     /// </summary>

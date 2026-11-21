@@ -94,6 +94,20 @@ public sealed class StdFontObjectTests
     }
 
     [TestMethod]
+    public void TheSizeAsDrawn_IsTheSizeRead_AndALaterName_SnapsFromTheSizeSet()
+    {
+        var font = Font("Courier", 14);
+        var changes = Watched(font);
+        Assert.AreEqual(12m, font.SizeAsDrawn);
+        Assert.AreEqual(StdFontFailure.None, font.TrySetName("Arial"));
+
+        Assert.AreEqual(14.25m, font.SizeAsDrawn);
+        Assert.AreEqual(14.25m, font.Size);
+        Assert.AreEqual(14.25m, font.SizeAsDrawn);
+        CollectionAssert.AreEqual(new[] { "Name" }, changes);
+    }
+
+    [TestMethod]
     public void ASizeRead_SnapsAgain_ToALaterBitmapFace()
     {
         var font = Font(size: 14);

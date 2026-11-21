@@ -54,11 +54,24 @@ public sealed class FlowFactWireTests
     }
 
     [TestMethod]
-    public void AProcedureWhoseFlowStatesNothing_HasNeither()
+    public void TheJumpsIntoALoop_AreReadBackAsTheyWereWritten()
+    {
+        var goTo = new JumpIntoLoopFact(JumpStatementKind.GoTo, At(3, 4, 10));
+        var resume = new JumpIntoLoopFact(JumpStatementKind.Resume, At(9, 4, 12));
+
+        var read = RoundTrip(new ProcedureSemanticModel(new SemanticId(Procedure), []) { JumpsIntoLoops = [goTo, resume] }).JumpsIntoLoops;
+
+        Assert.IsNotNull(read);
+        CollectionAssert.AreEqual(new[] { goTo, resume }, read.Value.ToArray());
+    }
+
+    [TestMethod]
+    public void AProcedureWhoseFlowStatesNothing_HasNoneOfThem()
     {
         var read = RoundTrip(new ProcedureSemanticModel(new SemanticId(Procedure), []));
 
         Assert.IsNull(read.InitialValueReads);
         Assert.IsNull(read.UnreadAssignments);
+        Assert.IsNull(read.JumpsIntoLoops);
     }
 }
