@@ -60,6 +60,13 @@ public sealed record class ProcedureSemanticModel(SemanticId Procedure, Immutabl
     public ImmutableArray<Flow.UnreadAssignmentFact> UnreadAssignments { get; init; } = [];
 
     /// <summary>
+    /// The statements of the procedure that jump from outside a <c>For</c> or a <c>For Each</c> loop to a label inside it
+    /// (<see cref="Flow.JumpIntoLoopFact"/>), in the order they are written in. The list is empty when there is none, and when the language core could not
+    /// tell.
+    /// </summary>
+    public ImmutableArray<Flow.JumpIntoLoopFact> JumpsIntoLoops { get; init; } = [];
+
+    /// <summary>
     /// The arguments of the calls of the procedure's body that the pass mapped to a parameter, each with what the procedure called declares of it
     /// (<see cref="ArgumentFact"/>), in the order the pass met them. An argument that is not in the list was mapped to no parameter the pass knows.
     /// </summary>

@@ -1,4 +1,5 @@
 using System.Globalization;
+using RDCore.SDK.Extensibility.Diagnostics;
 using RDCore.SDK.Semantics.Refactoring;
 
 namespace RDCore.SDK.Tests.Semantics;
@@ -21,6 +22,33 @@ public sealed class RefactoringTitlesTests
         StringAssert.Contains(RefactoringTitles.RenameOutsideCallersDescription("DoIt", culture), "DoIt");
         Assert.IsFalse(string.IsNullOrWhiteSpace(RefactoringTitles.RenameOutsideCallersLabel(culture)));
         Assert.AreNotEqual(RefactoringTitles.RenameOutsideCallersRename(culture), RefactoringTitles.RenameOutsideCallersCancel(culture));
+    }
+
+    // the action of a module and the workspace's are told apart, and each names the code it fixes, in each language.
+    [TestMethod]
+    [DataRow("en")]
+    [DataRow("fr")]
+    public void AFixOfEveryDiagnosticOfACode_NamesTheCode_AndWhereItFixesThem(string language)
+    {
+        var culture = CultureInfo.GetCultureInfo(language);
+        var code = new RDCoreDiagnosticCode("RDC", 1025);
+
+        var module = RefactoringTitles.FixAllInModule(code, culture);
+        var workspace = RefactoringTitles.FixAllInWorkspace(code, culture);
+
+        StringAssert.Contains(module, code.ToString());
+        StringAssert.Contains(workspace, code.ToString());
+        Assert.AreNotEqual(module, workspace);
+    }
+
+    [TestMethod]
+    public void AFixOfEveryDiagnosticOfACode_IsTitledInFrench_InFrench()
+    {
+        var code = new RDCoreDiagnosticCode("RDC", 1025);
+        var (english, french) = (CultureInfo.GetCultureInfo("en"), CultureInfo.GetCultureInfo("fr"));
+
+        Assert.AreNotEqual(RefactoringTitles.FixAllInModule(code, english), RefactoringTitles.FixAllInModule(code, french));
+        Assert.AreNotEqual(RefactoringTitles.FixAllInWorkspace(code, english), RefactoringTitles.FixAllInWorkspace(code, french));
     }
 
     [TestMethod]

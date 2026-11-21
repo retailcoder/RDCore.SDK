@@ -49,6 +49,29 @@ public static class RefactoringKinds
     public const string ConvertGoSub = "refactor.extract.gosub";
 
     /// <summary>
+    /// Inline Member: a call of a <c>Sub</c>, a <c>Function</c> or a <c>Property Get</c> of the workspace is replaced by the member's body
+    /// (<strong>MS-VBAL §5.3.1</strong>). Each argument is given to the parameter it binds to (<strong>MS-VBAL §5.3.1.11</strong>), and the result of a
+    /// function is given to a local, or written in place of the call when its body is one assignment of its result. The range it is asked for is on a call
+    /// of the member, which inlines that call, or on the member's name where it is declared, which inlines every call.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Its choices are the sites, a <see cref="RDCore.SDK.Platform.Protocol.RefactorChoiceKind.List"/> whose items are the calls
+    /// (<see cref="RDCore.SDK.Platform.Protocol.RefactorItem.Location"/>), each with a <see cref="RDCore.SDK.Platform.Protocol.RefactorChoiceKind.Flag"/> that
+    /// inlines it and a reason that says the form it is written in; and whether the member is removed, a
+    /// <see cref="RDCore.SDK.Platform.Protocol.RefactorChoiceKind.Flag"/> offered when every reference to it is a site that is inlined. A site that is
+    /// refused is a <see cref="RDCore.SDK.Platform.Protocol.RefactorNoticeKind.Refusal"/> of its item
+    /// (<see cref="RDCore.SDK.Platform.Protocol.RefactorNotice.Choice"/> and <see cref="RDCore.SDK.Platform.Protocol.RefactorNotice.Item"/>), located where
+    /// what refuses it is written.
+    /// </para>
+    /// <para>
+    /// A member that the runtime or a host calls (an event handler, an implemented member, an entry point), a recursive or <c>Static</c> one, and a
+    /// <c>Declare</c>, which has no body, are refused. So is a call that does not bind to the member early: a late-bound call, or one through an interface.
+    /// </para>
+    /// </remarks>
+    public const string InlineMember = "refactor.inline.member";
+
+    /// <summary>
     /// Move Member Up: the procedure a range is in, with the comments directly above it and its <c>Attribute</c> lines, moves above the procedure before it.
     /// The <c>Property Get</c>, <c>Let</c> and <c>Set</c> of one name, written one after another, move together, and a procedure that moves
     /// past them moves past all of them. A move into a branch of an <c>#If</c> block, or out of one, is refused (<strong>MS-VBAL §3.4</strong>), and the

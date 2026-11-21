@@ -206,6 +206,35 @@ public sealed class RDCorePlatformJsonWireTests
             ],
             Range = Range,
         });
+        // the sites of an Inline Member, each a located item; a refused one is a refusal of its item.
+        yield return Same(new RefactorPrepareResult
+        {
+            Choices =
+            [
+                new RefactorChoice
+                {
+                    Id = "sites", Kind = RefactorChoiceKind.List, Label = "Calls",
+                    Items =
+                    [
+                        new RefactorItem
+                        {
+                            Id = "site0", Label = "Add 1", Reason = "The body is written before the statement", Location = new SourceLocation(Module, Range),
+                            Choices = [new RefactorChoice { Id = "inline", Kind = RefactorChoiceKind.Flag, Label = "Inline", Default = "true" }],
+                        },
+                    ],
+                },
+                new RefactorChoice { Id = "remove", Kind = RefactorChoiceKind.Flag, Label = "Remove the member", Description = "m", Default = "false" },
+            ],
+            Notices =
+            [
+                new RefactorNotice
+                {
+                    Code = "inlineMember.lateBound", Kind = RefactorNoticeKind.Refusal, Message = "m", Location = new SourceLocation(Module, Range),
+                    Choice = "sites", Item = "site0",
+                },
+            ],
+            Range = Range,
+        });
         static T Applied<T>() where T : RefactorApplyParams, new() => new T
         {
             Kind = RefactoringKinds.ExtractMethod, Uri = Module, Range = Range,
@@ -307,7 +336,8 @@ public sealed class RDCorePlatformJsonWireTests
         ("ListSettingValueResult", """{"applied":true}"""),
         ("ListSettingValue", """{"isSupported":true}"""),
         ("RefactorPrepareParams", """{"kind":"refactor.extract.method","uri":"file:///c:/workspace/Module1.bas","range":{"start":{"line":1,"character":2},"end":{"line":3,"character":4},"isEmpty":false}}"""),
-        ("RefactorPrepareResult", """{"choices":[{"id":"name","kind":0,"label":"Name","description":null,"default":"NewMethod","options":[],"items":[],"canReorder":false},{"id":"access","kind":1,"label":"Access","description":"Who can call it","default":"Private","options":[{"value":"Private","label":"Private","description":"This module"}],"items":[],"canReorder":false},{"id":"parameters","kind":3,"label":"Parameters","description":null,"default":null,"options":[],"items":[{"id":"total","label":"ByRef total As Long","reason":"The selection assigns it","choices":[{"id":"byRef","kind":2,"label":"ByRef","description":null,"default":"true","options":[],"items":[],"canReorder":false}]}],"canReorder":true}],"notices":[{"code":"extractMethod.writeBack","kind":1,"message":"m","location":{"uri":"file:///c:/workspace/Module1.bas","range":{"start":{"line":1,"character":2},"end":{"line":3,"character":4},"isEmpty":false}},"related":{"uri":"file:///c:/workspace/Module1.bas","range":{"start":{"line":1,"character":2},"end":{"line":3,"character":4},"isEmpty":false}},"choice":null,"item":null}],"range":{"start":{"line":1,"character":2},"end":{"line":3,"character":4},"isEmpty":false}}"""),
+        ("RefactorPrepareResult", """{"choices":[{"id":"name","kind":0,"label":"Name","description":null,"default":"NewMethod","options":[],"items":[],"canReorder":false},{"id":"access","kind":1,"label":"Access","description":"Who can call it","default":"Private","options":[{"value":"Private","label":"Private","description":"This module"}],"items":[],"canReorder":false},{"id":"parameters","kind":3,"label":"Parameters","description":null,"default":null,"options":[],"items":[{"id":"total","label":"ByRef total As Long","reason":"The selection assigns it","location":null,"choices":[{"id":"byRef","kind":2,"label":"ByRef","description":null,"default":"true","options":[],"items":[],"canReorder":false}]}],"canReorder":true}],"notices":[{"code":"extractMethod.writeBack","kind":1,"message":"m","location":{"uri":"file:///c:/workspace/Module1.bas","range":{"start":{"line":1,"character":2},"end":{"line":3,"character":4},"isEmpty":false}},"related":{"uri":"file:///c:/workspace/Module1.bas","range":{"start":{"line":1,"character":2},"end":{"line":3,"character":4},"isEmpty":false}},"choice":null,"item":null}],"range":{"start":{"line":1,"character":2},"end":{"line":3,"character":4},"isEmpty":false}}"""),
+        ("RefactorPrepareResult", """{"choices":[{"id":"sites","kind":3,"label":"Calls","description":null,"default":null,"options":[],"items":[{"id":"site0","label":"Add 1","reason":"The body is written before the statement","location":{"uri":"file:///c:/workspace/Module1.bas","range":{"start":{"line":1,"character":2},"end":{"line":3,"character":4},"isEmpty":false}},"choices":[{"id":"inline","kind":2,"label":"Inline","description":null,"default":"true","options":[],"items":[],"canReorder":false}]}],"canReorder":false},{"id":"remove","kind":2,"label":"Remove the member","description":"m","default":"false","options":[],"items":[],"canReorder":false}],"notices":[{"code":"inlineMember.lateBound","kind":0,"message":"m","location":{"uri":"file:///c:/workspace/Module1.bas","range":{"start":{"line":1,"character":2},"end":{"line":3,"character":4},"isEmpty":false}},"related":null,"choice":"sites","item":"site0"}],"range":{"start":{"line":1,"character":2},"end":{"line":3,"character":4},"isEmpty":false}}"""),
         ("RefactorApplyParams", """{"kind":"refactor.extract.method","uri":"file:///c:/workspace/Module1.bas","range":{"start":{"line":1,"character":2},"end":{"line":3,"character":4},"isEmpty":false},"answers":[{"id":"name","value":"Total","items":[]},{"id":"parameters","value":null,"items":[{"id":"total","answers":[{"id":"byRef","value":"false","items":[]}]}]}],"accepted":["extractMethod.writeBack"]}"""),
         ("RefactorWorkspaceEdit", """{"created":["file:///c:/workspace/IShape.cls"],"documents":[{"uri":"file:///c:/workspace/Module1.bas","version":3,"edits":[{"range":{"start":{"line":1,"character":2},"end":{"line":3,"character":4},"isEmpty":false},"newText":"Total = Sum(total)"}]}]}"""),
         ("RefactorIdentifierCheckParams", """{"kind":"refactor.extract.method","uri":"file:///c:/workspace/Module1.bas","range":{"start":{"line":1,"character":2},"end":{"line":3,"character":4},"isEmpty":false},"answers":[{"id":"parameters","value":null,"items":[{"id":"total","answers":[{"id":"name","value":"Sum","items":[]}]}]}]}"""),

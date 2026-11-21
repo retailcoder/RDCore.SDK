@@ -101,4 +101,62 @@ public sealed class DiagnosticFixesTests
         Assert.AreEqual("v", read?.Setting?.Value);
         Assert.IsNull(read?.Rename);
     }
+
+    private static readonly RDCoreDiagnosticCode Fixed = new("RDC", 1025);
+
+    // a diagnostic of a code on a line, whose first fix inserts a text at a column of that line
+    private static Diagnostic Found(RDCoreDiagnosticCode code, int line, string text, int column = 0, int version = 3, bool changesBehavior = false)
+        => new()
+        {
+            Code = code.ToString(),
+            Range = new Range(line, 0, line, 1),
+            Message = text,
+            Data = new DiagnosticFixes
+            {
+                Edits = [new EditFix { Title = text, Edits = [new TextEdit { Range = new Range(line, column, line, column), NewText = text }],
+                    ChangesBehavior = changesBehavior, Version = version }],
+            }.ToData(),
+        };
+
+    [TestMethod]
+    public void EveryDiagnosticOfACode_IsFixed_InTheOrderOfTheirRanges()
+    {
+        var (fixedOnes, edits) = DiagnosticFixes.OfEvery([Found(Fixed, 4, "b"), Found(new("RDC", 1011), 3, "other"), Found(Fixed, 1, "a")], Fixed, version: 3);
+
+        CollectionAssert.AreEqual(new[] { "a", "b" }, fixedOnes.Select(diagnostic => diagnostic.Message).ToArray());
+        CollectionAssert.AreEqual(new[] { "a", "b" }, edits.Select(edit => edit.NewText).ToArray());
+    }
+
+    [TestMethod]
+    [DataRow(2, false, DisplayName = "a fix of another version")]
+    [DataRow(3, true, DisplayName = "a fix that changes what the code does")]
+    public void AFixOfAnotherVersion_OrThatChangesWhatTheCodeDoes_IsNotTaken(int version, bool changesBehavior)
+    {
+        var (fixedOnes, _) = DiagnosticFixes.OfEvery(
+            [Found(Fixed, 1, "a"), Found(Fixed, 2, "b", version: version, changesBehavior: changesBehavior)], Fixed, version: 3);
+
+        CollectionAssert.AreEqual(new[] { "a" }, fixedOnes.Select(diagnostic => diagnostic.Message).ToArray());
+    }
+
+    [TestMethod]
+    [DataRow(0, DisplayName = "an edit that starts where one taken does: not taken")]
+    [DataRow(2, DisplayName = "an edit after the one taken: taken")]
+    public void AFixIsTaken_UnlessItOverlapsOneTaken(int column)
+    {
+        var first = Found(Fixed, 1, "a");
+        var replacing = new Diagnostic
+        {
+            Code = Fixed.ToString(),
+            Range = new Range(1, 0, 1, 1),
+            Message = "b",
+            Data = new DiagnosticFixes
+            {
+                Edits = [new EditFix { Title = "b", Edits = [new TextEdit { Range = new Range(1, column, 1, 3), NewText = "b" }], Version = 3 }],
+            }.ToData(),
+        };
+
+        var (fixedOnes, _) = DiagnosticFixes.OfEvery([first, replacing], Fixed, version: 3);
+
+        CollectionAssert.AreEqual(column == 0 ? new[] { "a" } : new[] { "a", "b" }, fixedOnes.Select(diagnostic => diagnostic.Message).ToArray());
+    }
 }

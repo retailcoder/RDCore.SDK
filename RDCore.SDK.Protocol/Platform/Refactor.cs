@@ -177,6 +177,12 @@ public sealed record class RefactorItem
     public string? Reason { get; init; }
 
     /// <summary>
+    /// Where the item is written, when a dialog shows its place: a call that is inlined. <see langword="null"/> for an item of no place, and for one whose
+    /// place its label shows, such as a parameter.
+    /// </summary>
+    public SourceLocation? Location { get; init; }
+
+    /// <summary>
     /// What the user chooses for the item: its name, how it is passed, whether it is kept.
     /// </summary>
     public IReadOnlyList<RefactorChoice> Choices { get; init; } = [];
