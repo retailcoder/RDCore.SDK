@@ -84,6 +84,24 @@ public sealed partial class ServerArgumentsTests
         StringAssert.EndsWith(commandLine.TrimEnd(), "-v");
     }
 
+    // the workspace as the client says it: a folder's path ends with its separator when it was read from a folder's URI, which a debug adapter is started
+    // with; a space, and a path that is a URI, as written.
+    [TestMethod]
+    [DataRow(@"C:\ws\", DisplayName = "a path that ends with its separator")]
+    [DataRow(@"C:\my ws\", DisplayName = "a path with a space that ends with its separator")]
+    [DataRow(@"C:\ws", DisplayName = "a path")]
+    [DataRow("file:///c:/ws/", DisplayName = "a folder's URI")]
+    public void TheWorkspace_ReachesTheServerAsTheClientSaysIt(string workspace)
+    {
+        var commandLine = RDCoreServerProcess.ServerArguments(1234, "pipe", workspace, LogLevel.Trace, verbose: true, "basic");
+        var arguments = AsTheProcessReadsThem(commandLine);
+
+        Assert.IsFalse(SdkCommandLine.TryAnswer(arguments, out var exitCode), $"the server's parser rejected it ({exitCode}): {commandLine}");
+        var parsed = SdkCommandLine.Parse(arguments);
+        Assert.AreEqual(workspace, parsed.WorkspaceUri, commandLine);
+        Assert.AreEqual("basic", parsed.Language, $"what follows the workspace is read as written: {commandLine}");
+    }
+
     [TestMethod]
     public void NoConstant_IsNoArgument()
         => Assert.DoesNotContain(

@@ -224,7 +224,7 @@ public class RDCoreServerProcess(
     /// </remarks>
     /// <param name="clientProcessId">The process identifier of the client that starts the server.</param>
     /// <param name="pipeName">The name of the pipe the server connects to.</param>
-    /// <param name="workspace">The root folder of the workspace.</param>
+    /// <param name="workspace">The root folder of the workspace, as a path or a URI; passed on as written, a trailing separator included.</param>
     /// <param name="trace">The minimum level the server logs at.</param>
     /// <param name="verbose">Whether the server logs verbosely.</param>
     /// <param name="language">The identifier of the language the client serves; <see langword="null"/> for the default.</param>
@@ -242,7 +242,9 @@ public class RDCoreServerProcess(
             ? $"--define {string.Join(" ", defines.Select(define => Quoted($"{define.Key}={define.Value}")))} "
             : null;
 
-        return $"-p {clientProcessId} -n {pipeName} -w \"{workspace}\" {languageArgument}{definesArgument}-t {trace} {(verbose ? "-v" : null)}";
+        // the workspace is quoted as a --define value is: a folder's path that ends with its separator would otherwise escape the closing quote, and the
+        // rest of the command line would be read as the workspace.
+        return $"-p {clientProcessId} -n {pipeName} -w {Quoted(workspace)} {languageArgument}{definesArgument}-t {trace} {(verbose ? "-v" : null)}";
     }
 
     // one argument, quoted so the process reads it back as written: a backslash stands for itself, except before a quote, where the backslashes are

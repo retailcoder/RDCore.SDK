@@ -3,14 +3,16 @@ using RDCore.SDK.Model.AST.Abstract;
 using RDCore.SDK.Model.AST.Declarations;
 using RDCore.SDK.Model.AST.Directives;
 using RDCore.SDK.Model.AST.Statements;
+using RDCore.SDK.Model.Source;
 using System.Text.RegularExpressions;
 
 namespace RDCore.SDK.Formatting;
 
 /// <summary>
-/// An edit of the whitespace of a module: what is from <paramref name="Character"/> of line <paramref name="Line"/> to <paramref name="EndCharacter"/> of line
-/// <paramref name="EndLine"/> is replaced by <paramref name="NewText"/>. What is replaced is whitespace, or nothing, and so is what replaces it: a run of it
-/// within a line, or the empty lines between two procedures, from the end of the line before them.
+/// An edit of the spaces, tabs and empty lines of a module: what is from <paramref name="Character"/> of line <paramref name="Line"/> to
+/// <paramref name="EndCharacter"/> of line <paramref name="EndLine"/> is replaced by <paramref name="NewText"/>. What is replaced is spaces and tabs, empty
+/// lines, or nothing, and so is what replaces it: a run of spaces and tabs within a line, or the empty lines between two procedures, from the end of the line
+/// before them. No other white space is a blank: a no-break space is kept where it is.
 /// </summary>
 /// <param name="Line">The line where what is replaced starts, from 0.</param>
 /// <param name="Character">Where what is replaced starts, in UTF-16 code units from the start of its line.</param>
@@ -193,12 +195,12 @@ public static partial class ModuleIndenter
         var depth = 0;
         for (var line = 0; line <= last; line++)
         {
-            if (!lines[line].AsSpan().TrimStart().StartsWith('#') || module.IsContinuation(line))
+            if (!lines[line].AsSpan().TrimStart(Blanks.Characters).StartsWith('#') || module.IsContinuation(line))
             {
                 continue;
             }
 
-            var code = lines[line].TrimStart();
+            var code = lines[line].TrimStart(Blanks.Characters);
             if (line >= start && (DirectiveIf().IsMatch(code) || DirectiveBranch().IsMatch(code) || DirectiveEnd().IsMatch(code)))
             {
                 return null;
@@ -372,12 +374,12 @@ public static partial class ModuleIndenter
             }
 
             var above = block - 1;
-            while (above >= 0 && string.IsNullOrWhiteSpace(module.Lines[above]))
+            while (above >= 0 && Blanks.IsAll(module.Lines[above]))
             {
                 above--;
             }
 
-            var code = above < 0 ? string.Empty : module.Lines[above].TrimStart();
+            var code = above < 0 ? string.Empty : module.Lines[above].TrimStart(Blanks.Characters);
             if (above < 0 || asWritten[above] || DirectiveIf().IsMatch(code) || DirectiveBranch().IsMatch(code))
             {
                 continue;
@@ -463,7 +465,7 @@ public static partial class ModuleIndenter
         var (at, to) = (0, 0);
         while (at < text.Length || to < wanted.Length)
         {
-            if (at < text.Length && to < wanted.Length && !char.IsWhiteSpace(text[at]) && !char.IsWhiteSpace(wanted[to]))
+            if (at < text.Length && to < wanted.Length && !Blanks.Is(text[at]) && !Blanks.Is(wanted[to]))
             {
                 if (text[at] != wanted[to])
                 {
@@ -475,12 +477,12 @@ public static partial class ModuleIndenter
             }
 
             var (from, into) = (at, to);
-            while (at < text.Length && char.IsWhiteSpace(text[at]))
+            while (at < text.Length && Blanks.Is(text[at]))
             {
                 at++;
             }
 
-            while (to < wanted.Length && char.IsWhiteSpace(wanted[to]))
+            while (to < wanted.Length && Blanks.Is(wanted[to]))
             {
                 to++;
             }
@@ -547,7 +549,7 @@ public static partial class ModuleIndenter
             for (var line = headerEnd + 1; line < end; line++)
             {
                 var text = module.Lines[line];
-                if (string.IsNullOrWhiteSpace(text))
+                if (Blanks.IsAll(text))
                 {
                     if (!options.IgnoreEmptyLinesInFirstBlocks)
                     {
@@ -590,7 +592,7 @@ public static partial class ModuleIndenter
         var text = module.Lines[line];
         var indentation = level * options.IndentSpaces;
         column = indentation;
-        if (string.IsNullOrWhiteSpace(text))
+        if (Blanks.IsAll(text))
         {
             // an empty line is left as it is, emptied, or indented to its level, as the setting says.
             return options.EmptyLineHandlingMethod switch
@@ -616,12 +618,12 @@ public static partial class ModuleIndenter
         }
         else if (labels.TryGetValue(line, out var labelEnd))
         {
-            var labelAt = text.Length - text.TrimStart().Length;
-            (prefix, codeAt) = (text[labelAt..labelEnd], text.Length - text[labelEnd..].TrimStart().Length);
+            var labelAt = text.Length - text.TrimStart(Blanks.Characters).Length;
+            (prefix, codeAt) = (text[labelAt..labelEnd], text.Length - text[labelEnd..].TrimStart(Blanks.Characters).Length);
         }
         else
         {
-            (prefix, codeAt) = (string.Empty, text.Length - text.TrimStart().Length);
+            (prefix, codeAt) = (string.Empty, text.Length - text.TrimStart(Blanks.Characters).Length);
         }
 
         var head = prefix.Length == 0 ? new string(' ', indentation)
@@ -679,7 +681,7 @@ public static partial class ModuleIndenter
             return code;
         }
 
-        var name = code[..at].TrimEnd();
+        var name = code[..at].TrimEnd(Blanks.Characters);
         var gap = Math.Max(options.AlignDimColumn - 1 - column - name.Length, 1);
         return name + new string(' ', gap) + code[at..];
     }
@@ -690,8 +692,8 @@ public static partial class ModuleIndenter
         var (isCode, _) = Lex(code);
         for (var index = 1; index + 2 < code.Length; index++)
         {
-            if (isCode[index] && isCode[index + 1] && char.IsWhiteSpace(code[index - 1]) && char.IsWhiteSpace(code[index + 2])
-                && string.Compare(code, index, "As", 0, 2, StringComparison.OrdinalIgnoreCase) == 0 && code[..index].Trim().Length > 0)
+            if (isCode[index] && isCode[index + 1] && Blanks.Is(code[index - 1]) && Blanks.Is(code[index + 2])
+                && string.Compare(code, index, "As", 0, 2, StringComparison.OrdinalIgnoreCase) == 0 && code[..index].Trim(Blanks.Characters).Length > 0)
             {
                 return index;
             }
@@ -729,7 +731,7 @@ public static partial class ModuleIndenter
             return null;
         }
 
-        var codeEnd = line[..comment].TrimEnd().Length;
+        var codeEnd = line[..comment].TrimEnd(Blanks.Characters).Length;
         var numbered = LineNumber().Match(line[..comment]) is { Success: true } number && number.Length == comment;
         return codeEnd == 0 || numbered ? null : (codeEnd, comment);
     }
@@ -780,7 +782,7 @@ public static partial class ModuleIndenter
                 }
 
                 var word = line[index..end];
-                if (startsStatement && word.Equals("Rem", StringComparison.OrdinalIgnoreCase) && (end == line.Length || char.IsWhiteSpace(line[end])))
+                if (startsStatement && word.Equals("Rem", StringComparison.OrdinalIgnoreCase) && (end == line.Length || Blanks.Is(line[end])))
                 {
                     return (isCode, index);
                 }
@@ -799,7 +801,7 @@ public static partial class ModuleIndenter
             {
                 startsStatement = index + 1 == line.Length || line[index + 1] != '=';
             }
-            else if (!char.IsWhiteSpace(character))
+            else if (!Blanks.Is(character))
             {
                 startsStatement = false;
             }
@@ -862,7 +864,8 @@ public static partial class ModuleIndenter
         {
             var range = label.SourceLocation.Range;
             var text = module.Lines[range.Start.Line];
-            if (range.Start.Line == range.End.Line && range.Start.Character == text.Length - text.TrimStart().Length && IsLabel(label, module))
+            if (range.Start.Line == range.End.Line && range.Start.Character == text.Length - text.TrimStart(Blanks.Characters).Length
+                && IsLabel(label, module))
             {
                 labels[range.Start.Line] = range.End.Character;
             }
@@ -904,7 +907,7 @@ public static partial class ModuleIndenter
             }
 
             // the tree is walked in the order it is written, with a stack of its own: an expression may be nested deeper than the caller's thread has stack for.
-            var lastCode = Array.FindLastIndex(module.Lines, line => !string.IsNullOrWhiteSpace(line));
+            var lastCode = Array.FindLastIndex(module.Lines, line => !Blanks.IsAll(line));
             var pending = new Stack<SyntaxNode>(scope.Roots.Reverse());
             while (pending.TryPop(out var node))
             {
@@ -995,7 +998,7 @@ public static partial class ModuleIndenter
             var range = block.SourceLocation.Range;
             var start = range.Start.Line;
             var last = Math.Min(module.LastLineOf(range), lines.Length - 1);
-            while (last > start && (string.IsNullOrWhiteSpace(lines[last]) || module.IsContinuation(last)))
+            while (last > start && (Blanks.IsAll(lines[last]) || module.IsContinuation(last)))
             {
                 last--;
             }
@@ -1093,7 +1096,7 @@ public static partial class ModuleIndenter
 
         // a node the parser recovered from an error may end past its closer, on the empty lines after it.
         var last = end;
-        while (last > start && string.IsNullOrWhiteSpace(module.Lines[last]))
+        while (last > start && Blanks.IsAll(module.Lines[last]))
         {
             last--;
         }
@@ -1144,7 +1147,7 @@ public static partial class ModuleIndenter
     {
         foreach (var word in words.Split(' '))
         {
-            while (at < code.Length && char.IsWhiteSpace(code[at]))
+            while (at < code.Length && Blanks.Is(code[at]))
             {
                 at++;
             }
@@ -1186,7 +1189,7 @@ public static partial class ModuleIndenter
                 continue;
             }
 
-            var code = module.Lines[line].TrimStart();
+            var code = module.Lines[line].TrimStart(Blanks.Characters);
             if (DirectiveIf().IsMatch(code))
             {
                 open.Push((line, []));
@@ -1257,8 +1260,8 @@ public static partial class ModuleIndenter
     // the code of a line, its line number, an end-of-line comment and the whitespace around it left out. A comment alone on its line is kept.
     private static string Keyworded(string line)
     {
-        var code = LineNumber().Match(line) is { Success: true } number ? line[number.Length..] : line.TrimStart();
-        return (CodeWithoutComment(code) ?? code).TrimEnd();
+        var code = LineNumber().Match(line) is { Success: true } number ? line[number.Length..] : line.TrimStart(Blanks.Characters);
+        return (CodeWithoutComment(code) ?? code).TrimEnd(Blanks.Characters);
     }
 
     // how many levels a line ends before it, and how many it starts after it.
@@ -1329,7 +1332,7 @@ public static partial class ModuleIndenter
 
         public string Place(string text, string? next)
         {
-            if (string.IsNullOrWhiteSpace(text))
+            if (Blanks.IsAll(text))
             {
                 return options.EmptyLineHandlingMethod switch
                 {
@@ -1339,7 +1342,7 @@ public static partial class ModuleIndenter
                 };
             }
 
-            var code = text.TrimStart();
+            var code = text.TrimStart(Blanks.Characters);
             int at;
             if (!options.AlignContinuations || isComment || isMember)
             {
@@ -1379,7 +1382,7 @@ public static partial class ModuleIndenter
                 return;
             }
 
-            if (CommentAt(line) is { } eol && line.TrimEnd().EndsWith(" _", StringComparison.Ordinal))
+            if (CommentAt(line) is { } eol && line.TrimEnd(Blanks.Characters).EndsWith(" _", StringComparison.Ordinal))
             {
                 // an end-of-line comment continued on the next line: what follows it is where it is.
                 _comment ??= eol.Comment;
@@ -1395,8 +1398,9 @@ public static partial class ModuleIndenter
 
             // a line that ends with a comma, or with a named argument's :=, or is followed by one that starts with :=, starts the next argument: where the argument
             // list is. A line that ends with an opening parenthesis starts the list's first argument where the line before it says.
-            var ending = code.TrimEnd().TrimEnd('_').TrimEnd();
-            if (ending.EndsWith(',') || ending.EndsWith(":=", StringComparison.Ordinal) || (next?.TrimStart().StartsWith(":=", StringComparison.Ordinal) ?? false))
+            var ending = code.TrimEnd(Blanks.Characters).TrimEnd('_').TrimEnd(Blanks.Characters);
+            if (ending.EndsWith(',') || ending.EndsWith(":=", StringComparison.Ordinal)
+                || (next?.TrimStart(Blanks.Characters).StartsWith(":=", StringComparison.Ordinal) ?? false))
             {
                 while (_anchors.Count > 0 && _anchors.Peek().Kind == AnchorKind.Argument)
                 {
@@ -1525,7 +1529,7 @@ public static partial class ModuleIndenter
             return null;
         }
 
-        while (before >= 0 && char.IsWhiteSpace(code[before]))
+        while (before >= 0 && Blanks.Is(code[before]))
         {
             before--;
         }
@@ -1550,11 +1554,11 @@ public static partial class ModuleIndenter
         "Print", "Write", "Input", "Get", "Put", "Close", "As", "Lock", "Unlock", "Seek", "Width",
     };
 
-    [GeneratedRegex(@"^[+&]\s")]
+    [GeneratedRegex(@"^[+&][ \t]")]
     private static partial Regex LeadingOperator();
 
     // what a line starts with that sets no anchor: its indentation and line number, a Set or a Let, a Declare up to its name.
-    [GeneratedRegex(@"^\s*(?:(?:-?\d+|&H[0-9A-F]{1,8}):?\s+)?(?:[LR]?Set\s+|Let\s+|(?:(?:Public|Private)\s+)?Declare\s+(?:PtrSafe\s+)?(?:Function|Sub))?", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"^[ \t]*(?:(?:-?\d+|&H[0-9A-F]{1,8}):?[ \t]+)?(?:[LR]?Set[ \t]+|Let[ \t]+|(?:(?:Public|Private)[ \t]+)?Declare[ \t]+(?:PtrSafe[ \t]+)?(?:Function|Sub))?", RegexOptions.IgnoreCase)]
     private static partial Regex IgnoredStart();
 
     // the lines of a module, and which of them continue the one before.
@@ -1594,18 +1598,18 @@ public static partial class ModuleIndenter
 
         private static bool IsContinued(string line)
         {
-            var text = line.TrimEnd();
+            var text = line.TrimEnd(Blanks.Characters);
             return text == "_" || text.EndsWith(" _", StringComparison.Ordinal) || text.EndsWith("\t_", StringComparison.Ordinal);
         }
     }
 
-    [GeneratedRegex(@"^\s*(?<number>(?:-?\d+|&H[0-9A-F]{1,8}):?)(?:\s+|$)", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"^[ \t]*(?<number>(?:-?\d+|&H[0-9A-F]{1,8}):?)(?:[ \t]+|$)", RegexOptions.IgnoreCase)]
     private static partial Regex LineNumber();
 
-    [GeneratedRegex(@"^[\p{L}_][\p{L}\p{N}_]*\s*:$")]
+    [GeneratedRegex(@"^[\p{L}_][\p{L}\p{N}_]*[ \t]*:$")]
     private static partial Regex LabelText();
 
-    [GeneratedRegex(@"^\s*(?:'|Rem(?:\s|$))", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"^[ \t]*(?:'|Rem(?:[ \t]|$))", RegexOptions.IgnoreCase)]
     private static partial Regex CommentLine();
 
     [GeneratedRegex(@"^Debug\.Print\b", RegexOptions.IgnoreCase)]
@@ -1614,48 +1618,48 @@ public static partial class ModuleIndenter
     [GeneratedRegex(@"^Debug\.Assert\b", RegexOptions.IgnoreCase)]
     private static partial Regex DebugAssert();
 
-    [GeneratedRegex(@"^Stop\s*(?:$|:|')", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"^Stop[ \t]*(?:$|:|')", RegexOptions.IgnoreCase)]
     private static partial Regex StopStatement();
 
-    [GeneratedRegex(@"^(?:Do|Loop)\s+(?:While|Until)\s+", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"^(?:Do|Loop)[ \t]+(?:While|Until)[ \t]+", RegexOptions.IgnoreCase)]
     private static partial Regex LoopCondition();
 
-    [GeneratedRegex(@"^(Dim|Const|Static|Public|Private|Global)\s", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"^(Dim|Const|Static|Public|Private|Global)[ \t]", RegexOptions.IgnoreCase)]
     private static partial Regex Declaration();
 
-    [GeneratedRegex(@"^((Public|Private|Friend|Global)\s+)?(Declare|Enum|Type|Event|Implements)\b", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"^((Public|Private|Friend|Global)[ \t]+)?(Declare|Enum|Type|Event|Implements)\b", RegexOptions.IgnoreCase)]
     private static partial Regex NotAVariable();
 
-    [GeneratedRegex(@"^As\s", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"^As[ \t]", RegexOptions.IgnoreCase)]
     private static partial Regex LeadingAs();
 
-    [GeneratedRegex(@"^#If\s.+\sThen\b", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"^#If[ \t].+[ \t]Then\b", RegexOptions.IgnoreCase)]
     private static partial Regex DirectiveIf();
 
-    [GeneratedRegex(@"^#(ElseIf\s|Else\b)", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"^#(ElseIf[ \t]|Else\b)", RegexOptions.IgnoreCase)]
     private static partial Regex DirectiveBranch();
 
-    [GeneratedRegex(@"^#End\s*If\b", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"^#End[ \t]*If\b", RegexOptions.IgnoreCase)]
     private static partial Regex DirectiveEnd();
 
-    [GeneratedRegex(@"^(ElseIf\s.*\sThen|Else:?)$", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"^(ElseIf[ \t].*[ \t]Then|Else:?)$", RegexOptions.IgnoreCase)]
     private static partial Regex BranchKeyword();
 
-    [GeneratedRegex(@"^Case\s", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"^Case[ \t]", RegexOptions.IgnoreCase)]
     private static partial Regex CaseKeyword();
 
-    [GeneratedRegex(@"^Select\s+Case\s", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"^Select[ \t]+Case[ \t]", RegexOptions.IgnoreCase)]
     private static partial Regex SelectKeyword();
 
-    [GeneratedRegex(@"^End\s+Select\b", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"^End[ \t]+Select\b", RegexOptions.IgnoreCase)]
     private static partial Regex EndSelectKeyword();
 
-    [GeneratedRegex(@"^(End\s+(If|With|Sub|Function|Property|Enum|Type)\b|Next\b|Loop\b|Wend\b)", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"^(End[ \t]+(If|With|Sub|Function|Property|Enum|Type)\b|Next\b|Loop\b|Wend\b)", RegexOptions.IgnoreCase)]
     private static partial Regex CloserKeyword();
 
-    [GeneratedRegex(@"^(If\s.*\sThen|With\s|For\s|Do\b|While\s|((Public|Private)\s+)?(Enum|Type)\s)", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"^(If[ \t].*[ \t]Then|With[ \t]|For[ \t]|Do\b|While[ \t]|((Public|Private)[ \t]+)?(Enum|Type)[ \t])", RegexOptions.IgnoreCase)]
     private static partial Regex OpenerKeyword();
 
-    [GeneratedRegex(@"^((Public|Private|Friend)\s+)?(Static\s+)?(Sub|Function|Property\s+(Get|Let|Set))\s", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"^((Public|Private|Friend)[ \t]+)?(Static[ \t]+)?(Sub|Function|Property[ \t]+(Get|Let|Set))[ \t]", RegexOptions.IgnoreCase)]
     private static partial Regex ProcedureKeyword();
 }

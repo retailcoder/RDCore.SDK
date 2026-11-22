@@ -3,6 +3,7 @@ using Range = OmniSharp.Extensions.LanguageServer.Protocol.Models.Range;
 using RDCore.SDK.Model.AST;
 using RDCore.SDK.Model.AST.Abstract;
 using RDCore.SDK.Model.AST.Statements;
+using RDCore.SDK.Model.Source;
 
 namespace RDCore.SDK.Formatting;
 
@@ -125,7 +126,7 @@ public static class ModuleBlocks
         // the empty line indented as the code around it is; the procedures left as they are spaced, which a line break does not change.
         var indenting = options with { EmptyLineHandlingMethod = EmptyLineHandlingMethod.Indent, VerticallySpaceProcedures = false };
         var procedure = ModuleIndenter.ProcedureAround(parse, lines, line - 1, line);
-        if (!string.IsNullOrWhiteSpace(lines[line]) || OpenAt(parse, lines, line - 1, procedure) is not [{ Opener: var opener, HasBody: false } block, ..]
+        if (!Blanks.IsAll(lines[line]) || OpenAt(parse, lines, line - 1, procedure) is not [{ Opener: var opener, HasBody: false } block, ..]
             || opener != line - 1)
         {
             var edits = procedure is { } around
@@ -137,7 +138,7 @@ public static class ModuleBlocks
         // the closer after the new line, as the opener is indented: the text with it in it is parsed and indented again, the closer's line with the others.
         // That text is the procedure the line is in, from its first line to its closer, when nothing outside it reaches into it; the whole module otherwise.
         var ends = ModuleIndenter.LineEndsIn(text);
-        var written = lines[opener][..(lines[opener].Length - lines[opener].TrimStart().Length)] + block.Closer;
+        var written = lines[opener][..(lines[opener].Length - lines[opener].TrimStart(Blanks.Characters).Length)] + block.Closer;
         var inserted = line + 1 < lines.Length
             ? (At: new Range(line + 1, 0, line + 1, 0), Text: written + ends[line])
             : (At: new Range(line, lines[line].Length, line, lines[line].Length), Text: ends[line - 1] + written);

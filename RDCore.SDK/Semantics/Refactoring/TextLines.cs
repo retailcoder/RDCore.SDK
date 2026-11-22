@@ -72,21 +72,19 @@ public sealed partial class TextLines
     /// </summary>
     public SourcePosition End => new(Count - 1, _lengths[^1]);
 
-    private const string Blanks = " \t";
-
     /// <summary>
     /// Whether nothing but spaces and tabs is written on a line.
     /// </summary>
     /// <param name="line">The line.</param>
     /// <returns><see langword="true"/> for a line that is empty or has only spaces and tabs.</returns>
-    public bool IsBlank(int line) => _text.AsSpan(_starts[line], _lengths[line]).TrimStart(Blanks).IsEmpty;
+    public bool IsBlank(int line) => _text.AsSpan(_starts[line], _lengths[line]).TrimStart(Blanks.Characters).IsEmpty;
 
     /// <summary>
     /// Whether nothing but spaces and tabs is written on a position's line before it: the position starts what is written on the line.
     /// </summary>
     /// <param name="position">The position.</param>
     /// <returns><see langword="true"/> when the line has only spaces and tabs before the position, or nothing.</returns>
-    public bool IsBlankBefore(SourcePosition position) => _text.AsSpan(_starts[position.Line], position.Character).TrimStart(Blanks).IsEmpty;
+    public bool IsBlankBefore(SourcePosition position) => _text.AsSpan(_starts[position.Line], position.Character).TrimStart(Blanks.Characters).IsEmpty;
 
     /// <summary>
     /// Whether nothing but spaces and tabs is written on a position's line after it: the position ends what is written on the line.
@@ -94,7 +92,7 @@ public sealed partial class TextLines
     /// <param name="position">The position.</param>
     /// <returns><see langword="true"/> when the line has only spaces and tabs after the position, or nothing.</returns>
     public bool IsBlankAfter(SourcePosition position)
-        => _text.AsSpan(_starts[position.Line] + position.Character, _lengths[position.Line] - position.Character).TrimStart(Blanks).IsEmpty;
+        => _text.AsSpan(_starts[position.Line] + position.Character, _lengths[position.Line] - position.Character).TrimStart(Blanks.Characters).IsEmpty;
 
     /// <summary>
     /// What is written on a position's line after it, without what ends the line.
@@ -111,7 +109,7 @@ public sealed partial class TextLines
     public string IndentOf(int line)
     {
         var text = _text.AsSpan(_starts[line], _lengths[line]);
-        return text[..(text.Length - text.TrimStart(Blanks).Length)].ToString();
+        return text[..(text.Length - text.TrimStart(Blanks.Characters).Length)].ToString();
     }
 
     /// <summary>
