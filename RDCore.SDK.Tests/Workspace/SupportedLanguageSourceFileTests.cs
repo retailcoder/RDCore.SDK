@@ -19,6 +19,9 @@ public sealed class SupportedLanguageSourceFileTests
     [DataRow("vb6", "ThisWorkbook.doccls", false, DisplayName = "a VBA document module, in VB6")]
     [DataRow("basic", "Program.rdc", true, DisplayName = "a BASIC program")]
     [DataRow("basic", "Module1.bas", false, DisplayName = "a .bas, in BASIC")]
+    [DataRow("vbscript", "Scripts/Backup.VBS", true, DisplayName = "a VBScript script in a folder, in capitals")]
+    [DataRow("vbscript", "Module1.bas", false, DisplayName = "a .bas, in VBScript")]
+    [DataRow("vba", "Backup.vbs", false, DisplayName = "a script, in VBA")]
     [DataRow("vba", "bas", false, DisplayName = "a file named as an extension, with none")]
     [DataRow("vba", "Module1.bas.bak", false, DisplayName = "a copy of a module")]
     public void AFile_IsWrittenInALanguage_WhenItsExtensionIsOneOfTheLanguages(string language, string path, bool expected)
@@ -35,6 +38,7 @@ public sealed class SupportedLanguageSourceFileTests
     [DataRow("vba", "Form1.rdform", true, DisplayName = "an RDForms form, in VBA")]
     [DataRow("vb6", "UserControl1.ctl", true, DisplayName = "a VB6 UserControl")]
     [DataRow("vb6", "ThisWorkbook.doccls", false, DisplayName = "a VBA document module, in VB6")]
+    [DataRow("vbscript", "Backup.vbs", true, DisplayName = "a script, in VBScript")]
     public void AFile_IsAModuleOfAWorkspace_WhenItsExtensionIsOneOfTheLanguagesModules(string language, string path, bool expected)
         => Assert.AreEqual(expected, SupportedLanguages.Get(language).IsModuleFile(path));
 }

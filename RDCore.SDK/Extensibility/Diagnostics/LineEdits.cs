@@ -154,7 +154,8 @@ public static class LineEdits
             at = last < 0 ? SourcePosition.Zero : new SourcePosition(last + 1, 0);
         }
 
-        return ConditionalCompilationBlocks.Of(parse.PrecompilerTrivia).IsConditional(at) ? null : at;
+        var insertion = new SourceLocation(module.SourceLocation.Uri, new SourceRange(at, at));
+        return ConditionalCompilationBlocks.Of(parse.PrecompilerTrivia).IsConditional(insertion) ? null : at;
     }
 
     /// <summary>

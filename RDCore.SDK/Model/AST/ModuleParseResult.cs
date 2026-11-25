@@ -21,6 +21,10 @@ public record class ModuleParseResult
     /// <remarks>
     /// Together with <see cref="SyntaxTree"/> and <see cref="PrecompilerTrivia"/> it accounts for every token of the source, which is what a formatter
     /// or an exporter needs to write the module back out. Trivia is not among the children of the syntax nodes, since it can be written anywhere.
+    /// <para>
+    /// A file that has blocks (<see cref="BlockModules"/>) has the trivia of all its modules here, and the header and the end line of each block
+    /// (<see cref="BlockBoundaryTriviaNode"/>), which no module's tree holds.
+    /// </para>
     /// </remarks>
     public ImmutableArray<SyntaxNode> Trivia { get; init; } = [];
     public ImmutableArray<VBSyntaxErrorInfo> SyntaxErrors { get; init; } = [];
@@ -44,6 +48,17 @@ public record class ModuleParseResult
     /// parse to the host, whose checks of the module's declarations need to know the names its controls take.
     /// </remarks>
     public FormDescriptor? Designer { get; init; }
+
+    /// <summary>
+    /// The modules that blocks of the file declare (<c>Class Name ... End Class</c>, <c>Module Name ... End Module</c>), in the order they are written; empty
+    /// for a file that has none, which is every file of one module.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="SyntaxTree"/> is the file's own module: what is outside every block. <see cref="Trivia"/>, <see cref="PrecompilerTrivia"/>,
+    /// <see cref="SyntaxErrors"/> and <see cref="LineEnding"/> are the whole file's, the blocks' included. Positions in a block's tree are positions in the
+    /// file. <see cref="Workspace.RDCoreDocument"/> maps the file to its modules and back.
+    /// </remarks>
+    public ImmutableArray<BlockModule> BlockModules { get; init; } = [];
 
     public bool IsSuccess => SyntaxTree is not null && SyntaxErrors.Length == 0;
 }

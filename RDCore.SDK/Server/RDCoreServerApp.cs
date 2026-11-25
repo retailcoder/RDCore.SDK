@@ -365,6 +365,8 @@ public abstract class RDCoreServerApp(
             // OmniSharp's own AddOptions() hands handlers an unconfigured SdkServerOptions; bridge the
             // configured instance so a closed-type registration wins over the open generic.
             services.AddSingleton<IOptions<SdkServerOptions>>(Options.Create(options.Value.Server));
+            // and the workspace's, which say how its documents are read (SdkWorkspaceOptions.AllowsFileLevelStatements).
+            services.AddSingleton<IOptions<SdkWorkspaceOptions>>(Options.Create(options.Value.Workspace));
 
             services.AddLogging(builder =>
             {

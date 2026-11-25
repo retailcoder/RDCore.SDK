@@ -65,8 +65,9 @@ public static class SymbolProperties
     /// <remarks>
     /// The language server reads every branch, and cannot tell which is live: a name that a module-level <c>#If</c> branch declares matches that declaration
     /// there. MS-VBA compiles the live branch only, so where that declaration is dead the name matches nothing, and the procedure declares it.
+    /// Each is a location, its document and the start of its range: a module written in several files may declare the name in a file other than the local's.
     /// </remarks>
-    public static readonly SymbolProperty<System.Collections.Immutable.ImmutableArray<Source.SourcePosition>> UnlessLive = new(nameof(UnlessLive));
+    public static readonly SymbolProperty<System.Collections.Immutable.ImmutableArray<Source.SourceLocation>> UnlessLive = new(nameof(UnlessLive));
     /// <summary>
     /// Whether a member of a form's class is one of the form's controls: declared by the form's designer, not by its code
     /// (<see cref="Workspace.Forms.FormDescriptor.DeclaredControls"/>).
@@ -137,10 +138,18 @@ public static class SymbolProperties
     /// </summary>
     public static readonly SymbolProperty<bool> Unregistered = new(nameof(Unregistered));
     /// <summary>
-    /// A small documentation string about this symbol.
+    /// The description of the symbol: a short documentation string, which hover, completion and signature help show
+    /// (<see cref="Completion.CompletionCandidates"/>, <see cref="Completion.SignatureDescription"/>). Unset for a symbol that has none.
     /// </summary>
     /// <remarks>
-    /// Provided via <c>VB_Description</c> attributes.
+    /// <list type="bullet">
+    /// <item>A module of a workspace, its members and its module variables: what the module writes (<see cref="AST.DocStrings"/>). The
+    /// <c>VB_Description</c> or <c>VB_VarDescription</c> attribute when it writes one, else the <c>'@ModuleDescription</c>, <c>'@Description</c> or
+    /// <c>'@VariableDescription</c> annotation.</item>
+    /// <item>A library, and its classes, modules, enumerations, constants, members and events: the help string of its description
+    /// (<see cref="Runtime.Libraries.LibrarySymbolReader"/>).</item>
+    /// <item>The standard library's members and their parameters: its own texts, in the current UI culture.</item>
+    /// </list>
     /// </remarks>
     public static readonly SymbolProperty<string> DocString = new(nameof(DocString));
     /// <summary>

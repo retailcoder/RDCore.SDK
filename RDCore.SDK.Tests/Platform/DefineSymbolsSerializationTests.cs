@@ -1,6 +1,9 @@
+using OmniSharp.Extensions.LanguageServer.Protocol.Serialization;
 using RDCore.SDK.Model.AST.Declarations;
+using RDCore.SDK.Model.Source;
 using RDCore.SDK.Platform.Protocol;
 using RDCore.SDK.Platform.Components;
+using System.Text.Json;
 
 namespace RDCore.Tests.Platform;
 
@@ -43,6 +46,64 @@ public sealed class DefineSymbolsSerializationTests
         Assert.AreEqual(priority, read.LibraryPriority);
         Assert.AreEqual(kind, read.ModuleType);
         Assert.AreEqual(module.AbsoluteUri, read.ModuleUri!.AbsoluteUri);
+    }
+
+    // each Implements directive is where its file and its range say, since a module written in several files repeats ranges: a location is written as
+    // SourceLocation is anywhere on the wire.
+    [TestMethod]
+    public void WhereEachImplementsIsWritten_IsItsFileAndItsRange_OnTheWire()
+    {
+        var part = new Uri("file:///c:/workspace/Shape.Part2.cls");
+        var request = new DefineSymbolsParams
+        {
+            ModuleName = "Shape",
+            ImplementedInterfaceNames = ["IShape"],
+            ImplementedInterfaceLocations = [new SourceLocation(part, new SourceRange(1, 2, 3, 4))],
+        };
+
+        using var written = JsonDocument.Parse(LspSerializer.Instance.SerializeObject(request));
+        var read = Wire.RoundTrip(request);
+
+        Assert.AreEqual(
+            """[{"uri":"file:///c:/workspace/Shape.Part2.cls","range":{"start":{"line":1,"character":2},"end":{"line":3,"character":4},"isEmpty":false}}]""",
+            written.RootElement.GetProperty("implementedInterfaceLocations").GetRawText());
+        CollectionAssert.AreEqual(request.ImplementedInterfaceLocations.ToArray(), read.ImplementedInterfaceLocations.ToArray());
+    }
+
+    // a symbol says the document it is written in, and a local's UnlessLive where each declaration is: a module written in several files repeats ranges.
+    [TestMethod]
+    public void TheDocumentOfASymbol_AndWhereItsLocalIsDeclaredUnlessLive_AreOnTheWire()
+    {
+        var request = new DefineSymbolsParams
+        {
+            ModuleName = "Module1",
+            Symbols =
+            [
+                new SymbolDescriptor
+                {
+                    Name = "Main", Kind = SymbolDescriptorKind.Procedure, DocumentUri = new Uri("file:///c:/workspace/Module1.bas"),
+                    Locals =
+                    [
+                        new LocalDescriptor
+                        {
+                            Name = "x", UnlessLive = [new SourceLocation(new Uri("file:///c:/workspace/Module1.Part2.bas"), new SourceRange(1, 2, 3, 4))],
+                        },
+                    ],
+                },
+            ],
+        };
+
+        // the symbols ride a string of their own (DefineSymbolsParams.SymbolsJson).
+        using var written = JsonDocument.Parse(LspSerializer.Instance.SerializeObject(request));
+        using var symbols = JsonDocument.Parse(written.RootElement.GetProperty("symbolsJson").GetString()!);
+        var symbol = symbols.RootElement[0];
+        var read = Wire.RoundTrip(request).Symbols.Single();
+
+        // PlatformJson writes the names of the members as they are.
+        Assert.AreEqual("file:///c:/workspace/Module1.bas", symbol.GetProperty("DocumentUri").GetString());
+        Assert.AreEqual("file:///c:/workspace/Module1.Part2.bas", symbol.GetProperty("Locals")[0].GetProperty("UnlessLive")[0].GetProperty("Uri").GetString());
+        Assert.AreEqual(request.Symbols[0].DocumentUri, read.DocumentUri);
+        CollectionAssert.AreEqual(request.Symbols[0].Locals[0].UnlessLive.ToArray(), read.Locals.Single().UnlessLive.ToArray());
     }
 
     [TestMethod]

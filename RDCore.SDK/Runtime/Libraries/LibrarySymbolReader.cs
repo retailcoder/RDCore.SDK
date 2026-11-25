@@ -55,6 +55,11 @@ namespace RDCore.SDK.Runtime.Libraries;
 /// known by the library's <see cref="LibraryOrigin.Guid"/>). That one is a standard module of the library, like VBA's own global module: its members are
 /// procedures of the module, with no <c>Me</c>, and names of the project at the library's rank, and it has neither a type nor events.
 /// </para>
+/// <para>
+/// Each symbol carries the help string its description has, as <see cref="SymbolProperties.DocString"/>: the library's project, its classes, modules,
+/// enumerations and their constants, members, events and constants. A class's default interface carries none of its own, since a description holds none
+/// for it; its members are the class's, with theirs.
+/// </para>
 /// </remarks>
 /// <param name="workspaceRoot">
 /// The workspace the symbols are addressed under. Library symbols are not <em>of</em> the workspace, but every <see cref="Symbol"/> is addressed relative to
@@ -83,7 +88,7 @@ public sealed class LibrarySymbolReader(Uri workspaceRoot, bool is64Bit = true)
 
         foreach (var library in libraries)
         {
-            symbols.Add(new VBProjectSymbol(workspaceRoot, library.Name).With(SymbolProperties.Library, library.Name));
+            symbols.Add(Described(new VBProjectSymbol(workspaceRoot, library.Name).With(SymbolProperties.Library, library.Name), library.Description));
 
             var owner = new VBStandardModuleSymbol(workspaceRoot, workspaceRoot, "_" + library.Name).With(SymbolProperties.Library, library.Name);
             symbols.Add(owner);
@@ -129,8 +134,8 @@ public sealed class LibrarySymbolReader(Uri workspaceRoot, bool is64Bit = true)
                 // the Visual Basic 6.0 library's application object is a module of the library: its members are names of the project, and it is not a type.
                 if (description.IsApplication && IsVisualBasic(library))
                 {
-                    var module = new VBStandardModuleSymbol(workspaceRoot, new VBProjectSymbol(workspaceRoot, library.Name).Uri, description.Name)
-                        .With(SymbolProperties.Library, library.Name);
+                    var module = Described(new VBStandardModuleSymbol(workspaceRoot, new VBProjectSymbol(workspaceRoot, library.Name).Uri, description.Name)
+                        .With(SymbolProperties.Library, library.Name), description.Description);
                     own.Add(module);
                     own.AddRange(description.Members.Select(member => ReadMember(library, description.Name, member, module.Uri, types, ScopeKind.Module)));
                     return;
@@ -164,8 +169,8 @@ public sealed class LibrarySymbolReader(Uri workspaceRoot, bool is64Bit = true)
             // constants are names of the project at the library's rank, and a procedure has no Me.
             foreach (var description in library.Modules)
             {
-                var module = new VBStandardModuleSymbol(workspaceRoot, new VBProjectSymbol(workspaceRoot, library.Name).Uri, description.Name)
-                    .With(SymbolProperties.Library, library.Name);
+                var module = Described(new VBStandardModuleSymbol(workspaceRoot, new VBProjectSymbol(workspaceRoot, library.Name).Uri, description.Name)
+                    .With(SymbolProperties.Library, library.Name), description.Description);
                 own.Add(module);
                 own.AddRange(description.Members.Select(member => ReadMember(library, description.Name, member, module.Uri, types, ScopeKind.Module)));
                 own.AddRange(description.Constants.Select(constant => ReadConstant(library, constant, module.Uri, types)).OfType<Symbol>());
@@ -367,18 +372,22 @@ public sealed class LibrarySymbolReader(Uri workspaceRoot, bool is64Bit = true)
             VBUnknownType.TypeInfo, SourceRange.Empty, SourceRange.Empty, AccessModifier.Public);
 
         var constants = description.Members
-            .Select(member => Added((VBEnumConstMemberSymbol)new VBEnumConstMemberSymbol(
+            .Select(member => Added(Described((VBEnumConstMemberSymbol)new VBEnumConstMemberSymbol(
                 workspaceRoot, symbol.Uri, member.Name, ScopeKind.Module, SymbolKindExt.EnumMember, SourceRange.Empty, SourceRange.Empty)
-                .With(SymbolProperties.EnumValue, member.Value), member.IsAddition))
+                .With(SymbolProperties.EnumValue, member.Value), member.Description), member.IsAddition))
             .ToArray();
 
-        return Added((VBEnumMemberSymbol)(symbol with { ResolvedType = new VBEnumType(symbol, constants, description.IsHidden) }).With(SymbolProperties.Library, library.Name),
-            description.IsAddition);
+        return Added(Described((VBEnumMemberSymbol)(symbol with { ResolvedType = new VBEnumType(symbol, constants, description.IsHidden) })
+            .With(SymbolProperties.Library, library.Name), description.Description), description.IsAddition);
     }
 
     // what RD-VBA adds to a library, which hover and completion can show as such.
     private static T Added<T>(T symbol, bool isAddition) where T : Symbol
         => isAddition ? (T)symbol.With(SymbolProperties.LibraryAddition, true) : symbol;
+
+    // what the library says the symbol is (its help string): what hover, completion and signature help show of it.
+    private static T Described<T>(T symbol, string? description) where T : Symbol
+        => description is { Length: > 0 } text ? (T)symbol.With(SymbolProperties.DocString, text) : symbol;
 
     private VBClassModuleSymbol ReadClass(LibraryDescription library, ClassDescription description, TypeNames types)
     {
@@ -390,6 +399,7 @@ public sealed class LibrarySymbolReader(Uri workspaceRoot, bool is64Bit = true)
             // TODO RDC11028: should a host's document class (Workbook, Worksheet; recorded in Excel) be Unregistered?
             // a library's classes are the host's, and a host adds members to its objects that the library does not declare.
             .With(SymbolProperties.Extensible, true);
+        symbol = Described(symbol, description.Description);
         if (description.ProgId is { Length: > 0 } progId)
         {
             symbol = (VBClassModuleSymbol)symbol.With(SymbolProperties.ProgId, progId);
@@ -463,11 +473,7 @@ public sealed class LibrarySymbolReader(Uri workspaceRoot, bool is64Bit = true)
         member = member.With(SymbolProperties.Library, library.Name)
             .With(SymbolProperties.ExternalTarget, ExternalTargetOf(library.Name, owner, description));
 
-        // what the library says the member does: what a completion list and a signature help show of it.
-        if (description.Description is { Length: > 0 } docString)
-        {
-            member = member.With(SymbolProperties.DocString, docString);
-        }
+        member = Described(member, description.Description);
 
         // the default member of a class and its enumerator are found by the id they carry, as those of a workspace class are by their attributes.
         if (description.DispId is 0 or -4)
@@ -508,12 +514,7 @@ public sealed class LibrarySymbolReader(Uri workspaceRoot, bool is64Bit = true)
             new LiteralExpressionNode(new SyntaxNodeId(moduleUri.AbsolutePath, []), new SourceLocation(moduleUri, SourceRange.Empty), value))
             .With(SymbolProperties.Library, library.Name);
 
-        if (description.Description is { Length: > 0 } docString)
-        {
-            constant = constant.With(SymbolProperties.DocString, docString);
-        }
-
-        constant = Added(constant, description.IsAddition);
+        constant = Added(Described(constant, description.Description), description.IsAddition);
         return (VBConstantMemberSymbol)(description.IsHidden
             ? constant.With(SymbolProperties.MemberFlags, constant.GetProperty(SymbolProperties.MemberFlags) | SymbolProperties.HiddenMemberFlag)
             : constant);
@@ -550,8 +551,9 @@ public sealed class LibrarySymbolReader(Uri workspaceRoot, bool is64Bit = true)
         var declaredEvent = new VBEventMemberSymbol(
             workspaceRoot, ownerUri, description.Name, ScopeKind.Instance, SourceRange.Empty, SourceRange.Empty, AccessModifier.Public);
 
-        return Added((VBTypeMemberSymbol)(declaredEvent with { Parameters = ReadParameters(library, description.Parameters, declaredEvent.Uri, withMe: false, types) })
-            .With(SymbolProperties.Library, library.Name), description.IsAddition);
+        var parameters = ReadParameters(library, description.Parameters, declaredEvent.Uri, withMe: false, types);
+        return Added(Described((VBTypeMemberSymbol)(declaredEvent with { Parameters = parameters }).With(SymbolProperties.Library, library.Name),
+            description.Description), description.IsAddition);
     }
 
     /// <summary>

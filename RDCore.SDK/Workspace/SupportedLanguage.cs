@@ -97,6 +97,17 @@ public class SupportedLanguage
     public bool UsesClassicBasicSyntax { get; init; }
 
     /// <summary>
+    /// Whether a file of the language may have statements outside its procedures (file-level statements), which run in the order they are written: the
+    /// script's own code, which is the program's entry point (<see cref="ProgramEntryPoint.ScriptName"/>).
+    /// </summary>
+    /// <remarks>
+    /// A script has them: VBScript runs a file from its first line to its last, and calls its procedures only where the file does.
+    /// VBA and VB6 do not: a statement outside a procedure is a syntax error (<strong>MS-VBAL §5.1</strong>), unless the workspace allows it
+    /// (<see cref="Server.Configuration.SdkWorkspaceOptions.FileLevelStatements"/>).
+    /// </remarks>
+    public bool HasFileLevelStatements { get; init; }
+
+    /// <summary>
     /// The libraries every project of the language references without its project file listing them, by name, in their order of reference precedence: after
     /// the standard library, and before the references the project file lists (<strong>RD-VBAL §2.3.1.3</strong>).
     /// </summary>
@@ -130,20 +141,26 @@ public class SupportedLanguage
     /// <summary>
     /// Whether a file is written in the language: whether its extension is the extension of one of its <see cref="FileTypes"/>.
     /// </summary>
-    /// <param name="path">The file's path, or its name.</param>
+    /// <remarks>
+    /// A module that a block of a file declares (<see cref="RDCoreDocument.BlockUri"/>) is written in the language of its file.
+    /// </remarks>
+    /// <param name="path">The file's path, or its name; or the path of a block's module.</param>
     /// <returns><see langword="true"/> when the extension is one of the language's, compared without regard to case.</returns>
     public bool IsSourceFile(string path) => HasExtensionOfOne(FileTypes, path);
 
     /// <summary>
     /// Whether a file is a module of a workspace of the language: whether its extension is the extension of one of its <see cref="ModuleFileTypes"/>.
     /// </summary>
-    /// <param name="path">The file's path, or its name.</param>
+    /// <remarks>
+    /// A module that a block of a file declares (<see cref="RDCoreDocument.BlockUri"/>) is a module of the workspaces its file is a module of.
+    /// </remarks>
+    /// <param name="path">The file's path, or its name; or the path of a block's module.</param>
     /// <returns><see langword="true"/> when the extension is one of the language's module files, compared without regard to case.</returns>
     public bool IsModuleFile(string path) => HasExtensionOfOne(ModuleFileTypes, path);
 
     private static bool HasExtensionOfOne(string[] fileTypes, string path)
     {
-        var extension = Path.GetExtension(path);
+        var extension = Path.GetExtension(RDCoreDocument.FileOf(path));
         return extension.Length > 0 && fileTypes.Any(fileType => string.Equals(fileType.TrimStart('*'), extension, StringComparison.OrdinalIgnoreCase));
     }
 
@@ -210,8 +227,24 @@ public static class SupportedLanguages
         UsesClassicBasicSyntax = true,
     };
 
+    /// <summary>
+    /// VBScript: Microsoft Visual Basic Scripting Edition, as Windows Script Host runs it.
+    /// </summary>
+    /// <remarks>
+    /// Its source is a script (<c>.vbs</c>): a text file with no header. A project of the language references the two libraries of Windows Script Host
+    /// without its project file listing them: <c>IHost</c>, the type library of <c>wscript.exe</c>, whose <c>WScript</c> object every script names, and
+    /// <c>IWshRuntimeLibrary</c> (Windows Script Host Object Model, <c>wshom.ocx</c>), whose <c>WshShell</c> a script creates with
+    /// <c>CreateObject("WScript.Shell")</c>. Its statements outside procedures are the script, which a run runs from its first line to its last
+    /// (<see cref="SupportedLanguage.HasFileLevelStatements"/>).
+    /// </remarks>
+    public static SupportedLanguage VBScript { get; } = new("vbscript", "Microsoft Visual Basic Scripting Edition", "*.vbs")
+    {
+        ImplicitReferences = ["IHost", "IWshRuntimeLibrary"],
+        HasFileLevelStatements = true,
+    };
+
     /// <summary>Every language the platform serves.</summary>
-    public static IReadOnlyList<SupportedLanguage> All { get; } = [RDVBA, VB6, BASIC];
+    public static IReadOnlyList<SupportedLanguage> All { get; } = [RDVBA, VB6, BASIC, VBScript];
 
     /// <summary>
     /// The selector of the documents of every language the platform serves, by their files: a client names a document's language its own way, so what selects
@@ -222,18 +255,20 @@ public static class SupportedLanguages
         .Select(fileType => new TextDocumentFilter { Pattern = $"**/{fileType}" }));
 
     /// <summary>
-    /// The language a project's file says the project is written in: <see cref="VB6"/> for a project imported from a Visual Basic 6 project
-    /// (<see cref="RDCoreProject.SourceProject"/>, a <c>.vbp</c>).
+    /// The language a project says it is written in: <see cref="VB6"/> for a project imported from a Visual Basic 6 project
+    /// (<see cref="RDCoreProject.SourceProject"/>, a <c>.vbp</c>), and <see cref="VBScript"/> for a project whose modules are all scripts (<c>.vbs</c>).
     /// </summary>
     /// <remarks>
     /// A server takes it when its client names no language in the <c>initializationOptions</c> of its <c>initialize</c> request
-    /// (<see cref="Platform.Protocol.RDCoreInitializationOptions.Language"/>): what the client names wins. A project that was not imported from a <c>.vbp</c> says
-    /// no language, and the server's own setting stands.
+    /// (<see cref="Platform.Protocol.RDCoreInitializationOptions.Language"/>): what the client names wins. Any other project says no language, and the
+    /// server's own setting stands.
     /// </remarks>
     /// <param name="project">The project.</param>
-    /// <returns>The language, or <see langword="null"/> when the project's file says none.</returns>
+    /// <returns>The language, or <see langword="null"/> when the project says none.</returns>
     public static SupportedLanguage? OfProject(RDCoreProject project)
-        => project.SourceProject is { } source && string.Equals(Path.GetExtension(source), ".vbp", StringComparison.OrdinalIgnoreCase) ? VB6 : null;
+        => project.SourceProject is { } source && string.Equals(Path.GetExtension(source), ".vbp", StringComparison.OrdinalIgnoreCase) ? VB6
+            : project.Modules is { Length: > 0 } modules && modules.All(module => module.RelativeUri is { } path && VBScript.IsSourceFile(path)) ? VBScript
+            : null;
 
     /// <summary>
     /// The language with the given identifier.

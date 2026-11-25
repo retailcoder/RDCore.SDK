@@ -68,6 +68,13 @@ public record class SymbolDescriptor
     public string? FixedLengthName { get; init; }
 
     /// <summary>
+    /// The document the member is written in (<see cref="WorkspaceSymbol.DocumentUri"/>), which <see cref="Range"/>, <see cref="SelectionRange"/> and
+    /// <see cref="Definitions"/> are ranges of, as are the ranges of its parameters, locals and constants. <see langword="null"/> for a member that was not
+    /// read from a document. Unread on a descriptor of <see cref="Members"/>: a member of a member is written in its parent's document.
+    /// </summary>
+    public Uri? DocumentUri { get; init; }
+
+    /// <summary>
     /// The source span of the whole declaration — the primary site (the first branch) when the
     /// member has multiple <see cref="Definitions"/>.
     /// </summary>
@@ -258,9 +265,10 @@ public record class LocalDescriptor
 
     /// <summary>
     /// Where the declarations are that keep this implicit or <c>ReDim</c> local from being declared, each in a branch of a <c>#If</c> block: the host
-    /// declares it only when every one of them is in a dead branch (<see cref="SymbolProperties.UnlessLive"/>). Empty for a local that is always declared.
+    /// declares it only when every one of them is in a dead branch (<see cref="SymbolProperties.UnlessLive"/>). Each is its document and the start of its
+    /// range. Empty for a local that is always declared.
     /// </summary>
-    public ImmutableArray<SourcePosition> UnlessLive { get; init; } = [];
+    public ImmutableArray<SourceLocation> UnlessLive { get; init; } = [];
 }
 
 /// <summary>

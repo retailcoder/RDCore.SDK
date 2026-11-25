@@ -64,7 +64,24 @@ public interface ISessionHalt
     void Request(RuntimeHaltKind kind, SourceLocation? location = null);
 
     /// <summary>
-    /// Forgets the request, so that the next program starts as one that was never stopped.
+    /// The code the process of a program that <see cref="RuntimeHaltKind.End"/> stopped ends with: <c>0</c>, unless the program said another as it ended
+    /// (<see cref="RequestEnd"/>).
+    /// </summary>
+    int ExitCode { get; }
+
+    /// <summary>
+    /// Stops the program as an <c>End</c> statement does (<see cref="RuntimeHaltKind.End"/>), and says the code its process ends with: Windows Script Host's
+    /// <c>WScript.Quit</c>.
+    /// </summary>
+    /// <param name="exitCode">The code the process ends with (<see cref="ExitCode"/>).</param>
+    /// <param name="location">The statement that stopped it, or <see langword="null"/> when it was not one.</param>
+    /// <remarks>
+    /// The first request stands, as it does for <see cref="Request"/>: a program that is already stopping keeps the code it was stopped with.
+    /// </remarks>
+    void RequestEnd(int exitCode, SourceLocation? location = null);
+
+    /// <summary>
+    /// Forgets the request and its <see cref="ExitCode"/>, so that the next program starts as one that was never stopped.
     /// </summary>
     void Clear();
 

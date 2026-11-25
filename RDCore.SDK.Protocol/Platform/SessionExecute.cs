@@ -73,6 +73,12 @@ public record class ExecuteResult
     public ExecutionOutcome Outcome { get; init; }
 
     /// <summary>
+    /// The code the program said its process ends with as it ended (<c>WScript.Quit</c>), when <see cref="Outcome"/> is <see cref="ExecutionOutcome.Halted"/>;
+    /// <c>0</c> otherwise.
+    /// </summary>
+    public int ExitCode { get; init; }
+
+    /// <summary>
     /// Everything the program printed, in order, one entry per line — including a line it left open
     /// with a trailing <c>;</c>.
     /// </summary>

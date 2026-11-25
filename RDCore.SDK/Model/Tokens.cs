@@ -267,6 +267,10 @@ public static class Tokens
     public const string VB_Extensible = "VB_Extensible";
     public const string VB_Ext_Key = "VB_Ext_Key";
     public const string VB_Description = "VB_Description";
+    /// <summary>
+    /// The attribute that describes a module variable (<c>Attribute Name.VB_VarDescription = "..."</c>), as <see cref="VB_Description"/> describes a member.
+    /// </summary>
+    public const string VB_VarDescription = "VB_VarDescription";
     public const string VB_UserMemId = "VB_UserMemId";
     public const string VB_MemberFlags = "VB_MemberFlags";
     public const string VB_Customizable = "VB_Customizable";

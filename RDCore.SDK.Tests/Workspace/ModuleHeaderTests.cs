@@ -28,6 +28,7 @@ public sealed class ModuleHeaderTests
     [DataRow(StandardModule)]
     [DataRow("Option Explicit\r\n' VERSION 1.0 CLASS was here once\r\n")] // not on its own line
     [DataRow("Attribute VB_Name = \"NotAClass\"\r\n")]
+    [DataRow("Option Explicit\r\nClass Logger\r\nVERSION 1.0 CLASS\r\nEnd Class\r\n")] // inside a block: the block's code
     public void IsClassModule_False_WhenSourceHasNoVersionHeader(string source)
         => Assert.AreEqual(false, ModuleHeader.IsClassModule(source));
 
@@ -49,6 +50,8 @@ public sealed class ModuleHeaderTests
     [DataRow(DesignerModule, 3, 21, 26, DisplayName = "a designer module")]
     [DataRow("Option Explicit\r\n  attribute  vb_name=\"Late\"\r\n", 1, 22, 26, DisplayName = "any case and spacing, on a later line")]
     [DataRow("Attribute VB_Name = \"\"\r\n", 0, 21, 21, DisplayName = "an empty name")]
+    [DataRow("Class Logger\r\nAttribute VB_Name = \"Other\"\r\nEnd Class\r\nAttribute VB_Name = \"Backup\"\r\n", 3, 21, 27,
+        DisplayName = "the file's own, after a block that writes one")]
     public void NameRangeOf_IsBetweenTheQuotesOfTheFirstVBNameLine(string source, int line, int start, int end)
         => Assert.AreEqual(new SourceRange(line, start, line, end), ModuleHeader.NameRangeOf(source));
 

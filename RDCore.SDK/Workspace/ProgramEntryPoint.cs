@@ -29,6 +29,16 @@ public static class ProgramEntryPoint
     public const string Name = BasicProgramText.EntryPointName;
 
     /// <summary>
+    /// The name of the procedure that a file's statements outside its procedures are, in the order they are written: the script's own code
+    /// (<see cref="SupportedLanguage.HasFileLevelStatements"/>). It is no name a program can write, so it is never one of its own procedures.
+    /// </summary>
+    /// <remarks>
+    /// A module that may have such statements has this procedure, even when it has none of them: a script whose code is all procedures runs nothing, as a
+    /// script does. It is the program's entry point ahead of a <c>Sub Main</c> (<see cref="Of"/>).
+    /// </remarks>
+    public const string ScriptName = "(Script)";
+
+    /// <summary>
     /// Whether a module declares a procedure a program can start with.
     /// </summary>
     /// <param name="module">The module.</param>
@@ -52,8 +62,8 @@ public static class ProgramEntryPoint
            && string.Equals(member.Name, name, StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
-    /// The entry point of a project: the procedure its <c>build</c> section names (<see cref="ProjectBuild.EntryPoint"/>), or else the <see cref="Name"/>
-    /// procedure of the one standard module that declares one.
+    /// The entry point of a project: the procedure its <c>build</c> section names (<see cref="ProjectBuild.EntryPoint"/>), or else the script of the one
+    /// standard module that is a script (<see cref="ScriptName"/>), or else the <see cref="Name"/> procedure of the one standard module that declares one.
     /// </summary>
     /// <remarks>
     /// <para>
@@ -80,9 +90,28 @@ public static class ProgramEntryPoint
         {
             [var module, var procedure] => (procedure, module),
             [var procedure] => (procedure, (string?)null),
-            _ => (Name, null),
+            _ => ((string?)null, (string?)null),
         };
 
+        var listed = modules.ToList();
+        var found = Declaring(listed, named ?? ScriptName, inModule);
+        if (named is null && found.Count == 0)
+        {
+            found = Declaring(listed, Name, inModule: null);
+        }
+
+        return found switch
+        {
+            [var (module, procedure)] => new ProgramEntryPointResolution { Module = module, Procedure = procedure },
+            [] => new ProgramEntryPointResolution { Refusal = ProgramEntryPointRefusal.NotFound },
+            _ => new ProgramEntryPointResolution { Refusal = ProgramEntryPointRefusal.Ambiguous, Candidates = [.. found.Select(entry => entry.Module)] },
+        };
+    }
+
+    // the standard modules that declare an entry point of that name: in the module named, or in any.
+    private static List<(VBModuleSymbol Module, VBTypeMemberSymbol Procedure)> Declaring(
+        IEnumerable<(VBModuleSymbol Module, IEnumerable<VBTypeMemberSymbol> Members)> modules, string named, string? inModule)
+    {
         var found = new List<(VBModuleSymbol Module, VBTypeMemberSymbol Procedure)>();
         foreach (var (module, members) in modules)
         {
@@ -97,12 +126,7 @@ public static class ProgramEntryPoint
             }
         }
 
-        return found switch
-        {
-            [var (module, procedure)] => new ProgramEntryPointResolution { Module = module, Procedure = procedure },
-            [] => new ProgramEntryPointResolution { Refusal = ProgramEntryPointRefusal.NotFound },
-            _ => new ProgramEntryPointResolution { Refusal = ProgramEntryPointRefusal.Ambiguous, Candidates = [.. found.Select(entry => entry.Module)] },
-        };
+        return found;
     }
 
     /// <summary>

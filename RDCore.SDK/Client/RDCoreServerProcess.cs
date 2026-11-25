@@ -168,7 +168,8 @@ public class RDCoreServerProcess(
         var verbose = true; //Options.Value.Server.Verbose;
 
         var arguments = ServerArguments(
-            Environment.ProcessId, pipeName, workspace, trace, verbose, Options.Value.Workspace.Language, Options.Value.Workspace.Defines);
+            Environment.ProcessId, pipeName, workspace, trace, verbose, Options.Value.Workspace.Language, Options.Value.Workspace.Defines,
+            Options.Value.Workspace.FileLevelStatements);
         var info = CreateProcessStartInfo(fullPath, arguments);
         if (mode is not null)
         {
@@ -216,7 +217,9 @@ public class RDCoreServerProcess(
     /// The language a client serves is its own to say of the server it starts: an interactive shell is a BASIC, and says so
     /// here, because the servers have to agree on it. It is left out when it is the default, so that a server's own
     /// settings win. The constants the client's own command line defines (<see cref="SdkWorkspaceOptions.Defines"/>) are passed on as
-    /// <c>--define</c>, so that every component reads the same project-level constants, including the servers that a server starts in turn.
+    /// <c>--define</c>, so that every component reads the same project-level constants, including the servers that a server starts in turn. A workspace whose
+    /// files may have statements outside procedures (<see cref="SdkWorkspaceOptions.FileLevelStatements"/>) says so with
+    /// <c>--file-level-statements</c>, so that the parser reads them.
     /// <para>
     /// 👉 <c>-v</c> goes last. It is a switch the argument parser only reads as one at the end of a command line; with
     /// anything after it, it takes the next argument for its value and the server never starts.
@@ -229,9 +232,10 @@ public class RDCoreServerProcess(
     /// <param name="verbose">Whether the server logs verbosely.</param>
     /// <param name="language">The identifier of the language the client serves; <see langword="null"/> for the default.</param>
     /// <param name="defines">The project-level constants the client's command line defines, by name; <see langword="null"/> or empty for none.</param>
+    /// <param name="fileLevelStatements">Whether the workspace's files may have statements outside procedures.</param>
     internal static string ServerArguments(
         int clientProcessId, string pipeName, string workspace, LogLevel trace, bool verbose, string? language = null,
-        IReadOnlyDictionary<string, string>? defines = null)
+        IReadOnlyDictionary<string, string>? defines = null, bool fileLevelStatements = false)
     {
         var languageArgument = language is null || string.Equals(language, Workspace.SupportedLanguages.RDVBA.Id, StringComparison.OrdinalIgnoreCase)
             ? null
@@ -244,7 +248,9 @@ public class RDCoreServerProcess(
 
         // the workspace is quoted as a --define value is: a folder's path that ends with its separator would otherwise escape the closing quote, and the
         // rest of the command line would be read as the workspace.
-        return $"-p {clientProcessId} -n {pipeName} -w {Quoted(workspace)} {languageArgument}{definesArgument}-t {trace} {(verbose ? "-v" : null)}";
+        var statementsArgument = fileLevelStatements ? "--file-level-statements " : null;
+        return $"-p {clientProcessId} -n {pipeName} -w {Quoted(workspace)} {languageArgument}{statementsArgument}{definesArgument}"
+            + $"-t {trace} {(verbose ? "-v" : null)}";
     }
 
     // one argument, quoted so the process reads it back as written: a backslash stands for itself, except before a quote, where the backslashes are

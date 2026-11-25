@@ -160,6 +160,106 @@ public sealed class SymbolDescriptorReaderTests
         Assert.AreEqual(new SourceRange(3, 0, 3, 17), field.Definitions[1].Range);
     }
 
+    private static readonly Uri Document = new("file:///c:/ws/Mod1.bas");
+
+    // a module written in two files: a name it declares in a #If branch of the other file than the procedure's.
+    private static readonly Uri OtherPart = new("file:///c:/ws/Mod1.Part2.bas");
+
+    // what a descriptor declares is written in its document: its parameters, its locals and the fields of its type with it.
+    [TestMethod]
+    public void WhatADescriptorDeclares_IsWrittenInItsDocument()
+    {
+        var unlessLive = new SourceLocation(OtherPart, new SourceRange(2, 4, 2, 4));
+        var symbols = Read(
+            new SymbolDescriptor
+            {
+                Name = "Add",
+                Kind = SymbolDescriptorKind.Function,
+                DocumentUri = Document,
+                Parameters = [new ParameterDescriptor { Name = "a", DeclaredTypeName = "Long" }],
+                Locals = [new LocalDescriptor { Name = "total", DeclaredBy = LocalDeclarationKind.Implicit, UnlessLive = [unlessLive] }],
+            },
+            new SymbolDescriptor
+            {
+                Name = "TPoint",
+                Kind = SymbolDescriptorKind.UserDefinedType,
+                DocumentUri = Document,
+                Members = [new SymbolDescriptor { Name = "X", Kind = SymbolDescriptorKind.UserDefinedTypeField, DeclaredTypeName = "Long" }],
+            });
+
+        var function = symbols.OfType<VBFunctionMemberSymbol>().Single();
+        var type = symbols.OfType<VBUserDefinedTypeMemberSymbol>().Single();
+        WorkspaceSymbol[] written =
+            [function, .. function.Parameters, .. function.Locals, type, .. type.Members, .. symbols.OfType<VBUserDefinedTypeFieldSymbol>()];
+        Assert.HasCount(6, written);
+        Assert.IsTrue(written.All(symbol => symbol.DocumentUri == Document),
+            string.Join(", ", written.Select(symbol => $"{symbol.Name}: {symbol.DocumentUri}")));
+        Assert.AreEqual(new SourceLocation(Document, function.Range), function.Location);
+        CollectionAssert.AreEqual(new[] { unlessLive }, function.Locals.Single().GetProperty(SymbolProperties.UnlessLive).ToArray());
+    }
+
+    // the other branches of a declaration are written where it is: a module's #If block is in one file.
+    [TestMethod]
+    public void ASymbolInADocument_HasItsAlternativesThere()
+    {
+        var field = (WorkspaceSymbol)Read(MultiBranchField(document: null)).Single();
+
+        var written = (WorkspaceSymbol)(field with { Alternatives = [field] }).InDocument(Document);
+
+        Assert.AreEqual(Document, written.DocumentUri);
+        Assert.AreEqual(Document, written.Alternatives.Single().DocumentUri);
+    }
+
+    [TestMethod]
+    public void ADescriptorOfNoDocument_DeclaresSymbolsOfNone()
+    {
+        var field = (WorkspaceSymbol)Read(new SymbolDescriptor { Name = "Total", Kind = SymbolDescriptorKind.ModuleField }).Single();
+
+        Assert.IsNull(field.DocumentUri);
+        Assert.IsNull(field.Location);
+    }
+
+    // the dead branches are keyed by document and range: the same range of another document is not dead, and a site of no document is in no branch.
+    [TestMethod]
+    [DataRow("file:///c:/ws/Mod1.bas", DefinitionState.Dead, DisplayName = "the second site's own document")]
+    [DataRow("file:///c:/ws/Mod1.Part2.bas", DefinitionState.Live, DisplayName = "the same range of another document")]
+    public void TheLiveDeclaration_IsDecidedWhereEachSiteIsWritten(string deadIn, DefinitionState second)
+    {
+        var dead = new SourceLocation(new Uri(deadIn), new SourceRange(3, 0, 3, 17));
+        var field = (WorkspaceSymbol)Read(MultiBranchField(Document)).Single();
+
+        var live = field.LiveDeclaration(location => location.Uri == dead.Uri && location.Range.Start == dead.Range.Start);
+
+        Assert.IsNotNull(live);
+        CollectionAssert.AreEqual(new[] { DefinitionState.Live, second }, live.Definitions.Select(definition => definition.State).ToArray());
+    }
+
+    [TestMethod]
+    public void ASiteOfNoDocument_IsLive()
+    {
+        var field = (WorkspaceSymbol)Read(MultiBranchField(document: null)).Single();
+
+        var live = field.LiveDeclaration(_ => true);
+
+        Assert.IsNotNull(live, "a symbol of no document is in no #If branch");
+        Assert.IsTrue(live.Definitions.All(definition => definition.State == DefinitionState.Live));
+    }
+
+    private static SymbolDescriptor MultiBranchField(Uri? document) => new()
+    {
+        Name = "Flags",
+        Kind = SymbolDescriptorKind.ModuleField,
+        DeclaredTypeName = "Long",
+        DocumentUri = document,
+        Range = new SourceRange(1, 0, 1, 15),
+        SelectionRange = new SourceRange(1, 4, 1, 9),
+        Definitions =
+        [
+            new DefinitionDescriptor { Range = new SourceRange(1, 0, 1, 15), SelectionRange = new SourceRange(1, 4, 1, 9) },
+            new DefinitionDescriptor { Range = new SourceRange(3, 0, 3, 17), SelectionRange = new SourceRange(3, 4, 3, 9) },
+        ],
+    };
+
     [TestMethod]
     public void SingleBranchDescriptor_LeavesDefinitionsEmpty()
     {

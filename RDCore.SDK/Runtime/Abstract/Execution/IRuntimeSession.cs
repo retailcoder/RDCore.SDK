@@ -302,11 +302,12 @@ public interface ISessionSymbols
     /// </remarks>
     /// <param name="moduleName">The name of the class module, which has been defined with its members.</param>
     /// <param name="implementedInterfaceNames">The names of the interfaces its <c>Implements</c> directives name, as written.</param>
+    /// <param name="implementedInterfaceLocations">Where each directive is written, its file and its range, one for each name, or empty when that is not
+    /// known.</param>
     /// <returns><see langword="false"/> if the session has no class module of that name.</returns>
-    /// <param name="implementedInterfaceRanges">Where each directive is written, one for each name, or empty when that is not known.</param>
     bool TryComposeClassModule(
         string moduleName, System.Collections.Immutable.ImmutableArray<string> implementedInterfaceNames,
-        System.Collections.Immutable.ImmutableArray<RDCore.SDK.Model.Source.SourceRange> implementedInterfaceRanges = default);
+        System.Collections.Immutable.ImmutableArray<RDCore.SDK.Model.Source.SourceLocation> implementedInterfaceLocations = default);
 
     /// <summary>
     /// Composes the class module whose <see cref="Symbol.Uri"/> is <paramref name="moduleUri"/>, as the overload that takes a module name
@@ -318,11 +319,12 @@ public interface ISessionSymbols
     /// </remarks>
     /// <param name="moduleUri">The <see cref="Symbol.Uri"/> of the class module, which has been defined with its members.</param>
     /// <param name="implementedInterfaceNames">The names of the interfaces its <c>Implements</c> directives name, as written.</param>
-    /// <param name="implementedInterfaceRanges">Where each directive is written, one for each name, or empty when that is not known.</param>
+    /// <param name="implementedInterfaceLocations">Where each directive is written, its file and its range, one for each name, or empty when that is not
+    /// known.</param>
     /// <returns><see langword="false"/> if the session has no class module of that identity.</returns>
     bool TryComposeClassModule(
         Uri moduleUri, System.Collections.Immutable.ImmutableArray<string> implementedInterfaceNames,
-        System.Collections.Immutable.ImmutableArray<RDCore.SDK.Model.Source.SourceRange> implementedInterfaceRanges = default);
+        System.Collections.Immutable.ImmutableArray<RDCore.SDK.Model.Source.SourceLocation> implementedInterfaceLocations = default);
 
     /// <summary>
     /// What the storage of a declared variable starts as, or <see langword="null"/> while nothing can reduce the constant

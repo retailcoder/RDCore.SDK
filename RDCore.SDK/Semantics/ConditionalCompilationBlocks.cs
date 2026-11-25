@@ -6,20 +6,24 @@ using System.Collections.Immutable;
 namespace RDCore.SDK.Semantics;
 
 /// <summary>
-/// The shape of the <c>#If</c> blocks of a module (<strong>MS-VBAL §3.4</strong>): which source ranges are the branches of one block, whatever they evaluate to.
+/// The shape of the <c>#If</c> blocks of a module (<strong>MS-VBAL §3.4</strong>): where the branches of each block are written, whatever they evaluate to.
 /// </summary>
 /// <remarks>
 /// A name can be declared in each branch of a <c>#If</c> block and be one declaration, whichever branch compiles: the branches are alternatives of one another.
 /// A name declared twice in the same branch - or twice with no <c>#If</c> at all - is not an alternative of itself, but a duplicate. Telling them apart takes no
 /// constant to be evaluated, only where each branch begins and ends; it is the structure that the evaluation of the constants (<c>PrecompilerLiveBranchEvaluator</c>)
 /// then chooses a branch of.
+/// <para>
+/// A branch is where its file and its range say, as a <see cref="SourceLocation"/>: a module written in several files repeats positions, and what is written
+/// at a position of one file is in no branch of another. A block is written in one file, with all its branches.
+/// </para>
 /// </remarks>
 public sealed class ConditionalCompilationBlocks
 {
-    private readonly ImmutableArray<ImmutableArray<SourceRange>> _blocks;
+    private readonly ImmutableArray<ImmutableArray<SourceLocation>> _blocks;
     private readonly ImmutableArray<(int Branches, bool HasElse)> _shapes;
 
-    private ConditionalCompilationBlocks(ImmutableArray<ImmutableArray<SourceRange>> blocks, ImmutableArray<(int Branches, bool HasElse)> shapes)
+    private ConditionalCompilationBlocks(ImmutableArray<ImmutableArray<SourceLocation>> blocks, ImmutableArray<(int Branches, bool HasElse)> shapes)
         => (_blocks, _shapes) = (blocks, shapes);
 
     /// <summary>
@@ -28,9 +32,10 @@ public sealed class ConditionalCompilationBlocks
     public static ConditionalCompilationBlocks None { get; } = new([], []);
 
     /// <summary>
-    /// The blocks of a module, read off its precompiler trivia, nested ones included.
+    /// The blocks of a module, read off its precompiler trivia, nested ones included, each where its nodes' <see cref="SyntaxNode.SourceLocation"/> say.
     /// </summary>
-    /// <param name="precompilerTrivia">The module's <c>ModuleParseResult.PrecompilerTrivia</c>.</param>
+    /// <param name="precompilerTrivia">The module's <c>ModuleParseResult.PrecompilerTrivia</c>, or the trivia of each file of a module written in
+    /// several.</param>
     public static ConditionalCompilationBlocks Of(ImmutableArray<SyntaxNode> precompilerTrivia)
     {
         if (precompilerTrivia.IsDefaultOrEmpty)
@@ -38,7 +43,7 @@ public sealed class ConditionalCompilationBlocks
             return None;
         }
 
-        var blocks = ImmutableArray.CreateBuilder<ImmutableArray<SourceRange>>();
+        var blocks = ImmutableArray.CreateBuilder<ImmutableArray<SourceLocation>>();
         var shapes = ImmutableArray.CreateBuilder<(int Branches, bool HasElse)>();
         foreach (var node in precompilerTrivia)
         {
@@ -55,7 +60,7 @@ public sealed class ConditionalCompilationBlocks
     /// <param name="block">The ordinal of the block, as <see cref="BranchesAt"/> gives it with the same <paramref name="counted"/>.</param>
     /// <param name="counted">Which blocks are counted, as <see cref="BranchesAt"/> counts them.</param>
     /// <exception cref="ArgumentOutOfRangeException">No counted block has that ordinal.</exception>
-    public bool HasElse(int block, Func<SourceRange, bool> counted) => ShapeOf(block, counted).HasElse;
+    public bool HasElse(int block, Func<SourceLocation, bool> counted) => ShapeOf(block, counted).HasElse;
 
     /// <summary>
     /// How many branches a block has: its <c>#If</c>, each <c>#ElseIf</c>, and its <c>#Else</c>, whatever they hold, an empty one included. A branch that holds
@@ -64,15 +69,15 @@ public sealed class ConditionalCompilationBlocks
     /// <param name="block">The ordinal of the block, as <see cref="BranchesAt"/> gives it with the same <paramref name="counted"/>.</param>
     /// <param name="counted">Which blocks are counted, as <see cref="BranchesAt"/> counts them.</param>
     /// <exception cref="ArgumentOutOfRangeException">No counted block has that ordinal.</exception>
-    public int BranchCount(int block, Func<SourceRange, bool> counted) => ShapeOf(block, counted).Branches;
+    public int BranchCount(int block, Func<SourceLocation, bool> counted) => ShapeOf(block, counted).Branches;
 
-    private (int Branches, bool HasElse) ShapeOf(int block, Func<SourceRange, bool> counted)
+    private (int Branches, bool HasElse) ShapeOf(int block, Func<SourceLocation, bool> counted)
     {
         var ordinal = 0;
         for (var index = 0; index < _blocks.Length; index++)
         {
             var branches = _blocks[index];
-            if (branches.IsDefaultOrEmpty || !counted(new SourceRange(branches[0].Start, branches[^1].End)))
+            if (branches.IsDefaultOrEmpty || !counted(Extent(branches)))
             {
                 continue;
             }
@@ -88,10 +93,11 @@ public sealed class ConditionalCompilationBlocks
 
     /// <summary>
     /// Whether the declarations at <paramref name="first"/> and <paramref name="second"/> are in different branches of one block, so that at most one of them is ever compiled.
+    /// Declarations in two files are never alternatives: no block is written in both.
     /// </summary>
-    /// <param name="first">Where the first is declared.</param>
-    /// <param name="second">Where the second is declared.</param>
-    public bool AreAlternatives(SourcePosition first, SourcePosition second)
+    /// <param name="first">Where the first is declared: its file, and the start of its range.</param>
+    /// <param name="second">Where the second is declared: its file, and the start of its range.</param>
+    public bool AreAlternatives(SourceLocation first, SourceLocation second)
     {
         foreach (var branches in _blocks)
         {
@@ -107,36 +113,36 @@ public sealed class ConditionalCompilationBlocks
     }
 
     /// <summary>
-    /// Whether what is written at <paramref name="position"/> is in a branch of a block, and so compiled only when that branch is live.
+    /// Whether what is written at <paramref name="location"/> is in a branch of a block, and so compiled only when that branch is live.
     /// </summary>
-    /// <param name="position">Where it is written.</param>
-    public bool IsConditional(SourcePosition position) => _blocks.Any(branches => BranchAt(branches, position) >= 0);
+    /// <param name="location">Where it is written: its file, and the start of its range.</param>
+    public bool IsConditional(SourceLocation location) => _blocks.Any(branches => BranchAt(branches, location) >= 0);
 
     /// <summary>
-    /// The branches that hold what is written at <paramref name="position"/>, the outermost first: for each block that holds it, which block it is and which of
-    /// its branches. Neither says where the block is written, only how many blocks come before it and how many branches before the one that holds it.
+    /// The branches that hold what is written at <paramref name="location"/>, the outermost first: for each block that holds it, which block it is and which
+    /// of its branches. Neither says where the block is written, only how many blocks come before it and how many branches before the one that holds it.
     /// </summary>
-    /// <param name="position">Where it is written.</param>
-    /// <param name="counted">Which blocks are counted, by the range from the start of the first branch to the end of the last: a block that is not counted
-    /// holds nothing, and is not counted in the ordinal of those after it.</param>
+    /// <param name="location">Where it is written: its file, and the start of its range.</param>
+    /// <param name="counted">Which blocks are counted, by their file and the range from the start of the first branch to the end of the last: a block that
+    /// is not counted holds nothing, and is not counted in the ordinal of those after it.</param>
     /// <returns>For each block that holds the position, its ordinal among the blocks counted, in the order they are written, and the ordinal of the branch -
     /// the <c>#If</c>, each <c>#ElseIf</c>, then the <c>#Else</c>; nothing when no counted block holds it.</returns>
     /// <remarks>
     /// Two declarations with the same branches are compiled together, whatever the constants are; a declaration moved into a branch, out of one or to another
     /// is compiled when other constants say so (<strong>MS-VBAL §3.4</strong>).
     /// </remarks>
-    public IReadOnlyList<(int Block, int Branch)> BranchesAt(SourcePosition position, Func<SourceRange, bool> counted)
+    public IReadOnlyList<(int Block, int Branch)> BranchesAt(SourceLocation location, Func<SourceLocation, bool> counted)
     {
         var branchesAt = new List<(int Block, int Branch)>();
         var ordinal = 0;
         foreach (var branches in _blocks)
         {
-            if (branches.IsDefaultOrEmpty || !counted(new SourceRange(branches[0].Start, branches[^1].End)))
+            if (branches.IsDefaultOrEmpty || !counted(Extent(branches)))
             {
                 continue;
             }
 
-            if (BranchAt(branches, position) is var branch and >= 0)
+            if (BranchAt(branches, location) is var branch and >= 0)
             {
                 branchesAt.Add((ordinal, branch));
             }
@@ -147,12 +153,17 @@ public sealed class ConditionalCompilationBlocks
         return branchesAt;
     }
 
-    // the range of a branch ends at the start of its last token, and is inclusive of it.
-    private static int BranchAt(ImmutableArray<SourceRange> branches, SourcePosition position)
+    // a block, from the start of its first branch to the end of its last, in the file it is written in.
+    private static SourceLocation Extent(ImmutableArray<SourceLocation> branches)
+        => branches[0] with { Range = new SourceRange(branches[0].Range.Start, branches[^1].Range.End) };
+
+    // the range of a branch ends at the start of its last token, and is inclusive of it; a branch of another file holds nothing of this one.
+    private static int BranchAt(ImmutableArray<SourceLocation> branches, SourceLocation location)
     {
+        var position = location.Range.Start;
         for (var index = 0; index < branches.Length; index++)
         {
-            if (position >= branches[index].Start && position <= branches[index].End)
+            if (branches[index].Uri == location.Uri && position >= branches[index].Range.Start && position <= branches[index].Range.End)
             {
                 return index;
             }
@@ -161,13 +172,14 @@ public sealed class ConditionalCompilationBlocks
         return -1;
     }
 
-    private static void Collect(SyntaxNode node, ImmutableArray<ImmutableArray<SourceRange>>.Builder blocks, ImmutableArray<(int Branches, bool HasElse)>.Builder shapes)
+    private static void Collect(
+        SyntaxNode node, ImmutableArray<ImmutableArray<SourceLocation>>.Builder blocks, ImmutableArray<(int Branches, bool HasElse)>.Builder shapes)
     {
         switch (node)
         {
             case PrecompilerIfBlockStatementNode ifBlock:
                 var bodies = BranchBodies(ifBlock);
-                blocks.Add([.. bodies.Select(body => body.SourceLocation.Range)]);
+                blocks.Add([.. bodies.Select(body => body.SourceLocation)]);
 
                 // the #If, each #ElseIf and the #Else, whether they hold anything or not.
                 var hasElse = ifBlock.Children.OfType<PrecompilerElseBlockStatementNode>().Any();

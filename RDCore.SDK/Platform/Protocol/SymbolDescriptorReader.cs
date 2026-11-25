@@ -102,8 +102,10 @@ public static class SymbolDescriptorReader
             // constants, udt fields) that carry their own descriptors — so only the first carries
             // the descriptor's multi-branch Definitions.
             var isPrimary = true;
-            foreach (var symbol in Read(descriptor, workspaceRoot, moduleUri, resolveType))
+            foreach (var read in Read(descriptor, workspaceRoot, moduleUri, resolveType))
             {
+                // what a descriptor declares is written in its document, the members of a member with it.
+                var symbol = read.InDocument(descriptor.DocumentUri);
                 yield return isPrimary ? WithExternalTarget(WithUserMemId(WithDefinitions(symbol, descriptor), descriptor), descriptor) : symbol;
                 isPrimary = false;
             }

@@ -46,7 +46,8 @@ public static partial class DeclarationEdits
         }
 
         var at = last < 0 ? SourcePosition.Zero : lines.StartOfLineAfter(last);
-        return ConditionalCompilationBlocks.Of(parse.PrecompilerTrivia).IsConditional(at) ? null : at;
+        var insertion = new SourceLocation(module.SourceLocation.Uri, new SourceRange(at, at));
+        return ConditionalCompilationBlocks.Of(parse.PrecompilerTrivia).IsConditional(insertion) ? null : at;
     }
 
     /// <summary>

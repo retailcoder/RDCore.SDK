@@ -35,13 +35,33 @@ public abstract record class WorkspaceSymbol(Uri WorkspaceRoot, Uri ParentUri, s
     public ImmutableArray<WorkspaceSymbol> Alternatives { get; init; } = [];
 
     /// <summary>
+    /// The document the symbol is written in: the <see cref="SourceLocation.Uri"/> of its declaration's nodes, which is the file's and not the module's
+    /// identity (<see cref="Symbol.Uri"/>). Each symbol of a module written in several files has the file it is written in. <see langword="null"/> for a
+    /// symbol that was not read from a document, such as a referenced library's.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="Definitions"/> are in the same document: they are branches of one <c>#If</c> block, which is written in one file. The locals, parameters
+    /// and constants of a procedure are in the procedure's document.
+    /// </remarks>
+    public Uri? DocumentUri { get; init; }
+
+    /// <summary>
+    /// Where the symbol is written: its <see cref="DocumentUri"/> and its <see cref="Range"/>; <see langword="null"/> when it has no document.
+    /// </summary>
+    public SourceLocation? Location => DocumentUri is { } document ? new SourceLocation(document, Range) : null;
+
+    /// <summary>
     /// The declaration of the live branch, of this symbol and its <see cref="Alternatives"/>: the first whose site is in no dead range of the module, with
     /// every site of <see cref="Definitions"/> marked live or dead; <see langword="null"/> when every site is in a dead range, and the symbol is not declared.
+    /// A site with no <see cref="DocumentUri"/> is in no branch, and is live.
     /// </summary>
-    /// <param name="isDead">Whether a position is in a branch the constants make dead.</param>
-    public WorkspaceSymbol? LiveDeclaration(Func<SourcePosition, bool> isDead)
+    /// <param name="isDead">Whether what is written at a location (its document, and the start of its range) is in a branch the constants make dead.</param>
+    public WorkspaceSymbol? LiveDeclaration(Func<SourceLocation, bool> isDead)
     {
-        var live = (Alternatives.IsDefaultOrEmpty ? [this] : Alternatives.Prepend(this)).FirstOrDefault(site => !isDead(site.Range.Start));
+        ArgumentNullException.ThrowIfNull(isDead);
+        bool IsDead(Uri? document, SourceRange range) => document is not null && isDead(new SourceLocation(document, range));
+
+        var live = (Alternatives.IsDefaultOrEmpty ? [this] : Alternatives.Prepend(this)).FirstOrDefault(site => !IsDead(site.DocumentUri, site.Range));
         if (live is null || Definitions.IsDefaultOrEmpty)
         {
             return live;
@@ -49,7 +69,8 @@ public abstract record class WorkspaceSymbol(Uri WorkspaceRoot, Uri ParentUri, s
 
         return live with
         {
-            Definitions = [.. Definitions.Select(definition => definition with { State = isDead(definition.Range.Start) ? DefinitionState.Dead : DefinitionState.Live })],
+            Definitions = [.. Definitions.Select(definition
+                => definition with { State = IsDead(DocumentUri, definition.Range) ? DefinitionState.Dead : DefinitionState.Live })],
             Alternatives = [],
         };
     }

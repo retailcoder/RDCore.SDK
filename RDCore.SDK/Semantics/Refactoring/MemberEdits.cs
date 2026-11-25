@@ -56,7 +56,8 @@ public static class MemberEdits
         }
 
         var blocks = ConditionalCompilationBlocks.Of(parse.PrecompilerTrivia);
-        return new MemberExtent(member, new SourceRange(new SourcePosition(first, 0), lines.StartOfLineAfter(range.End.Line)), blocks.IsConditional(range.Start));
+        return new MemberExtent(member, new SourceRange(new SourcePosition(first, 0), lines.StartOfLineAfter(range.End.Line)),
+            blocks.IsConditional(member.SourceLocation));
     }
 
     /// <summary>

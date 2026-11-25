@@ -110,6 +110,13 @@ public record class SdkAppCommandLineArgs
     public string? Language { get; set; }
 
     /// <summary>
+    /// A <em>command-line switch</em> that turns the <see cref="SdkWorkspaceOptions.FileLevelStatements"/> setting on; without it, the setting is what the
+    /// configuration says.
+    /// </summary>
+    [Option("file-level-statements")]
+    public bool FileLevelStatements { get; set; }
+
+    /// <summary>
     /// <em>Command-line argument</em> defining or overriding project-level precompiler constants, each in <c>NAME=VALUE</c> form, after the one switch
     /// (e.g. <c>--define RDDEBUG=1 TRACE=0</c>). Overrides the <c>.rdproj</c> and the built-in host constants.
     /// </summary>
@@ -156,6 +163,7 @@ public record class SdkAppCommandLineArgs
         if (WorkspaceUri is string workspaceUri) yield return new("Configuration:Workspace:WorkspaceUri", workspaceUri);
         if (DefaultLocation is string defaultLocation) yield return new("Configuration:Workspace:DefaultLocation", defaultLocation);
         if (Language is string language) yield return new("Configuration:Workspace:Language", language);
+        if (FileLevelStatements) yield return new("Configuration:Workspace:FileLevelStatements", bool.TrueString);
         foreach (var (name, value) in PrecompilerConstantOverrides())
         {
             yield return new($"Configuration:Workspace:Defines:{name}", value);
@@ -562,7 +570,7 @@ public record class SdkWorkspaceOptions
 
     /// <summary>
     /// The identifier of the language the workspace is written in (<see cref="Workspace.SupportedLanguage.Id"/>): <c>vba</c> (RD-VBA, the
-    /// default), <c>vb6</c> or <c>basic</c>.
+    /// default), <c>vb6</c>, <c>basic</c> or <c>vbscript</c>.
     /// </summary>
     /// <remarks>
     /// The language is what the platform's components agree on about the dialect, so a client says it of the servers it starts - and of the
@@ -585,6 +593,31 @@ public record class SdkWorkspaceOptions
     /// </remarks>
     [Setting(SettingReach.NextStart)]
     public bool EnableFileSystemWatchers { get; set; } = true;
+
+    /// <summary>
+    /// Whether a file of the workspace may have statements outside its procedures (file-level statements), which run in the order they are written, as a
+    /// script's do. A run's entry point is then that code (<see cref="Workspace.ProgramEntryPoint.ScriptName"/>), and not a <c>Sub Main</c>.
+    /// </summary>
+    /// <remarks>
+    /// Off by default: in VBA and VB6 such a statement is a syntax error (<strong>MS-VBAL §5.1</strong>). A language whose files always have them has them
+    /// whatever this says (<see cref="Workspace.SupportedLanguage.HasFileLevelStatements"/>), and so does a document of such a language in a workspace of
+    /// another (a <c>.vbs</c>): <see cref="AllowsFileLevelStatements"/> says which documents do.
+    /// </remarks>
+    [Setting(SettingReach.NextStart)]
+    public bool FileLevelStatements { get; set; }
+
+    /// <summary>
+    /// Whether a document may have statements outside its procedures: the workspace allows them (<see cref="FileLevelStatements"/>), its language always
+    /// has them, or the document is the source file of a language that always has them (<see cref="Workspace.SupportedLanguage.HasFileLevelStatements"/>).
+    /// A module that a block of a file declares (<see cref="Workspace.RDCoreDocument.BlockUri"/>) has none: they are the file's own module's.
+    /// </summary>
+    /// <param name="document">The document's URI, or its path.</param>
+    /// <returns><see langword="true"/> when its statements outside procedures are the module's own code.</returns>
+    /// <exception cref="InvalidOperationException"><see cref="Language"/> is not the identifier of a language the platform serves.</exception>
+    public bool AllowsFileLevelStatements(string document)
+        => Workspace.RDCoreDocument.FileOf(document).Length == document.Length
+            && (FileLevelStatements || SupportedLanguage.HasFileLevelStatements
+                || Workspace.SupportedLanguages.All.Any(language => language.HasFileLevelStatements && language.IsSourceFile(document)));
 
     /// <summary>
     /// The conditional-compilation constants that the <c>--define</c> arguments define (<see cref="SdkAppCommandLineArgs.Define"/>), by name: each value

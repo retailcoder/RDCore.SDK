@@ -240,15 +240,65 @@ public static class ModuleNodeExtensions
         => int.TryParse(module.GetMemberAttribute(memberName, Tokens.VB_UserMemId)?.Trim(), out var value) ? value : null;
 
     /// <summary>
-    /// The text of a member's own <c>Attribute &lt;member&gt;.VB_Description</c> directive - what the member does, as the VBE's Object Browser and a completion
-    /// list show it - or <c>null</c> when the module declares none for that member.
+    /// The text of the module's own <c>Attribute VB_Description</c> directive (<strong>RD-VBAL §3.1.1.7</strong>): what the module is, as the VBE's Object
+    /// Browser shows it. <see langword="null"/> when the module declares none.
     /// </summary>
-    /// <remarks>The value is a string literal: its quotes are not part of the text, and a doubled quote in it is one.</remarks>
+    /// <param name="module">The module.</param>
+    /// <remarks>
+    /// The value is a string literal: its quotes are not part of the text, and a doubled quote in it is one. An empty string describes nothing. A
+    /// <c>'@ModuleDescription</c> annotation is trivia, which no node of the tree holds: <see cref="DocStrings.GetModuleDescription"/> reads the
+    /// attribute, else the annotation.
+    /// </remarks>
+    public static string? GetModuleDescription(this ModuleNode module)
+        => module.GetModuleDescriptionDirective() is { } attribute ? DescriptionOf(attribute.Value) : null;
+
+    /// <summary>
+    /// The module's own <c>Attribute VB_Description</c> directive that describes it (<see cref="GetModuleDescription(ModuleNode)"/>): the first one that
+    /// describes something. <see langword="null"/> when the module declares none.
+    /// </summary>
+    /// <param name="module">The module.</param>
+    public static AttributeDirectiveNode? GetModuleDescriptionDirective(this ModuleNode module)
+        => module.Children.OfType<AttributeDirectiveNode>().FirstOrDefault(attribute => attribute.Binding is null
+            && string.Equals(attribute.Name, Tokens.VB_Description, StringComparison.OrdinalIgnoreCase) && DescriptionOf(attribute.Value) is not null);
+
+    /// <summary>
+    /// The text of a member's own <c>Attribute &lt;member&gt;.VB_Description</c> directive (<strong>RD-VBAL §3.1.1.7</strong>): what the member does, as the
+    /// VBE's Object Browser and a completion list show it. <see langword="null"/> when the module declares none for that member.
+    /// </summary>
+    /// <param name="module">The module that declares the member.</param>
+    /// <param name="memberName">The name of the member, compared without regard to case.</param>
+    /// <remarks>
+    /// The value is a string literal: its quotes are not part of the text, and a doubled quote in it is one. An empty string describes nothing. A
+    /// <c>'@Description</c> annotation is trivia, which no node of the tree holds: <see cref="DocStrings.GetMemberDescription"/> reads the attribute,
+    /// else the annotation.
+    /// </remarks>
     public static string? GetMemberDescription(this ModuleNode module, string memberName)
-    {
-        var value = module.GetMemberAttribute(memberName, Tokens.VB_Description)?.Trim();
-        return value is { Length: >= 2 } && value[0] == '"' && value[^1] == '"' && value[1..^1].Replace("\"\"", "\"") is { Length: > 0 } text ? text : null;
-    }
+        => DescriptionOf(module.GetMemberAttribute(memberName, Tokens.VB_Description));
+
+    /// <summary>
+    /// The text of a module variable's <c>Attribute &lt;variable&gt;.VB_VarDescription</c> directive: what the variable holds, as the VBE's Object Browser
+    /// shows it. <see langword="null"/> when the module declares none for that variable.
+    /// </summary>
+    /// <param name="module">The module that declares the variable.</param>
+    /// <param name="variableName">The name of the variable, compared without regard to case.</param>
+    /// <remarks>
+    /// The directive is written at module level, after the variable's declaration, and not in a procedure's body as a member's attributes are. Its value is
+    /// read as <see cref="GetMemberDescription(ModuleNode, string)"/> reads a member's. A <c>'@VariableDescription</c> annotation is trivia:
+    /// <see cref="DocStrings.GetMemberDescription"/> reads the attribute, else the annotation.
+    /// </remarks>
+    public static string? GetVariableDescription(this ModuleNode module, string variableName)
+        => module.Children.OfType<AttributeDirectiveNode>()
+            .Where(attribute => string.Equals(attribute.Binding, variableName, StringComparison.OrdinalIgnoreCase)
+                && string.Equals(attribute.Name, Tokens.VB_VarDescription, StringComparison.OrdinalIgnoreCase))
+            .Select(attribute => DescriptionOf(attribute.Value))
+            .FirstOrDefault(text => text is not null);
+
+    // the text of a description attribute's value, a string literal: null for one that is not a string, and for the empty string, which describes nothing.
+    private static string? DescriptionOf(string? value)
+        => value?.Trim() is { Length: >= 2 } literal && literal[0] == '"' && literal[^1] == '"'
+            && VBStringValue.UnquoteLiteralToken(literal) is { Length: > 0 } text
+            ? text
+            : null;
 
     // the value of a member's own attribute, as it is written; the attribute is written in the member's body (see GetMemberUserMemId). The first a module
     // writes for that member, of the first member of that name that writes one.
@@ -301,13 +351,14 @@ public static class ModuleNodeExtensions
         => [.. ImplementsDirectivesOf(module).Select(directive => directive.Name)];
 
     /// <summary>
-    /// Where each of <see cref="GetImplementedInterfaceNames"/> is written: the source range of its <c>Implements</c> directive,
-    /// one for each name and in the same order.
+    /// Where each of <see cref="GetImplementedInterfaceNames"/> is written: the file and the range of its <c>Implements</c> directive,
+    /// one for each name and in the same order. Each location's file is the one its directive is written in.
     /// </summary>
-    public static ImmutableArray<SourceRange> GetImplementedInterfaceRanges(this ModuleNode module)
-        => [.. ImplementsDirectivesOf(module).Select(directive => directive.Range)];
+    /// <param name="module">The module whose directives are read.</param>
+    public static ImmutableArray<SourceLocation> GetImplementedInterfaceLocations(this ModuleNode module)
+        => [.. ImplementsDirectivesOf(module).Select(directive => directive.Location)];
 
-    private static IEnumerable<(string Name, SourceRange Range)> ImplementsDirectivesOf(ModuleNode module)
+    private static IEnumerable<(string Name, SourceLocation Location)> ImplementsDirectivesOf(ModuleNode module)
     {
         foreach (var directive in module.Children.OfType<ImplementsDirectiveNode>())
         {
@@ -319,7 +370,7 @@ public static class ModuleNodeExtensions
             };
             if (name is not null)
             {
-                yield return (name, directive.Location.Range);
+                yield return (name, directive.Location);
             }
         }
     }

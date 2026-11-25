@@ -97,7 +97,7 @@ public record class DefineSymbolsParams : IRequest, IRequest<DefineSymbolsResult
     /// </summary>
     /// <remarks>
     /// The host composes the class from them once its members are defined
-    /// (<see cref="RDCore.SDK.Runtime.Abstract.Execution.ISessionSymbols.TryComposeClassModule(Uri, ImmutableArray{string}, ImmutableArray{SourceRange})"/>),
+    /// (<see cref="Runtime.Abstract.Execution.ISessionSymbols.TryComposeClassModule(Uri, ImmutableArray{string}, ImmutableArray{SourceLocation})"/>),
     /// resolving each to the class it names among the class modules it has: an object of the class is then an object that implements the
     /// interface, which is what a call through a variable declared as the interface is dispatched on (<strong>§5.3.1.9</strong>), and what a
     /// <c>TypeOf ... Is</c> and a <c>Set</c> to such a variable are decided by.
@@ -105,10 +105,10 @@ public record class DefineSymbolsParams : IRequest, IRequest<DefineSymbolsResult
     public ImmutableArray<string> ImplementedInterfaceNames { get; init; } = [];
 
     /// <summary>
-    /// Where each of <see cref="ImplementedInterfaceNames"/> is written in the module: the range of its <c>Implements</c> directive,
+    /// Where each of <see cref="ImplementedInterfaceNames"/> is written in the module: the file and the range of its <c>Implements</c> directive,
     /// one for each name and in the same order, or empty when they are not known.
     /// </summary>
-    public ImmutableArray<SourceRange> ImplementedInterfaceRanges { get; init; } = [];
+    public ImmutableArray<SourceLocation> ImplementedInterfaceLocations { get; init; } = [];
 
     /// <summary>
     /// The <see cref="System.Text.Json"/> representation of the module's <see cref="RDCore.SDK.Model.AST.ModuleParseResult"/>

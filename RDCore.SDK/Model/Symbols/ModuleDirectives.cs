@@ -61,7 +61,9 @@ public readonly record struct ModuleDirectives(
     bool PredeclaredId = false, bool Creatable = true, bool Extensible = false, bool Exposed = false)
 {
     /// <summary>
-    /// The directives of a module that declares none of them explicitly.
+    /// The directives of a module that declares none of them explicitly: the default of each parameter, as
+    /// <see cref="AST.Declarations.ModuleNodeExtensions.GetModuleDirectives"/> reads them of such a module. A class module is creatable.
     /// </summary>
-    public static readonly ModuleDirectives None = new();
+    // new() on a struct is its zero value, which leaves Creatable false: naming an argument runs the primary constructor, with its defaults.
+    public static readonly ModuleDirectives None = new(Explicit: false);
 }
