@@ -97,6 +97,17 @@ public class SupportedLanguage
     public bool UsesClassicBasicSyntax { get; init; }
 
     /// <summary>
+    /// Whether a module of the language may have statements outside its procedures, which run in the order they are written: the script's own code, which is
+    /// the program's entry point (<see cref="ProgramEntryPoint.ScriptName"/>).
+    /// </summary>
+    /// <remarks>
+    /// A script has them: VBScript runs a file from its first line to its last, and calls its procedures only where the file does.
+    /// VBA and VB6 do not: a statement outside a procedure is a syntax error (<strong>MS-VBAL §5.1</strong>), unless the workspace allows it
+    /// (<see cref="Server.Configuration.SdkWorkspaceOptions.ModuleLevelStatements"/>).
+    /// </remarks>
+    public bool HasModuleLevelStatements { get; init; }
+
+    /// <summary>
     /// The libraries every project of the language references without its project file listing them, by name, in their order of reference precedence: after
     /// the standard library, and before the references the project file lists (<strong>RD-VBAL §2.3.1.3</strong>).
     /// </summary>
@@ -217,11 +228,13 @@ public static class SupportedLanguages
     /// Its source is a script (<c>.vbs</c>): a text file with no header. A project of the language references the two libraries of Windows Script Host
     /// without its project file listing them: <c>IHost</c>, the type library of <c>wscript.exe</c>, whose <c>WScript</c> object every script names, and
     /// <c>IWshRuntimeLibrary</c> (Windows Script Host Object Model, <c>wshom.ocx</c>), whose <c>WshShell</c> a script creates with
-    /// <c>CreateObject("WScript.Shell")</c>.
+    /// <c>CreateObject("WScript.Shell")</c>. Its statements outside procedures are the script, which a run runs from its first line to its last
+    /// (<see cref="SupportedLanguage.HasModuleLevelStatements"/>).
     /// </remarks>
     public static SupportedLanguage VBScript { get; } = new("vbscript", "Microsoft Visual Basic Scripting Edition", "*.vbs")
     {
         ImplicitReferences = ["IHost", "IWshRuntimeLibrary"],
+        HasModuleLevelStatements = true,
     };
 
     /// <summary>Every language the platform serves.</summary>

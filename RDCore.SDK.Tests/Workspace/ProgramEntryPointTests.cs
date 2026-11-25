@@ -88,6 +88,37 @@ public sealed class ProgramEntryPointTests
         CollectionAssert.AreEqual(new[] { "One", "Two" }, resolved.Candidates.Select(candidate => candidate.Name).ToArray());
     }
 
+    // a script is its own code, which runs from its first line to its last: that is where the program starts, and not at a Sub Main, the script's or another
+    // module's.
+    [TestMethod]
+    public void AProjectThatNamesNoEntryPoint_StartsAtTheCodeOfItsOneScript_AheadOfASubMain()
+    {
+        var resolved = ProgramEntryPoint.Of(null, [Standard("Program", "Main"), Standard("Backup", "Main", ProgramEntryPoint.ScriptName)]);
+
+        Assert.AreEqual("Backup", resolved.Module?.Name);
+        Assert.AreEqual(ProgramEntryPoint.ScriptName, resolved.Procedure?.Name);
+    }
+
+    [TestMethod]
+    public void AProjectOfTwoScripts_IsRefused_NamingThem()
+    {
+        var resolved = ProgramEntryPoint.Of(null, [Standard("Backup", ProgramEntryPoint.ScriptName), Standard("Program", "Main"),
+            Standard("Restore", ProgramEntryPoint.ScriptName)]);
+
+        Assert.AreEqual(ProgramEntryPointRefusal.Ambiguous, resolved.Refusal);
+        CollectionAssert.AreEqual(new[] { "Backup", "Restore" }, resolved.Candidates.Select(candidate => candidate.Name).ToArray());
+    }
+
+    [TestMethod]
+    public void TheEntryPointTheProjectNames_IsWhereAProjectWithAScriptStarts()
+    {
+        var resolved = ProgramEntryPoint.Of(new ProjectBuild { EntryPoint = "Program.Main" },
+            [Standard("Program", "Main"), Standard("Backup", ProgramEntryPoint.ScriptName)]);
+
+        Assert.AreEqual("Program", resolved.Module?.Name);
+        Assert.AreEqual("Main", resolved.Procedure?.Name);
+    }
+
     // a library is not run: it has no entry point, whatever its modules declare.
     [TestMethod]
     public void ALibrary_HasNoEntryPoint()
