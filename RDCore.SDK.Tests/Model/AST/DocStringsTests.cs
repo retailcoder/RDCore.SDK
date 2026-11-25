@@ -224,7 +224,7 @@ public sealed class DocStringsTests
     [TestMethod]
     public void AnAnnotationWithNoArgument_DescribesNothing()
     {
-        // the annotation above the second procedure, which has a string, shows that the parse's annotations are read.
+        // the annotation above the second procedure, which has an argument, shows that the parse's annotations are read.
         var parse = Parse([Procedure("Main", 3, 5), Procedure("Other", 7, 9)],
             Annotated(1, DocStrings.ModuleDescriptionAnnotation, argument: null), Annotated(2, DocStrings.MemberDescriptionAnnotation, argument: null),
             Annotated(6, DocStrings.MemberDescriptionAnnotation, "Runs another way."));
