@@ -16,6 +16,7 @@ public sealed class FileLevelStatementsTests
     [DataRow("vba", "file:///c:/ws/Scripts/Backup.VBS", true, DisplayName = "a script in a VBA workspace")]
     [DataRow("vbscript", "file:///c:/ws/Backup.vbs", true, DisplayName = "a script")]
     [DataRow("vbscript", "file:///c:/ws/Module1.bas", true, DisplayName = "any module of a VBScript workspace")]
+    [DataRow("vbscript", "file:///c:/ws/Backup.vbs/Logger", false, DisplayName = "the module of a block of a script")]
     public void ADocument_HasThemWhenItsLanguageDoes(string language, string document, bool expected)
         => Assert.AreEqual(expected, new SdkWorkspaceOptions { Language = language }.AllowsFileLevelStatements(document));
 

@@ -52,7 +52,8 @@ public static partial class ModuleName
     /// <remarks>
     /// A member-qualified attribute (<c>Attribute Foo.VB_Name</c>) is not a module name and is
     /// ignored. The value is a string literal, so surrounding quotes are stripped and a doubled
-    /// <c>""</c> escape is unescaped.
+    /// <c>""</c> escape is unescaped. An attribute inside a block of the file (<see cref="FileBlocks"/>) is not the file's own module's: a block's name is
+    /// the name its header writes, which no attribute inside it changes.
     /// </remarks>
     public static string? FromSource(string? source)
     {
@@ -61,8 +62,32 @@ public static partial class ModuleName
             return null;
         }
 
-        var match = VBNameAttribute().Match(source);
-        return match.Success ? match.Groups["name"].Value.Replace("\"\"", "\"") : null;
+        var blocks = FileBlocks.Find(source);
+        for (var match = VBNameAttribute().Match(source); match.Success; match = match.NextMatch())
+        {
+            var line = LineOf(source, match.Index);
+            if (!blocks.Any(block => block.HeaderLine <= line && line <= block.EndLine))
+            {
+                return match.Groups["name"].Value.Replace("\"\"", "\"");
+            }
+        }
+
+        return null;
+    }
+
+    // the zero-based line of a position of the source, as FileBlocks counts lines: CR LF, LF and CR each end one.
+    private static int LineOf(string source, int index)
+    {
+        var line = 0;
+        for (var at = 0; at < index; at++)
+        {
+            if (source[at] == '\n' || source[at] == '\r' && (at + 1 >= source.Length || source[at + 1] != '\n'))
+            {
+                line++;
+            }
+        }
+
+        return line;
     }
 
     // module-level `Attribute VB_Name = "Name"` on its own physical line (\r? so a CRLF line ending

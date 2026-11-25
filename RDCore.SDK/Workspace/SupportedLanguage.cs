@@ -141,20 +141,26 @@ public class SupportedLanguage
     /// <summary>
     /// Whether a file is written in the language: whether its extension is the extension of one of its <see cref="FileTypes"/>.
     /// </summary>
-    /// <param name="path">The file's path, or its name.</param>
+    /// <remarks>
+    /// A module that a block of a file declares (<see cref="RDCoreDocument.BlockUri"/>) is written in the language of its file.
+    /// </remarks>
+    /// <param name="path">The file's path, or its name; or the path of a block's module.</param>
     /// <returns><see langword="true"/> when the extension is one of the language's, compared without regard to case.</returns>
     public bool IsSourceFile(string path) => HasExtensionOfOne(FileTypes, path);
 
     /// <summary>
     /// Whether a file is a module of a workspace of the language: whether its extension is the extension of one of its <see cref="ModuleFileTypes"/>.
     /// </summary>
-    /// <param name="path">The file's path, or its name.</param>
+    /// <remarks>
+    /// A module that a block of a file declares (<see cref="RDCoreDocument.BlockUri"/>) is a module of the workspaces its file is a module of.
+    /// </remarks>
+    /// <param name="path">The file's path, or its name; or the path of a block's module.</param>
     /// <returns><see langword="true"/> when the extension is one of the language's module files, compared without regard to case.</returns>
     public bool IsModuleFile(string path) => HasExtensionOfOne(ModuleFileTypes, path);
 
     private static bool HasExtensionOfOne(string[] fileTypes, string path)
     {
-        var extension = Path.GetExtension(path);
+        var extension = Path.GetExtension(RDCoreDocument.FileOf(path));
         return extension.Length > 0 && fileTypes.Any(fileType => string.Equals(fileType.TrimStart('*'), extension, StringComparison.OrdinalIgnoreCase));
     }
 

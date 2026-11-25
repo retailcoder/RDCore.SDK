@@ -609,13 +609,15 @@ public record class SdkWorkspaceOptions
     /// <summary>
     /// Whether a document may have statements outside its procedures: the workspace allows them (<see cref="FileLevelStatements"/>), its language always
     /// has them, or the document is the source file of a language that always has them (<see cref="Workspace.SupportedLanguage.HasFileLevelStatements"/>).
+    /// A module that a block of a file declares (<see cref="Workspace.RDCoreDocument.BlockUri"/>) has none: they are the file's own module's.
     /// </summary>
     /// <param name="document">The document's URI, or its path.</param>
     /// <returns><see langword="true"/> when its statements outside procedures are the module's own code.</returns>
     /// <exception cref="InvalidOperationException"><see cref="Language"/> is not the identifier of a language the platform serves.</exception>
     public bool AllowsFileLevelStatements(string document)
-        => FileLevelStatements || SupportedLanguage.HasFileLevelStatements
-            || Workspace.SupportedLanguages.All.Any(language => language.HasFileLevelStatements && language.IsSourceFile(document));
+        => Workspace.RDCoreDocument.FileOf(document).Length == document.Length
+            && (FileLevelStatements || SupportedLanguage.HasFileLevelStatements
+                || Workspace.SupportedLanguages.All.Any(language => language.HasFileLevelStatements && language.IsSourceFile(document)));
 
     /// <summary>
     /// The conditional-compilation constants that the <c>--define</c> arguments define (<see cref="SdkAppCommandLineArgs.Define"/>), by name: each value

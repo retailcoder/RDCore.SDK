@@ -45,5 +45,16 @@ public record class ModuleParseResult
     /// </remarks>
     public FormDescriptor? Designer { get; init; }
 
+    /// <summary>
+    /// The modules that blocks of the file declare (<c>Class Name ... End Class</c>, <c>Module Name ... End Module</c>), in the order they are written; empty
+    /// for a file that has none, which is every file of one module.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="SyntaxTree"/> is the file's own module: what is outside every block. <see cref="Trivia"/>, <see cref="PrecompilerTrivia"/>,
+    /// <see cref="SyntaxErrors"/> and <see cref="LineEnding"/> are the whole file's, the blocks' included. Positions in a block's tree are positions in the
+    /// file. <see cref="Workspace.RDCoreDocument"/> maps the file to its modules and back.
+    /// </remarks>
+    public ImmutableArray<BlockModule> BlockModules { get; init; } = [];
+
     public bool IsSuccess => SyntaxTree is not null && SyntaxErrors.Length == 0;
 }
