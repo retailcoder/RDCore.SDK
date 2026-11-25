@@ -1,4 +1,5 @@
 using RDCore.SDK.Model.AST;
+using RDCore.SDK.Model.AST.Abstract;
 using RDCore.SDK.Model.AST.Declarations;
 using RDCore.SDK.Model.Source;
 
@@ -38,6 +39,56 @@ public sealed record class RDCoreDocument(Uri File, ModuleParseResult Parse)
     /// <returns>The module's tree; <see langword="null"/> when the file holds no module at that address, or its own module could not be read.</returns>
     public ModuleNode? SyntaxTreeOf(Uri module)
         => module == File ? Parse.SyntaxTree : Parse.BlockModules.FirstOrDefault(block => block.Uri == module)?.SyntaxTree;
+
+    /// <summary>
+    /// The parse of one of the file's modules: its tree, and what of the file's trivia, directives and syntax errors is that module's.
+    /// </summary>
+    /// <remarks>
+    /// The file's parse holds the trivia (<see cref="ModuleParseResult.Trivia"/>), the directives (<see cref="ModuleParseResult.PrecompilerTrivia"/>) and the
+    /// syntax errors (<see cref="ModuleParseResult.SyntaxErrors"/>) of all its modules. An item is the module's whose lines hold its start: a block's module
+    /// has the lines between its header and its end, and the file's own module every other line. An item that runs on past the module's lines (a <c>#If</c>
+    /// left open) is still the module's it starts in. The header and the end lines of a block (<see cref="BlockBoundaryTriviaNode"/>) are the file's, and no
+    /// module's: a comment on either is the file's own module's. Positions are the file's, as in the file's parse.
+    /// <para>
+    /// A block's module has the file's <see cref="ModuleParseResult.LineEnding"/>, and no <see cref="ModuleParseResult.Designer"/>; the file's own module has
+    /// the file's. Neither has <see cref="ModuleParseResult.BlockModules"/>. A file with no block has the file's parse as its own module's.
+    /// </para>
+    /// </remarks>
+    /// <param name="module">The address of the module: the file's (<see cref="File"/>), or a block's (<see cref="BlockUri"/>).</param>
+    /// <returns>
+    /// The module's parse; <see langword="null"/> when the file holds no module at that address. When two blocks have one name, the first block's.
+    /// </returns>
+    public ModuleParseResult? ParseOf(Uri module)
+    {
+        if (Parse.BlockModules.IsEmpty)
+        {
+            return module == File ? Parse : null;
+        }
+
+        var block = Parse.BlockModules.FirstOrDefault(each => each.Uri == module);
+        if (block is null && module != File)
+        {
+            return null;
+        }
+
+        bool Holds(SourcePosition start) => block is null
+            ? !Parse.BlockModules.Any(each => IsInside(each, start))
+            : IsInside(block, start);
+
+        return new ModuleParseResult
+        {
+            SyntaxTree = block is null ? Parse.SyntaxTree : block.SyntaxTree,
+            Trivia = [.. Parse.Trivia.Where(node => node is not BlockBoundaryTriviaNode && Holds(node.SourceLocation.Range.Start))],
+            PrecompilerTrivia = [.. Parse.PrecompilerTrivia.Where(node => Holds(node.SourceLocation.Range.Start))],
+            SyntaxErrors = [.. Parse.SyntaxErrors.Where(error => Holds(error.Location.Range.Start))],
+            LineEnding = Parse.LineEnding,
+            Designer = block is null ? Parse.Designer : null,
+        };
+    }
+
+    // whether a position is on a line between a block's header and its end.
+    private static bool IsInside(BlockModule block, SourcePosition position)
+        => position.Line > block.Range.Start.Line && position.Line < block.Range.End.Line;
 
     /// <summary>
     /// The address of the module a block of a file declares: the file's address, with the module's name as one more segment.
