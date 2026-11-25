@@ -72,6 +72,13 @@ public static class ProgramEntryPoint
     /// case. A module that is not a standard module is passed over.
     /// </para>
     /// <para>
+    /// A name with no module is also the name of a script: the standard module of that name, when it is a script (it declares <see cref="ScriptName"/>),
+    /// starts at its script, as <c>Backup.(Script)</c> names it. A project of several scripts runs the one it names this way. The other scripts are
+    /// modules its code can call into: their procedures and their blocks' modules are there, and their own statements do not run. When the name is both a
+    /// script's module and a procedure of another standard module's (or of the script's own), the entry point is
+    /// <see cref="ProgramEntryPointRefusal.Ambiguous"/>, its candidates naming the module of each (the script's module twice when the procedure is its own).
+    /// </para>
+    /// <para>
     /// A library has no entry point (<see cref="ProjectOutputType.Library"/>): it is refused whatever its modules declare.
     /// </para>
     /// </remarks>
@@ -94,7 +101,7 @@ public static class ProgramEntryPoint
         };
 
         var listed = modules.ToList();
-        var found = Declaring(listed, named ?? ScriptName, inModule);
+        var found = Declaring(listed, named ?? ScriptName, inModule, orScriptNamed: inModule is null ? named : null);
         if (named is null && found.Count == 0)
         {
             found = Declaring(listed, Name, inModule: null);
@@ -108,19 +115,27 @@ public static class ProgramEntryPoint
         };
     }
 
-    // the standard modules that declare an entry point of that name: in the module named, or in any.
+    // the standard modules that declare an entry point of that name: in the module named, or in any; and the script of the module orScriptNamed names, in the
+    // order the modules were given.
     private static List<(VBModuleSymbol Module, VBTypeMemberSymbol Procedure)> Declaring(
-        IEnumerable<(VBModuleSymbol Module, IEnumerable<VBTypeMemberSymbol> Members)> modules, string named, string? inModule)
+        IEnumerable<(VBModuleSymbol Module, IEnumerable<VBTypeMemberSymbol> Members)> modules, string named, string? inModule, string? orScriptNamed = null)
     {
         var found = new List<(VBModuleSymbol Module, VBTypeMemberSymbol Procedure)>();
         foreach (var (module, members) in modules)
         {
-            if (module is not VBStandardModuleSymbol || (inModule is not null && !string.Equals(module.Name, inModule, StringComparison.OrdinalIgnoreCase)))
+            if (module is not VBStandardModuleSymbol)
             {
                 continue;
             }
 
-            if (members.FirstOrDefault(member => IsEntryPoint(member, named)) is { } procedure)
+            if (orScriptNamed is not null && string.Equals(module.Name, orScriptNamed, StringComparison.OrdinalIgnoreCase)
+                && members.FirstOrDefault(member => IsEntryPoint(member, ScriptName)) is { } script)
+            {
+                found.Add((module, script));
+            }
+
+            if ((inModule is null || string.Equals(module.Name, inModule, StringComparison.OrdinalIgnoreCase))
+                && members.FirstOrDefault(member => IsEntryPoint(member, named)) is { } procedure)
             {
                 found.Add((module, procedure));
             }
@@ -161,7 +176,8 @@ public enum ProgramEntryPointRefusal
     NotFound,
 
     /// <summary>
-    /// More than one standard module declares it (<see cref="ProgramEntryPointResolution.Candidates"/>).
+    /// More than one entry point answers to it: more than one standard module declares it, or it names both a script's module and a procedure
+    /// (<see cref="ProgramEntryPointResolution.Candidates"/>).
     /// </summary>
     Ambiguous,
 }
@@ -187,7 +203,7 @@ public sealed record class ProgramEntryPointResolution
     public ProgramEntryPointRefusal? Refusal { get; init; }
 
     /// <summary>
-    /// The standard modules that each declare the entry point, in the order they were given, when more than one does
+    /// The standard module of each entry point that answers to the name, in the order they were given, when more than one does
     /// (<see cref="ProgramEntryPointRefusal.Ambiguous"/>); empty otherwise.
     /// </summary>
     public IReadOnlyList<VBModuleSymbol> Candidates { get; init; } = [];

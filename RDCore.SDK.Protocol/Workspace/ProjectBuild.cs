@@ -58,8 +58,9 @@ public sealed record class ProjectBuild
     public ProjectOutputType OutputType { get; init; }
 
     /// <summary>
-    /// The procedure the program starts with, as <c>Module.Procedure</c> or a lone <c>Procedure</c>; <see langword="null"/> for the <c>Sub Main</c> of the
-    /// one standard module that declares one. <c>ProgramEntryPoint.Of</c> finds the procedure it names.
+    /// The procedure the program starts with, as <c>Module.Procedure</c> or a lone <c>Procedure</c>, or the name of a script's module, which starts at its
+    /// script; <see langword="null"/> for the script of the one standard module that is a script, or else the <c>Sub Main</c> of the one standard module
+    /// that declares one. <c>ProgramEntryPoint.Of</c> finds the procedure it names.
     /// </summary>
     [JsonPropertyName("entryPoint")]
     [JsonConverter(typeof(ProjectEntryPointJsonConverter))]

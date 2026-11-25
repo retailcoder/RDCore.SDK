@@ -109,6 +109,48 @@ public sealed class ProgramEntryPointTests
         CollectionAssert.AreEqual(new[] { "Backup", "Restore" }, resolved.Candidates.Select(candidate => candidate.Name).ToArray());
     }
 
+    // a project of several scripts runs the one it names by its module's name, whatever the case: the others are modules its code can call into.
+    [TestMethod]
+    [DataRow("Restore")]
+    [DataRow("rESTORE", DisplayName = "names are compared without regard to case")]
+    [DataRow("Restore.(Script)", DisplayName = "the script named as a procedure of its module")]
+    public void AScriptNamedByItsModule_IsWhereTheProgramStarts(string entryPoint)
+    {
+        var resolved = ProgramEntryPoint.Of(new ProjectBuild { EntryPoint = entryPoint },
+            [Standard("Backup", ProgramEntryPoint.ScriptName, "Copy"), Standard("Restore", ProgramEntryPoint.ScriptName), Standard("Program", "Main")]);
+
+        Assert.AreEqual("Restore", resolved.Module?.Name);
+        Assert.AreEqual(ProgramEntryPoint.ScriptName, resolved.Procedure?.Name);
+        Assert.IsNull(resolved.Refusal);
+    }
+
+    // a name that is a script's module and a procedure too is refused, naming the module of each: the run does not pick one.
+    [TestMethod]
+    [DataRow("Tools", DisplayName = "a procedure of another module")]
+    [DataRow("Backup", DisplayName = "a procedure of the script's own module")]
+    public void ANameThatIsAScriptsModuleAndAProcedure_IsRefusedAsAmbiguous_NamingBoth(string procedureIn)
+    {
+        (VBModuleSymbol, IEnumerable<VBTypeMemberSymbol>)[] modules = procedureIn == "Tools"
+            ? [Standard("Backup", ProgramEntryPoint.ScriptName), Standard("Tools", "Backup")]
+            : [Standard("Backup", ProgramEntryPoint.ScriptName, "Backup"), Standard("Tools", "Helper")];
+
+        var resolved = ProgramEntryPoint.Of(new ProjectBuild { EntryPoint = "backup" }, modules);
+
+        Assert.AreEqual(ProgramEntryPointRefusal.Ambiguous, resolved.Refusal);
+        CollectionAssert.AreEqual(procedureIn == "Tools" ? new[] { "Backup", "Tools" } : new[] { "Backup", "Backup" },
+            resolved.Candidates.Select(candidate => candidate.Name).ToArray());
+    }
+
+    // a module of that name that is not a script names no entry point: the name is a procedure's, looked for in every standard module.
+    [TestMethod]
+    public void TheNameOfAModuleThatIsNotAScript_IsLookedUpAsAProcedure()
+    {
+        var resolved = ProgramEntryPoint.Of(new ProjectBuild { EntryPoint = "Backup" }, [Standard("Backup", "Main"), Standard("Tools", "Backup")]);
+
+        Assert.AreEqual("Tools", resolved.Module?.Name);
+        Assert.AreEqual("Backup", resolved.Procedure?.Name);
+    }
+
     [TestMethod]
     public void TheEntryPointTheProjectNames_IsWhereAProjectWithAScriptStarts()
     {
