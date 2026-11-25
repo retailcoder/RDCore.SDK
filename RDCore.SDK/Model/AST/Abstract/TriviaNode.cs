@@ -38,7 +38,10 @@ public sealed record class ModuleHeaderTriviaNode(SyntaxNodeId Identity, SourceL
 /// <param name="SourceLocation">The document location (<c>Uri</c>+<c>Range</c>) of the line, in the file, before its comment.</param>
 /// <param name="Kind">The kind of the block: <c>Class</c> or <c>Module</c>.</param>
 /// <param name="IsEnd">Whether the line is the block's end; its header otherwise.</param>
-/// <param name="Source">The exact original text of the line before its comment, its leading blanks included.</param>
+/// <param name="Source">
+/// The exact original text of the line before its comment, its leading blanks and a header's modifiers (<c>Public</c>, <c>Private</c>,
+/// <c>Partial</c>, <c>Creatable</c>) included.
+/// </param>
 public sealed record class BlockBoundaryTriviaNode(
     SyntaxNodeId Identity, SourceLocation SourceLocation, Workspace.FileBlockKind Kind, bool IsEnd, string Source)
     : SyntaxNode(Identity, SourceLocation, []);

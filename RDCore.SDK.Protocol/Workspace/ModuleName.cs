@@ -66,29 +66,13 @@ public static partial class ModuleName
         var blocks = FileBlocks.Find(source);
         for (var match = VBNameAttribute().Match(source); match.Success; match = match.NextMatch())
         {
-            var line = LineOf(source, match.Index);
-            if (!blocks.Any(block => block.HeaderLine <= line && line <= block.EndLine))
+            if (!FileBlocks.Holds(blocks, source, match.Index))
             {
                 return match.Groups["name"].Value.Replace("\"\"", "\"");
             }
         }
 
         return null;
-    }
-
-    // the zero-based line of a position of the source, as FileBlocks counts lines: CR LF, LF and CR each end one.
-    private static int LineOf(string source, int index)
-    {
-        var line = 0;
-        for (var at = 0; at < index; at++)
-        {
-            if (source[at] == '\n' || source[at] == '\r' && (at + 1 >= source.Length || source[at + 1] != '\n'))
-            {
-                line++;
-            }
-        }
-
-        return line;
     }
 
     // module-level `Attribute VB_Name = "Name"` on its own physical line (\r? so a CRLF line ending

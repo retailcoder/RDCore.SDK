@@ -20,4 +20,23 @@ namespace RDCore.SDK.Model.AST;
 /// <param name="Uri">The module's address: the file's, with the module's name as one more segment (<see cref="Workspace.RDCoreDocument.BlockUri"/>).</param>
 /// <param name="Range">Where the block is in the file, from the start of its header to the end of its <c>End Class</c> or <c>End Module</c>.</param>
 /// <param name="SyntaxTree">The module's tree: what is between the block's header and its end, read as a module is.</param>
-public sealed record class BlockModule(string Name, ModuleType Kind, Uri Uri, SourceRange Range, ModuleNode SyntaxTree);
+public sealed record class BlockModule(string Name, ModuleType Kind, Uri Uri, SourceRange Range, ModuleNode SyntaxTree)
+{
+    /// <summary>
+    /// Whether the block's header writes <c>Partial</c> before its kind (<see cref="Workspace.FileBlock.IsPartial"/>): the module is a part of a module
+    /// that other parts, in this file or others, may extend.
+    /// </summary>
+    public bool IsPartial { get; init; }
+
+    /// <summary>
+    /// Whether the block's header writes <c>Creatable</c> before <c>Class</c> (<see cref="Workspace.FileBlock.IsCreatable"/>); a <c>Module</c>
+    /// block's never does.
+    /// </summary>
+    public bool IsCreatable { get; init; }
+
+    /// <summary>
+    /// The visibility the block's header states, <see cref="AccessModifier.Public"/> or <see cref="AccessModifier.Private"/>
+    /// (<see cref="Workspace.FileBlock.Visibility"/>); <see langword="null"/> when the header states none.
+    /// </summary>
+    public AccessModifier? Visibility { get; init; }
+}

@@ -4,3 +4,6 @@
 
 // a type the protocol's requests carry, which a consumer built against an earlier package finds in this assembly.
 [assembly: TypeForwardedTo(typeof(RDCore.SDK.Runtime.Abstract.Execution.ErrorBreakMode))]
+
+// a type a block's header states (FileBlock.Visibility), which a consumer built against an earlier package finds in this assembly.
+[assembly: TypeForwardedTo(typeof(RDCore.SDK.Model.AccessModifier))]

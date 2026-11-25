@@ -1,3 +1,4 @@
+using RDCore.SDK.Model;
 using RDCore.SDK.Model.AST.Declarations;
 using RDCore.SDK.Model.Symbols;
 
@@ -97,7 +98,12 @@ public static class ModuleKinds
         return
         [
             new DeclaredModule(ModuleName.Resolve(source, module.RelativeUri), Of(module, source), IsBlock: false),
-            .. FileBlocks.Find(source).Select(block => new DeclaredModule(block.Name, Of(block.Kind), IsBlock: true)),
+            .. FileBlocks.Find(source).Select(block => new DeclaredModule(block.Name, Of(block.Kind), IsBlock: true)
+            {
+                IsPartial = block.IsPartial,
+                IsCreatable = block.IsCreatable,
+                Visibility = block.Visibility,
+            }),
         ];
     }
 
@@ -140,4 +146,22 @@ public sealed record class DocumentHostClass(string Library, string ClassName);
 /// <param name="IsBlock">
 /// Whether the module is a block's, addressed under its file (<see cref="RDCoreDocument.BlockUri"/>); the file's own module otherwise, addressed by the file.
 /// </param>
-public sealed record class DeclaredModule(string Name, ModuleType Kind, bool IsBlock);
+public sealed record class DeclaredModule(string Name, ModuleType Kind, bool IsBlock)
+{
+    /// <summary>
+    /// Whether the module is a block's whose header writes <c>Partial</c> (<see cref="FileBlock.IsPartial"/>). The file's own module is never partial.
+    /// </summary>
+    public bool IsPartial { get; init; }
+
+    /// <summary>
+    /// Whether the module is a <c>Class</c> block's whose header writes <c>Creatable</c> (<see cref="FileBlock.IsCreatable"/>). The file's own module
+    /// never is.
+    /// </summary>
+    public bool IsCreatable { get; init; }
+
+    /// <summary>
+    /// The visibility a block's header states (<see cref="FileBlock.Visibility"/>); <see langword="null"/> when it states none, and for the file's own
+    /// module.
+    /// </summary>
+    public AccessModifier? Visibility { get; init; }
+}

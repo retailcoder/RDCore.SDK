@@ -24,25 +24,46 @@ public static partial class ModuleHeader
     /// Whether <paramref name="source"/> carries a module <c>VERSION</c> header: it is a class
     /// or designer module. <c>null</c> when there is no source to inspect.
     /// </summary>
+    /// <remarks>
+    /// The header is the file's own module's: a <c>VERSION</c> line inside a block of the file (<see cref="FileBlocks"/>) is the block's code.
+    /// </remarks>
     /// <param name="source">The raw module source, or <c>null</c> when it could not be read.</param>
     public static bool? IsClassModule(string? source)
-        => string.IsNullOrEmpty(source) ? null : VersionHeader().IsMatch(source);
+    {
+        if (string.IsNullOrEmpty(source))
+        {
+            return null;
+        }
+
+        var blocks = FileBlocks.Find(source);
+        for (var match = VersionHeader().Match(source); match.Success; match = match.NextMatch())
+        {
+            if (!FileBlocks.Holds(blocks, source, match.Index))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     /// <summary>
     /// Where the first <c>Attribute VB_Name</c> line of <paramref name="source"/> writes the module's name: the range between its quotes.
     /// </summary>
     /// <remarks>
-    /// Lines are the text's, split at each line feed; a carriage return before one is part of its line. The range is zero-based, on one line.
+    /// Lines are the text's, split at each line feed; a carriage return before one is part of its line. The range is zero-based, on one line. The
+    /// name is the file's own module's: an <c>Attribute VB_Name</c> line inside a block of the file (<see cref="FileBlocks"/>) is not it.
     /// </remarks>
     /// <param name="source">The module file's text, or <c>null</c> when it could not be read.</param>
-    /// <returns>The name's range, which is empty for <c>Attribute VB_Name = ""</c>; or <c>null</c> when no line of the text is an
+    /// <returns>The name's range, which is empty for <c>Attribute VB_Name = ""</c>; or <c>null</c> when no line of the file's own module is an
     /// <c>Attribute VB_Name</c> line.</returns>
     public static SourceRange? NameRangeOf(string? source)
     {
         var lines = LinesOf(source);
-        for (var line = 0; line < lines.Length; line++)
+        var blocks = FileBlocks.Find(source);
+        for (int line = 0, start = 0; line < lines.Length; start += lines[line].Length + 1, line++)
         {
-            if (VBNameLine().Match(lines[line]) is { Success: true } match)
+            if (VBNameLine().Match(lines[line]) is { Success: true } match && !FileBlocks.Holds(blocks, source!, start))
             {
                 var name = match.Groups["name"];
                 return new SourceRange(line, name.Index, line, name.Index + name.Length);

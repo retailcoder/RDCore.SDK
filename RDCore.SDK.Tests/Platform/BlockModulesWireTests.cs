@@ -61,6 +61,35 @@ public sealed class BlockModulesWireTests
             readBoundaries.Select(node => (node.Identity, node.SourceLocation, node.Kind, node.IsEnd, node.Source)).ToArray());
     }
 
+    // a block's modifiers are read back as they were written, and so is its header's text, modifiers included; a block whose header states none is read
+    // back with none.
+    [TestMethod]
+    public void TheModifiersOfABlock_AndItsHeader_AreReadBackAsTheyWereWritten()
+    {
+        var logger = RDCoreDocument.BlockUri(File, "Logger");
+        var plain = RDCoreDocument.BlockUri(File, "Plain");
+        BlockModule[] blocks =
+        [
+            new("Logger", ModuleType.ClassModule, logger, new SourceRange(2, 0, 4, 9),
+                new ModuleNode(new SyntaxNodeId(logger.AbsolutePath, [0]), new SourceLocation(File, new SourceRange(3, 0, 4, 0)), []))
+            {
+                IsPartial = true, IsCreatable = true, Visibility = AccessModifier.Private,
+            },
+            new("Plain", ModuleType.StdModule, plain, new SourceRange(5, 0, 6, 10),
+                new ModuleNode(new SyntaxNodeId(plain.AbsolutePath, [0]), new SourceLocation(File, new SourceRange(6, 0, 6, 0)), [])),
+        ];
+        var header = new BlockBoundaryTriviaNode(new SyntaxNodeId(logger.AbsolutePath, [1]), new SourceLocation(File, new SourceRange(2, 0, 2, 38)),
+            FileBlockKind.Class, false, "Private Partial Creatable Class Logger");
+        var own = new ModuleNode(new SyntaxNodeId(File.AbsolutePath, [0]), new SourceLocation(File, new SourceRange(0, 0, 7, 0)), []);
+
+        var read = PlatformJson.Deserialize<ModuleParseResult>(
+            PlatformJson.Serialize(ModuleParseResult.Success(own) with { BlockModules = [.. blocks], Trivia = [header] }));
+
+        CollectionAssert.AreEqual(new (bool, bool, AccessModifier?)[] { (true, true, AccessModifier.Private), (false, false, null) },
+            read.BlockModules.Select(block => (block.IsPartial, block.IsCreatable, block.Visibility)).ToArray());
+        Assert.AreEqual("Private Partial Creatable Class Logger", read.Trivia.Cast<BlockBoundaryTriviaNode>().Single().Source);
+    }
+
     [TestMethod]
     public void AFileWithoutBlocks_HasNone()
     {

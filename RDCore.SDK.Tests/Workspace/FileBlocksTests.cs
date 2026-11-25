@@ -43,6 +43,53 @@ public sealed class FileBlocksTests
         => CollectionAssert.AreEqual(new[] { new FileBlock("Outer", FileBlockKind.Class, 0, 2) },
             FileBlocks.Find(Source("Class Outer", "Class Inner", "End Class", "End Class")).ToArray());
 
+    // the modifiers before the kind, each at most once and in their one order, say what the header writes: a visibility, Partial, and Creatable; a
+    // header that states none has none. The block's end is its kind's, as a plain block's is.
+    [TestMethod]
+    [DataRow("Class Logger", false, false, null, DisplayName = "no modifier")]
+    [DataRow("Partial Class Logger ' its generated part", true, false, null, DisplayName = "Partial")]
+    [DataRow("Creatable Class Logger", false, true, null, DisplayName = "Creatable")]
+    [DataRow("Public Class Logger", false, false, "Public", DisplayName = "Public")]
+    [DataRow("  private   class Logger", false, false, "Private", DisplayName = "Private, in any case and spacing")]
+    [DataRow("Public Partial Class Logger", true, false, "Public", DisplayName = "a visibility, then Partial")]
+    [DataRow("Private Creatable Class Logger", false, true, "Private", DisplayName = "a visibility, then Creatable")]
+    [DataRow("Partial Creatable Class Logger", true, true, null, DisplayName = "Partial, then Creatable")]
+    [DataRow("PUBLIC\tPARTIAL CREATABLE CLASS Logger", true, true, "Public", DisplayName = "all three, in any case")]
+    public void TheModifiersOfAHeader_AreWhatItWrites(string header, bool isPartial, bool isCreatable, string? visibility)
+    {
+        var block = FileBlocks.Find(Source(header, "End Class")).Single();
+
+        Assert.AreEqual(new FileBlock("Logger", FileBlockKind.Class, 0, 1), block with { IsPartial = false, IsCreatable = false, Visibility = null });
+        Assert.AreEqual(isPartial, block.IsPartial);
+        Assert.AreEqual(isCreatable, block.IsCreatable);
+        Assert.AreEqual(visibility is null ? null : Enum.Parse<RDCore.SDK.Model.AccessModifier>(visibility), block.Visibility);
+    }
+
+    [TestMethod]
+    public void AModuleBlock_TakesAVisibilityAndPartial()
+        => Assert.AreEqual(new FileBlock("Helpers", FileBlockKind.Module, 0, 1) { IsPartial = true, Visibility = RDCore.SDK.Model.AccessModifier.Private },
+            FileBlocks.Find(Source("Private Partial Module Helpers", "End Module")).Single());
+
+    [TestMethod]
+    [DataRow(new[] { "Partial Logger", "End Class" }, DisplayName = "Partial with no kind")]
+    [DataRow(new[] { "Partial Partial Class Logger", "End Class" }, DisplayName = "Partial twice")]
+    [DataRow(new[] { "Creatable Creatable Class Logger", "End Class" }, DisplayName = "Creatable twice")]
+    [DataRow(new[] { "Class Partial Logger", "End Class" }, DisplayName = "Partial after the kind")]
+    [DataRow(new[] { "Partial Public Class Logger", "End Class" }, DisplayName = "Partial, then a visibility")]
+    [DataRow(new[] { "Partial Private Module Helpers", "End Module" }, DisplayName = "Partial, then a visibility, on a module")]
+    [DataRow(new[] { "Creatable Partial Class Logger", "End Class" }, DisplayName = "Creatable, then Partial")]
+    [DataRow(new[] { "Creatable Public Class Logger", "End Class" }, DisplayName = "Creatable, then a visibility")]
+    [DataRow(new[] { "Creatable Module Helpers", "End Module" }, DisplayName = "Creatable on a module")]
+    [DataRow(new[] { "Public Partial Creatable Module Helpers", "End Module" }, DisplayName = "Creatable on a module, after the others")]
+    [DataRow(new[] { "Friend Class Logger", "End Class" }, DisplayName = "Friend")]
+    [DataRow(new[] { "Global Module Helpers", "End Module" }, DisplayName = "Global")]
+    [DataRow(new[] { "Public Public Class Logger", "End Class" }, DisplayName = "a visibility twice")]
+    [DataRow(new[] { "Public Private Class Logger", "End Class" }, DisplayName = "two visibilities")]
+    [DataRow(new[] { "Public Partial Public Class Logger", "End Class" }, DisplayName = "a visibility on both sides of Partial")]
+    [DataRow(new[] { "Class Public Logger", "End Class" }, DisplayName = "a visibility after the kind")]
+    public void AModifierThatIsNotOnceBeforeTheKind_StartsNoBlock(string[] lines)
+        => Assert.AreEqual(0, FileBlocks.Find(Source(lines)).Count);
+
     [TestMethod]
     [DataRow("Class Logger\r\nAttribute VB_Name = \"Other\"\r\nEnd Class\r\n", null, DisplayName = "an attribute inside a block only")]
     [DataRow("Class Logger\r\nAttribute VB_Name = \"Other\"\r\nEnd Class\r\nAttribute VB_Name = \"Backup\"\r\n", "Backup",

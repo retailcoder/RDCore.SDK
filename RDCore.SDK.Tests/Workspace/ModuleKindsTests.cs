@@ -1,3 +1,4 @@
+using RDCore.SDK.Model;
 using RDCore.SDK.Model.AST.Declarations;
 using RDCore.SDK.Model.Symbols;
 using RDCore.SDK.Workspace;
@@ -112,6 +113,27 @@ public sealed class ModuleKindsTests
                 new DeclaredModule("Backup", ModuleType.StdModule, IsBlock: false),
                 new DeclaredModule("Account", ModuleType.ClassModule, IsBlock: true),
                 new DeclaredModule("Logger", ModuleType.StdModule, IsBlock: true),
+            },
+            modules.ToArray());
+    }
+
+    // a block's declared module is partial, creatable, and has a visibility, as its header writes; the file's own module is the plain part, has no
+    // header, and has none of them.
+    [TestMethod]
+    public void ABlocksModifiers_AreItsDeclaredModules_AndTheFilesOwnHasNone()
+    {
+        const string source = "Attribute VB_Name = \"Backup\"\r\nPublic Partial Class Account\r\nEnd Class\r\nCreatable Class Shape\r\nEnd Class\r\n"
+            + "Private Module Logger\r\nEnd Module\r\nModule Plain\r\nEnd Module\r\n";
+
+        var modules = ModuleKinds.ModulesOf(new RDCoreModule { RelativeUri = "Backup.vbs" }, source);
+
+        CollectionAssert.AreEqual(new[]
+            {
+                new DeclaredModule("Backup", ModuleType.StdModule, IsBlock: false),
+                new DeclaredModule("Account", ModuleType.ClassModule, IsBlock: true) { IsPartial = true, Visibility = AccessModifier.Public },
+                new DeclaredModule("Shape", ModuleType.ClassModule, IsBlock: true) { IsCreatable = true },
+                new DeclaredModule("Logger", ModuleType.StdModule, IsBlock: true) { Visibility = AccessModifier.Private },
+                new DeclaredModule("Plain", ModuleType.StdModule, IsBlock: true),
             },
             modules.ToArray());
     }
