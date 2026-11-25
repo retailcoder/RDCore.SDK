@@ -23,6 +23,13 @@ namespace RDCore.SDK.Model.AST;
 public sealed record class BlockModule(string Name, ModuleType Kind, Uri Uri, SourceRange Range, ModuleNode SyntaxTree)
 {
     /// <summary>
+    /// Where the block's header writes the module's name (<see cref="Workspace.FileBlock.NameColumn"/>), in the file's positions: what a rename of the
+    /// module edits, since the file's <c>Attribute VB_Name</c> and the file's name are its own module's. <see langword="null"/> when the parser that
+    /// made the module does not give it.
+    /// </summary>
+    public SourceRange? NameRange { get; init; }
+
+    /// <summary>
     /// Whether the block's header writes <c>Partial</c> before its kind (<see cref="Workspace.FileBlock.IsPartial"/>).
     /// </summary>
     public bool IsPartial { get; init; }

@@ -25,7 +25,11 @@ public sealed class FileBlocksTests
             "end module"));
 
         CollectionAssert.AreEqual(
-            new[] { new FileBlock("Logger", FileBlockKind.Class, 1, 4), new FileBlock("Helpers", FileBlockKind.Module, 5, 7) },
+            new[]
+            {
+                new FileBlock("Logger", FileBlockKind.Class, 1, 4) { NameColumn = 6 },
+                new FileBlock("Helpers", FileBlockKind.Module, 5, 7) { NameColumn = 7 },
+            },
             blocks.ToArray());
     }
 
@@ -40,11 +44,11 @@ public sealed class FileBlocksTests
 
     [TestMethod]
     public void ABlock_EndsAtTheFirstEndOfItsKind_AHeaderInsideItIsItsCode()
-        => CollectionAssert.AreEqual(new[] { new FileBlock("Outer", FileBlockKind.Class, 0, 2) },
+        => CollectionAssert.AreEqual(new[] { new FileBlock("Outer", FileBlockKind.Class, 0, 2) { NameColumn = 6 } },
             FileBlocks.Find(Source("Class Outer", "Class Inner", "End Class", "End Class")).ToArray());
 
     // the modifiers before the kind, each at most once and in their one order, say what the header writes: a visibility, Partial, and Creatable; a
-    // header that states none has none. The block's end is its kind's, as a plain block's is.
+    // header that states none has none. The block's end is its kind's, as a plain block's is, and its name is where the header writes it, after them.
     [TestMethod]
     [DataRow("Class Logger", false, false, null, DisplayName = "no modifier")]
     [DataRow("Partial Class Logger ' its generated part", true, false, null, DisplayName = "Partial")]
@@ -59,7 +63,9 @@ public sealed class FileBlocksTests
     {
         var block = FileBlocks.Find(Source(header, "End Class")).Single();
 
-        Assert.AreEqual(new FileBlock("Logger", FileBlockKind.Class, 0, 1), block with { IsPartial = false, IsCreatable = false, Visibility = null });
+        Assert.AreEqual(new FileBlock("Logger", FileBlockKind.Class, 0, 1),
+            block with { NameColumn = 0, IsPartial = false, IsCreatable = false, Visibility = null });
+        Assert.AreEqual(header.IndexOf("Logger", StringComparison.Ordinal), block.NameColumn);
         Assert.AreEqual(isPartial, block.IsPartial);
         Assert.AreEqual(isCreatable, block.IsCreatable);
         Assert.AreEqual(visibility is null ? null : Enum.Parse<RDCore.SDK.Model.AccessModifier>(visibility), block.Visibility);
@@ -67,7 +73,8 @@ public sealed class FileBlocksTests
 
     [TestMethod]
     public void AModuleBlock_TakesAVisibilityAndPartial()
-        => Assert.AreEqual(new FileBlock("Helpers", FileBlockKind.Module, 0, 1) { IsPartial = true, Visibility = RDCore.SDK.Model.AccessModifier.Private },
+        => Assert.AreEqual(
+            new FileBlock("Helpers", FileBlockKind.Module, 0, 1) { NameColumn = 23, IsPartial = true, Visibility = RDCore.SDK.Model.AccessModifier.Private },
             FileBlocks.Find(Source("Private Partial Module Helpers", "End Module")).Single());
 
     [TestMethod]

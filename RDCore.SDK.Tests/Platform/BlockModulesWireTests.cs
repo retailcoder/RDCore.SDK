@@ -24,13 +24,17 @@ public sealed class BlockModulesWireTests
         var member = new MemberDeclarationNode(new SyntaxNodeId(logger.AbsolutePath, [0, 0]), new SourceLocation(File, new SourceRange(3, 0, 4, 7)), [],
             "Write", MemberKind.Procedure, AccessModifier.Public);
         var block = new BlockModule("Logger", ModuleType.ClassModule, logger, new SourceRange(2, 0, 5, 9),
-            new ModuleNode(new SyntaxNodeId(logger.AbsolutePath, [0]), new SourceLocation(File, new SourceRange(3, 0, 5, 0)), [member]));
+            new ModuleNode(new SyntaxNodeId(logger.AbsolutePath, [0]), new SourceLocation(File, new SourceRange(3, 0, 5, 0)), [member]))
+        {
+            NameRange = new SourceRange(2, 6, 2, 12),
+        };
         var own = new ModuleNode(new SyntaxNodeId(File.AbsolutePath, [0]), new SourceLocation(File, new SourceRange(0, 0, 7, 0)), []);
 
         var read = PlatformJson.Deserialize<ModuleParseResult>(PlatformJson.Serialize(ModuleParseResult.Success(own) with { BlockModules = [block] }));
 
         var readBlock = read.BlockModules.Single();
         Assert.AreEqual(("Logger", ModuleType.ClassModule, logger, block.Range), (readBlock.Name, readBlock.Kind, readBlock.Uri, readBlock.Range));
+        Assert.AreEqual(block.NameRange, readBlock.NameRange, "where the header writes the name");
         Assert.AreEqual(block.SyntaxTree.Identity, readBlock.SyntaxTree.Identity);
         Assert.AreEqual(block.SyntaxTree.SourceLocation, readBlock.SyntaxTree.SourceLocation);
         var readMember = (MemberDeclarationNode)readBlock.SyntaxTree.Children.Single();

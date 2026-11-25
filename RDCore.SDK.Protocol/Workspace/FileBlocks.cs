@@ -29,6 +29,12 @@ public enum FileBlockKind
 public sealed record class FileBlock(string Name, FileBlockKind Kind, int HeaderLine, int EndLine)
 {
     /// <summary>
+    /// The zero-based column of <see cref="HeaderLine"/> where the header writes the module's name. The name spans <see cref="Name"/>'s length from
+    /// there, which is what a rename of the module edits.
+    /// </summary>
+    public int NameColumn { get; init; }
+
+    /// <summary>
     /// Whether the block's header writes <c>Partial</c> before its kind (<c>Partial Class Name</c>, <c>Partial Module Name</c>).
     /// </summary>
     /// <remarks>
@@ -108,6 +114,7 @@ public static partial class FileBlocks
             {
                 blocks.Add(new FileBlock(header.Groups["name"].Value, kind, line, endLine)
                 {
+                    NameColumn = header.Groups["name"].Index,
                     IsPartial = header.Groups["partial"].Success,
                     IsCreatable = header.Groups["creatable"].Success,
                     Visibility = VisibilityOf(header.Groups["visibility"]),
