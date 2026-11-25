@@ -21,6 +21,10 @@ public record class ModuleParseResult
     /// <remarks>
     /// Together with <see cref="SyntaxTree"/> and <see cref="PrecompilerTrivia"/> it accounts for every token of the source, which is what a formatter
     /// or an exporter needs to write the module back out. Trivia is not among the children of the syntax nodes, since it can be written anywhere.
+    /// <para>
+    /// A file that has blocks (<see cref="BlockModules"/>) has the trivia of all its modules here, and the header and the end line of each block
+    /// (<see cref="BlockBoundaryTriviaNode"/>), which no module's tree holds.
+    /// </para>
     /// </remarks>
     public ImmutableArray<SyntaxNode> Trivia { get; init; } = [];
     public ImmutableArray<VBSyntaxErrorInfo> SyntaxErrors { get; init; } = [];

@@ -19,6 +19,7 @@ namespace RDCore.SDK.Model.AST.Abstract;
 /// <param name="Children">The child syntax nodes. A <c>default</c> array is empty.</param>
 [JsonPolymorphic]
 [JsonDerivedType(typeof(AnnotationTriviaNode), "AnnotationTrivia")]
+[JsonDerivedType(typeof(BlockBoundaryTriviaNode), "BlockBoundaryTrivia")]
 [JsonDerivedType(typeof(CommentTriviaNode), "CommentTrivia")]
 [JsonDerivedType(typeof(ErasedPlusTriviaNode), "ErasedPlusTrivia")]
 [JsonDerivedType(typeof(LineContinuationTriviaNode), "LineContinuationTrivia")]

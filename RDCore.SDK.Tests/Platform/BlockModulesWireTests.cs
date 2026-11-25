@@ -40,6 +40,28 @@ public sealed class BlockModulesWireTests
     }
 
     [TestMethod]
+    public void TheHeaderAndTheEndOfABlock_AreReadBackAsTheyWereWritten_AsBlockBoundaryTrivia()
+    {
+        var logger = RDCoreDocument.BlockUri(File, "Logger");
+        BlockBoundaryTriviaNode[] boundaries =
+        [
+            new(new SyntaxNodeId(logger.AbsolutePath, [1]), new SourceLocation(File, new SourceRange(2, 0, 2, 13)),
+                FileBlockKind.Module, false, "Module Logger"),
+            new(new SyntaxNodeId(logger.AbsolutePath, [2]), new SourceLocation(File, new SourceRange(5, 0, 5, 12)),
+                FileBlockKind.Module, true, "  End Module"),
+        ];
+        var own = new ModuleNode(new SyntaxNodeId(File.AbsolutePath, [0]), new SourceLocation(File, new SourceRange(0, 0, 7, 0)), []);
+
+        var json = PlatformJson.Serialize(ModuleParseResult.Success(own) with { Trivia = [.. boundaries] });
+        var read = PlatformJson.Deserialize<ModuleParseResult>(json);
+
+        StringAssert.Contains(json, "\"BlockBoundaryTrivia\"", "the name the node is written under");
+        var readBoundaries = read.Trivia.Cast<BlockBoundaryTriviaNode>().ToArray();
+        CollectionAssert.AreEqual(boundaries.Select(node => (node.Identity, node.SourceLocation, node.Kind, node.IsEnd, node.Source)).ToArray(),
+            readBoundaries.Select(node => (node.Identity, node.SourceLocation, node.Kind, node.IsEnd, node.Source)).ToArray());
+    }
+
+    [TestMethod]
     public void AFileWithoutBlocks_HasNone()
     {
         var own = new ModuleNode(new SyntaxNodeId(File.AbsolutePath, [0]), new SourceLocation(File, new SourceRange(0, 0, 1, 0)), []);
