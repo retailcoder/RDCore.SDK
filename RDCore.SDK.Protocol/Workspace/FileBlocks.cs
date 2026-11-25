@@ -70,7 +70,7 @@ public sealed record class FileBlock(string Name, FileBlockKind Kind, int Header
 /// (<see cref="FileBlock.Visibility"/>), then <c>Partial</c> (<see cref="FileBlock.IsPartial"/>), then, for a <c>Class</c> block only,
 /// <c>Creatable</c> (<see cref="FileBlock.IsCreatable"/>), as in <c>Public Partial Creatable Class Name</c>. Keywords are read in any case. A line
 /// that writes the modifiers in another order, a modifier twice, a modifier after the kind, <c>Creatable</c> before <c>Module</c>, or another
-/// visibility (<c>Friend</c>, <c>Global</c>) is no header.
+/// visibility (<c>Friend</c>, <c>Global</c>) is not a header.
 /// </para>
 /// </remarks>
 public static partial class FileBlocks
