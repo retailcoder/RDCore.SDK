@@ -102,7 +102,8 @@ public sealed class ModuleKindsTests
     [TestMethod]
     public void AFile_DeclaresItsOwnModuleFirst_ThenOneForEachBlock_NamedAndKindedAsItsHeaderSays()
     {
-        const string source = "Attribute VB_Name = \"Backup\"\r\nClass Account\r\n    Attribute VB_Name = \"Ledger\"\r\nEnd Class\r\nModule Logger\r\nEnd Module\r\n";
+        const string source = "Attribute VB_Name = \"Backup\"\r\nClass Account\r\n    Attribute VB_Name = \"Ledger\"\r\nEnd Class\r\n"
+            + "Module Logger\r\nEnd Module\r\n";
 
         var modules = ModuleKinds.ModulesOf(new RDCoreModule { RelativeUri = "Backup.vbs" }, source);
 
