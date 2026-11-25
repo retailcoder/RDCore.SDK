@@ -24,7 +24,7 @@ public sealed record class RDCoreDocument(Uri File, ModuleParseResult Parse)
     public IEnumerable<Uri> ModuleUris => [File, .. Parse.BlockModules.Select(block => block.Uri)];
 
     /// <summary>
-    /// The module a position of the file is in: the block whose range holds it, and the file's own module otherwise.
+    /// The module a position of the file is in: the block whose range holds it, its end included, and the file's own module otherwise.
     /// </summary>
     /// <param name="position">A position in the file.</param>
     /// <returns>The address of the module: a block's (<see cref="BlockUri"/>), or the file's.</returns>
@@ -45,6 +45,7 @@ public sealed record class RDCoreDocument(Uri File, ModuleParseResult Parse)
     /// <param name="file">The file's URI.</param>
     /// <param name="name">The module's name, as the block's header writes it.</param>
     /// <returns>The module's URI, <c>file:///c:/ws/Backup.vbs/Logger</c> for the module <c>Logger</c> of <c>Backup.vbs</c>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="file"/> or <paramref name="name"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException"><paramref name="name"/> is empty.</exception>
     public static Uri BlockUri(Uri file, string name)
     {
@@ -58,6 +59,7 @@ public sealed record class RDCoreDocument(Uri File, ModuleParseResult Parse)
     /// </summary>
     /// <param name="module">The address of the module.</param>
     /// <returns>The URI of the file that holds the module.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="module"/> is <see langword="null"/>.</exception>
     public static Uri FileOf(Uri module)
     {
         ArgumentNullException.ThrowIfNull(module);
@@ -70,12 +72,13 @@ public sealed record class RDCoreDocument(Uri File, ModuleParseResult Parse)
     /// The path of the file a module is in: the path of the file of a block's module (<see cref="BlockUri"/>), and the path itself otherwise.
     /// </summary>
     /// <remarks>
-    /// A path is a block's module's when its last segment has no extension, which no name of a module has, and the segment before it is a file of one of the
+    /// A path is a block's module's when its last segment has no extension (a module's name has none) and the segment before it is a file of one of the
     /// languages the platform serves (<see cref="SupportedLanguage.FileTypes"/>, <see cref="SupportedLanguage.ModuleFileTypes"/>). A file without an extension
     /// in a folder named as such a file is read as a block's module too.
     /// </remarks>
     /// <param name="path">The module's path, or its URI's path; <c>/</c> and <c>\</c> both separate segments.</param>
     /// <returns>The file's path; <paramref name="path"/> itself when it is the path of a file.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="path"/> is <see langword="null"/>.</exception>
     public static string FileOf(string path)
     {
         ArgumentNullException.ThrowIfNull(path);
