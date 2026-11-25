@@ -18,6 +18,6 @@ namespace RDCore.SDK.Model.AST;
 /// <param name="Kind">The kind of module: <see cref="ModuleType.ClassModule"/> for a <c>Class</c> block, <see cref="ModuleType.StdModule"/> for a
 /// <c>Module</c> block.</param>
 /// <param name="Uri">The module's address: the file's, with the module's name as one more segment (<see cref="Workspace.RDCoreDocument.BlockUri"/>).</param>
-/// <param name="Range">Where the block is in the file, from the start of its header to the end of its end.</param>
+/// <param name="Range">Where the block is in the file, from the start of its header to the end of its <c>End Class</c> or <c>End Module</c>.</param>
 /// <param name="SyntaxTree">The module's tree: what is between the block's header and its end, read as a module is.</param>
 public sealed record class BlockModule(string Name, ModuleType Kind, Uri Uri, SourceRange Range, ModuleNode SyntaxTree);

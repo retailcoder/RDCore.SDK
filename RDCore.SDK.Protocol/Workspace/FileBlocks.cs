@@ -32,9 +32,9 @@ public sealed record class FileBlock(string Name, FileBlockKind Kind, int Header
 /// </summary>
 /// <remarks>
 /// A block starts on a line that holds <c>Class</c> or <c>Module</c> and the module's name, and nothing else but a comment, and ends on the first line
-/// after it that holds <c>End Class</c> or <c>End Module</c>, the one that matches it. Blocks do not nest: a header inside a block is the block's code. A
-/// header that no matching end follows starts no block, and neither does a line that continues the line before it (<c> _</c>). What is outside every block
-/// is the file's own module. A block's name is the name its header writes: an <c>Attribute VB_Name</c> inside it does not rename it, and is not the file's
+/// after it that holds the end of its kind (<c>End Class</c> for a <c>Class</c> block, <c>End Module</c> for a <c>Module</c> block). Blocks do not nest:
+/// a header inside a block is the block's code. A header that no matching end follows starts no block. A line that continues the line before it
+/// (<c> _</c>) is neither a header nor an end. What is outside every block is the file's own module. A block's name is the name its header writes: an <c>Attribute VB_Name</c> inside it does not rename it, and is not the file's
 /// own module's either (<see cref="ModuleName.FromSource"/>).
 /// </remarks>
 public static partial class FileBlocks
