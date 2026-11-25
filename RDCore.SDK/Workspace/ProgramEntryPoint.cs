@@ -29,8 +29,8 @@ public static class ProgramEntryPoint
     public const string Name = BasicProgramText.EntryPointName;
 
     /// <summary>
-    /// The name of the procedure that a module's statements outside its procedures are, in the order they are written: the script's own code
-    /// (<see cref="SupportedLanguage.HasModuleLevelStatements"/>). It is no name a program can write, so it is never one of its own procedures.
+    /// The name of the procedure that a file's statements outside its procedures are, in the order they are written: the script's own code
+    /// (<see cref="SupportedLanguage.HasFileLevelStatements"/>). It is no name a program can write, so it is never one of its own procedures.
     /// </summary>
     /// <remarks>
     /// A module that may have such statements has this procedure, even when it has none of them: a script whose code is all procedures runs nothing, as a

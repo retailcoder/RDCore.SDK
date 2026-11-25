@@ -60,20 +60,20 @@ public sealed partial class ServerArgumentsTests
             ParsedBack("basic").ToConfigurationOverrides().ToList(),
             new KeyValuePair<string, string?>("Configuration:Workspace:Language", "basic"));
 
-    // the parser reads a module's statements outside procedures only when the workspace says so, and the parser is a server the client starts.
+    // the parser reads a file's statements outside procedures only when the workspace says so, and the parser is a server the client starts.
     [TestMethod]
     [DataRow(true)]
     [DataRow(false)]
-    public void WhetherTheWorkspaceHasModuleLevelStatements_ReachesTheServersConfiguration(bool moduleLevelStatements)
+    public void WhetherTheWorkspaceHasFileLevelStatements_ReachesTheServersConfiguration(bool fileLevelStatements)
     {
         var commandLine = RDCoreServerProcess.ServerArguments(1234, "pipe", "C:/ws", LogLevel.Trace, verbose: true, "basic",
-            moduleLevelStatements: moduleLevelStatements);
+            fileLevelStatements: fileLevelStatements);
         var arguments = AsTheProcessReadsThem(commandLine);
 
         Assert.IsFalse(SdkCommandLine.TryAnswer(arguments, out var exitCode), $"the server's parser rejected it ({exitCode}): {commandLine}");
         var overrides = SdkCommandLine.Parse(arguments).ToConfigurationOverrides().ToList();
-        Assert.AreEqual(moduleLevelStatements,
-            overrides.Contains(new KeyValuePair<string, string?>("Configuration:Workspace:ModuleLevelStatements", bool.TrueString)), commandLine);
+        Assert.AreEqual(fileLevelStatements,
+            overrides.Contains(new KeyValuePair<string, string?>("Configuration:Workspace:FileLevelStatements", bool.TrueString)), commandLine);
         StringAssert.EndsWith(commandLine.TrimEnd(), "-v");
     }
 

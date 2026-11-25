@@ -110,11 +110,11 @@ public record class SdkAppCommandLineArgs
     public string? Language { get; set; }
 
     /// <summary>
-    /// A <em>command-line switch</em> that turns the <see cref="SdkWorkspaceOptions.ModuleLevelStatements"/> setting on; without it, the setting is what the
+    /// A <em>command-line switch</em> that turns the <see cref="SdkWorkspaceOptions.FileLevelStatements"/> setting on; without it, the setting is what the
     /// configuration says.
     /// </summary>
-    [Option("module-level-statements")]
-    public bool ModuleLevelStatements { get; set; }
+    [Option("file-level-statements")]
+    public bool FileLevelStatements { get; set; }
 
     /// <summary>
     /// <em>Command-line argument</em> defining or overriding project-level precompiler constants, each in <c>NAME=VALUE</c> form, after the one switch
@@ -163,7 +163,7 @@ public record class SdkAppCommandLineArgs
         if (WorkspaceUri is string workspaceUri) yield return new("Configuration:Workspace:WorkspaceUri", workspaceUri);
         if (DefaultLocation is string defaultLocation) yield return new("Configuration:Workspace:DefaultLocation", defaultLocation);
         if (Language is string language) yield return new("Configuration:Workspace:Language", language);
-        if (ModuleLevelStatements) yield return new("Configuration:Workspace:ModuleLevelStatements", bool.TrueString);
+        if (FileLevelStatements) yield return new("Configuration:Workspace:FileLevelStatements", bool.TrueString);
         foreach (var (name, value) in PrecompilerConstantOverrides())
         {
             yield return new($"Configuration:Workspace:Defines:{name}", value);
@@ -595,27 +595,27 @@ public record class SdkWorkspaceOptions
     public bool EnableFileSystemWatchers { get; set; } = true;
 
     /// <summary>
-    /// Whether a module of the workspace may have statements outside its procedures, which run in the order they are written, as a script's do. A run's
-    /// entry point is then the module's own code (<see cref="Workspace.ProgramEntryPoint.ScriptName"/>), and not a <c>Sub Main</c>.
+    /// Whether a file of the workspace may have statements outside its procedures (file-level statements), which run in the order they are written, as a
+    /// script's do. A run's entry point is then that code (<see cref="Workspace.ProgramEntryPoint.ScriptName"/>), and not a <c>Sub Main</c>.
     /// </summary>
     /// <remarks>
-    /// Off by default: in VBA and VB6 such a statement is a syntax error (<strong>MS-VBAL §5.1</strong>). A language whose modules always have them has them
-    /// whatever this says (<see cref="Workspace.SupportedLanguage.HasModuleLevelStatements"/>), and so does a document of such a language in a workspace of
-    /// another (a <c>.vbs</c>): <see cref="AllowsModuleLevelStatements"/> says which documents do.
+    /// Off by default: in VBA and VB6 such a statement is a syntax error (<strong>MS-VBAL §5.1</strong>). A language whose files always have them has them
+    /// whatever this says (<see cref="Workspace.SupportedLanguage.HasFileLevelStatements"/>), and so does a document of such a language in a workspace of
+    /// another (a <c>.vbs</c>): <see cref="AllowsFileLevelStatements"/> says which documents do.
     /// </remarks>
     [Setting(SettingReach.NextStart)]
-    public bool ModuleLevelStatements { get; set; }
+    public bool FileLevelStatements { get; set; }
 
     /// <summary>
-    /// Whether a document may have statements outside its procedures: the workspace allows them (<see cref="ModuleLevelStatements"/>), its language always
-    /// has them, or the document is the source file of a language that always has them (<see cref="Workspace.SupportedLanguage.HasModuleLevelStatements"/>).
+    /// Whether a document may have statements outside its procedures: the workspace allows them (<see cref="FileLevelStatements"/>), its language always
+    /// has them, or the document is the source file of a language that always has them (<see cref="Workspace.SupportedLanguage.HasFileLevelStatements"/>).
     /// </summary>
     /// <param name="document">The document's URI, or its path.</param>
     /// <returns><see langword="true"/> when its statements outside procedures are the module's own code.</returns>
     /// <exception cref="InvalidOperationException"><see cref="Language"/> is not the identifier of a language the platform serves.</exception>
-    public bool AllowsModuleLevelStatements(string document)
-        => ModuleLevelStatements || SupportedLanguage.HasModuleLevelStatements
-            || Workspace.SupportedLanguages.All.Any(language => language.HasModuleLevelStatements && language.IsSourceFile(document));
+    public bool AllowsFileLevelStatements(string document)
+        => FileLevelStatements || SupportedLanguage.HasFileLevelStatements
+            || Workspace.SupportedLanguages.All.Any(language => language.HasFileLevelStatements && language.IsSourceFile(document));
 
     /// <summary>
     /// The conditional-compilation constants that the <c>--define</c> arguments define (<see cref="SdkAppCommandLineArgs.Define"/>), by name: each value
