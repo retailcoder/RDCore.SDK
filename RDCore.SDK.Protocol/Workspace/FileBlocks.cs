@@ -29,9 +29,11 @@ public enum FileBlockKind
 public sealed record class FileBlock(string Name, FileBlockKind Kind, int HeaderLine, int EndLine)
 {
     /// <summary>
-    /// Whether the block's header writes <c>Partial</c> before its kind (<c>Partial Class Name</c>, <c>Partial Module Name</c>): the block is a part of
-    /// a module that other parts, in this file or others, may extend.
+    /// Whether the block's header writes <c>Partial</c> before its kind (<c>Partial Class Name</c>, <c>Partial Module Name</c>).
     /// </summary>
+    /// <remarks>
+    /// This is what the header writes, and nothing more: what <c>Partial</c> makes of a module is the language's to say.
+    /// </remarks>
     public bool IsPartial { get; init; }
 
     /// <summary>

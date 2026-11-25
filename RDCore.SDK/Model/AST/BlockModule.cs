@@ -23,8 +23,7 @@ namespace RDCore.SDK.Model.AST;
 public sealed record class BlockModule(string Name, ModuleType Kind, Uri Uri, SourceRange Range, ModuleNode SyntaxTree)
 {
     /// <summary>
-    /// Whether the block's header writes <c>Partial</c> before its kind (<see cref="Workspace.FileBlock.IsPartial"/>): the module is a part of a module
-    /// that other parts, in this file or others, may extend.
+    /// Whether the block's header writes <c>Partial</c> before its kind (<see cref="Workspace.FileBlock.IsPartial"/>).
     /// </summary>
     public bool IsPartial { get; init; }
 
