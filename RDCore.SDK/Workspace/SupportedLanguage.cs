@@ -236,18 +236,20 @@ public static class SupportedLanguages
         .Select(fileType => new TextDocumentFilter { Pattern = $"**/{fileType}" }));
 
     /// <summary>
-    /// The language a project's file says the project is written in: <see cref="VB6"/> for a project imported from a Visual Basic 6 project
-    /// (<see cref="RDCoreProject.SourceProject"/>, a <c>.vbp</c>).
+    /// The language a project says it is written in: <see cref="VB6"/> for a project imported from a Visual Basic 6 project
+    /// (<see cref="RDCoreProject.SourceProject"/>, a <c>.vbp</c>), and <see cref="VBScript"/> for a project whose modules are all scripts (<c>.vbs</c>).
     /// </summary>
     /// <remarks>
     /// A server takes it when its client names no language in the <c>initializationOptions</c> of its <c>initialize</c> request
-    /// (<see cref="Platform.Protocol.RDCoreInitializationOptions.Language"/>): what the client names wins. A project that was not imported from a <c>.vbp</c> says
-    /// no language, and the server's own setting stands.
+    /// (<see cref="Platform.Protocol.RDCoreInitializationOptions.Language"/>): what the client names wins. Any other project says no language, and the
+    /// server's own setting stands.
     /// </remarks>
     /// <param name="project">The project.</param>
-    /// <returns>The language, or <see langword="null"/> when the project's file says none.</returns>
+    /// <returns>The language, or <see langword="null"/> when the project says none.</returns>
     public static SupportedLanguage? OfProject(RDCoreProject project)
-        => project.SourceProject is { } source && string.Equals(Path.GetExtension(source), ".vbp", StringComparison.OrdinalIgnoreCase) ? VB6 : null;
+        => project.SourceProject is { } source && string.Equals(Path.GetExtension(source), ".vbp", StringComparison.OrdinalIgnoreCase) ? VB6
+            : project.Modules is { Length: > 0 } modules && modules.All(module => module.RelativeUri is { } path && VBScript.IsSourceFile(path)) ? VBScript
+            : null;
 
     /// <summary>
     /// The language with the given identifier.
