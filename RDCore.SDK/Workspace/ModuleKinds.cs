@@ -68,6 +68,40 @@ public static class ModuleKinds
     };
 
     /// <summary>
+    /// The kind of the module a block of a file declares (<see cref="FileBlocks"/>): a standard module for <c>Module Name ... End Module</c>, a class module
+    /// for <c>Class Name ... End Class</c>.
+    /// </summary>
+    /// <param name="kind">The kind of the block.</param>
+    /// <returns>
+    /// <see cref="ModuleType.StdModule"/> for <see cref="FileBlockKind.Module"/>, <see cref="ModuleType.ClassModule"/> for <see cref="FileBlockKind.Class"/>.
+    /// </returns>
+    public static ModuleType Of(FileBlockKind kind) => kind == FileBlockKind.Class ? ModuleType.ClassModule : ModuleType.StdModule;
+
+    /// <summary>
+    /// Every module a file of a project declares, read from its text without parsing it, in the order they are written: the file's own module, then the
+    /// module of each of its blocks (<see cref="FileBlocks"/>).
+    /// </summary>
+    /// <remarks>
+    /// The file's own module is named as <see cref="ModuleName.Resolve"/> names it, and its kind is <see cref="Of(RDCoreModule?, string?)"/>'s. A block's
+    /// module is named as its header writes it, and its kind is its block's (<see cref="Of(FileBlockKind)"/>). A file of one module declares that one.
+    /// </remarks>
+    /// <param name="module">The file's entry in the project.</param>
+    /// <param name="source">The file's text, or <see langword="null"/> when it could not be read.</param>
+    /// <returns>
+    /// The modules, the file's own first; the file's own module alone, named for its file, when <paramref name="source"/> is <see langword="null"/>.
+    /// </returns>
+    /// <exception cref="ArgumentNullException"><paramref name="module"/> is <see langword="null"/>.</exception>
+    public static IReadOnlyList<DeclaredModule> ModulesOf(RDCoreModule module, string? source)
+    {
+        ArgumentNullException.ThrowIfNull(module);
+        return
+        [
+            new DeclaredModule(ModuleName.Resolve(source, module.RelativeUri), Of(module, source), IsBlock: false),
+            .. FileBlocks.Find(source).Select(block => new DeclaredModule(block.Name, Of(block.Kind), IsBlock: true)),
+        ];
+    }
+
+    /// <summary>
     /// Whether a module of this kind is a class module: its members are of each object of it, and <c>Me</c> is one of them. A document module is.
     /// </summary>
     /// <param name="type">The module's kind.</param>
@@ -97,3 +131,13 @@ public static class ModuleKinds
 /// <param name="Library">The name of the library, as a project references it: <c>Excel</c>.</param>
 /// <param name="ClassName">The name of the class in it: <c>Worksheet</c>.</param>
 public sealed record class DocumentHostClass(string Library, string ClassName);
+
+/// <summary>
+/// A module that a file of a project declares (<see cref="ModuleKinds.ModulesOf"/>): the file's own module, or the module of one of its blocks.
+/// </summary>
+/// <param name="Name">The module's name: its <c>Attribute VB_Name</c> or its file's name for the file's own module, its header's for a block's.</param>
+/// <param name="Kind">The kind of module.</param>
+/// <param name="IsBlock">
+/// Whether the module is a block's, addressed under its file (<see cref="RDCoreDocument.BlockUri"/>); the file's own module otherwise, addressed by the file.
+/// </param>
+public sealed record class DeclaredModule(string Name, ModuleType Kind, bool IsBlock);
