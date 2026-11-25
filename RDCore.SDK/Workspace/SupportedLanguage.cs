@@ -210,8 +210,22 @@ public static class SupportedLanguages
         UsesClassicBasicSyntax = true,
     };
 
+    /// <summary>
+    /// VBScript: Microsoft Visual Basic Scripting Edition, as Windows Script Host runs it.
+    /// </summary>
+    /// <remarks>
+    /// Its source is a script (<c>.vbs</c>): a text file with no header. A project of the language references the two libraries of Windows Script Host
+    /// without its project file listing them: <c>IHost</c>, the type library of <c>wscript.exe</c>, whose <c>WScript</c> object every script names, and
+    /// <c>IWshRuntimeLibrary</c> (Windows Script Host Object Model, <c>wshom.ocx</c>), whose <c>WshShell</c> a script creates with
+    /// <c>CreateObject("WScript.Shell")</c>.
+    /// </remarks>
+    public static SupportedLanguage VBScript { get; } = new("vbscript", "Microsoft Visual Basic Scripting Edition", "*.vbs")
+    {
+        ImplicitReferences = ["IHost", "IWshRuntimeLibrary"],
+    };
+
     /// <summary>Every language the platform serves.</summary>
-    public static IReadOnlyList<SupportedLanguage> All { get; } = [RDVBA, VB6, BASIC];
+    public static IReadOnlyList<SupportedLanguage> All { get; } = [RDVBA, VB6, BASIC, VBScript];
 
     /// <summary>
     /// The selector of the documents of every language the platform serves, by their files: a client names a document's language its own way, so what selects

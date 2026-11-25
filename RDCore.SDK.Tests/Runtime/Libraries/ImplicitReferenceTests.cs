@@ -45,6 +45,11 @@ public sealed class ImplicitReferenceTests
         Assert.IsEmpty(SupportedLanguages.RDVBA.ImplicitReferencesOf([null, .. WithNoForm]));
     }
 
+    // a script runs under Windows Script Host, whose WScript object and WScript.Shell a script uses without naming a library.
+    [TestMethod]
+    public void AScript_ReferencesTheLibrariesOfWindowsScriptHost()
+        => CollectionAssert.AreEqual(new[] { "IHost", "IWshRuntimeLibrary" }, SupportedLanguages.VBScript.ImplicitReferencesOf(["Backup.vbs"]).ToArray());
+
     [TestMethod]
     public void ALanguageThatHasRDForms_ReferencesItOnce()
     {
