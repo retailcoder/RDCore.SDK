@@ -55,6 +55,7 @@ public static partial class ModuleName
     /// <c>""</c> escape is unescaped. An attribute inside a block of the file (<see cref="FileBlocks"/>) is not the file's own module's: a block's name is
     /// the name its header writes, which no attribute inside it changes.
     /// </remarks>
+    /// <param name="source">The text of the source file; <see langword="null"/> or empty for none.</param>
     public static string? FromSource(string? source)
     {
         if (string.IsNullOrEmpty(source))
