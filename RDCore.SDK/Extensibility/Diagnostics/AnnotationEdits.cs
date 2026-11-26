@@ -6,7 +6,7 @@ using RDCore.SDK.Model.Source;
 namespace RDCore.SDK.Extensibility.Diagnostics;
 
 /// <summary>
-/// The edits of a fix (<see cref="EditFix"/>) that remove or move a comment annotation (<strong>RD-VBAL §3.0.1.1</strong>), placed by the parse of the
+/// The edits of a fix (<see cref="EditFix"/>) that remove or move a comment annotation (<strong>RD-VBAL §3.0.1.1</strong>), found in the parse of the
 /// module it is in: the comment that holds it, its text, the range that removes it, and the edits that write it on a line of its own elsewhere.
 /// </summary>
 /// <remarks>
@@ -58,7 +58,8 @@ public static class AnnotationEdits
 
     /// <summary>
     /// The edits that move the annotation onto a comment line of its own before the line a range starts on, with its arguments as they are written, and
-    /// remove it where it is (<see cref="RemovalOf"/>): a module annotation moved above the header of a block (<see cref="Annotations.GetHeaderAnnotations"/>).
+    /// remove it where it is (<see cref="RemovalOf"/>), such as a module annotation moved above the header of a block
+    /// (<see cref="Annotations.GetHeaderAnnotations"/>).
     /// </summary>
     /// <remarks>
     /// The line is written without indentation, as <see cref="LineEdits"/> writes lines.
