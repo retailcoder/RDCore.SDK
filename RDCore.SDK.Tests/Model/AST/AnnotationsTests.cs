@@ -155,7 +155,8 @@ public sealed class AnnotationsTests
     public void AStringArgument_IsTheStringTheLiteralWrites()
     {
         var annotation = new AnnotationTriviaNode(Id(), Lines(0, 0), "HttpGet",
-            [new LiteralExpressionNode(Id(), Lines(0, 0), new VBStringValue("/orders/{id}")), new LiteralExpressionNode(Id(), Lines(0, 0), new VBLongValue(42))]);
+            [new LiteralExpressionNode(Id(), Lines(0, 0), new VBStringValue("/orders/{id}")),
+                new LiteralExpressionNode(Id(), Lines(0, 0), new VBLongValue(42))]);
 
         Assert.AreEqual("/orders/{id}", annotation.GetStringArgument());
         Assert.IsNull(annotation.GetStringArgument(1), "a Long literal is not a string");
