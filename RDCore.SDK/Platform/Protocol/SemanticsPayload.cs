@@ -503,6 +503,10 @@ public record class DeclarationBindingDto(
 /// What the static pass found out about each expression of the module's declarations outside any procedure, such as a constant's value or an array's
 /// bounds (<see cref="ModuleSemanticModel.Expressions"/>). <see langword="null"/> when there are none, and when the host does not say.
 /// </param>
+/// <param name="Directives">
+/// The directives the module is under, as every part of it states them (<see cref="ModuleSemanticModel.Directives"/>); <see langword="null"/> when the host
+/// does not say.
+/// </param>
 public record class ModuleSemanticsDto(
     Uri Module,
     bool? OptionExplicit,
@@ -517,7 +521,8 @@ public record class ModuleSemanticsDto(
     ImmutableArray<string>? UndefinedConditionalConstants = null,
     ImmutableArray<ConditionalConstantFact>? ProjectConditionalConstants = null,
     bool Win64OnlySetOnWindows = false,
-    ImmutableArray<ExpressionFactDto>? Expressions = null)
+    ImmutableArray<ExpressionFactDto>? Expressions = null,
+    ModuleDirectives? Directives = null)
 {
     /// <summary>
     /// Describes a model for the wire.
@@ -556,7 +561,8 @@ public record class ModuleSemanticsDto(
         model.UndefinedConditionalConstants.IsDefaultOrEmpty ? null : model.UndefinedConditionalConstants,
         model.ProjectConditionalConstants.IsDefaultOrEmpty ? null : model.ProjectConditionalConstants,
         model.Win64OnlySetOnWindows,
-        model.Expressions.IsEmpty ? null : ImmutableArray.CreateRange(model.Expressions.Values.Select(ExpressionFactDto.From)));
+        model.Expressions.IsEmpty ? null : ImmutableArray.CreateRange(model.Expressions.Values.Select(ExpressionFactDto.From)),
+        model.Directives);
 
     private static CompileErrorDto ErrorOf(VBCompileErrorInfo error) => CompileErrorDto.From(error);
 }
