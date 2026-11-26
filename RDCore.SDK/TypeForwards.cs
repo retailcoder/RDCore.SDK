@@ -6,3 +6,4 @@ using System.Runtime.CompilerServices;
 [assembly: TypeForwardedTo(typeof(RDCore.SDK.Workspace.SupportedLanguage))]
 [assembly: TypeForwardedTo(typeof(RDCore.SDK.Workspace.SupportedLanguages))]
 [assembly: TypeForwardedTo(typeof(RDCore.SDK.Workspace.WorkspacePaths))]
+[assembly: TypeForwardedTo(typeof(RDCore.SDK.Workspace.Forms.FormControlClass))]
