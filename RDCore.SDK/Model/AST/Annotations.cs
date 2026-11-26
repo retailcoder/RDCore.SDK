@@ -122,7 +122,7 @@ public static class Annotations
         };
 
     /// <summary>
-    /// Whether the annotation has a name, matched as VBA matches names, whatever their case (<strong>MS-VBAL §3.3.5.1</strong>): <c>'@ignoremodule</c> is
+    /// Whether the annotation has a name, matched as VBA matches names, whatever their case (<strong>MS-VBAL §3.3.5.2</strong>): <c>'@ignoremodule</c> is
     /// named <c>IgnoreModule</c>.
     /// </summary>
     /// <param name="annotation">The annotation.</param>
