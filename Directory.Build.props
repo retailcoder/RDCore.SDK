@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <!-- the single version source of this repository: its package and assemblies; a release tag must equal v<VersionPrefix>[-suffix], the suffix passed as -p:VersionSuffix. -->
-    <VersionPrefix>0.2.0</VersionPrefix>
+    <VersionPrefix>0.2.1</VersionPrefix>
     <!-- the RDCore.SDK.Protocols package the SDK depends on, which moves in step with the SDK's own version; a build may name another one, a local pack say. -->
     <RDCoreSdkProtocolsVersion Condition="'$(RDCoreSdkProtocolsVersion)' == ''">0.2.0-alpha</RDCoreSdkProtocolsVersion>
   </PropertyGroup>
