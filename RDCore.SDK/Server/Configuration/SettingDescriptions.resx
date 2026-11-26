@@ -52,6 +52,9 @@
   <data name="Workspace_EnableFileSystemWatchers" xml:space="preserve">
     <value>Whether the language server watches the workspace's files itself, for an editor that does not. Off, a file changed outside the editor is read when the server next starts.</value>
   </data>
+  <data name="Workspace_FileLevelStatements" xml:space="preserve">
+    <value>Whether the workspace's files may have statements outside their procedures, which run in the order they are written: a run then starts with that code, and not with a Sub Main. Off, such a statement is a syntax error, as in VBA and VB6.</value>
+  </data>
   <data name="Platform_Extensions_Allowed" xml:space="preserve">
     <value>The extensions the platform loads, by their title, separated by commas. An extension runs code of its own, with the platform's rights.</value>
   </data>
