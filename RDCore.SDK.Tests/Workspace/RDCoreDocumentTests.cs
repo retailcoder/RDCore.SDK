@@ -116,7 +116,8 @@ public sealed class RDCoreDocumentTests
         var endComment = Comment(File, 6, 12);
         var aboveOther = Comment(File, 7, 0);
         var codeComment = Comment(File, 10, 12);
-        var ownCode = new VariableDeclarationNode(new SyntaxNodeId(File.AbsolutePath, [10]), new SourceLocation(File, new SourceRange(10, 0, 10, 10)), "x", []);
+        var ownCode = new VariableDeclarationNode(
+            new SyntaxNodeId(File.AbsolutePath, [10]), new SourceLocation(File, new SourceRange(10, 0, 10, 10)), "x", []);
         var parse = ModuleParseResult.Success(new ModuleNode(new SyntaxNodeId(File.AbsolutePath, [0]), new SourceLocation(File, new SourceRange(0, 0, 12, 0)),
             [ownCode])) with
         {

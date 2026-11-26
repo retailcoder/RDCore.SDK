@@ -46,8 +46,9 @@ public sealed record class RDCoreDocument(Uri File, ModuleParseResult Parse)
     /// <remarks>
     /// The file's parse holds the trivia (<see cref="ModuleParseResult.Trivia"/>), the directives (<see cref="ModuleParseResult.PrecompilerTrivia"/>) and the
     /// syntax errors (<see cref="ModuleParseResult.SyntaxErrors"/>) of all its modules. An item is the module's whose lines hold its start: a block's module
-    /// has the lines between its header and its end, and the comment lines directly above its header (no blank line and no code between them and the
-    /// header, and no code before the comment on its line), which hold the annotations of the block's module (<see cref="Annotations.GetHeaderAnnotations"/>).
+    /// has the lines between its header and its end, and the comment lines directly above its header, which hold the annotations of the block's module
+    /// (<see cref="Annotations.GetHeaderAnnotations"/>). Those comment lines end, going up from the header, at a blank line, a line of code (a comment
+    /// written after code included), a directive's line, or a line of another block, its header and its end line included.
     /// The file's own module has every other line. An item that runs on past the module's lines (a <c>#If</c> left open) is still the module's it starts in.
     /// The header and the end lines of a block (<see cref="BlockBoundaryTriviaNode"/>) are the file's, and no module's: a comment on either is the file's own
     /// module's. Positions are the file's, as in the file's parse.
