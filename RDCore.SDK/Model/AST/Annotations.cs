@@ -108,7 +108,7 @@ public static class Annotations
     /// <c>'@HttpGet("/orders")</c>.
     /// </summary>
     /// <param name="annotation">The annotation.</param>
-    /// <param name="index">The zero-based position of the argument in the annotation's argument list.</param>
+    /// <param name="index">The zero-based position of the argument in the annotation's argument list; the first argument when omitted.</param>
     /// <returns>
     /// The name as it is written, or the string the literal writes; <see langword="null"/> when the annotation has no argument at that position, or when the
     /// argument is neither a simple name nor a string literal (a number, a member access).

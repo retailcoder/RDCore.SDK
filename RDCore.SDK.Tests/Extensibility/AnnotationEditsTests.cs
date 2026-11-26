@@ -116,6 +116,7 @@ public sealed class AnnotationEditsTests
         var edits = AnnotationEdits.MoveAbove(Parse, IgnoreModule, Main.SourceLocation.Range);
 
         Assert.IsNotNull(edits);
-        Assert.AreEqual("'@ModuleDescription(\"Shapes\")\r\n'@Folder(\"Tools\") \r\n'@IgnoreModule RDC00315\r\nSub Main()\r\nEnd Sub\r\n", edits.ApplyTo(Text));
+        Assert.AreEqual(
+            "'@ModuleDescription(\"Shapes\")\r\n'@Folder(\"Tools\") \r\n'@IgnoreModule RDC00315\r\nSub Main()\r\nEnd Sub\r\n", edits.ApplyTo(Text));
     }
 }
