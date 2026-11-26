@@ -54,10 +54,10 @@ public sealed record class AnnotationDeclaration
     public string? ReplacedBy { get; init; }
 
     /// <summary>
-    /// The fewest arguments it takes: one for each parameter that is neither optional nor repeated.
+    /// The fewest arguments it takes: one for each parameter that is not optional, a list among them.
     /// </summary>
     [JsonIgnore]
-    public int MinArguments => Parameters.Count(parameter => !parameter.IsOptional && !parameter.Repeats);
+    public int MinArguments => Parameters.Count(parameter => !parameter.IsOptional);
 
     /// <summary>
     /// The most arguments it takes: one for each parameter; <see langword="null"/> when its last parameter repeats, and any number is legal.
@@ -66,14 +66,13 @@ public sealed record class AnnotationDeclaration
     public int? MaxArguments => Parameters is [.., { Repeats: true }] ? null : Parameters.Length;
 
     /// <summary>
-    /// Whether its parameters are in the order the declaration requires: no required parameter after an optional or a repeated one, and only the last one
-    /// repeated.
+    /// Whether its parameters are in the order the declaration requires: no required parameter after an optional one, and only the last one repeated.
     /// </summary>
     [JsonIgnore]
     public bool IsWellFormed
         => Parameters.Select((parameter, index) => (parameter, index)).All(item
             => (!item.parameter.Repeats || item.index == Parameters.Length - 1)
-                && (item.parameter.IsOptional || item.parameter.Repeats || Parameters.Take(item.index).All(before => !before.IsOptional && !before.Repeats)));
+                && (item.parameter.IsOptional || Parameters.Take(item.index).All(before => !before.IsOptional)));
 
     /// <summary>
     /// Whether a name is the annotation's own or one of its aliases. Case does not matter, as in any VBA name (<strong>MS-VBAL §3.3.5.1</strong>).
