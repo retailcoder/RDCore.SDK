@@ -103,6 +103,24 @@ public static class Annotations
             ? value.Value
             : null;
 
+    /// <summary>
+    /// The text of a name or string literal argument of the annotation: <c>RDC00315</c> of <c>'@Ignore RDC00315</c>, and <c>/orders</c> of
+    /// <c>'@HttpGet("/orders")</c>.
+    /// </summary>
+    /// <param name="annotation">The annotation.</param>
+    /// <param name="index">The zero-based position of the argument in the annotation's argument list.</param>
+    /// <returns>
+    /// The name as it is written, or the string the literal writes; <see langword="null"/> when the annotation has no argument at that position, or when the
+    /// argument is neither a simple name nor a string literal (a number, a member access).
+    /// </returns>
+    public static string? GetArgumentText(this AnnotationTriviaNode annotation, int index = 0)
+        => index < 0 || index >= annotation.Children.Length ? null : annotation.Children[index] switch
+        {
+            SimpleNameExpressionNode name => name.IdentifierName,
+            LiteralExpressionNode { StaticValue: VBStringValue value } => value.Value,
+            _ => null,
+        };
+
     // the annotations above each child of the module, gathered once for each parse: a consumer reads them for each declaration, and reading the trivia anew
     // for each is quadratic in their number. A parse is immutable, so what is gathered of it stays true of it. The children are keyed by reference: a node is
     // a record, and two declarations written alike are still two.
