@@ -9,7 +9,7 @@ namespace RDCore.SDK.Client.Connection;
 
 /// <summary>
 /// The <see cref="IRDCorePlatformChannel"/> of an OmniSharp language client: what <c>rdc.exe</c> and every <see cref="RDCoreClientApp"/> speak the platform's
-/// protocol through, so that they run the same client logic (<see cref="RDCorePlatformClient"/>) as a client that has only <c>RDCore.SDK.Protocol</c>.
+/// protocol through, so that they run the same client logic (<see cref="RDCorePlatformClient"/>) as a client that has only <c>RDCore.SDK.Protocols</c>.
 /// </summary>
 /// <remarks>
 /// <para>

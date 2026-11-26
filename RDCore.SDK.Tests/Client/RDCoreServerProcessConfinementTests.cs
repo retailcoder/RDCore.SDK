@@ -103,7 +103,7 @@ public sealed class RDCoreServerProcessConfinementTests
     [TestMethod]
     public async Task AnExtensionInAFolderThatLinksOutsideTheRoot_IsNotStarted()
     {
-        RDCoreLanguageServerLaunchTests.WithLinkedFolder(Path.Combine(_root, "Extensions", "Linked"), _outside);
+        WithLinkedFolder(Path.Combine(_root, "Extensions", "Linked"), _outside);
 
         var refused = await StartAsync($"Extensions/Linked/{Executable}");
 
@@ -115,8 +115,8 @@ public sealed class RDCoreServerProcessConfinementTests
     public async Task AnExtensionThroughACycleOfLinks_IsNotStarted()
     {
         var extensions = Path.Combine(_root, "Extensions");
-        RDCoreLanguageServerLaunchTests.WithLinkedFolder(Path.Combine(extensions, "A"), Path.Combine(extensions, "B"));
-        RDCoreLanguageServerLaunchTests.WithLinkedFolder(Path.Combine(extensions, "B"), Path.Combine(extensions, "A"));
+        WithLinkedFolder(Path.Combine(extensions, "A"), Path.Combine(extensions, "B"));
+        WithLinkedFolder(Path.Combine(extensions, "B"), Path.Combine(extensions, "A"));
 
         var refused = await StartAsync($"Extensions/A/{Executable}");
 
@@ -147,7 +147,7 @@ public sealed class RDCoreServerProcessConfinementTests
     public void TheExecutableStarted_IsTheRealPathOfTheOneChecked()
     {
         var inner = Directory.CreateDirectory(Path.Combine(_root, "deep", "a", "b")).FullName;
-        RDCoreLanguageServerLaunchTests.WithLinkedFolder(Path.Combine(_root, "Extensions", "Inner"), inner);
+        WithLinkedFolder(Path.Combine(_root, "Extensions", "Inner"), inner);
 
         var started = PlatformRootConfinement.Confined(_root, Path.Combine(_root, "Extensions", "Inner", "..", Executable));
 
@@ -190,5 +190,33 @@ public sealed class RDCoreServerProcessConfinementTests
         var refused = (Win32Exception)failed;
         Assert.AreNotEqual(2, refused.NativeErrorCode, refused.Message);
         StringAssert.Contains(refused.Message, PlatformRootConfinement.RealPath(deployed));
+    }
+
+    // a symbolic link where the system lets this process make one. Windows asks for Developer Mode or elevation for that, and makes a junction without either:
+    // a folder that leads elsewhere all the same.
+    private static void WithLinkedFolder(string link, string target)
+    {
+        try
+        {
+            Directory.CreateSymbolicLink(link, target);
+            return;
+        }
+        catch (Exception exception) when (OperatingSystem.IsWindows() && exception is IOException or UnauthorizedAccessException)
+        {
+        }
+
+        using var mklink = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("cmd.exe")
+        {
+            ArgumentList = { "/d", "/c", "mklink", "/J", link, target },
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+        })!;
+        mklink.WaitForExit();
+        if (mklink.ExitCode != 0 || !Directory.Exists(link))
+        {
+            Assert.Inconclusive($"this process may make neither a symbolic link nor a junction here: {mklink.StandardError.ReadToEnd()}");
+        }
     }
 }

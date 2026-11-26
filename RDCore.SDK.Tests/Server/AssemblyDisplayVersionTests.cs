@@ -51,7 +51,6 @@ public sealed class AssemblyDisplayVersionTests
 
     [TestMethod]
     [DataRow("RDCore.SDK")]
-    [DataRow("RDCore.SDK.Protocol")]
     public void SdkAssembly_FollowsTheSingleVersionSource(string assemblyName)
     {
         // Directory.Build.props' VersionPrefix feeds both versions of every SDK assembly: a csproj that sets its own

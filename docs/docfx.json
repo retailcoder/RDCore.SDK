@@ -8,18 +8,15 @@
           "files": [
             "**/*.csproj"
           ]
-        },
-        {
-          "src": "../RDCore.SDK.Protocol",
-          "files": [
-            "**/*.csproj"
-          ]
         }
       ],
       "dest": "api"
     }
   ],
   "build": {
+    "xref": [
+      "https://rubberduck-vba.github.io/RDCore.SDK.Protocols/xrefmap.yml"
+    ],
     "content": [
       {
         "files": [

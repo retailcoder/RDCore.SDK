@@ -47,7 +47,7 @@ jobs:
        # instruments), and none of the code generated at build time (resx designers, regex generators).
        reportgenerator -reports:coverage.cobertura.xml -targetdir:coverage-report \
          -reporttypes:JsonSummary \
-         "-assemblyfilters:+RDCore.SDK;+RDCore.SDK.Protocol" \
+         "-assemblyfilters:+RDCore.SDK" \
          "-filefilters:-*/obj/*;-*\\obj\\*"
        pct=$(grep -m1 -oE '"linecoverage": [0-9.]+' coverage-report/Summary.json | grep -oE '[0-9.]+$')
        echo "RDCore.SDK line coverage: ${pct}%"

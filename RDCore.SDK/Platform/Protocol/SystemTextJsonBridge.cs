@@ -5,7 +5,7 @@ using RDCore.SDK.Client;
 namespace RDCore.SDK.Platform.Protocol;
 
 /// <summary>
-/// Writes and reads a message of <c>RDCore.SDK.Protocol</c> through <c>System.Text.Json</c> and <see cref="RDCorePlatformJson.Options"/>, where OmniSharp's
+/// Writes and reads a message of <c>RDCore.SDK.Protocols</c> through <c>System.Text.Json</c> and <see cref="RDCorePlatformJson.Options"/>, where OmniSharp's
 /// Newtonsoft serializer would get it wrong.
 /// </summary>
 /// <remarks>
