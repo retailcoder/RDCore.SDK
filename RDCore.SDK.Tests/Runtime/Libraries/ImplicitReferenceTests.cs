@@ -7,7 +7,8 @@ namespace RDCore.Tests.Runtime.Libraries;
 
 /// <summary>
 /// The libraries a project references without its project file listing them: its language's, and RDForms when it has the code of an RDForms form
-/// (<see cref="SupportedLanguage.ImplicitReferencesOf"/>), before the ones the file lists.
+/// (<see cref="SupportedLanguage.ImplicitReferencesOf"/>), before the ones the file lists; and Windows Script Host's when it has a script and its language
+/// has them not (<see cref="SupportedLanguage.TrailingImplicitReferencesOf"/>), after them.
 /// </summary>
 [TestClass]
 public sealed class ImplicitReferenceTests
@@ -17,7 +18,7 @@ public sealed class ImplicitReferenceTests
     private static DirectoryLibrarySource Source()
     {
         static MockFileData Library(string name) => new($$"""{ "formatVersion": 2, "name": "{{name}}" }""");
-        var files = new MockFileSystem(new[] { "VBRUN", "VB", "RDForms", "Scripting" }
+        var files = new MockFileSystem(new[] { "VBRUN", "VB", "RDForms", "Scripting", "IHost", "IWshRuntimeLibrary" }
             .ToDictionary(name => Path.Combine(Symbols, name + ".json"), Library));
         return new DirectoryLibrarySource(files, Symbols);
     }
@@ -49,6 +50,42 @@ public sealed class ImplicitReferenceTests
     [TestMethod]
     public void AScript_ReferencesTheLibrariesOfWindowsScriptHost()
         => CollectionAssert.AreEqual(new[] { "IHost", "IWshRuntimeLibrary" }, SupportedLanguages.VBScript.ImplicitReferencesOf(["Backup.vbs"]).ToArray());
+
+    // both of Windows Script Host's libraries carry the Scripting runtime's FileSystemObject: after the listed references, they do not shadow Scripting's.
+    [TestMethod]
+    public void AProjectWithAScript_ReferencesWindowsScriptHost_AfterTheOnesItsFileLists()
+    {
+        var project = Project(["Program.bas", "Lib.vbs"], "Scripting");
+
+        var libraries = LibrarySymbolProvider.Load(Source(), project, SupportedLanguages.RDVBA);
+
+        Assert.IsEmpty(libraries.Problems);
+        CollectionAssert.AreEqual(new[] { ("Scripting", 1), ("IHost", 2), ("IWshRuntimeLibrary", 3) },
+            libraries.Priorities.OrderBy(priority => priority.Value).Select(priority => (priority.Key, priority.Value)).ToArray());
+        CollectionAssert.AreEqual(new[] { new ReferencePriorityInfo("VBA", 0), new("Scripting", 1), new("IHost", 2), new("IWshRuntimeLibrary", 3) },
+            LibrarySymbolProvider.ReferencePriorities(project, SupportedLanguages.RDVBA).ToArray());
+    }
+
+    [TestMethod]
+    public void AProjectOfScripts_ReferencesWindowsScriptHost_BeforeTheOnesItsFileLists()
+    {
+        var libraries = LibrarySymbolProvider.Load(Source(), Project(["Backup.vbs", "Restore.vbs"], "Scripting"), SupportedLanguages.VBScript);
+
+        Assert.IsEmpty(libraries.Problems);
+        CollectionAssert.AreEqual(new[] { ("IHost", 1), ("IWshRuntimeLibrary", 2), ("Scripting", 3) },
+            libraries.Priorities.OrderBy(priority => priority.Value).Select(priority => (priority.Key, priority.Value)).ToArray());
+    }
+
+    // a library the project file lists is referenced where it lists it, and not again after it.
+    [TestMethod]
+    public void AProjectWithAScriptThatListsWindowsScriptHost_ReferencesItWhereItListsIt()
+    {
+        var libraries = LibrarySymbolProvider.Load(Source(), Project(["Program.bas", "Lib.vbs"], "IHost", "Scripting"), SupportedLanguages.RDVBA);
+
+        Assert.IsEmpty(libraries.Problems);
+        CollectionAssert.AreEqual(new[] { ("IHost", 1), ("Scripting", 2), ("IWshRuntimeLibrary", 3) },
+            libraries.Priorities.OrderBy(priority => priority.Value).Select(priority => (priority.Key, priority.Value)).ToArray());
+    }
 
     [TestMethod]
     public void ALanguageThatHasRDForms_ReferencesItOnce()
