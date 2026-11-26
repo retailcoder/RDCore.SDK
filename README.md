@@ -13,10 +13,10 @@ It depends on the [**RDCore.SDK.Protocols**](https://github.com/rubberduck-vba/R
 
 The platform built on these libraries, the RD-VBA runtime included, lives in the [RDCore](https://github.com/rubberduck-vba/RDCore) repository, under **⚖️GPLv3 or later**. What you build with RDCore is yours (see [RDCore's NOTICE](https://github.com/rubberduck-vba/RDCore/blob/main/NOTICE.md)).
 
-The MIT license in [LICENSE](LICENSE) covers the libraries of this repository. A French version of the license is available on request. [NOTICE.md](NOTICE.md) names the third-party code the libraries include, with its license.
+The MIT license in [LICENSE](LICENSE) covers the library of this repository. A French version of the license is available on request. [NOTICE.md](NOTICE.md) names the third-party code the library includes, with its license.
 
 ## 📊 Project Status
-These libraries are in **alpha**: their API will still change before 1.0.
+This library is in **alpha**: its API will still change before 1.0.
 
 **Contributions**  
 
@@ -30,6 +30,7 @@ These libraries are in **alpha**: their API will still change before 1.0.
 | Library | Role | Coverage |
 |---|---|---|
 | **RDCore.SDK** | Language core + shared plumbing | [![RDCore.SDK](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/rubberduck-vba/RDCore.SDK/badges/coverage-RDCore.SDK.json)](https://github.com/rubberduck-vba/RDCore.SDK/actions/workflows/build.yml) |
+
 ## Building
 
 From the repository root, with the .NET 11 SDK:
