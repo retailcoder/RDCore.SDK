@@ -14,7 +14,8 @@ public sealed record class AnnotationSet
     /// <summary>
     /// The description of each annotation and of each of its parameters, by its key (<see cref="KeyOf(AnnotationDeclaration)"/>,
     /// <see cref="KeyOf(AnnotationDeclaration, AnnotationParameter)"/>), in each language of the platform, by its two-letter name
-    /// (<see cref="Server.Configuration.SettingsSchema.Languages"/>). A text the provider has none of in a language is missing from it.
+    /// (<see cref="Server.Configuration.SettingsSchema.Languages"/>). Read from an extension's resources (<see cref="ExtensionAnnotationsAttribute.Read"/>), a
+    /// text the provider has none of in a language is the one its resources fall back on; a text it has in no language is missing from every one.
     /// </summary>
     public Dictionary<string, Dictionary<string, string>> Descriptions { get; init; } = [];
 
