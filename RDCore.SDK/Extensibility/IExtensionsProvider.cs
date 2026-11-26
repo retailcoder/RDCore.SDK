@@ -10,11 +10,15 @@ public interface IExtensionsProvider
     /// </summary>
     /// <param name="name">The name of the executable extension.</param>
     /// <param name="description">A short description of the extension.</param>
+    /// <param name="runtimeIdentifier">
+    /// The runtime identifier the extension was published for, such as <c>win-x64</c>, which the manifest records
+    /// (<see cref="ExtensionInfo.RuntimeIdentifier"/>); <c>null</c> records none.
+    /// </param>
     /// <remarks>
     /// 🧩 The implementation must validate that it is executing this method inside the target extension folder.
     /// </remarks>
     /// <returns><c>null</c> if the specified extension cannot be described.</returns>
-    ExtensionInfo? Describe(string name, string description);
+    ExtensionInfo? Describe(string name, string description, string? runtimeIdentifier = null);
 
     /// <summary>
     /// Scans the <em>extensions folder</em> for subfolders containing an <em>extension manifest</em>.
