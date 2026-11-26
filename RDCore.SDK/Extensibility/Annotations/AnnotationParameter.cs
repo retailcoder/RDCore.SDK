@@ -4,7 +4,7 @@ namespace RDCore.SDK.Extensibility.Annotations;
 /// A parameter of an annotation (<see cref="AnnotationDeclaration.Parameters"/>): what signature help shows for its argument.
 /// </summary>
 /// <remarks>
-/// Its description is not here: it is a string of the provider's resources, keyed <c>Annotation_Parameter</c> (<see cref="AnnotationSet.Descriptions"/>).
+/// Its description is a string of the provider's resources, keyed <c>Annotation_Parameter</c> (<see cref="AnnotationSet.Descriptions"/>).
 /// </remarks>
 public sealed record class AnnotationParameter
 {
