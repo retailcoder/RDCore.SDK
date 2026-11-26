@@ -79,13 +79,17 @@ public class ExtensionsClient(
     /// <c>.dll</c> of the same name beside it.
     /// </param>
     /// <param name="description">A short description of the extension.</param>
+    /// <param name="runtimeIdentifier">
+    /// The runtime identifier the extension was published for, such as <c>win-x64</c>, which the manifest records
+    /// (<see cref="ExtensionInfo.RuntimeIdentifier"/>); <c>null</c> records none.
+    /// </param>
     /// <remarks>
     /// The implementation validates that it is executing this method inside the target extension folder.
     /// The folder the current directory is in and the extensions folder are compared as their <see cref="PlatformRootConfinement.RealPath">real paths</see>,
     /// and an extension is not described when a link on the way to either cannot be followed.
     /// </remarks>
     /// <returns><c>null</c> if the specified extension cannot be described.</returns>
-    public ExtensionInfo? Describe(string name, string description)
+    public ExtensionInfo? Describe(string name, string description, string? runtimeIdentifier = null)
     {
         // guard: this must run from inside <ExtensionsRoot>/<ExtensionFolder>/ so the folder name is
         // the extension title. Compare the resolved extensions root, not a relative path fragment, and both as real paths: the system
@@ -156,6 +160,7 @@ public class ExtensionsClient(
             Capabilities = capabilities,
             DiagnosticPrefix = assembly.GetCustomAttribute<DiagnosticPrefixAttribute>()?.Prefix,
             SdkVersion = sdkVersion,
+            RuntimeIdentifier = runtimeIdentifier,
         }.WithSettingsOf(assembly).WithAnnotationsOf(assembly);
     }
 

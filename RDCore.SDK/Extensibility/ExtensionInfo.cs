@@ -94,6 +94,15 @@ public record class ExtensionInfo
     public PlatformVersion? SdkVersion { get; init; }
 
     /// <summary>
+    /// The runtime identifier the extension was published for, such as <c>win-x64</c>, in the form
+    /// <see cref="PlatformManifest.RuntimeIdentifier"/> takes; <c>null</c> when the manifest does not say.
+    /// </summary>
+    /// <remarks>
+    /// An extension package is installed only into a platform of its runtime identifier (<see cref="ExtensionPackage.Install"/>).
+    /// </remarks>
+    public string? RuntimeIdentifier { get; init; }
+
+    /// <summary>
     /// The settings the extension is configured with (<see cref="ExtensionSettingsAttribute"/>), without their descriptions, which are in
     /// <see cref="SettingDescriptions"/>; none for an extension that has none.
     /// </summary>

@@ -109,4 +109,21 @@ public sealed class ExtensionsClientDescribeTests
         Assert.AreEqual("Marque un montage.", info.AnnotationDescriptions["fr"]["Fixture"]);
         Assert.AreEqual("Marque un montage.", new AnnotationCatalogue([info.AnnotationSet]).DescriptionOf(fixture, CultureInfo.GetCultureInfo("fr-CA")));
     }
+
+    // the manifest describe writes is the one an extension package carries: installing reads its runtime identifier from it.
+    [TestMethod]
+    [DataRow("linux-arm64", DisplayName = "published for a runtime")]
+    [DataRow(null, DisplayName = "published for none")]
+    public void ADescribedExtensionsRuntimeIdentifier_IsTheOneItsPackageIsInstalledBy(string? runtimeIdentifier)
+    {
+        File.WriteAllBytes(Path.Combine(_folder, $"{Title}.exe"), [1, 2, 3]);
+
+        var info = CreateSut().Describe($"{Title}.exe", "described", runtimeIdentifier);
+
+        Assert.IsNotNull(info);
+        Assert.AreEqual(runtimeIdentifier, info.RuntimeIdentifier);
+        var packaged = ExtensionPackageManifest.Parse(JsonSerializer.SerializeToUtf8Bytes(info));
+        Assert.AreEqual(runtimeIdentifier, packaged.RuntimeIdentifier);
+        Assert.AreEqual(Title, packaged.Title);
+    }
 }
