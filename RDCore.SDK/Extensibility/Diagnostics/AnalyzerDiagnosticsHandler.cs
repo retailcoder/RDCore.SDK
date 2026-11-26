@@ -43,8 +43,8 @@ public class AnalyzerDiagnosticsHandler(
         => Task.FromResult(LargeStackThread.Run(() => Diagnose(PlatformJson.Deserialize<DiagnoseDocumentPayload>(request.Json))));
 
     /// <summary>
-    /// The diagnostics a derived handler reports of its own, besides the analyzers' findings: for the core extension, the syntax, compile and run-time errors
-    /// the payload holds. They come first in the result. None, unless a derived handler says otherwise.
+    /// The diagnostics a derived handler reports of its own, besides the analyzers' findings, such as the syntax, compile and run-time errors the payload
+    /// holds. They come first in the result. None, unless a derived handler says otherwise.
     /// </summary>
     /// <param name="payload">The document, its parse and its semantics, and the phase of the analysis asked for.</param>
     /// <returns>The diagnostics of the phase asked for (<see cref="DiagnoseDocumentPayload.Phase"/>).</returns>

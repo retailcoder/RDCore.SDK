@@ -58,9 +58,9 @@ public interface ICoreDiagnosticsFactory
     /// </summary>
     /// <param name="finding">What an <see cref="IModuleAnalyzer"/> found.</param>
     /// <returns>
-    /// A diagnostic coded as the finding is (<c>RDC00000</c> for a Rubberduck Core one), with the severity the analyzer gave it. It links to the code's page in
-    /// the platform's documentation when the code is one of the platform's own, and to the extension's page of it when the code is of the prefix the extension
-    /// declares with a <see cref="DiagnosticPrefixAttribute.HelpBaseUri"/>.
+    /// A diagnostic coded as the finding is (<c>RDC00000</c> for a Rubberduck Core one), with the severity the analyzer gave it. It links to the code's
+    /// page in the platform's documentation when the code is one of the platform's own, and to the extension's page of it when the code is of the prefix
+    /// the extension declares with a <see cref="DiagnosticPrefixAttribute.HelpBaseUri"/>.
     /// </returns>
     Diagnostic FromAnalyzerFinding(AnalyzerFinding finding);
 }

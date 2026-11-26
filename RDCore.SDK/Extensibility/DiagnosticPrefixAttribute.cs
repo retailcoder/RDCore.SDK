@@ -42,8 +42,8 @@ public sealed class DiagnosticPrefixAttribute : Attribute
     public string Prefix { get; }
 
     /// <summary>
-    /// The address of the extension's pages of its diagnostics, such as <c>https://example.org/docs/diagnostics</c>, where the page of <c>XYZ00042</c> is
-    /// <c>xyz00042.html</c>. <see langword="null"/> when the extension publishes none.
+    /// The address of the pages that document the extension's diagnostics, such as <c>https://example.org/docs/diagnostics</c>, where the page of
+    /// <c>XYZ00042</c> is <c>xyz00042.html</c>. <see langword="null"/> when the extension publishes none.
     /// </summary>
     /// <remarks>
     /// A diagnostic of the extension's prefix links to its page (LSP <c>codeDescription</c>) when a <see cref="Model.Diagnostics.DiagnosticFactory"/> that is
