@@ -119,4 +119,24 @@ public sealed class AnnotationEditsTests
         Assert.AreEqual(
             "'@ModuleDescription(\"Shapes\")\r\n'@Folder(\"Tools\") \r\n'@IgnoreModule RDC00315\r\nSub Main()\r\nEnd Sub\r\n", edits.ApplyTo(Text));
     }
+
+    // beside another annotation of its comment, only its name changes: the other annotation and its arguments stay as written.
+    [TestMethod]
+    public void RenamingAnAnnotation_ReplacesItsNameAfterItsAt_AndKeepsItsArguments()
+    {
+        var edit = AnnotationEdits.Rename(Parse, IgnoreModule, "Ignore");
+
+        Assert.IsNotNull(edit);
+        Assert.AreEqual(Text.Replace("@IgnoreModule RDC00315", "@Ignore RDC00315", StringComparison.Ordinal), new[] { edit }.ApplyTo(Text));
+    }
+
+    // a range that does not start at the annotation's own name: nothing is renamed rather than the wrong characters.
+    [TestMethod]
+    public void AnAnnotationWhoseTextIsNotItsName_IsNotRenamed()
+    {
+        var misplaced = IgnoreModule with { SourceLocation = At(1, 17, 1, LineOf(1).Length - 1) };
+        var parse = Parse with { Trivia = [Tools, misplaced] };
+
+        Assert.IsNull(AnnotationEdits.Rename(parse, misplaced, "Ignore"));
+    }
 }

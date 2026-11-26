@@ -75,6 +75,28 @@ public static class AnnotationEdits
                 SyntaxEdits.Remove(RemovalOf(parse, annotation))]
             : null;
 
+    /// <summary>
+    /// The edit that renames the annotation where it is, its arguments left as they are written: <c>'@IgnoreModule RDC00315</c> renamed <c>Ignore</c> is
+    /// <c>'@Ignore RDC00315</c>.
+    /// </summary>
+    /// <param name="parse">The parse of the module the annotation is in.</param>
+    /// <param name="annotation">The annotation.</param>
+    /// <param name="name">The name it is written under, without the <c>@</c>.</param>
+    /// <returns>
+    /// The edit that replaces the name after the <c>@</c>; <see langword="null"/> when the annotation has no one-line comment (<see cref="CommentOf"/>),
+    /// or when its text does not start with its name.
+    /// </returns>
+    public static TextEdit? Rename(ModuleParseResult parse, AnnotationTriviaNode annotation, string name)
+    {
+        if (TextOf(parse, annotation) is not { } text || !text.StartsWith($"@{annotation.Name}", StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        var start = annotation.SourceLocation.Range.Start;
+        return SyntaxEdits.Replace(SyntaxEdits.Following(new SourcePosition(start.Line, start.Character + 1), annotation.Name.Length), name);
+    }
+
     // the one-line comment that holds the annotation, and where the annotation starts in its text.
     private static (CommentTriviaNode Comment, int Offset)? Locate(ModuleParseResult parse, AnnotationTriviaNode annotation)
     {

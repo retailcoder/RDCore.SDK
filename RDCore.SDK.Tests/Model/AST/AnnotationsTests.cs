@@ -207,4 +207,12 @@ public sealed class AnnotationsTests
         Assert.IsNull(annotation.GetArgumentText(3), "there is no fourth argument");
         Assert.IsNull(annotation.GetArgumentText(-1));
     }
+
+    [TestMethod]
+    [DataRow("IgnoreModule", true, DisplayName = "as written")]
+    [DataRow("ignoremodule", true, DisplayName = "in another case")]
+    [DataRow("Ignore", false, DisplayName = "a name it starts with")]
+    [DataRow("IgnoreModules", false, DisplayName = "a longer name")]
+    public void AnAnnotation_IsNamed_WhateverTheCaseOfTheName(string name, bool expected)
+        => Assert.AreEqual(expected, Annotation(0, "IgnoreModule").IsNamed(name));
 }

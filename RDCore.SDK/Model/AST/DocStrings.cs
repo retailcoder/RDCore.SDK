@@ -82,7 +82,7 @@ public static class DocStrings
 
         var header = parse.GetHeaderAnnotations();
         return parse.GetModuleAnnotations().FirstOrDefault(annotation
-            => (Is(annotation, ModuleDescriptionAnnotation) || (Is(annotation, MemberDescriptionAnnotation) && header.Contains(annotation)))
+            => (annotation.IsNamed(ModuleDescriptionAnnotation) || (annotation.IsNamed(MemberDescriptionAnnotation) && header.Contains(annotation)))
                 && TextOf(annotation) is not null);
     }
 
@@ -144,7 +144,7 @@ public static class DocStrings
                     };
 
                     if (declared is ({ } name, { } annotationName) && !described.ContainsKey(name)
-                        && parse.GetAnnotations(child).Select(annotation => Is(annotation, annotationName) ? TextOf(annotation) : null)
+                        && parse.GetAnnotations(child).Select(annotation => annotation.IsNamed(annotationName) ? TextOf(annotation) : null)
                             .FirstOrDefault(text => text is not null) is { } text)
                     {
                         described[name] = text;
@@ -154,8 +154,6 @@ public static class DocStrings
 
             return described;
         });
-
-    private static bool Is(AnnotationTriviaNode annotation, string name) => string.Equals(annotation.Name, name, StringComparison.OrdinalIgnoreCase);
 
     // the text of a description attribute or annotation; null for one that describes nothing.
     private static string? TextOf(SyntaxNode node)

@@ -122,11 +122,15 @@ public static class ExpressionWriter
 
     /// <summary>
     /// The literal that writes a value the one way the writer has (<strong>MS-VBAL §3.3</strong>): with the type-declaration character that keeps its
-    /// type, so that it reads back as the value it is.
+    /// type, so that it reads back as the value it is. A string is written between double quotes, each double quote it holds written twice:
+    /// <c>"say ""hi"""</c>.
     /// </summary>
     /// <param name="value">The value.</param>
-    /// <returns>The literal, or <see langword="null"/> when no literal writes the value.</returns>
-    internal static string? LiteralOf(VBTypedValue value) => value switch
+    /// <returns>
+    /// The literal, or <see langword="null"/> when no literal writes the value: a <c>Byte</c>, a <c>Decimal</c>, an object other than <c>Nothing</c>, or a
+    /// string that holds a line break, which a string literal cannot hold (<strong>MS-VBAL §3.3.4</strong>).
+    /// </returns>
+    public static string? LiteralOf(VBTypedValue value) => value switch
     {
         VBBooleanValue boolean => boolean.Value.Equals(VBBooleanValue.True.Value) ? Tokens.True : Tokens.False,
         VBIntegerValue integer => integer.Value.ToString(CultureInfo.InvariantCulture),

@@ -121,6 +121,15 @@ public static class Annotations
             _ => null,
         };
 
+    /// <summary>
+    /// Whether the annotation has a name, matched as VBA matches names, whatever their case (<strong>MS-VBAL §3.3.5.1</strong>): <c>'@ignoremodule</c> is
+    /// named <c>IgnoreModule</c>.
+    /// </summary>
+    /// <param name="annotation">The annotation.</param>
+    /// <param name="name">The name, without the <c>@</c>.</param>
+    /// <returns><see langword="true"/> when the annotation's <see cref="AnnotationTriviaNode.Name"/> is the name in any case.</returns>
+    public static bool IsNamed(this AnnotationTriviaNode annotation, string name) => string.Equals(annotation.Name, name, StringComparison.OrdinalIgnoreCase);
+
     // the annotations above each child of the module, gathered once for each parse: a consumer reads them for each declaration, and reading the trivia anew
     // for each is quadratic in their number. A parse is immutable, so what is gathered of it stays true of it. The children are keyed by reference: a node is
     // a record, and two declarations written alike are still two.
