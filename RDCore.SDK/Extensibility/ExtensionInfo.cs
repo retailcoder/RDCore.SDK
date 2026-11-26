@@ -97,7 +97,8 @@ public record class ExtensionInfo
     /// <see cref="PlatformManifest.RuntimeIdentifier"/> takes; <c>null</c> when the manifest does not say.
     /// </summary>
     /// <remarks>
-    /// An extension package is installed only into a platform of its runtime identifier (<see cref="ExtensionPackage.Install"/>).
+    /// An extension package is installed only into a platform of its runtime identifier, or into one whose manifest names none
+    /// (<see cref="ExtensionPackage.Install"/>): a package whose manifest names none is installed only there.
     /// </remarks>
     public string? RuntimeIdentifier { get; init; }
 
