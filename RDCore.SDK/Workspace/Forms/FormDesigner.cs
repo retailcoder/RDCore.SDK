@@ -501,8 +501,8 @@ public static partial class FormDesigner
         => int.TryParse(value, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var result) ? result : null;
 
     // a `Begin` block: its name is at `NameColumn` (zero-based) of the source's zero-based `Line`; its string properties are where they are written
-    private sealed record class DesignerBlock(FormControlClass Class, string Name, Dictionary<string, string> Properties, List<DesignerBlock> Children, int Line,
-        int NameColumn)
+    private sealed record class DesignerBlock(FormControlClass Class, string Name, Dictionary<string, string> Properties, List<DesignerBlock> Children,
+        int Line, int NameColumn)
     {
         public List<DesignerString> Strings { get; } = [];
 
