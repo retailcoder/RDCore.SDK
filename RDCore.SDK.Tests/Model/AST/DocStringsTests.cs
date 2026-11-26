@@ -290,4 +290,29 @@ public sealed class DocStringsTests
         Assert.AreEqual("Counts once.", counter.GetMemberDescription("Count"));
         Assert.AreEqual("The third.", document.ParseOf(blocks[2].Uri)!.GetModuleDescription(), "inside a block, a '@Description is a member's");
     }
+
+    [TestMethod]
+    public void InAScriptWithNoCode_ADescriptionAnnotationOnTheFirstLineAboveABlocksHeader_DescribesThatBlocksModule()
+    {
+        // 0 above Shape; 1 Shape's header; 2 Shape's end. The script has no code: its procedure is of no width, where the file starts.
+        var file = new Uri("file:///c:/ws/Backup.vbs");
+        var shape = new BlockModule("Shape", ModuleType.ClassModule, RDCoreDocument.BlockUri(file, "Shape"), new SourceRange(1, 0, 2, 9),
+            new ModuleNode(Id(), Lines(2, 2), []));
+        var script = new MemberDeclarationNode(Id(), Lines(0, 0, endCharacter: 0), [], ProgramEntryPoint.ScriptName, MemberKind.Procedure);
+        var parse = new ModuleParseResult
+        {
+            SyntaxTree = new ModuleNode(Id(), Lines(0, 2), [script]),
+            Trivia =
+            [
+                .. Annotated(0, DocStrings.MemberDescriptionAnnotation, "A shape."),
+                new BlockBoundaryTriviaNode(Id(), Lines(1, 1), FileBlockKind.Class, false, "Class Shape"),
+                new BlockBoundaryTriviaNode(Id(), Lines(2, 2), FileBlockKind.Class, true, "End Class"),
+            ],
+            BlockModules = [shape],
+        };
+        var document = new RDCoreDocument(file, parse);
+
+        Assert.AreEqual("A shape.", document.ParseOf(shape.Uri)!.GetModuleDescription());
+        Assert.IsNull(document.ParseOf(file)!.GetModuleDescription());
+    }
 }
