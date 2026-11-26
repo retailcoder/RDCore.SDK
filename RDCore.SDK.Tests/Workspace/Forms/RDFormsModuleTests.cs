@@ -78,7 +78,7 @@ public sealed class RDFormsModuleTests
         CollectionAssert.Contains(SupportedLanguages.RDVBA.FileTypes, "*.rdform");
         CollectionAssert.Contains(SupportedLanguages.VB6.FileTypes, "*.rdform");
         Assert.IsFalse(SupportedLanguages.All.SelectMany(language => language.FileTypes).Contains("*.xaml"));
-        Assert.IsTrue(SupportedLanguages.DocumentSelector.Any(filter => filter.Pattern == "**/*.rdform"));
+        Assert.IsTrue(SupportedLanguageSelectors.DocumentSelector.Any(filter => filter.Pattern == "**/*.rdform"));
     }
 
     [TestMethod]

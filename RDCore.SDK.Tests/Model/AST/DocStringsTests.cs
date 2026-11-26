@@ -30,8 +30,9 @@ public sealed class DocStringsTests
     private static AttributeDirectiveNode Attribute(int line, string name, string value, string? binding = null)
         => new(Id(), Lines(line, line), name, value, binding);
 
-    private static MemberDeclarationNode Procedure(string name, int first, int last, Uri? file = null, SyntaxNode[]? body = null)
-        => new(Id(), Lines(first, last, file), [.. body ?? []], name, MemberKind.Procedure);
+    private static MemberDeclarationNode Procedure(
+        string name, int first, int last, Uri? file = null, SyntaxNode[]? body = null, MemberKind kind = MemberKind.Procedure)
+        => new(Id(), Lines(first, last, file), [.. body ?? []], name, kind);
 
     private static VariableDeclarationNode Variable(string name, int line, int endCharacter = 40)
         => new(Id(), Lines(line, line, endCharacter: endCharacter), name, []);
@@ -218,5 +219,38 @@ public sealed class DocStringsTests
         var parse = Parse([Procedure("Main", 3, 5)], Annotated(2, DocStrings.MemberDescriptionAnnotation, new VBLongValue(1)));
 
         Assert.IsNull(parse.GetMemberDescription("Main"));
+    }
+
+    [TestMethod]
+    public void AnAnnotationWithNoArgument_DescribesNothing()
+    {
+        // the annotation above the second procedure, which has an argument, shows that the parse's annotations are read.
+        var parse = Parse([Procedure("Main", 3, 5), Procedure("Other", 7, 9)],
+            Annotated(1, DocStrings.ModuleDescriptionAnnotation, argument: null), Annotated(2, DocStrings.MemberDescriptionAnnotation, argument: null),
+            Annotated(6, DocStrings.MemberDescriptionAnnotation, "Runs another way."));
+
+        Assert.IsNull(parse.GetModuleDescription());
+        Assert.IsNull(parse.GetMemberDescription("Main"));
+        Assert.AreEqual("Runs another way.", parse.GetMemberDescription("Other"));
+    }
+
+    [TestMethod]
+    public void OfSeveralMembersOfOneName_TheFirstWrittenThatHasADescription_DescribesThem()
+    {
+        // the two accessors of one property: an annotation above the second alone; one above each; an attribute in the second's body alone; one in each.
+        var aboveTheSecond = Parse([Procedure("Value", 1, 3, kind: MemberKind.PropertyGet), Procedure("Value", 5, 7, kind: MemberKind.PropertyLet)],
+            Annotated(4, DocStrings.MemberDescriptionAnnotation, "Sets the value."));
+        var aboveEach = Parse([Procedure("Value", 2, 4, kind: MemberKind.PropertyGet), Procedure("Value", 6, 8, kind: MemberKind.PropertyLet)],
+            Annotated(1, DocStrings.MemberDescriptionAnnotation, "Gets the value."), Annotated(5, DocStrings.MemberDescriptionAnnotation, "Sets the value."));
+        var inTheSecond = Parse([Procedure("Value", 1, 3, kind: MemberKind.PropertyGet),
+            Procedure("Value", 5, 8, body: [Attribute(6, Tokens.VB_Description, "\"Sets the value.\"", "Value")], kind: MemberKind.PropertyLet)]);
+        var inEach = Parse([
+            Procedure("Value", 1, 4, body: [Attribute(2, Tokens.VB_Description, "\"Gets the value.\"", "Value")], kind: MemberKind.PropertyGet),
+            Procedure("Value", 5, 8, body: [Attribute(6, Tokens.VB_Description, "\"Sets the value.\"", "Value")], kind: MemberKind.PropertyLet)]);
+
+        Assert.AreEqual("Sets the value.", aboveTheSecond.GetMemberDescription("Value"));
+        Assert.AreEqual("Gets the value.", aboveEach.GetMemberDescription("Value"));
+        Assert.AreEqual("Sets the value.", inTheSecond.GetMemberDescription("Value"));
+        Assert.AreEqual("Gets the value.", inEach.GetMemberDescription("Value"));
     }
 }

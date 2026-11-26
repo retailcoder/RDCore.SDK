@@ -24,13 +24,17 @@ public sealed class BlockModulesWireTests
         var member = new MemberDeclarationNode(new SyntaxNodeId(logger.AbsolutePath, [0, 0]), new SourceLocation(File, new SourceRange(3, 0, 4, 7)), [],
             "Write", MemberKind.Procedure, AccessModifier.Public);
         var block = new BlockModule("Logger", ModuleType.ClassModule, logger, new SourceRange(2, 0, 5, 9),
-            new ModuleNode(new SyntaxNodeId(logger.AbsolutePath, [0]), new SourceLocation(File, new SourceRange(3, 0, 5, 0)), [member]));
+            new ModuleNode(new SyntaxNodeId(logger.AbsolutePath, [0]), new SourceLocation(File, new SourceRange(3, 0, 5, 0)), [member]))
+        {
+            NameRange = new SourceRange(2, 6, 2, 12),
+        };
         var own = new ModuleNode(new SyntaxNodeId(File.AbsolutePath, [0]), new SourceLocation(File, new SourceRange(0, 0, 7, 0)), []);
 
         var read = PlatformJson.Deserialize<ModuleParseResult>(PlatformJson.Serialize(ModuleParseResult.Success(own) with { BlockModules = [block] }));
 
         var readBlock = read.BlockModules.Single();
         Assert.AreEqual(("Logger", ModuleType.ClassModule, logger, block.Range), (readBlock.Name, readBlock.Kind, readBlock.Uri, readBlock.Range));
+        Assert.AreEqual(block.NameRange, readBlock.NameRange, "where the header writes the name");
         Assert.AreEqual(block.SyntaxTree.Identity, readBlock.SyntaxTree.Identity);
         Assert.AreEqual(block.SyntaxTree.SourceLocation, readBlock.SyntaxTree.SourceLocation);
         var readMember = (MemberDeclarationNode)readBlock.SyntaxTree.Children.Single();
@@ -61,8 +65,8 @@ public sealed class BlockModulesWireTests
             readBoundaries.Select(node => (node.Identity, node.SourceLocation, node.Kind, node.IsEnd, node.Source)).ToArray());
     }
 
-    // a block's modifiers are read back as they were written, and so is its header's text, modifiers included; a block whose header states none is read
-    // back with none.
+    // a block's modifiers and where its header writes them are read back as they were written, and so is its header's text, modifiers included; a block
+    // whose header states none is read back with none, and with its kind's range only.
     [TestMethod]
     public void TheModifiersOfABlock_AndItsHeader_AreReadBackAsTheyWereWritten()
     {
@@ -74,9 +78,14 @@ public sealed class BlockModulesWireTests
                 new ModuleNode(new SyntaxNodeId(logger.AbsolutePath, [0]), new SourceLocation(File, new SourceRange(3, 0, 4, 0)), []))
             {
                 IsPartial = true, IsCreatable = true, Visibility = AccessModifier.Private,
+                VisibilityRange = new SourceRange(2, 0, 2, 7), PartialRange = new SourceRange(2, 8, 2, 15),
+                CreatableRange = new SourceRange(2, 16, 2, 25), KindRange = new SourceRange(2, 26, 2, 31),
             },
             new("Plain", ModuleType.StdModule, plain, new SourceRange(5, 0, 6, 10),
-                new ModuleNode(new SyntaxNodeId(plain.AbsolutePath, [0]), new SourceLocation(File, new SourceRange(6, 0, 6, 0)), [])),
+                new ModuleNode(new SyntaxNodeId(plain.AbsolutePath, [0]), new SourceLocation(File, new SourceRange(6, 0, 6, 0)), []))
+            {
+                KindRange = new SourceRange(5, 0, 5, 6),
+            },
         ];
         var header = new BlockBoundaryTriviaNode(new SyntaxNodeId(logger.AbsolutePath, [1]), new SourceLocation(File, new SourceRange(2, 0, 2, 38)),
             FileBlockKind.Class, false, "Private Partial Creatable Class Logger");
@@ -87,6 +96,9 @@ public sealed class BlockModulesWireTests
 
         CollectionAssert.AreEqual(new (bool, bool, AccessModifier?)[] { (true, true, AccessModifier.Private), (false, false, null) },
             read.BlockModules.Select(block => (block.IsPartial, block.IsCreatable, block.Visibility)).ToArray());
+        CollectionAssert.AreEqual(blocks.Select(block => (block.VisibilityRange, block.PartialRange, block.CreatableRange, block.KindRange)).ToArray(),
+            read.BlockModules.Select(block => (block.VisibilityRange, block.PartialRange, block.CreatableRange, block.KindRange)).ToArray(),
+            "where each header writes its words, and nowhere for a word it does not write");
         Assert.AreEqual("Private Partial Creatable Class Logger", read.Trivia.Cast<BlockBoundaryTriviaNode>().Single().Source);
     }
 

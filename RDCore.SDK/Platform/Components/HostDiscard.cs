@@ -16,6 +16,14 @@ namespace RDCore.SDK.Platform.Components;
 public record class HostDiscardParams : IRequest, IRequest<DiscardResult>
 {
     /// <summary>
+    /// The root of the project whose session the module leaves: the root of a project the host composed for analysis
+    /// (<see cref="HostProjectAnalyzeParams.WorkspaceRoot"/>) discards the module from that project, and the runtime session is left as it is, as a
+    /// define with that root (<see cref="DefineSymbolsParams.WorkspaceRoot"/>) defines the module there. <see langword="null"/>, or the root of the
+    /// runtime session's project, discards it from the runtime session.
+    /// </summary>
+    public Uri? WorkspaceRoot { get; init; }
+
+    /// <summary>
     /// The address of the module symbol: the one the language server defined the module under, which it derives once and for every request about a
     /// module. A module that is not the project's - a document the client opened - has no symbol of its own to find by name, and still has
     /// what it declared.

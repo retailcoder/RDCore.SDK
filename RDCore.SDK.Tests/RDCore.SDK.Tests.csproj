@@ -16,7 +16,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\RDCore.SDK\RDCore.SDK.csproj" />
-    <ProjectReference Include="..\RDCore.SDK.Protocol\RDCore.SDK.Protocol.csproj" />
   </ItemGroup>
 
   <ItemGroup>

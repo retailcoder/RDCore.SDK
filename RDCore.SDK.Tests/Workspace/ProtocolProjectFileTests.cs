@@ -4,7 +4,7 @@ using System.Text.Json;
 namespace RDCore.Tests.Workspace;
 
 /// <summary>
-/// The project file model is in <c>RDCore.SDK.Protocol</c>, which a client of the platform references alone: an IDE's add-in reads a <c>.rdproj</c>
+/// The project file model is in <c>RDCore.SDK.Protocols</c>, which a client of the platform references alone: an IDE's add-in reads a <c>.rdproj</c>
 /// with it, and with nothing of the platform.
 /// </summary>
 [TestClass]
@@ -15,7 +15,7 @@ public sealed class ProtocolProjectFileTests
     {
         var assembly = typeof(ProjectFile).Assembly;
 
-        Assert.AreEqual("RDCore.SDK.Protocol", assembly.GetName().Name);
+        Assert.AreEqual("RDCore.SDK.Protocols", assembly.GetName().Name);
         var others = assembly.GetReferencedAssemblies()
             .Select(reference => reference.Name!)
             .Where(name => name != "System" && !name.StartsWith("System.", StringComparison.Ordinal) && name != "netstandard" && name != "mscorlib")

@@ -9,9 +9,8 @@ The language model and the shared plumbing of [RDCore](https://github.com/rubber
 | Assembly | What it is |
 |---|---|
 | `RDCore.SDK` | The RDCore language model (MS-VBAL types, symbols, syntax trees, semantics and diagnostics) and the plumbing every process and extension of the platform shares: hosting, configuration, logging, workspaces, and the server and client app bases. |
-| `RDCore.SDK.Protocol` | The messages a client exchanges with the RDCore platform: the `rdcore/*` methods, the platform handshake, and how to start the language server. |
 
-Each assembly carries its French resources (`fr`) beside the English ones.
+The assembly carries its French resources (`fr`) beside the English ones. The messages a client exchanges with the RDCore platform (the `rdcore/*` methods, the platform handshake, and how to start the language server) are the [RDCore.SDK.Protocols](https://www.nuget.org/packages/RDCore.SDK.Protocols) package, which this one depends on.
 
 ## Getting started
 

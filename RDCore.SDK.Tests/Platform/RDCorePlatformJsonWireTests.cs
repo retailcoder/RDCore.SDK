@@ -18,7 +18,7 @@ using OmniSharpSerializer = OmniSharp.Extensions.JsonRpc.ISerializer;
 namespace RDCore.Tests.Platform;
 
 /// <summary>
-/// A client that has only <c>RDCore.SDK.Protocol</c> writes and reads every message of it with <see cref="RDCorePlatformJson.Options"/>; the platform's own processes
+/// A client that has only <c>RDCore.SDK.Protocols</c> writes and reads every message of it with <see cref="RDCorePlatformJson.Options"/>; the platform's own processes
 /// write and read them with OmniSharp's Newtonsoft serializers. The JSON must be the same both ways, member for member.
 /// </summary>
 [TestClass]

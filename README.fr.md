@@ -7,17 +7,16 @@
 > 👋 Bonjour! Nouveau ici? _Rubberduck_ a toujours été une initiative open-source. **RDCore l'honore avec une formule Open-Core**.  
 > <small>Voir [rubberduckvba.ca](https://rubberduckvba.ca) pour plus d'informations.</small>
 
-Ce dépôt contient le paquet [**RDCore.SDK**](https://www.nuget.org/packages/RDCore.SDK) de la plateforme [RDCore](https://github.com/rubberduck-vba/RDCore), sous licence **⚖️MIT**. Le paquet contient ces bibliothèques, chacune un assembly distinct :
+Ce dépôt contient le paquet [**RDCore.SDK**](https://www.nuget.org/packages/RDCore.SDK) de la plateforme [RDCore](https://github.com/rubberduck-vba/RDCore), sous licence **⚖️MIT** : le modèle du langage (types, symboles, arbres syntaxiques, sémantique et diagnostics MS-VBAL) et la plomberie que partagent tous les composants de la plateforme (hébergement, configuration, journalisation, espaces de travail, bases des applications serveur et client). Chaque composant et chaque extension de RDCore s'appuie sur lui.
 
-- **RDCore.SDK** : le modèle du langage (types, symboles, arbres syntaxiques, sémantique et diagnostics MS-VBAL) et la plomberie que partagent tous les composants de la plateforme (hébergement, configuration, journalisation, espaces de travail, bases des applications serveur et client). Chaque composant et chaque extension de RDCore s'appuie sur elle.
-- **RDCore.SDK.Protocol** : ce dont un client de la plateforme a besoin, et rien d'autre. Elle contient les méthodes `rdcore/*` et leurs messages, la poignée de main de la plateforme, et comment démarrer le serveur de langage. Elle n'utilise que System.Text.Json, sans OmniSharp. L'add-in RDCore de HexIDE la référence.
+Il dépend du paquet [**RDCore.SDK.Protocols**](https://github.com/rubberduck-vba/RDCore.SDK.Protocols) : ce dont un client de la plateforme a besoin, et rien d'autre, sans OmniSharp. L'add-in RDCore de HexIDE ne référence que ce paquet.
 
 La plateforme construite sur ces bibliothèques, incluant le runtime RD-VBA, se trouve dans le dépôt [RDCore](https://github.com/rubberduck-vba/RDCore), sous **⚖️GPLv3 ou toute version ultérieure**. Ce que vous construisez avec RDCore vous appartient (voir l'[AVIS de RDCore](https://github.com/rubberduck-vba/RDCore/blob/main/NOTICE.md)).
 
-La licence MIT de [LICENSE](LICENSE) couvre les bibliothèques de ce dépôt. Une version française de la licence est disponible sur demande. [NOTICE.md](NOTICE.md) nomme le code tiers que les bibliothèques contiennent, avec sa licence.
+La licence MIT de [LICENSE](LICENSE) couvre la bibliothèque de ce dépôt. Une version française de la licence est disponible sur demande. [NOTICE.md](NOTICE.md) nomme le code tiers que la bibliothèque contient, avec sa licence.
 
 ## 📊 État du projet
-Ces bibliothèques sont en version **alpha** : leur API changera encore avant la version 1.0.
+Cette bibliothèque est en version **alpha** : son API changera encore avant la version 1.0.
 
 **Contributions**  
 
@@ -31,7 +30,6 @@ Ces bibliothèques sont en version **alpha** : leur API changera encore avant la
 | Bibliothèque | Rôle | Couverture |
 |---|---|---|
 | **RDCore.SDK** | Cœur du langage + plomberie partagée | [![RDCore.SDK](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/rubberduck-vba/RDCore.SDK/badges/coverage-RDCore.SDK.json)](https://github.com/rubberduck-vba/RDCore.SDK/actions/workflows/build.yml) |
-| **RDCore.SDK.Protocol** | Le protocole côté client, sans OmniSharp | [![RDCore.SDK.Protocol](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/rubberduck-vba/RDCore.SDK/badges/coverage-RDCore.SDK.Protocol.json)](https://github.com/rubberduck-vba/RDCore.SDK/actions/workflows/build.yml) |
 
 ## Compiler
 

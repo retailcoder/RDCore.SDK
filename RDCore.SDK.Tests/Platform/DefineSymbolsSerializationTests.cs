@@ -106,6 +106,36 @@ public sealed class DefineSymbolsSerializationTests
         CollectionAssert.AreEqual(request.Symbols[0].Locals[0].UnlessLive.ToArray(), read.Locals.Single().UnlessLive.ToArray());
     }
 
+    // the dead branches of a module written in two files are each where its file says, since both files repeat ranges (MS-VBAL §3.4).
+    [TestMethod]
+    public void TheDeadBranchesOfAReply_AreTheirFilesAndTheirRanges_OnTheWire()
+    {
+        var result = new DefineSymbolsResult
+        {
+            DeadBranches =
+            [
+                new SourceLocation(new Uri("file:///c:/workspace/Module1.bas"), new SourceRange(2, 0, 3, 4)),
+                new SourceLocation(new Uri("file:///c:/workspace/Module1.Part2.bas"), new SourceRange(2, 0, 3, 4)),
+            ],
+        };
+
+        using var written = JsonDocument.Parse(LspSerializer.Instance.SerializeObject(result));
+        var read = Wire.RoundTrip(result);
+
+        Assert.AreEqual(2, written.RootElement.GetProperty("deadBranches").GetArrayLength());
+        CollectionAssert.AreEqual(result.DeadBranches.ToArray(), read.DeadBranches.ToArray());
+    }
+
+    // a host that says no dead branches is read as one whose branches are all live.
+    [TestMethod]
+    public void AReplyWithoutDeadBranches_HasNone()
+    {
+        var read = LspSerializer.Instance.DeserializeObject<DefineSymbolsResult>("""{"defined":1}""");
+
+        Assert.AreEqual(1, read.Defined, "the reply was read");
+        Assert.IsEmpty(read.DeadBranches);
+    }
+
     [TestMethod]
     public void AModuleOfTheSessionsOwnProject_IsOfNoLibrary_ByDefault()
     {

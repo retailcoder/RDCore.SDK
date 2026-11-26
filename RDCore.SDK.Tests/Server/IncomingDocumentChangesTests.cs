@@ -187,7 +187,7 @@ public sealed class IncomingDocumentChangesTests
     public async Task AChangeToADocumentNoHandlerServes_IsNotWaitedFor()
     {
         var incoming = new IncomingDocumentChanges();
-        incoming.Serve(SupportedLanguages.DocumentSelector);
+        incoming.Serve(SupportedLanguageSelectors.DocumentSelector);
 
         incoming.Arrived(new Uri("file:///c:/ws/README.md"));
 
@@ -203,7 +203,7 @@ public sealed class IncomingDocumentChangesTests
     public async Task AChangeToADocumentAHandlerServes_IsWaitedFor(string document)
     {
         var incoming = new IncomingDocumentChanges();
-        incoming.Serve(SupportedLanguages.DocumentSelector);
+        incoming.Serve(SupportedLanguageSelectors.DocumentSelector);
 
         incoming.Arrived(new Uri(document));
 
@@ -308,7 +308,7 @@ public sealed class IncomingDocumentChangesTests
         Assert.AreEqual(42, await notServing.WhileCurrentAsync(new Uri(DocumentA), CancellationToken.None, _ => Task.FromResult(42)).WaitAsync(Hung));
 
         var serving = ServingFileChanges();
-        serving.Serve(SupportedLanguages.DocumentSelector);
+        serving.Serve(SupportedLanguageSelectors.DocumentSelector);
         serving.FileChangeArrived(new Uri("file:///c:/ws/.rdproj"));
         serving.FileChangeArrived(new Uri("file:///c:/ws/README.md"));
         Assert.AreEqual(42, await serving.WhileWorkspaceCurrentAsync(CancellationToken.None, _ => Task.FromResult(42)).WaitAsync(Hung));
