@@ -1,4 +1,5 @@
 ﻿using RDCore.SDK.Client;
+using RDCore.SDK.Platform;
 
 namespace RDCore.SDK.Extensibility;
 
@@ -78,9 +79,17 @@ public record class ExtensionInfo
     public bool IsCoreExtension { get; init; }
 
     /// <summary>
-    /// The version of <c>RDCore.SDK</c> the extension was built against, as its assembly references it; <c>null</c> when the manifest does not say.
+    /// The version of <c>RDCore.SDK</c> the extension was built against, as its assembly references it; <c>null</c> when the manifest does not
+    /// say, or names something that is not a version.
     /// </summary>
-    public Version? SdkVersion { get; init; }
+    /// <remarks>
+    /// The manifest writes it as a <see cref="PlatformVersion"/>, such as <c>0.2.1</c>. An assembly reference holds the major, minor and patch
+    /// numbers, without a prerelease, which <see cref="PlatformVersion.IsCompatibleWith"/> ignores. A manifest that writes a four-part version,
+    /// such as <c>0.2.1.0</c>, is read by its first three. An extension with no compatible <c>SdkVersion</c> is not started
+    /// (<see cref="ExtensionValidationFlags.IncompatibleSdk"/>).
+    /// </remarks>
+    [System.Text.Json.Serialization.JsonConverter(typeof(ExtensionSdkVersion))]
+    public PlatformVersion? SdkVersion { get; init; }
 
     /// <summary>
     /// The settings the extension is configured with (<see cref="ExtensionSettingsAttribute"/>), without their descriptions, which are in

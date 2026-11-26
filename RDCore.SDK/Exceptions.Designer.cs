@@ -185,6 +185,15 @@ namespace RDCore.SDK {
                 return ResourceManager.GetString("ValidationFlags_FileHashMismatch", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   Looks up a localized string similar to The &apos;SdkVersion&apos; specified in the extension manifest is missing, or is not compatible with the RDCore.SDK this platform runs with..
+        /// </summary>
+        internal static string ValidationFlags_IncompatibleSdk {
+            get {
+                return ResourceManager.GetString("ValidationFlags_IncompatibleSdk", resourceCulture);
+            }
+        }
         
         /// <summary>
         ///   Looks up a localized string similar to Evaluation stack:.

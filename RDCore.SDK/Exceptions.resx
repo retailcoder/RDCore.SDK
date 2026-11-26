@@ -159,6 +159,9 @@
   <data name="ValidationFlags_FileHashMismatch" xml:space="preserve">
     <value>The 'FileHash' specified in the extension manifest does not match the file hash (SHA-512) of the server executable. The executable file may have been tampered with.</value>
   </data>
+  <data name="ValidationFlags_IncompatibleSdk" xml:space="preserve">
+    <value>The 'SdkVersion' specified in the extension manifest is missing, or is not compatible with the RDCore.SDK this platform runs with.</value>
+  </data>
   <data name="ValidationFlags_InvalidCertificate" xml:space="preserve">
     <value>The certificate associated with this extension is invalid or expired.</value>
   </data>

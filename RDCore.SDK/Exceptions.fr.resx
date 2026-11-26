@@ -159,6 +159,9 @@
   <data name="ValidationFlags_FileHashMismatch" xml:space="preserve">
     <value>Le hachage ('FileHash') spécifié par les métadonnées (manifest) de cette extension ne correspond pas au hachage (SHA-512) du fichier exécutable. L'exécutable a peut-être été modifié depuis son installation.</value>
   </data>
+  <data name="ValidationFlags_IncompatibleSdk" xml:space="preserve">
+    <value>La version du SDK ('SdkVersion') spécifiée par les métadonnées (manifest) de cette extension est absente, ou n'est pas compatible avec le RDCore.SDK de cette plateforme.</value>
+  </data>
   <data name="ValidationFlags_InvalidCertificate" xml:space="preserve">
     <value>Le certificat associé à cette extension est invalide ou expiré.</value>
   </data>

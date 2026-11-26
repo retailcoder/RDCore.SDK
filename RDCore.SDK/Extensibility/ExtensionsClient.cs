@@ -142,7 +142,7 @@ public class ExtensionsClient(
         var sdkName = typeof(ExtensionInfo).Assembly.GetName().Name;
         var sdkVersion = assembly.GetReferencedAssemblies()
             .FirstOrDefault(reference => string.Equals(reference.Name, sdkName, StringComparison.Ordinal))?
-            .Version;
+            .Version is { } referenced ? ExtensionSdkVersion.Of(referenced) : null;
 
         return new ExtensionInfo
         {
@@ -334,6 +334,7 @@ public class ExtensionsClient(
         AppendValidationFlagMessage(flags, ExtensionValidationFlags.LocationMismatch, builder, Exceptions.ValidationFlags_LocationMismatch);
         AppendValidationFlagMessage(flags, ExtensionValidationFlags.FileNotFound, builder, Exceptions.ValidationFlags_FileNotFound);
         AppendValidationFlagMessage(flags, ExtensionValidationFlags.FileHashMismatch, builder, Exceptions.ValidationFlags_FileHashMismatch);
+        AppendValidationFlagMessage(flags, ExtensionValidationFlags.IncompatibleSdk, builder, Exceptions.ValidationFlags_IncompatibleSdk);
 
         return builder.ToString();
     }

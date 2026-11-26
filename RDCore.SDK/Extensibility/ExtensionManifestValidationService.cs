@@ -51,6 +51,14 @@ public enum ExtensionValidationFlags
     /// The server executable may have been tampered with.
     /// </remarks>
     FileHashMismatch = 1 << 4,
+    /// <summary>
+    /// The <c>SdkVersion</c> specified in the extension manifest is missing, or is not compatible with the <c>RDCore.SDK</c> the platform runs
+    /// with (<see cref="PlatformVersion.IsCompatibleWith"/>).
+    /// </summary>
+    /// <remarks>
+    /// An extension built against another minor version before 1.0, or another major version from 1.0, is not started.
+    /// </remarks>
+    IncompatibleSdk = 1 << 5,
 
 }
 
@@ -106,7 +114,7 @@ public class ExtensionManifestValidationService(IOptions<SdkAppOptions> options,
     /// <returns>A <see cref="ExtensionValidationFlags"/> value that encodes any <em>validation flags</em> (use <c>HasFlags</c>), or <see cref="ExtensionValidationFlags.NoFlags"/> if there are no issues.</returns>
     public ExtensionValidationFlags Validate(ExtensionInfo manifest)
     {
-        var flags = FlagNotAllowed(manifest) | FlagBlocked(manifest);
+        var flags = FlagNotAllowed(manifest) | FlagBlocked(manifest) | FlagIncompatibleSdk(manifest);
         if (flags == ExtensionValidationFlags.NoFlags)
         {// configuration allows the extension to run.
 
@@ -131,6 +139,12 @@ public class ExtensionManifestValidationService(IOptions<SdkAppOptions> options,
         => !options.Value.Platform.Extensions.Blocked.Any(e => e.Title == manifest.Title)
             ? ExtensionValidationFlags.NoFlags
             : ExtensionValidationFlags.Blocked;
+
+    // a manifest that does not say which SDK the extension was built against is not one this platform can vouch for.
+    private static ExtensionValidationFlags FlagIncompatibleSdk(ExtensionInfo manifest)
+        => manifest.SdkVersion is { } built && built.IsCompatibleWith(RDCoreSdk.Version)
+            ? ExtensionValidationFlags.NoFlags
+            : ExtensionValidationFlags.IncompatibleSdk;
 
     private ExtensionValidationFlags FlagLocationMismatch(ExtensionInfo manifest)
         => ExtensionsFolder.GetDirectories(manifest.Title, new EnumerationOptions() { MatchCasing = MatchCasing.CaseInsensitive, RecurseSubdirectories = false })

@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NSubstitute;
+using RDCore.SDK;
 using RDCore.SDK.Extensibility;
 using RDCore.SDK.Platform;
 using RDCore.SDK.Server.Configuration;
@@ -69,5 +70,19 @@ public sealed class ExtensionsClientDescribeTests
         Assert.AreEqual(Title, info.Title);
         Assert.AreEqual(Convert.ToBase64String(SHA512.HashData(apphost)), info.FileHash);
         Assert.AreEqual(typeof(ExtensionsClientDescribeTests).Assembly.GetName().Version, info.Version);
+    }
+
+    // this test assembly, the extension's here, references the SDK it runs with: its manifest says an SDK the platform can start it with.
+    [TestMethod]
+    public void AnExtensionsSdkVersion_IsTheSdkItsAssemblyReferences()
+    {
+        File.WriteAllBytes(Path.Combine(_folder, $"{Title}.exe"), [1, 2, 3]);
+        var referenced = typeof(ExtensionInfo).Assembly.GetName().Version!;
+
+        var info = CreateSut().Describe($"{Title}.exe", "described");
+
+        Assert.IsNotNull(info?.SdkVersion);
+        Assert.AreEqual(new Version(referenced.Major, referenced.Minor, referenced.Build), info.SdkVersion.Core);
+        Assert.IsTrue(info.SdkVersion.IsCompatibleWith(RDCoreSdk.Version), $"{info.SdkVersion.Text} works with {RDCoreSdk.Version.Text}");
     }
 }
