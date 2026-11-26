@@ -518,7 +518,8 @@ public static partial class FormDesigner
     private sealed record class DesignerSource(DesignerBlock Root, string Text, FormDesignerReference? Cited);
 
     // the designer block the header names (ModuleHeader.DesignerOf), which every client reads the same way: null when it names none, as a class
-    // module's header (`BEGIN` alone) does not; a block the text never closes cannot be read, as a client is told by its EndLine
+    // module's header (`BEGIN` alone) does not. It throws UnterminatedBlock exactly when the header's EndLine is null, so every client finds the same
+    // blocks unclosed; the loop's own throw is never reached, as both apply the same End rule.
     private static DesignerSource? ReadSource(string? source)
     {
         if (ModuleHeader.DesignerOf(source) is not { } header)
