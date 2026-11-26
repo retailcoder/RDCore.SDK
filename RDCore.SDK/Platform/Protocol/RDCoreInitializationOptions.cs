@@ -49,7 +49,7 @@ public sealed record class RDCoreInitializationOptions
     /// <para>
     /// A client built on OmniSharp's language client (0.19.9) is such a client when it answers with an error: when its handler fails, when its user cannot be
     /// asked, or when it has no handler for the request at all. Until it is initialized, OmniSharp's language client writes no message except the
-    /// <c>initialize</c> request, the <c>initialized</c> notification and a response with a result, and never writes what it held. A client built on
+    /// <c>initialize</c> request, the <c>initialized</c> notification and a response with a result: it holds an error response for good. A client built on
     /// <see cref="Client.RDCoreClientApp"/> writes its error responses as well (<see cref="Client.ClientAnswers.WithErrorAnswersDuringInitialize"/>).
     /// </para>
     /// <para>
