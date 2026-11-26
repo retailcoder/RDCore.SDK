@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using OmniSharp.Extensions.JsonRpc;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
+using RDCore.SDK.Client;
 using RDCore.SDK.Model.Diagnostics;
 using RDCore.SDK.Platform;
 using RDCore.SDK.Platform.Protocol;
