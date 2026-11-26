@@ -518,12 +518,17 @@ public static partial class FormDesigner
     private sealed record class DesignerSource(DesignerBlock Root, string Text, FormDesignerReference? Cited);
 
     // the designer block the header names (ModuleHeader.DesignerOf), which every client reads the same way: null when it names none, as a class
-    // module's header (`BEGIN` alone) does not
+    // module's header (`BEGIN` alone) does not; a block the text never closes cannot be read, as a client is told by its EndLine
     private static DesignerSource? ReadSource(string? source)
     {
         if (ModuleHeader.DesignerOf(source) is not { } header)
         {
             return null;
+        }
+
+        if (header.EndLine is null)
+        {
+            throw new FormDesignerFormatException(FormDesignerFormatProblem.UnterminatedBlock);
         }
 
         var lines = source!.Split('\n');
