@@ -24,7 +24,7 @@ public sealed record class AnnotationParameter
     public bool IsOptional { get; init; }
 
     /// <summary>
-    /// Whether it takes any number of arguments, as a list: only the last parameter may.
+    /// Whether it takes a list of arguments: one or more, or any number when it is also optional. Only the last parameter may.
     /// </summary>
     public bool Repeats { get; init; }
 }

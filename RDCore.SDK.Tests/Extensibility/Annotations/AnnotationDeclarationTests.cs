@@ -124,21 +124,22 @@ public sealed class AnnotationDeclarationTests
     }
 
     [TestMethod]
-    [DataRow(0, 0, 0, false, DisplayName = "no parameter")]
-    [DataRow(2, 0, 2, false, DisplayName = "two required")]
-    [DataRow(1, 1, 2, false, DisplayName = "one required, one optional")]
-    [DataRow(1, 0, -1, true, DisplayName = "one required, then a list")]
-    public void TheArgumentsAnAnnotationTakes_AreCountedFromItsParameters(int required, int optional, int max, bool list)
+    [DataRow(0, 0, 0, false, false, DisplayName = "no parameter")]
+    [DataRow(2, 0, 2, false, false, DisplayName = "two required")]
+    [DataRow(1, 1, 2, false, false, DisplayName = "one required, one optional")]
+    [DataRow(1, 0, -1, true, false, DisplayName = "one required, then an optional list")]
+    [DataRow(0, 0, -1, true, true, DisplayName = "a required list")]
+    public void TheArgumentsAnAnnotationTakes_AreCountedFromItsParameters(int required, int optional, int max, bool list, bool listRequired)
     {
         AnnotationParameter[] parameters =
         [
             .. Enumerable.Range(0, required).Select(index => Parameter($"R{index}")),
             .. Enumerable.Range(0, optional).Select(index => Parameter($"O{index}", optional: true)),
-            .. list ? [Parameter("Items", repeats: true)] : Array.Empty<AnnotationParameter>(),
+            .. list ? [Parameter("Items", optional: !listRequired, repeats: true)] : Array.Empty<AnnotationParameter>(),
         ];
         var annotation = Declared("Counted") with { Parameters = parameters };
 
-        Assert.AreEqual(required, annotation.MinArguments);
+        Assert.AreEqual(required + (listRequired ? 1 : 0), annotation.MinArguments);
         Assert.AreEqual(max < 0 ? null : max, annotation.MaxArguments);
         Assert.IsTrue(annotation.IsWellFormed);
     }
