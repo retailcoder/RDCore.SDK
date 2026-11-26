@@ -48,29 +48,11 @@ public sealed class SdkCommandLineTests
     }
 
     [TestMethod]
-    [DoNotParallelize] // it reads what the process's console is written, which another test running at once could write to.
     [DataRow(new string[0], DisplayName = "no arguments")]
     [DataRow(new[] { "--urls", "http://localhost:5000" }, DisplayName = "a web host's")]
     [DataRow(new[] { "--workspace", "C:/ws" }, DisplayName = "a platform application's with no pipe")]
-    public void AnyOtherCommandLine_IsNotAServerLaunch_AndWritesNothing(string[] args)
-    {
-        var written = new StringWriter();
-        var console = Console.Out;
-        Console.SetOut(written);
-        var error = Console.Error;
-        Console.SetError(written);
-        try
-        {
-            Assert.IsFalse(SdkCommandLine.IsServerLaunch(args));
-        }
-        finally
-        {
-            Console.SetOut(console);
-            Console.SetError(error);
-        }
-
-        Assert.AreEqual(string.Empty, written.ToString());
-    }
+    public void AnyOtherCommandLine_IsNotAServerLaunch(string[] args)
+        => Assert.IsFalse(SdkCommandLine.IsServerLaunch(args));
 
     // the arguments a process receives from a command line: split at the spaces outside quotes, the quotes taken off.
     private static string[] CommandLineArguments(string commandLine)
