@@ -27,8 +27,8 @@ public sealed class FileBlocksTests
         CollectionAssert.AreEqual(
             new[]
             {
-                new FileBlock("Logger", FileBlockKind.Class, 1, 4) { NameColumn = 6 },
-                new FileBlock("Helpers", FileBlockKind.Module, 5, 7) { NameColumn = 7 },
+                new FileBlock("Logger", FileBlockKind.Class, 1, 4) { NameColumn = 6, KindColumn = 0 },
+                new FileBlock("Helpers", FileBlockKind.Module, 5, 7) { NameColumn = 7, KindColumn = 0 },
             },
             blocks.ToArray());
     }
@@ -44,7 +44,7 @@ public sealed class FileBlocksTests
 
     [TestMethod]
     public void ABlock_EndsAtTheFirstEndOfItsKind_AHeaderInsideItIsItsCode()
-        => CollectionAssert.AreEqual(new[] { new FileBlock("Outer", FileBlockKind.Class, 0, 2) { NameColumn = 6 } },
+        => CollectionAssert.AreEqual(new[] { new FileBlock("Outer", FileBlockKind.Class, 0, 2) { NameColumn = 6, KindColumn = 0 } },
             FileBlocks.Find(Source("Class Outer", "Class Inner", "End Class", "End Class")).ToArray());
 
     // the modifiers before the kind, each at most once and in their one order, say what the header writes: a visibility, Partial, and Creatable; a
@@ -63,18 +63,61 @@ public sealed class FileBlocksTests
     {
         var block = FileBlocks.Find(Source(header, "End Class")).Single();
 
-        Assert.AreEqual(new FileBlock("Logger", FileBlockKind.Class, 0, 1),
-            block with { NameColumn = 0, IsPartial = false, IsCreatable = false, Visibility = null });
+        Assert.AreEqual(new FileBlock("Logger", FileBlockKind.Class, 0, 1), block with
+        {
+            NameColumn = 0, KindColumn = 0, VisibilityColumn = null, PartialColumn = null, CreatableColumn = null,
+            IsPartial = false, IsCreatable = false, Visibility = null,
+        });
         Assert.AreEqual(header.IndexOf("Logger", StringComparison.Ordinal), block.NameColumn);
         Assert.AreEqual(isPartial, block.IsPartial);
         Assert.AreEqual(isCreatable, block.IsCreatable);
         Assert.AreEqual(visibility is null ? null : Enum.Parse<RDCore.SDK.Model.AccessModifier>(visibility), block.Visibility);
     }
 
+    // each word of a header is where the header writes it, in whatever case and spacing: the visibility, Partial and Creatable where it writes them,
+    // nowhere when it does not, and the kind always.
+    [TestMethod]
+    [DataRow("Class Logger", null, null, null, 0, DisplayName = "no modifier")]
+    [DataRow("Partial Class Logger ' its generated part", null, 0, null, 8, DisplayName = "Partial")]
+    [DataRow("Creatable Class Logger", null, null, 0, 10, DisplayName = "Creatable")]
+    [DataRow("Public Class Logger", 0, null, null, 7, DisplayName = "Public")]
+    [DataRow("  private   class Logger", 2, null, null, 12, DisplayName = "Private, in any case and spacing")]
+    [DataRow("Public Partial Class Logger", 0, 7, null, 15, DisplayName = "a visibility, then Partial")]
+    [DataRow("Private Creatable Class Logger", 0, null, 8, 18, DisplayName = "a visibility, then Creatable")]
+    [DataRow("Partial Creatable Class Logger", null, 0, 8, 18, DisplayName = "Partial, then Creatable")]
+    [DataRow("PUBLIC\tPARTIAL CREATABLE CLASS Logger", 0, 7, 15, 25, DisplayName = "all three, in any case")]
+    public void EachWordOfAHeader_IsWhereItIsWritten(string header, int? visibilityColumn, int? partialColumn, int? creatableColumn, int kindColumn)
+    {
+        var block = FileBlocks.Find(Source(header, "End Class")).Single();
+
+        Assert.AreEqual((visibilityColumn, partialColumn, creatableColumn, kindColumn),
+            (block.VisibilityColumn, block.PartialColumn, block.CreatableColumn, block.KindColumn));
+        Assert.AreEqual("Class", header.Substring(block.KindColumn, "Class".Length), true, "the kind is the word at its column");
+        if (block.PartialColumn is { } partial)
+        {
+            Assert.AreEqual("Partial", header.Substring(partial, "Partial".Length), true, "Partial is the word at its column");
+        }
+
+        if (block.CreatableColumn is { } creatable)
+        {
+            Assert.AreEqual("Creatable", header.Substring(creatable, "Creatable".Length), true, "Creatable is the word at its column");
+        }
+
+        if (block.VisibilityColumn is { } at)
+        {
+            Assert.AreEqual(block.Visibility.ToString(), header.Substring(at, block.Visibility.ToString()!.Length), true,
+                "the visibility is the word at its column");
+        }
+    }
+
     [TestMethod]
     public void AModuleBlock_TakesAVisibilityAndPartial()
         => Assert.AreEqual(
-            new FileBlock("Helpers", FileBlockKind.Module, 0, 1) { NameColumn = 23, IsPartial = true, Visibility = RDCore.SDK.Model.AccessModifier.Private },
+            new FileBlock("Helpers", FileBlockKind.Module, 0, 1)
+            {
+                NameColumn = 23, KindColumn = 16, VisibilityColumn = 0, PartialColumn = 8, IsPartial = true,
+                Visibility = RDCore.SDK.Model.AccessModifier.Private,
+            },
             FileBlocks.Find(Source("Private Partial Module Helpers", "End Module")).Single());
 
     [TestMethod]

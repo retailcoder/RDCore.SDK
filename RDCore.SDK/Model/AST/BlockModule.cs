@@ -30,6 +30,33 @@ public sealed record class BlockModule(string Name, ModuleType Kind, Uri Uri, So
     public SourceRange? NameRange { get; init; }
 
     /// <summary>
+    /// Where the block's header writes its kind, <c>Class</c> or <c>Module</c> (<see cref="Workspace.FileBlock.KindColumn"/>), in the file's positions:
+    /// where a finding about the module as a whole is reported. <see langword="null"/> when the parser that made the module does not give it.
+    /// </summary>
+    public SourceRange? KindRange { get; init; }
+
+    /// <summary>
+    /// Where the block's header writes its visibility, <c>Public</c> or <c>Private</c> (<see cref="Workspace.FileBlock.VisibilityColumn"/>), in the
+    /// file's positions. <see langword="null"/> when the header writes none (<see cref="Visibility"/> is then <see langword="null"/> too), or when the
+    /// parser that made the module does not give it.
+    /// </summary>
+    public SourceRange? VisibilityRange { get; init; }
+
+    /// <summary>
+    /// Where the block's header writes <c>Partial</c> (<see cref="Workspace.FileBlock.PartialColumn"/>), in the file's positions.
+    /// <see langword="null"/> when the header does not write it (<see cref="IsPartial"/> is then <see langword="false"/>), or when the parser that made
+    /// the module does not give it.
+    /// </summary>
+    public SourceRange? PartialRange { get; init; }
+
+    /// <summary>
+    /// Where the block's header writes <c>Creatable</c> (<see cref="Workspace.FileBlock.CreatableColumn"/>), in the file's positions.
+    /// <see langword="null"/> when the header does not write it (<see cref="IsCreatable"/> is then <see langword="false"/>), or when the parser that
+    /// made the module does not give it.
+    /// </summary>
+    public SourceRange? CreatableRange { get; init; }
+
+    /// <summary>
     /// Whether the block's header writes <c>Partial</c> before its kind (<see cref="Workspace.FileBlock.IsPartial"/>).
     /// </summary>
     public bool IsPartial { get; init; }

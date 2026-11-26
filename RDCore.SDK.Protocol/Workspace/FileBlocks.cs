@@ -35,6 +35,31 @@ public sealed record class FileBlock(string Name, FileBlockKind Kind, int Header
     public int NameColumn { get; init; }
 
     /// <summary>
+    /// The zero-based column of <see cref="HeaderLine"/> where the header writes the block's kind, <c>Class</c> or <c>Module</c>, in whatever case it
+    /// writes it. The word spans the length of its <see cref="Kind"/>'s name from there.
+    /// </summary>
+    public int KindColumn { get; init; }
+
+    /// <summary>
+    /// The zero-based column of <see cref="HeaderLine"/> where the header writes its visibility, <c>Public</c> or <c>Private</c>; <see langword="null"/>
+    /// when it writes none (<see cref="Visibility"/> is then <see langword="null"/> too). The word spans the length of its <see cref="Visibility"/>'s
+    /// name from there.
+    /// </summary>
+    public int? VisibilityColumn { get; init; }
+
+    /// <summary>
+    /// The zero-based column of <see cref="HeaderLine"/> where the header writes <c>Partial</c>, whose seven characters start there;
+    /// <see langword="null"/> when it does not write it (<see cref="IsPartial"/> is then <see langword="false"/>).
+    /// </summary>
+    public int? PartialColumn { get; init; }
+
+    /// <summary>
+    /// The zero-based column of <see cref="HeaderLine"/> where the header writes <c>Creatable</c>, whose nine characters start there;
+    /// <see langword="null"/> when it does not write it (<see cref="IsCreatable"/> is then <see langword="false"/>).
+    /// </summary>
+    public int? CreatableColumn { get; init; }
+
+    /// <summary>
     /// Whether the block's header writes <c>Partial</c> before its kind (<c>Partial Class Name</c>, <c>Partial Module Name</c>).
     /// </summary>
     /// <remarks>
@@ -115,6 +140,10 @@ public static partial class FileBlocks
                 blocks.Add(new FileBlock(header.Groups["name"].Value, kind, line, endLine)
                 {
                     NameColumn = header.Groups["name"].Index,
+                    KindColumn = header.Groups["kind"].Index,
+                    VisibilityColumn = ColumnOf(header.Groups["visibility"]),
+                    PartialColumn = ColumnOf(header.Groups["partial"]),
+                    CreatableColumn = ColumnOf(header.Groups["creatable"]),
                     IsPartial = header.Groups["partial"].Success,
                     IsCreatable = header.Groups["creatable"].Success,
                     Visibility = VisibilityOf(header.Groups["visibility"]),
@@ -140,6 +169,9 @@ public static partial class FileBlocks
 
         return null;
     }
+
+    // where a header writes a modifier; nowhere when it does not write it.
+    private static int? ColumnOf(Group modifier) => modifier.Success ? modifier.Index : null;
 
     // the visibility a header writes, Public or Private; none when it writes none.
     private static AccessModifier? VisibilityOf(Group visibility)
