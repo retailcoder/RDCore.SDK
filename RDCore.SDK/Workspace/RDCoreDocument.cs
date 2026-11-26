@@ -97,8 +97,8 @@ public sealed record class RDCoreDocument(Uri File, ModuleParseResult Parse)
         => position.Line > block.Range.Start.Line && position.Line < block.Range.End.Line;
 
     // the first of the comment lines directly above each block's header: no blank line and no code is between them and the header, and no code is before
-    // the comment on its line. A block with none has its header's line. Code is what the file's own tree holds, a directive's line, a header or an end
-    // line, and the lines of a block.
+    // the comment on its line. A block with none has its header's line. Code is what the file's own tree writes (CodeLines), a directive's line, a header
+    // or an end line, and the lines of a block.
     private Dictionary<BlockModule, int> HeaderCommentLines()
     {
         var comments = new HashSet<int>();
@@ -115,10 +115,7 @@ public sealed record class RDCoreDocument(Uri File, ModuleParseResult Parse)
 
         foreach (var child in Parse.SyntaxTree?.Children ?? [])
         {
-            for (var line = child.SourceLocation.Range.Start.Line; line <= child.SourceLocation.Range.End.Line; line++)
-            {
-                code.Add(line);
-            }
+            code.UnionWith(CodeLines(child));
         }
 
         code.UnionWith(Parse.PrecompilerTrivia.Select(directive => directive.SourceLocation.Range.Start.Line));
@@ -136,6 +133,17 @@ public sealed record class RDCoreDocument(Uri File, ModuleParseResult Parse)
         }
 
         return first;
+    }
+
+    // the lines a node of the file's own tree writes code on. A script's procedure (ProgramEntryPoint.ScriptName) writes its code on its statements'
+    // lines, and none when the script has no code: its range runs from its first statement to its last, across the blocks and the comments between them,
+    // and is of no width where the file starts when there is none.
+    private static IEnumerable<int> CodeLines(SyntaxNode node)
+    {
+        var range = node.SourceLocation.Range;
+        return node is MemberDeclarationNode { MemberKind: MemberKind.Procedure, Name: ProgramEntryPoint.ScriptName }
+            ? node.Children.SelectMany(CodeLines)
+            : Enumerable.Range(range.Start.Line, range.End.Line - range.Start.Line + 1);
     }
 
     /// <inheritdoc cref="FileBlocks.BlockUri(Uri, string)"/>

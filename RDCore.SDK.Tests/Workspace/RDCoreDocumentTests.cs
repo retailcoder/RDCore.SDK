@@ -2,6 +2,7 @@ using RDCore.SDK.Model;
 using RDCore.SDK.Model.AST;
 using RDCore.SDK.Model.AST.Abstract;
 using RDCore.SDK.Model.AST.Declarations;
+using RDCore.SDK.Model.AST.Statements;
 using RDCore.SDK.Model.Errors;
 using RDCore.SDK.Model.Source;
 using RDCore.SDK.Workspace;
@@ -140,6 +141,44 @@ public sealed class RDCoreDocumentTests
         CollectionAssert.AreEqual(new SyntaxNode[] { aboveOther }, document.ParseOf(other)!.Trivia.ToArray());
         Assert.IsEmpty(document.ParseOf(third)!.Trivia);
     }
+
+    [TestMethod]
+    public void AScriptWithNoCode_WritesNoLine_SoACommentOnTheFirstLineAboveAHeaderIsTheBlocks()
+    {
+        // 0 a comment above Shape's header; 1 Shape's header; 2 Shape's end. The script has no code: its procedure is of no width, where the file starts.
+        var shape = RDCoreDocument.BlockUri(File, "Shape");
+        var aboveShape = Comment(File, 0, 0);
+        var script = new MemberDeclarationNode(new SyntaxNodeId(File.AbsolutePath, [1]), new SourceLocation(File, new SourceRange(0, 0, 0, 0)), [],
+            ProgramEntryPoint.ScriptName, MemberKind.Procedure, AccessModifier.Public);
+        var document = new RDCoreDocument(File, Script([script], [aboveShape, Boundary(shape, 1, false), Boundary(shape, 2, true)],
+            new BlockModule("Shape", ModuleType.ClassModule, shape, new SourceRange(1, 0, 2, 9), Module(shape, File, 2, 2))));
+
+        CollectionAssert.AreEqual(new SyntaxNode[] { aboveShape }, document.ParseOf(shape)!.Trivia.ToArray());
+        Assert.IsEmpty(document.ParseOf(File)!.Trivia);
+    }
+
+    [TestMethod]
+    public void AScriptsCode_IsOnItsStatementsLines_SoACommentBetweenThemAboveAHeaderIsTheBlocks()
+    {
+        // 0 the script's code; 1 a comment above Shape's header; 2 Shape's header; 3 Shape's end; 4 the script's code. The script's procedure runs from
+        // its first statement to its last, across the block.
+        var shape = RDCoreDocument.BlockUri(File, "Shape");
+        var aboveShape = Comment(File, 1, 0);
+        DebugPrintStatementNode Statement(int line) => new(new SyntaxNodeId(File.AbsolutePath, [1, line]), new SourceLocation(File, new SourceRange(line, 0,
+            line, 11)), []);
+        var script = new MemberDeclarationNode(new SyntaxNodeId(File.AbsolutePath, [1]), new SourceLocation(File, new SourceRange(0, 0, 4, 11)),
+            [Statement(0), Statement(4)], ProgramEntryPoint.ScriptName, MemberKind.Procedure, AccessModifier.Public);
+        var document = new RDCoreDocument(File, Script([script], [aboveShape, Boundary(shape, 2, false), Boundary(shape, 3, true)],
+            new BlockModule("Shape", ModuleType.ClassModule, shape, new SourceRange(2, 0, 3, 9), Module(shape, File, 3, 3))));
+
+        CollectionAssert.AreEqual(new SyntaxNode[] { aboveShape }, document.ParseOf(shape)!.Trivia.ToArray());
+        Assert.IsEmpty(document.ParseOf(File)!.Trivia);
+    }
+
+    // a script file's parse: the file's own tree, its trivia, and its blocks.
+    private static ModuleParseResult Script(SyntaxNode[] children, SyntaxNode[] trivia, params BlockModule[] blocks)
+        => ModuleParseResult.Success(new ModuleNode(new SyntaxNodeId(File.AbsolutePath, [0]), new SourceLocation(File, new SourceRange(0, 0, 5, 0)),
+            [.. children])) with { Trivia = [.. trivia], BlockModules = [.. blocks] };
 
     [TestMethod]
     public void AnAddressThatIsNoModuleOfTheFile_HasNoParse_AndAFileWithoutBlocksIsItsOwnModulesParse()
