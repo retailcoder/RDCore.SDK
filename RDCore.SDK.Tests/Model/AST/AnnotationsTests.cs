@@ -173,7 +173,7 @@ public sealed class AnnotationsTests
     }
 
     [TestMethod]
-    public void AModuleThatIsNoBlocks_HasNoHeaderAnnotations()
+    public void TheFilesOwnModule_HasNoHeaderAnnotations()
     {
         var parse = Parse([Procedure("Hello", 3, 5)], Comment(0, Annotation(0, "Controller")), Comment(2, Annotation(2, "HttpGet")));
 

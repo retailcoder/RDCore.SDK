@@ -54,7 +54,7 @@ public static class Annotations
     /// </summary>
     /// <param name="parse">The parse of the block's module (<see cref="Workspace.RDCoreDocument.ParseOf"/>), which holds those comment lines.</param>
     /// <returns>
-    /// The annotations of the module's file written before the start of the module's tree; empty for a module that is no block's, whose tree starts where
+    /// The annotations of the module's file written before the start of the module's tree; empty for a module that is not a block's, whose tree starts where
     /// its file starts, and when the module has no tree.
     /// </returns>
     public static ImmutableArray<AnnotationTriviaNode> GetHeaderAnnotations(this ModuleParseResult parse)
