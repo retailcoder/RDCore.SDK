@@ -75,11 +75,7 @@ public static class DocStrings
             return attribute;
         }
 
-        var procedures = module.Children.OfType<MemberDeclarationNode>().Where(IsProcedure).Select(procedure => procedure.SourceLocation).ToArray();
-        return parse.Trivia.OfType<AnnotationTriviaNode>().FirstOrDefault(annotation => Is(annotation, ModuleDescriptionAnnotation)
-            && TextOf(annotation) is not null
-            && !procedures.Any(procedure => procedure.Uri == annotation.SourceLocation.Uri
-                && procedure.Range.Start <= annotation.SourceLocation.Range.Start));
+        return parse.GetModuleAnnotations().FirstOrDefault(annotation => Is(annotation, ModuleDescriptionAnnotation) && TextOf(annotation) is not null);
     }
 
     /// <summary>
@@ -127,24 +123,9 @@ public static class DocStrings
                 return described;
             }
 
-            var comments = new HashSet<(Uri File, int Line)>();
-            foreach (var comment in parse.Trivia.OfType<CommentTriviaNode>())
-            {
-                var range = comment.SourceLocation.Range;
-                for (var line = range.Start.Line; line <= range.End.Line; line++)
-                {
-                    comments.Add((comment.SourceLocation.Uri, line));
-                }
-            }
-
-            var annotations = parse.Trivia.OfType<AnnotationTriviaNode>()
-                .Where(annotation => TextOf(annotation) is not null)
-                .ToLookup(annotation => (annotation.SourceLocation.Uri, annotation.SourceLocation.Range.Start.Line));
-
-            // the declarations of each file in the order they are written, and the last line of the code before each one.
+            // the declarations of each file in the order they are written: the first one of a name that has a description gives it.
             foreach (var file in module.Children.GroupBy(child => child.SourceLocation.Uri))
             {
-                var codeEnds = -1;
                 foreach (var child in file.OrderBy(child => child.SourceLocation.Range.Start))
                 {
                     (string? Name, string? Annotation) declared = child switch
@@ -154,33 +135,17 @@ public static class DocStrings
                         _ => (null, null),
                     };
 
-                    if (declared is ({ } name, { } annotationName) && !described.ContainsKey(name))
+                    if (declared is ({ } name, { } annotationName) && !described.ContainsKey(name)
+                        && parse.GetAnnotations(child).Select(annotation => Is(annotation, annotationName) ? TextOf(annotation) : null)
+                            .FirstOrDefault(text => text is not null) is { } text)
                     {
-                        // up the comment lines above the declaration: the last annotation found is the first one written.
-                        string? text = null;
-                        for (var line = child.SourceLocation.Range.Start.Line - 1; line > codeEnds && comments.Contains((file.Key, line)); line--)
-                        {
-                            if (annotations[(file.Key, line)].FirstOrDefault(candidate => Is(candidate, annotationName)) is { } annotation)
-                            {
-                                text = TextOf(annotation);
-                            }
-                        }
-
-                        if (text is not null)
-                        {
-                            described[name] = text;
-                        }
+                        described[name] = text;
                     }
-
-                    codeEnds = Math.Max(codeEnds, child.SourceLocation.Range.End.Line);
                 }
             }
 
             return described;
         });
-
-    private static bool IsProcedure(MemberDeclarationNode member)
-        => member.MemberKind is MemberKind.Procedure or MemberKind.Function or MemberKind.PropertyGet or MemberKind.PropertyLet or MemberKind.PropertySet;
 
     private static bool Is(AnnotationTriviaNode annotation, string name) => string.Equals(annotation.Name, name, StringComparison.OrdinalIgnoreCase);
 
