@@ -152,6 +152,35 @@ public sealed class AnnotationsTests
     }
 
     [TestMethod]
+    public void ABlocksModule_HasTheAnnotationsAboveItsHeader_FirstOfItsModuleAnnotations_AndNoneIsAMembers()
+    {
+        // 0-1 above the header; 2 the header, which the block's parse does not hold; 3 the block's declarations section; 4-6 a procedure.
+        var hello = Procedure("Hello", 4, 6);
+        var parse = new ModuleParseResult
+        {
+            SyntaxTree = new ModuleNode(Id(), Lines(3, 7), [hello]),
+            Trivia =
+            [
+                .. Comment(0, Annotation(0, "Controller", new VBStringValue("api"))),
+                .. Comment(1, Annotation(1, "Folder")),
+                .. Comment(3, Annotation(3, "ModuleDescription")),
+            ],
+        };
+
+        CollectionAssert.AreEqual(new[] { "Controller", "Folder", "ModuleDescription" }, Names(parse.GetModuleAnnotations()));
+        CollectionAssert.AreEqual(new[] { "Controller", "Folder" }, Names(parse.GetHeaderAnnotations()));
+        CollectionAssert.AreEqual(new[] { "ModuleDescription" }, Names(parse.GetAnnotations(hello)));
+    }
+
+    [TestMethod]
+    public void AModuleThatIsNoBlocks_HasNoHeaderAnnotations()
+    {
+        var parse = Parse([Procedure("Hello", 3, 5)], Comment(0, Annotation(0, "Controller")), Comment(2, Annotation(2, "HttpGet")));
+
+        Assert.IsEmpty(parse.GetHeaderAnnotations());
+    }
+
+    [TestMethod]
     public void AStringArgument_IsTheStringTheLiteralWrites()
     {
         var annotation = new AnnotationTriviaNode(Id(), Lines(0, 0), "HttpGet",

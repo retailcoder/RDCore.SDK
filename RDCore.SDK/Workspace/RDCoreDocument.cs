@@ -46,9 +46,11 @@ public sealed record class RDCoreDocument(Uri File, ModuleParseResult Parse)
     /// <remarks>
     /// The file's parse holds the trivia (<see cref="ModuleParseResult.Trivia"/>), the directives (<see cref="ModuleParseResult.PrecompilerTrivia"/>) and the
     /// syntax errors (<see cref="ModuleParseResult.SyntaxErrors"/>) of all its modules. An item is the module's whose lines hold its start: a block's module
-    /// has the lines between its header and its end, and the file's own module every other line. An item that runs on past the module's lines (a <c>#If</c>
-    /// left open) is still the module's it starts in. The header and the end lines of a block (<see cref="BlockBoundaryTriviaNode"/>) are the file's, and no
-    /// module's: a comment on either is the file's own module's. Positions are the file's, as in the file's parse.
+    /// has the lines between its header and its end, and the comment lines directly above its header (no blank line and no code between them and the
+    /// header, and no code before the comment on its line), which hold the annotations of the block's module (<see cref="Annotations.GetHeaderAnnotations"/>).
+    /// The file's own module has every other line. An item that runs on past the module's lines (a <c>#If</c> left open) is still the module's it starts in.
+    /// The header and the end lines of a block (<see cref="BlockBoundaryTriviaNode"/>) are the file's, and no module's: a comment on either is the file's own
+    /// module's. Positions are the file's, as in the file's parse.
     /// <para>
     /// A block's module has the file's <see cref="ModuleParseResult.LineEnding"/>, and no <see cref="ModuleParseResult.Designer"/>; the file's own module has
     /// the file's line ending and designer. Neither has <see cref="ModuleParseResult.BlockModules"/>. A file with no block has the file's parse as its own
@@ -72,9 +74,12 @@ public sealed record class RDCoreDocument(Uri File, ModuleParseResult Parse)
             return null;
         }
 
+        var headerComments = HeaderCommentLines();
+        bool IsBlocks(BlockModule each, SourcePosition start)
+            => IsInside(each, start) || (start.Line >= headerComments[each] && start.Line < each.Range.Start.Line);
         bool Holds(SourcePosition start) => block is null
-            ? !Parse.BlockModules.Any(each => IsInside(each, start))
-            : IsInside(block, start);
+            ? !Parse.BlockModules.Any(each => IsBlocks(each, start))
+            : IsBlocks(block, start);
 
         return new ModuleParseResult
         {
@@ -90,6 +95,48 @@ public sealed record class RDCoreDocument(Uri File, ModuleParseResult Parse)
     // whether a position is on a line between a block's header and its end.
     private static bool IsInside(BlockModule block, SourcePosition position)
         => position.Line > block.Range.Start.Line && position.Line < block.Range.End.Line;
+
+    // the first of the comment lines directly above each block's header: no blank line and no code is between them and the header, and no code is before
+    // the comment on its line. A block with none has its header's line. Code is what the file's own tree holds, a directive's line, a header or an end
+    // line, and the lines of a block.
+    private Dictionary<BlockModule, int> HeaderCommentLines()
+    {
+        var comments = new HashSet<int>();
+        var code = new HashSet<int>();
+        foreach (var node in Parse.Trivia)
+        {
+            var range = node.SourceLocation.Range;
+            var lines = node is CommentTriviaNode ? comments : node is BlockBoundaryTriviaNode ? code : null;
+            for (var line = range.Start.Line; lines is not null && line <= range.End.Line; line++)
+            {
+                lines.Add(line);
+            }
+        }
+
+        foreach (var child in Parse.SyntaxTree?.Children ?? [])
+        {
+            for (var line = child.SourceLocation.Range.Start.Line; line <= child.SourceLocation.Range.End.Line; line++)
+            {
+                code.Add(line);
+            }
+        }
+
+        code.UnionWith(Parse.PrecompilerTrivia.Select(directive => directive.SourceLocation.Range.Start.Line));
+        var first = new Dictionary<BlockModule, int>(ReferenceEqualityComparer.Instance);
+        foreach (var block in Parse.BlockModules)
+        {
+            var line = block.Range.Start.Line;
+            while (line > 0 && comments.Contains(line - 1) && !code.Contains(line - 1)
+                && !Parse.BlockModules.Any(each => IsInside(each, new SourcePosition(line - 1, 0))))
+            {
+                line--;
+            }
+
+            first[block] = line;
+        }
+
+        return first;
+    }
 
     /// <inheritdoc cref="FileBlocks.BlockUri(Uri, string)"/>
     public static Uri BlockUri(Uri file, string name) => FileBlocks.BlockUri(file, name);

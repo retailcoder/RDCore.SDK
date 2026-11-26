@@ -54,14 +54,19 @@ public static class DocStrings
 
     /// <summary>
     /// Where the module writes its description: its own <c>Attribute VB_Description</c> directive (an <see cref="AttributeDirectiveNode"/>,
-    /// <see cref="ModuleNodeExtensions.GetModuleDescriptionDirective"/>), else its first <c>'@ModuleDescription</c> annotation (an
-    /// <see cref="AnnotationTriviaNode"/>). <see langword="null"/> when it writes neither.
+    /// <see cref="ModuleNodeExtensions.GetModuleDescriptionDirective"/>), else its first description annotation (an <see cref="AnnotationTriviaNode"/>):
+    /// a <c>'@ModuleDescription</c>, or, above the header of a block's module, a <c>'@Description</c>. <see langword="null"/> when it writes none.
     /// </summary>
     /// <param name="parse">The module's parse.</param>
     /// <remarks>
     /// A module annotation binds in the module's declarations section (<strong>RD-VBAL §3.0.1.1</strong>): one written after the start of the module's
     /// first procedure does not describe the module. One written on the line right above that procedure still does, because <c>@ModuleDescription</c>
     /// binds to a module only. In a tree that holds the nodes of several files, each annotation is in the declarations section of its own file.
+    /// <para>
+    /// The module of a block of a file also binds the annotations on the comment lines directly above its header
+    /// (<see cref="Annotations.GetHeaderAnnotations"/>). A <c>'@Description</c> there describes the block's module, as one above a member describes the
+    /// member; inside the block, it is a member's. Of the description annotations of the module, the first written counts.
+    /// </para>
     /// </remarks>
     public static SyntaxNode? GetModuleDescriptionNode(this ModuleParseResult parse)
     {
@@ -75,7 +80,10 @@ public static class DocStrings
             return attribute;
         }
 
-        return parse.GetModuleAnnotations().FirstOrDefault(annotation => Is(annotation, ModuleDescriptionAnnotation) && TextOf(annotation) is not null);
+        var header = parse.GetHeaderAnnotations();
+        return parse.GetModuleAnnotations().FirstOrDefault(annotation
+            => (Is(annotation, ModuleDescriptionAnnotation) || (Is(annotation, MemberDescriptionAnnotation) && header.Contains(annotation)))
+                && TextOf(annotation) is not null);
     }
 
     /// <summary>

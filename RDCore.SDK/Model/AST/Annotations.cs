@@ -31,6 +31,11 @@ public static class Annotations
     /// Each annotation that no procedure of its file starts at or before; empty when the module has no tree. In a tree that holds the nodes of several
     /// files, each annotation is in the declarations section of its own file, as each node's <see cref="Source.SourceLocation.Uri"/> says.
     /// </returns>
+    /// <remarks>
+    /// The module of a block of a file (<see cref="BlockModule"/>) has module annotations outside it too: those on the comment lines directly above its
+    /// header (<see cref="GetHeaderAnnotations"/>), which its parse holds (<see cref="Workspace.RDCoreDocument.ParseOf"/>). They come first, as they are
+    /// written first, and they are never a member's.
+    /// </remarks>
     public static ImmutableArray<AnnotationTriviaNode> GetModuleAnnotations(this ModuleParseResult parse)
     {
         if (parse.SyntaxTree is not { } module)
@@ -41,6 +46,27 @@ public static class Annotations
         var procedures = module.Children.OfType<MemberDeclarationNode>().Where(IsProcedure).Select(procedure => procedure.SourceLocation).ToArray();
         return [.. parse.Trivia.OfType<AnnotationTriviaNode>().Where(annotation => !procedures.Any(procedure => procedure.Uri == annotation.SourceLocation.Uri
             && procedure.Range.Start <= annotation.SourceLocation.Range.Start))];
+    }
+
+    /// <summary>
+    /// The annotations written on the comment lines directly above the header of a block's module (<c>Class Name</c>, <c>Module Name</c>), in the order
+    /// they are written: the module annotations of the block that are outside it.
+    /// </summary>
+    /// <param name="parse">The parse of the block's module (<see cref="Workspace.RDCoreDocument.ParseOf"/>), which holds those comment lines.</param>
+    /// <returns>
+    /// The annotations of the module's file written before the start of the module's tree; empty for a module that is no block's, whose tree starts where
+    /// its file starts, and when the module has no tree.
+    /// </returns>
+    public static ImmutableArray<AnnotationTriviaNode> GetHeaderAnnotations(this ModuleParseResult parse)
+    {
+        if (parse.SyntaxTree is not { } module)
+        {
+            return [];
+        }
+
+        var start = module.SourceLocation;
+        return [.. parse.Trivia.OfType<AnnotationTriviaNode>()
+            .Where(annotation => annotation.SourceLocation.Uri == start.Uri && annotation.SourceLocation.Range.Start < start.Range.Start)];
     }
 
     /// <summary>
