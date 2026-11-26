@@ -2,7 +2,6 @@ using System.Security.Cryptography;
 using System.Text.Json;
 using Microsoft.Extensions.Options;
 using NSubstitute;
-using RDCore.SDK;
 using RDCore.SDK.Extensibility;
 using RDCore.SDK.Platform;
 using RDCore.SDK.Server.Configuration;
@@ -52,7 +51,16 @@ public sealed class ExtensionManifestValidationServiceTests
         SdkVersion = sdk,
     };
 
-    private static PlatformVersion Sdk => RDCoreSdk.Version;
+    private static PlatformVersion Sdk => ExtensionManifestValidationService.SdkVersion;
+
+    // an extension references RDCore.SDK, whose version the Protocols package's need not be: RDCore.SDK 0.2.1 runs on Protocols 0.2.0.
+    [TestMethod]
+    public void ThePlatformsSdk_IsRDCoreSdksOwnVersion()
+    {
+        var sdk = typeof(ExtensionInfo).Assembly.GetName().Version!;
+
+        Assert.AreEqual(new Version(sdk.Major, sdk.Minor, sdk.Build), Sdk.Core);
+    }
 
     [TestMethod]
     public void AnExtensionBuiltAgainstThePlatformsSdk_IsValid()

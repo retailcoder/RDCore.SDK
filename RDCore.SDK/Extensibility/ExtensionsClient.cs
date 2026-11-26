@@ -142,7 +142,7 @@ public class ExtensionsClient(
         var sdkName = typeof(ExtensionInfo).Assembly.GetName().Name;
         var sdkVersion = assembly.GetReferencedAssemblies()
             .FirstOrDefault(reference => string.Equals(reference.Name, sdkName, StringComparison.Ordinal))?
-            .Version is { } referenced ? ExtensionSdkVersion.Of(referenced) : null;
+            .Version is { } referenced ? PlatformVersionJsonConverter.Of(referenced) : null;
 
         return new ExtensionInfo
         {

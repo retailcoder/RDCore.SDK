@@ -1,7 +1,6 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NSubstitute;
-using RDCore.SDK;
 using RDCore.SDK.Extensibility;
 using RDCore.SDK.Platform;
 using RDCore.SDK.Server.Configuration;
@@ -83,6 +82,7 @@ public sealed class ExtensionsClientDescribeTests
 
         Assert.IsNotNull(info?.SdkVersion);
         Assert.AreEqual(new Version(referenced.Major, referenced.Minor, referenced.Build), info.SdkVersion.Core);
-        Assert.IsTrue(info.SdkVersion.IsCompatibleWith(RDCoreSdk.Version), $"{info.SdkVersion.Text} works with {RDCoreSdk.Version.Text}");
+        var platform = ExtensionManifestValidationService.SdkVersion;
+        Assert.IsTrue(info.SdkVersion.IsCompatibleWith(platform), $"{info.SdkVersion.Text} works with {platform.Text}");
     }
 }

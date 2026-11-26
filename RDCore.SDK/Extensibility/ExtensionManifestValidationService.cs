@@ -2,6 +2,7 @@
 using RDCore.SDK.Platform;
 using RDCore.SDK.Server.Configuration;
 using System.IO.Abstractions;
+using System.Reflection;
 using System.Security.Cryptography;
 
 namespace RDCore.SDK.Extensibility;
@@ -108,6 +109,19 @@ public class ExtensionManifestValidationService(IOptions<SdkAppOptions> options,
     private IDirectoryInfo ExtensionsFolder => fileSystem.DirectoryInfo.New(environment.Resolve(options.Value.Platform.Extensions.Path));
 
     /// <summary>
+    /// The RDCore.SDK version the platform runs with, which an extension's <see cref="ExtensionInfo.SdkVersion"/> must be compatible with
+    /// (<see cref="PlatformVersion.IsCompatibleWith"/>): the version of RDCore.SDK's own assembly, such as <c>0.2.1-alpha</c>.
+    /// </summary>
+    /// <remarks>
+    /// It is RDCore.SDK's version, which an extension's assembly references, and not RDCore.SDK.Protocols' (<see cref="RDCoreSdk.Version"/>):
+    /// the two packages are versioned apart. It is read from the assembly's informational version, or from its numeric version when it has none.
+    /// </remarks>
+    public static PlatformVersion SdkVersion { get; } = typeof(ExtensionInfo).Assembly is var sdk
+        && PlatformVersion.TryParse(sdk.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion, out var stamped)
+            ? stamped
+            : PlatformVersionJsonConverter.Of(sdk.GetName().Version ?? new Version(0, 0, 0));
+
+    /// <summary>
     /// Validates the specified <see cref="ExtensionInfo"/>.
     /// </summary>
     /// <param name="manifest">The deserialized <em>extension manifest</em> metadata.</param>
@@ -142,7 +156,7 @@ public class ExtensionManifestValidationService(IOptions<SdkAppOptions> options,
 
     // a manifest that does not say which SDK the extension was built against is not one this platform can vouch for.
     private static ExtensionValidationFlags FlagIncompatibleSdk(ExtensionInfo manifest)
-        => manifest.SdkVersion is { } built && built.IsCompatibleWith(RDCoreSdk.Version)
+        => manifest.SdkVersion is { } built && built.IsCompatibleWith(SdkVersion)
             ? ExtensionValidationFlags.NoFlags
             : ExtensionValidationFlags.IncompatibleSdk;
 
