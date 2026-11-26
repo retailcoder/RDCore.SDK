@@ -11,7 +11,7 @@ namespace RDCore.Tests.Extensibility;
 
 /// <summary>
 /// An extension manifest is valid when the extension it describes was built against an RDCore.SDK compatible with the one the platform runs
-/// with: the same minor version before 1.0, the same major version from 1.0. The manifest writes that version as a platform version.
+/// with: the same major and minor versions before 1.0, the same major version from 1.0. The manifest writes that version as a platform version.
 /// </summary>
 [TestClass]
 public sealed class ExtensionManifestValidationServiceTests

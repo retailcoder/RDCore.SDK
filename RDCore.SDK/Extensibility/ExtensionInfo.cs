@@ -83,10 +83,10 @@ public record class ExtensionInfo
     /// say, or names something that is not a version.
     /// </summary>
     /// <remarks>
-    /// The manifest writes it as a <see cref="PlatformVersion"/>, such as <c>0.2.1</c>. An assembly reference holds the major, minor and patch
-    /// numbers, without a prerelease, which <see cref="PlatformVersion.IsCompatibleWith"/> ignores. A manifest that writes a four-part version,
-    /// such as <c>0.2.1.0</c>, is read by its first three. An extension with no compatible <c>SdkVersion</c> is not started
-    /// (<see cref="ExtensionValidationFlags.IncompatibleSdk"/>).
+    /// The manifest writes it as a <see cref="PlatformVersion"/>, such as <c>0.2.1</c>: an assembly reference holds the major, minor and patch
+    /// numbers, and no prerelease. <see cref="PlatformVersion.IsCompatibleWith"/> reads only the major and minor numbers. A manifest that writes a
+    /// four-part version, such as <c>0.2.1.0</c>, is read by its first three numbers. An extension with no compatible <c>SdkVersion</c> is not
+    /// started (<see cref="ExtensionValidationFlags.IncompatibleSdk"/>).
     /// </remarks>
     [System.Text.Json.Serialization.JsonConverter(typeof(ExtensionSdkVersion))]
     public PlatformVersion? SdkVersion { get; init; }
