@@ -31,6 +31,24 @@ public static class SdkCommandLine
             ? parsed with { WorkspaceUri = FullWorkspace(parsed.WorkspaceUri) }
             : null!;
 
+    /// <summary>
+    /// Whether the platform started the process as one of its servers: the command line parses as a platform application's
+    /// (<see cref="SdkAppCommandLineArgs"/>) and names the pipe the server is to connect on (<c>--pipe-name</c>), as every child process's does.
+    /// </summary>
+    /// <remarks>
+    /// An executable that is a platform extension and also runs on its own (a web host, a tool) asks this to choose what it runs as. It writes nothing:
+    /// a command line of another kind, such as a web host's <c>--urls</c>, is not answered as <see cref="TryAnswer(string[], out int)"/> answers it.
+    /// </remarks>
+    /// <param name="args">The command-line arguments as received.</param>
+    /// <returns>
+    /// <see langword="true"/> when the platform started the process; <see langword="false"/> for any other command line, an empty one included.
+    /// </returns>
+    public static bool IsServerLaunch(string[] args)
+    {
+        using var quiet = new Parser(settings => settings.HelpWriter = null);
+        return quiet.ParseArguments<SdkAppCommandLineArgs>(args).Value is { PipeName.Length: > 0 };
+    }
+
     // read as a URI, as the platform reads a workspace, a relative path is rooted at "/": "." is the root, and "Ledger" a folder there.
     private static string? FullWorkspace(string? workspace)
         => workspace is not { Length: > 0 } || Path.IsPathFullyQualified(workspace) || Uri.TryCreate(workspace, UriKind.Absolute, out _)
