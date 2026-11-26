@@ -15,7 +15,7 @@ public static class AnalyzerMessages
     /// <param name="message">The localized text of the message, with <c>{0}</c>, <c>{1}</c> and so on for the particulars.</param>
     /// <param name="particulars">What the occurrence is about, in the order of their placeholders: usually names.</param>
     /// <returns>The message, its placeholders replaced by the particulars.</returns>
-    /// <exception cref="FormatException">The message has a placeholder with no particular for it.</exception>
+    /// <exception cref="FormatException">The message is not a format string, or has a placeholder with no particular for it.</exception>
     public static string Format(string message, params ReadOnlySpan<object?> particulars)
         => string.Format(CultureInfo.CurrentUICulture, message, particulars);
 }
