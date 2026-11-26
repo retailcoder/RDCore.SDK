@@ -194,6 +194,15 @@ namespace RDCore.SDK {
                 return ResourceManager.GetString("ValidationFlags_IncompatibleSdk", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   Looks up a localized string similar to The &apos;Annotations&apos; specified in the extension manifest are not valid: two share a name or an alias, one&apos;s parameters are out of order, or &apos;AnnotationDescriptions&apos; describes an annotation or a parameter none of them declares..
+        /// </summary>
+        internal static string ValidationFlags_InvalidAnnotations {
+            get {
+                return ResourceManager.GetString("ValidationFlags_InvalidAnnotations", resourceCulture);
+            }
+        }
         
         /// <summary>
         ///   Looks up a localized string similar to Evaluation stack:.

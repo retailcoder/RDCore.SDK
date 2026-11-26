@@ -156,7 +156,7 @@ public class ExtensionsClient(
             Capabilities = capabilities,
             DiagnosticPrefix = assembly.GetCustomAttribute<DiagnosticPrefixAttribute>()?.Prefix,
             SdkVersion = sdkVersion,
-        }.WithSettingsOf(assembly);
+        }.WithSettingsOf(assembly).WithAnnotationsOf(assembly);
     }
 
     /// <summary>
@@ -335,6 +335,7 @@ public class ExtensionsClient(
         AppendValidationFlagMessage(flags, ExtensionValidationFlags.FileNotFound, builder, Exceptions.ValidationFlags_FileNotFound);
         AppendValidationFlagMessage(flags, ExtensionValidationFlags.FileHashMismatch, builder, Exceptions.ValidationFlags_FileHashMismatch);
         AppendValidationFlagMessage(flags, ExtensionValidationFlags.IncompatibleSdk, builder, Exceptions.ValidationFlags_IncompatibleSdk);
+        AppendValidationFlagMessage(flags, ExtensionValidationFlags.InvalidAnnotations, builder, Exceptions.ValidationFlags_InvalidAnnotations);
 
         return builder.ToString();
     }

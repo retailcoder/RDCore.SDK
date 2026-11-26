@@ -162,6 +162,9 @@
   <data name="ValidationFlags_IncompatibleSdk" xml:space="preserve">
     <value>The 'SdkVersion' specified in the extension manifest is missing, or is not compatible with the RDCore.SDK this platform runs with.</value>
   </data>
+  <data name="ValidationFlags_InvalidAnnotations" xml:space="preserve">
+    <value>The 'Annotations' specified in the extension manifest are not valid: two share a name or an alias, one's parameters are out of order, or 'AnnotationDescriptions' describes an annotation or a parameter none of them declares.</value>
+  </data>
   <data name="ValidationFlags_InvalidCertificate" xml:space="preserve">
     <value>The certificate associated with this extension is invalid or expired.</value>
   </data>

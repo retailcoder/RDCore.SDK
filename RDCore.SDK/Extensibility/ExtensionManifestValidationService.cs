@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Options;
+using RDCore.SDK.Extensibility.Annotations;
 using RDCore.SDK.Platform;
 using RDCore.SDK.Server.Configuration;
 using System.IO.Abstractions;
@@ -60,6 +61,16 @@ public enum ExtensionValidationFlags
     /// An extension built against another minor version before 1.0, or another major version from 1.0, is not started.
     /// </remarks>
     IncompatibleSdk = 1 << 5,
+    /// <summary>
+    /// The <c>Annotations</c> specified in the extension manifest are not valid: two of them share a name or an alias, one's parameters are not in the order a
+    /// declaration requires (<see cref="AnnotationDeclaration.IsWellFormed"/>), or <c>AnnotationDescriptions</c> describes an annotation or a parameter none of
+    /// them declares.
+    /// </summary>
+    /// <remarks>
+    /// The language server reads every extension's annotations from its manifest (<see cref="AnnotationCatalogue"/>), so a manifest whose own annotations
+    /// disagree is not started.
+    /// </remarks>
+    InvalidAnnotations = 1 << 6,
 
 }
 
@@ -128,7 +139,7 @@ public class ExtensionManifestValidationService(IOptions<SdkAppOptions> options,
     /// <returns>A <see cref="ExtensionValidationFlags"/> value that encodes any <em>validation flags</em> (use <c>HasFlags</c>), or <see cref="ExtensionValidationFlags.NoFlags"/> if there are no issues.</returns>
     public ExtensionValidationFlags Validate(ExtensionInfo manifest)
     {
-        var flags = FlagNotAllowed(manifest) | FlagBlocked(manifest) | FlagIncompatibleSdk(manifest);
+        var flags = FlagNotAllowed(manifest) | FlagBlocked(manifest) | FlagIncompatibleSdk(manifest) | FlagInvalidAnnotations(manifest);
         if (flags == ExtensionValidationFlags.NoFlags)
         {// configuration allows the extension to run.
 
@@ -159,6 +170,21 @@ public class ExtensionManifestValidationService(IOptions<SdkAppOptions> options,
         => manifest.SdkVersion is { } built && built.IsCompatibleWith(SdkVersion)
             ? ExtensionValidationFlags.NoFlags
             : ExtensionValidationFlags.IncompatibleSdk;
+
+    private static ExtensionValidationFlags FlagInvalidAnnotations(ExtensionInfo manifest)
+    {
+        // names and aliases compare as VBA names do, without case (AnnotationDeclaration.IsCalled).
+        var names = manifest.Annotations.SelectMany(annotation => annotation.Aliases.Prepend(annotation.Name)).ToArray();
+        var keys = manifest.Annotations
+            .SelectMany(annotation => annotation.Parameters.Select(parameter => AnnotationSet.KeyOf(annotation, parameter)).Prepend(AnnotationSet.KeyOf(annotation)))
+            .ToHashSet(StringComparer.Ordinal);
+
+        return names.Distinct(StringComparer.OrdinalIgnoreCase).Count() == names.Length
+            && manifest.Annotations.All(annotation => annotation.IsWellFormed)
+            && manifest.AnnotationDescriptions.Values.All(described => described.Keys.All(keys.Contains))
+                ? ExtensionValidationFlags.NoFlags
+                : ExtensionValidationFlags.InvalidAnnotations;
+    }
 
     private ExtensionValidationFlags FlagLocationMismatch(ExtensionInfo manifest)
         => ExtensionsFolder.GetDirectories(manifest.Title, new EnumerationOptions() { MatchCasing = MatchCasing.CaseInsensitive, RecurseSubdirectories = false })

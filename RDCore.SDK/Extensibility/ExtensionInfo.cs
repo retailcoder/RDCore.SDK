@@ -1,4 +1,5 @@
 ﻿using RDCore.SDK.Client;
+using RDCore.SDK.Extensibility.Annotations;
 using RDCore.SDK.Platform;
 
 namespace RDCore.SDK.Extensibility;
@@ -103,6 +104,46 @@ public record class ExtensionInfo
     /// (<see cref="Server.Configuration.SettingsSchema.Languages"/>).
     /// </summary>
     public Dictionary<string, Dictionary<string, string>> SettingDescriptions { get; init; } = [];
+
+    /// <summary>
+    /// The annotations the extension provides (<see cref="ExtensionAnnotationsAttribute"/>), without their descriptions, which are in
+    /// <see cref="AnnotationDescriptions"/>; none for an extension that provides none.
+    /// </summary>
+    /// <remarks>
+    /// The language server knows them from the manifest without starting the extension (<see cref="AnnotationCatalogue"/>). A manifest whose
+    /// annotations are not valid is not started (<see cref="ExtensionValidationFlags.InvalidAnnotations"/>).
+    /// </remarks>
+    public AnnotationDeclaration[] Annotations { get; init; } = [];
+
+    /// <summary>
+    /// The description of each annotation of <see cref="Annotations"/> and of each of its parameters, by its key (<see cref="AnnotationSet.KeyOf(AnnotationDeclaration)"/>,
+    /// <see cref="AnnotationSet.KeyOf(AnnotationDeclaration, AnnotationParameter)"/>), in each language of the platform, by its two-letter name
+    /// (<see cref="Server.Configuration.SettingsSchema.Languages"/>).
+    /// </summary>
+    public Dictionary<string, Dictionary<string, string>> AnnotationDescriptions { get; init; } = [];
+
+    /// <summary>
+    /// The annotations the extension provides, with their descriptions, as the language server's catalogue takes them
+    /// (<see cref="AnnotationCatalogue(IEnumerable{AnnotationSet})"/>).
+    /// </summary>
+    [System.Text.Json.Serialization.JsonIgnore]
+    public AnnotationSet AnnotationSet => new() { Declarations = Annotations, Descriptions = AnnotationDescriptions };
+
+    /// <summary>
+    /// The manifest, with the annotations the extension's assembly says it provides (<see cref="ExtensionAnnotationsAttribute.Read"/>) and their descriptions in
+    /// each language of the platform.
+    /// </summary>
+    /// <param name="assembly">The extension's assembly.</param>
+    /// <returns>The manifest as it is, for an assembly that says nothing of any annotations.</returns>
+    /// <exception cref="InvalidOperationException">
+    /// The assembly's <see cref="ExtensionAnnotationsAttribute"/> names a type that does not implement <see cref="IAnnotationDeclarations"/>, or that has no
+    /// parameterless constructor.
+    /// </exception>
+    /// <exception cref="System.Resources.MissingManifestResourceException">The assembly has no resources of the name the attribute gives.</exception>
+    public ExtensionInfo WithAnnotationsOf(System.Reflection.Assembly assembly)
+        => ExtensionAnnotationsAttribute.Read(assembly) is { } provided
+            ? this with { Annotations = provided.Declarations, AnnotationDescriptions = provided.Descriptions }
+            : this;
 
     /// <summary>
     /// The manifest, with the settings the extension's assembly says it is configured with (<see cref="ExtensionSettingsAttribute"/>) and their descriptions in
