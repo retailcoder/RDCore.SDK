@@ -22,7 +22,8 @@ public interface IProgramMachine : IAsyncDisposable
     /// </param>
     /// <returns>
     /// The value the procedure returned, as JSON, or how it ended otherwise: a run-time error that nothing handled
-    /// (<see cref="ExecutionOutcome.RuntimeError"/>), a procedure the module does not declare (<see cref="ExecutionOutcome.NotFound"/>), an <c>End</c>
+    /// (<see cref="ExecutionOutcome.RuntimeError"/>), a module the program does not have, or a procedure its module does not declare <c>Public</c>
+    /// (<see cref="ExecutionOutcome.NotFound"/>), an <c>End</c>
     /// statement (<see cref="ExecutionOutcome.Halted"/>), or an invocation while another runs (<see cref="ExecutionOutcome.Refused"/>). None of these is an
     /// exception.
     /// </returns>
