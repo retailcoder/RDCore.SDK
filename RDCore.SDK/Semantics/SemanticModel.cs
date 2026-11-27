@@ -109,8 +109,8 @@ public sealed record class ModuleSemanticModel(
 
     /// <summary>
     /// The directives the module is under (<see cref="Model.Symbols.ModuleDirectives"/>): its options (<strong>MS-VBAL §5.2.1</strong>), which are
-    /// <c>Option Base</c>, <c>Option Compare</c>, <c>Option Explicit</c> and <c>Option Private Module</c>, and what its attributes and its block headers
-    /// state of it.
+    /// <c>Option Base</c>, <c>Option Compare</c>, <c>Option Explicit</c> and <c>Option Private Module</c>, RD-VBA's <c>'@OptionStrict</c> annotation, and
+    /// what its attributes and its block headers state of it.
     /// </summary>
     /// <remarks>
     /// The directives are the module's, whichever of its parts states them: a module whose <c>Partial</c> parts are written in several files has one set,
