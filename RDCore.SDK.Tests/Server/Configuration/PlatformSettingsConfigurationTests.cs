@@ -226,7 +226,8 @@ public sealed class PlatformSettingsConfigurationTests
             .Build()
             .GetSection(SettingsSchema.Root).Get<SdkAppOptions>()!;
         var validation = new ExtensionManifestValidationService(
-            Microsoft.Extensions.Options.Options.Create(options), Substitute.For<System.IO.Abstractions.IFileSystem>(), Substitute.For<IPlatformEnvironment>());
+            Microsoft.Extensions.Options.Options.Create(options), Substitute.For<System.IO.Abstractions.IFileSystem>(),
+            Substitute.For<IPlatformEnvironment>());
 
         CollectionAssert.Contains(options.Platform.Extensions.Allowed, "RDCore.UnitTesting");
         Assert.AreEqual(ExtensionValidationFlags.Blocked, validation.Validate(Manifest("RDCore.UnitTesting")));

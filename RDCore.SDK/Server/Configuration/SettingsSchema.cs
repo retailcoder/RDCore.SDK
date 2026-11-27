@@ -179,7 +179,9 @@ public sealed class SettingsSchema
     /// <param name="other">The other schema.</param>
     /// <exception cref="ArgumentException">Both schemas have a setting of the same key.</exception>
     public SettingsSchema Combine(SettingsSchema other)
-        => new([.. Settings, .. other.Settings], new Dictionary<string, string?>([.. _defaultTexts, .. other._defaultTexts], StringComparer.OrdinalIgnoreCase));
+        => new(
+            [.. Settings, .. other.Settings],
+            new Dictionary<string, string?>([.. _defaultTexts, .. other._defaultTexts], StringComparer.OrdinalIgnoreCase));
 
     private readonly IReadOnlyDictionary<string, string?> _defaultTexts;
 
@@ -278,8 +280,8 @@ public sealed class SettingsSchema
 
     // defaults: an instance of the type as it is made, whose values are the settings' own when nothing sets them; null when there is none.
     private static void Read(
-        Type type, object? defaults, string section, SettingReach reach, bool isTrustSensitive, ResourceManager? descriptions, List<SettingDescriptor> settings,
-        Dictionary<string, string?> defaultTexts, HashSet<Type> reading)
+        Type type, object? defaults, string section, SettingReach reach, bool isTrustSensitive, ResourceManager? descriptions,
+        List<SettingDescriptor> settings, Dictionary<string, string?> defaultTexts, HashSet<Type> reading)
     {
         foreach (var property in type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
         {

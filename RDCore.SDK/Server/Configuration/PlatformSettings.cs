@@ -4,8 +4,8 @@ using Microsoft.Extensions.Configuration.Json;
 namespace RDCore.SDK.Server.Configuration;
 
 /// <summary>
-/// Adds the platform's own settings file, <c>platform-settings.json</c> at the platform root (<see cref="Platform.IPlatformEnvironment.SettingsPath"/>), to the
-/// configuration of a platform application: what every component of one platform is deployed with.
+/// Adds the platform's own settings file, <c>platform-settings.json</c> at the platform root (<see cref="Platform.IPlatformEnvironment.SettingsPath"/>), to
+/// the configuration of a platform application: what every component of one platform is deployed with.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -19,8 +19,9 @@ namespace RDCore.SDK.Server.Configuration;
 /// when the file does not say it, whatever any other source says of it.</description></item>
 /// </list>
 /// <para>
-/// A file that is not there is no setting, and neither is one that cannot be read: a process started from a build folder has no platform root. A component
-/// reads the file when it starts, and not again.
+/// A file that is not there sets nothing, and neither does one that cannot be read, such as a file that is not valid JSON: every setting only the platform
+/// sets is then its default. A process started from a build folder has no platform root, and so no file. A component reads the file when it starts, and
+/// not again: a change takes effect the next time each component starts.
 /// </para>
 /// </remarks>
 public static class PlatformSettingsConfiguration
@@ -29,7 +30,9 @@ public static class PlatformSettingsConfiguration
     /// Adds the platform's settings file to a configuration: below its other sources, and above them for the settings only the platform sets.
     /// </summary>
     /// <remarks>
-    /// Added once every other source is: the sources added after it are above it, the settings only the platform sets included.
+    /// Add it after the sources whose values it is to override: a source added to the end of the configuration after it is above it, for the settings only
+    /// the platform sets as well. The user's settings (<see cref="UserSettingsConfiguration.AddUserSettings"/>), wherever they are
+    /// added, never set a setting only the platform sets (<see cref="SettingDescriptor.IsSettable"/>).
     /// </remarks>
     /// <param name="builder">The configuration.</param>
     /// <param name="path">The path of the file (<see cref="Platform.IPlatformEnvironment.SettingsPath"/>).</param>
