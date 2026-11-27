@@ -164,8 +164,8 @@ public static class AnnotationCompletion
     public const string Probe = "RDCoreAnnotationProbe";
 
     /// <summary>
-    /// The line being typed with the annotation written in it made the annotation <see cref="Probe"/>, with no argument: what is before the comment is
-    /// kept, so that the line has the code it has, and the line end is kept.
+    /// The line being typed, its comment replaced by the annotation <see cref="Probe"/> with no argument: the code before the comment and the line end are
+    /// kept.
     /// </summary>
     /// <param name="line">The line, as it is written, its <c>\r</c> included when it has one.</param>
     /// <param name="site">The annotation being written on the line (<see cref="AnnotationSite.Read"/>).</param>
@@ -184,8 +184,9 @@ public static class AnnotationCompletion
     /// <remarks>
     /// <para>
     /// It annotates the module where it is written in the module's declarations section, or on the comment lines directly above a block's header
-    /// (<see cref="Annotations.GetModuleAnnotations"/>); a member where it is directly above a procedure's declaration, and a variable or a constant where
-    /// it is directly above one of the module's (<see cref="Annotations.GetAnnotations"/>). Right above the first procedure it annotates both the module
+    /// (<see cref="Annotations.GetModuleAnnotations"/>); a member where it is directly above the declaration of a procedure, a <c>Declare</c> or an
+    /// <c>Event</c>, and a variable or a constant where it is directly above one of the module's (<see cref="Annotations.GetAnnotations"/>). Directly
+    /// above an <c>Enum</c> or a <c>Type</c>, it annotates no member and no variable. Right above the first procedure it annotates both the module
     /// and the procedure. It annotates the line below it where nothing but white space is before its comment on its line.
     /// </para>
     /// <para>
@@ -239,8 +240,8 @@ public static class AnnotationCompletion
     /// with its signature as its detail (<see cref="SignatureOf"/>) and its description in the language of the user interface as its documentation.
     /// </summary>
     /// <remarks>
-    /// A deprecated annotation is left out of the list: it is still read, and reported where it is written, and the annotation that replaces it is
-    /// offered in its place.
+    /// A deprecated annotation is left out of the list: it is still read, and reported where it is written. The annotation that replaces it is offered
+    /// where it is legal.
     /// </remarks>
     /// <param name="catalogue">Every annotation the platform knows.</param>
     /// <param name="place">Where the annotation is written (<see cref="PlaceOf"/>).</param>
@@ -259,8 +260,8 @@ public static class AnnotationCompletion
     }
 
     /// <summary>
-    /// What an annotation takes, as a signature help shows it: <c>@Description(Text)</c>, each parameter where the label has it, with its description in
-    /// the language of the user interface, and the annotation's own as the signature's.
+    /// What an annotation takes, as a signature help shows it: a label such as <c>@Description(Text)</c>, each parameter with its place in the label and
+    /// its description, and the annotation's description as the signature's, both in the language of the user interface.
     /// </summary>
     /// <remarks>
     /// A parameter that may be left out is written <c>Optional</c>, and the last one, when it takes a list of arguments, <c>ParamArray</c>, as a
