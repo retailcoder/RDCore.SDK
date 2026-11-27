@@ -546,7 +546,7 @@ public abstract class RDCoreServerApp(
             return null;
         }
 
-        // the settings first: a workspace's settings say nothing of which workspace it is, and the configuration still names the one started on.
+        // the settings first: a workspace's settings say nothing of which workspace it is, and the configuration names the one started on.
         _ = settings?.MoveTo(root.Requested!);
         workspace.WorkspaceUri = root.Requested!;
         return root.Message;

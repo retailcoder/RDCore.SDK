@@ -6,7 +6,7 @@ namespace RDCore.Tests.Server.Configuration;
 
 /// <summary>
 /// A component started on one workspace that learns its workspace is another folder (the one its client opened) takes that folder's settings: its
-/// configuration says what that folder sets and no longer what the first one set, and so do its settings objects, live or not. What its client said stays
+/// configuration says what that folder sets and not what the first one set, and so do its settings objects, live or not. What its client said stays
 /// said, under the other folder's settings.
 /// </summary>
 [TestClass]

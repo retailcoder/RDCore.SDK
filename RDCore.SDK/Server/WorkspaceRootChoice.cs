@@ -37,7 +37,7 @@ public sealed record class WorkspaceRootChoice(string? Requested, string? Starte
 
     /// <summary>
     /// Whether the request and the server's start both name a folder, and not the same one (<see cref="WorkspacePaths.Same"/>): a separator at the end, the
-    /// case of the drive on Windows, or a character a URI escapes, is no difference.
+    /// case of the drive on Windows, or a character a URI escapes, makes no difference.
     /// </summary>
     public bool Differs => Requested is not null && Started is not null && !WorkspacePaths.Same(Requested, Started);
 
