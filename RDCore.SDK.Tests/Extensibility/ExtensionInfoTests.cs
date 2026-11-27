@@ -43,13 +43,15 @@ public sealed class ExtensionInfoTests
     };
 
     // IsCoreExtension is the platform's to say, and is never written. The annotation's JSON is the declaration's own (AnnotationDeclarationTests).
-    private const string Golden =
-        """{"Name":"Ext.exe","Title":"Ext","Id":"Ext","Version":"1.2.3","Publisher":"Publisher","PublisherWebUrl":"https://example.com","""
-        + """"Description":"An extension.","FileHash":"aGFzaA==","Capabilities":[{"Name":"Diagnostics","IsSupported":true}],"DiagnosticPrefix":"EXT","""
-        + """"SdkVersion":"0.2.1-alpha","RuntimeIdentifier":"linux-x64","Settings":[],"SettingDescriptions":{},"""
-        + """"Annotations":[{"Name":"Fixture","Aliases":[],"Targets":"Member","ModuleKinds":"All","Repeats":false,"""
-        + """"Parameters":[{"Name":"Label","Takes":"Text","IsOptional":false,"Repeats":false}],"IsDeprecated":false,"ReplacedBy":null}],"""
-        + """"AnnotationDescriptions":{"en":{"Fixture":"Marks a fixture.","Fixture_Label":"The label."},"fr":{"Fixture":"Marque un montage."}}}""";
+    // one line of JSON, written here on several.
+    private static readonly string Golden = """
+        {"Name":"Ext.exe","Title":"Ext","Id":"Ext","Version":"1.2.3","Publisher":"Publisher","PublisherWebUrl":"https://example.com",
+        "Description":"An extension.","FileHash":"aGFzaA==","Capabilities":[{"Name":"Diagnostics","IsSupported":true}],"DiagnosticPrefix":"EXT",
+        "SdkVersion":"0.2.1-alpha","RuntimeIdentifier":"linux-x64","Settings":[],"SettingDescriptions":{},
+        "Annotations":[{"Name":"Fixture","Aliases":[],"Targets":"Member","ModuleKinds":"All","Repeats":false,
+        "Parameters":[{"Name":"Label","Takes":"Text","IsOptional":false,"Repeats":false}],"IsDeprecated":false,"ReplacedBy":null}],
+        "AnnotationDescriptions":{"en":{"Fixture":"Marks a fixture.","Fixture_Label":"The label."},"fr":{"Fixture":"Marque un montage."}}}
+        """.ReplaceLineEndings(string.Empty);
 
     [TestMethod]
     public void AManifest_IsWrittenAsItsGolden()
