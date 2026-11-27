@@ -44,6 +44,21 @@ public sealed class BlockModulesWireTests
     }
 
     [TestMethod]
+    public void TheParseOfABlocksModule_HasTheBlocksRange_AndIsReadBackWithIt()
+    {
+        var logger = RDCoreDocument.BlockUri(File, "Logger");
+        var block = new BlockModule("Logger", ModuleType.ClassModule, logger, new SourceRange(2, 0, 5, 9),
+            new ModuleNode(new SyntaxNodeId(logger.AbsolutePath, [0]), new SourceLocation(File, new SourceRange(3, 0, 5, 0)), []));
+        var own = new ModuleNode(new SyntaxNodeId(File.AbsolutePath, [0]), new SourceLocation(File, new SourceRange(0, 0, 7, 0)), []);
+        var document = new RDCoreDocument(File, ModuleParseResult.Success(own) with { BlockModules = [block] });
+
+        var read = PlatformJson.Deserialize<ModuleParseResult>(PlatformJson.Serialize(document.ParseOf(logger)!));
+
+        Assert.AreEqual(block.Range, read.BlockRange);
+        Assert.IsNull(document.ParseOf(File)!.BlockRange, "the file's own module is no block's");
+    }
+
+    [TestMethod]
     public void TheHeaderAndTheEndOfABlock_AreReadBackAsTheyWereWritten_AsBlockBoundaryTrivia()
     {
         var logger = RDCoreDocument.BlockUri(File, "Logger");

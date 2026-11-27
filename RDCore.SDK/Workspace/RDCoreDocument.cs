@@ -54,8 +54,8 @@ public sealed record class RDCoreDocument(Uri File, ModuleParseResult Parse)
     /// module's. Positions are the file's, as in the file's parse.
     /// <para>
     /// A block's module has the file's <see cref="ModuleParseResult.LineEnding"/>, and no <see cref="ModuleParseResult.Designer"/>; the file's own module has
-    /// the file's line ending and designer. Neither has <see cref="ModuleParseResult.BlockModules"/>. A file with no block has the file's parse as its own
-    /// module's.
+    /// the file's line ending and designer. Neither has <see cref="ModuleParseResult.BlockModules"/>. A block's module has its block's range
+    /// (<see cref="ModuleParseResult.BlockRange"/>), and the file's own module none. A file with no block has the file's parse as its own module's.
     /// </para>
     /// </remarks>
     /// <param name="module">The address of the module: the file's (<see cref="File"/>), or a block's (<see cref="BlockUri"/>).</param>
@@ -90,6 +90,7 @@ public sealed record class RDCoreDocument(Uri File, ModuleParseResult Parse)
             SyntaxErrors = [.. Parse.SyntaxErrors.Where(error => Holds(error.Location.Range.Start))],
             LineEnding = Parse.LineEnding,
             Designer = block is null ? Parse.Designer : null,
+            BlockRange = block?.Range,
         };
     }
 

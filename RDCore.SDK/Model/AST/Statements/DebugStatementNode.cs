@@ -21,12 +21,27 @@ namespace RDCore.SDK.Model.AST.Statements;
 /// from the host's own development environment, and it has exactly these two members. The object's
 /// symbol is synthesized to match: see <c>StdLibSymbolProvider</c>.
 /// </para>
+/// <para>
+/// The node keeps where each name is written (<see cref="ObjectRange"/>, <see cref="MemberRange"/>), so that a hover or a go-to-definition on
+/// <c>Debug</c> or on its member binds it without reading the source text again.
+/// </para>
 /// </remarks>
 /// <param name="Identity">A unique identifier for this specific syntax node.</param>
 /// <param name="SourceLocation">The document location (<c>Uri</c>+<c>Range</c>) of the statement.</param>
 /// <param name="Children">The statement's own operands.</param>
 public abstract record class DebugStatementNode(SyntaxNodeId Identity, SourceLocation SourceLocation, ImmutableArray<SyntaxNode> Children)
-    : StatementNode(Identity, SourceLocation, Children);
+    : StatementNode(Identity, SourceLocation, Children)
+{
+    /// <summary>
+    /// Where <c>Debug</c> is written, the object the statement is against; <see langword="null"/> when it is not known.
+    /// </summary>
+    public SourceRange? ObjectRange { get; init; }
+
+    /// <summary>
+    /// Where the member is written after the <c>.</c>: <c>Print</c> or <c>Assert</c>; <see langword="null"/> when it is not known.
+    /// </summary>
+    public SourceRange? MemberRange { get; init; }
+}
 
 /// <summary>
 /// <c>Debug.Print [outputList]</c>: writes an output list to the environment's own output.

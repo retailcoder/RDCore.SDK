@@ -5,22 +5,31 @@ using RDCore.SDK.Model.Values.Intrinsic;
 namespace RDCore.Tests.Model.Values;
 
 /// <summary>
-/// An element's cell is made the first time the element is used, and not when the array is: these pin when cells are made, and that an element whose
-/// cell is not made yet reads, copies, is let and is forgotten as the cell the array's constructor would have made.
+/// An element held in a cell has its cell made the first time the element is used, and not when the array is: these pin when cells are made, and that an
+/// element whose cell is not made yet reads, copies, is let and is forgotten as the cell the array's constructor would have made. The elements are
+/// <c>String</c>s, a type held in cells; an element of a fixed-width type is held as bytes (<see cref="VBArrayValueBlockTests"/>).
 /// </summary>
 [TestClass]
 [TestCategory("RD-VBAL §2.5 Runtime Values")]
 public sealed class VBArrayValueCellTests
 {
+    // what an element never assigned reads: the default value of the String type.
+    private static readonly object? Default = VBStringType.TypeInfo.DefaultValue.RuntimeValue.BoxedValue;
+
     private int _made;
 
     private ValueBindingHandle MakeCell()
     {
         _made++;
-        return new ValueBindingHandle(VBIntegerType.TypeInfo.DefaultValue.RuntimeValue);
+        return new ValueBindingHandle(VBStringType.TypeInfo.DefaultValue.RuntimeValue);
     }
 
-    private VBFixedSizeArrayValue NewArray(int uBound) => new([(0, uBound)], VBIntegerType.TypeInfo, elementCell: MakeCell);
+    private VBFixedSizeArrayValue NewArray(int uBound)
+    {
+        var array = new VBFixedSizeArrayValue([(0, uBound)], VBStringType.TypeInfo, elementCell: MakeCell);
+        Assert.AreEqual(RecordFieldEncoding.None, array.ElementEncoding, "the premise: the elements are held in cells, which the test needs rewriting for");
+        return array;
+    }
 
     private static object? Read(VBArrayValue array, int index) => array.ElementAt(index)!.RuntimeValue.BoxedValue;
 
@@ -29,7 +38,7 @@ public sealed class VBArrayValueCellTests
     [TestMethod]
     public void AnArrayOfTheMostElements_MakesNoCell()
     {
-        var array = new VBFixedSizeArrayValue([(1, (int)VBArrayValue.MaximumLength)], VBByteType.TypeInfo, elementCell: MakeCell);
+        var array = new VBFixedSizeArrayValue([(1, (int)VBArrayValue.MaximumLength)], VBStringType.TypeInfo, elementCell: MakeCell);
 
         Assert.AreEqual((int)VBArrayValue.MaximumLength, array.Length);
         Assert.AreEqual(0, _made);
@@ -40,8 +49,8 @@ public sealed class VBArrayValueCellTests
     {
         var array = NewArray(9);
 
-        Assert.AreEqual((short)0, Read(array, 3));
-        Assert.AreEqual((short)0, array[3]!.RuntimeValue.BoxedValue);
+        Assert.AreEqual(Default, Read(array, 3));
+        Assert.AreEqual(Default, array[3]!.RuntimeValue.BoxedValue);
         Assert.AreSame(array.CellAt(3), array.GetElementHandle(3));
         Assert.AreEqual(1, _made);
     }
@@ -51,10 +60,10 @@ public sealed class VBArrayValueCellTests
     {
         var array = NewArray(9);
 
-        Assert.IsTrue(array.TryLetElementAt(5, new VBIntegerValue(42)));
+        Assert.IsTrue(array.TryLetElementAt(5, new VBStringValue("42")));
 
-        Assert.AreEqual((short)42, Read(array, 5));
-        Assert.AreEqual((short)0, Read(array, 4));
+        Assert.AreEqual("42", Read(array, 5));
+        Assert.AreEqual(Default, Read(array, 4));
         Assert.AreEqual(2, _made);
     }
 
@@ -65,9 +74,9 @@ public sealed class VBArrayValueCellTests
         Assert.IsEmpty(array.MadeCells);
 
         _ = array.ElementAt(30);
-        Assert.IsTrue(array.TryLetElementAt(5, new VBIntegerValue(1)));
+        Assert.IsTrue(array.TryLetElementAt(5, new VBStringValue("1")));
         var view = array with { };
-        var cell = new ValueBindingHandle(new VBIntegerValue(9).RuntimeValue);
+        var cell = new ValueBindingHandle(new VBStringValue("9").RuntimeValue);
         Assert.IsTrue(view.TrySetElementAt(70, cell));
 
         CollectionAssert.AreEqual(new[] { 5, 30 }, array.MadeCells.Select(made => made.FlatIndex).ToArray());
@@ -82,10 +91,10 @@ public sealed class VBArrayValueCellTests
         var array = NewArray(9);
         var view = array with { };
 
-        Assert.IsTrue(view.TryLetElementAt(2, new VBIntegerValue(7)));
+        Assert.IsTrue(view.TryLetElementAt(2, new VBStringValue("7")));
 
         Assert.AreSame(view.CellAt(2), array.CellAt(2));
-        Assert.AreEqual((short)7, Read(array, 2));
+        Assert.AreEqual("7", Read(array, 2));
         Assert.AreEqual(1, _made);
     }
 
@@ -94,29 +103,29 @@ public sealed class VBArrayValueCellTests
     {
         var array = NewArray(9);
         var view = array with { };
-        var cell = new ValueBindingHandle(new VBIntegerValue(9).RuntimeValue);
+        var cell = new ValueBindingHandle(new VBStringValue("9").RuntimeValue);
 
         Assert.IsTrue(view.TrySetElementAt(1, cell));
 
         Assert.AreSame(cell, view.CellAt(1));
         Assert.AreNotSame(cell, array.CellAt(1));
-        Assert.AreEqual((short)0, Read(array, 1));
+        Assert.AreEqual(Default, Read(array, 1));
     }
 
     [TestMethod]
     public void ACopy_MakesACellOnlyForTheElementsMade_AndSharesNone()
     {
         var array = NewArray(999);
-        Assert.IsTrue(array.TryLetElementAt(10, new VBIntegerValue(3)));
+        Assert.IsTrue(array.TryLetElementAt(10, new VBStringValue("3")));
 
         var copy = array.DataCopy();
-        Assert.IsTrue(copy.TryLetElementAt(10, new VBIntegerValue(4)));
-        Assert.IsTrue(copy.TryLetElementAt(11, new VBIntegerValue(5)));
+        Assert.IsTrue(copy.TryLetElementAt(10, new VBStringValue("4")));
+        Assert.IsTrue(copy.TryLetElementAt(11, new VBStringValue("5")));
 
-        Assert.AreEqual((short)3, Read(array, 10));
-        Assert.AreEqual((short)0, Read(array, 11));
-        Assert.AreEqual((short)4, Read(copy, 10));
-        Assert.AreEqual((short)5, Read(copy, 11));
+        Assert.AreEqual("3", Read(array, 10));
+        Assert.AreEqual(Default, Read(array, 11));
+        Assert.AreEqual("4", Read(copy, 10));
+        Assert.AreEqual("5", Read(copy, 11));
         Assert.AreNotSame(array.CellAt(10), copy.CellAt(10));
         Assert.AreEqual(3, _made);
     }
@@ -131,7 +140,7 @@ public sealed class VBArrayValueCellTests
 
         Assert.IsFalse(IsKnown(array, 0));
         Assert.IsFalse(IsKnown(array, 9));
-        Assert.AreEqual((short)0, Read(array, 9));
+        Assert.AreEqual(Default, Read(array, 9));
     }
 
     [TestMethod]
@@ -139,8 +148,8 @@ public sealed class VBArrayValueCellTests
     {
         var array = NewArray(9);
 
-        array.ForgetElements(VBIntegerType.TypeInfo.DefaultValue.RuntimeValue);
-        array.ForgetElements(VBIntegerType.TypeInfo.DefaultValue.RuntimeValue);
+        array.ForgetElements(VBStringType.TypeInfo.DefaultValue.RuntimeValue);
+        array.ForgetElements(VBStringType.TypeInfo.DefaultValue.RuntimeValue);
 
         Assert.AreEqual(0, _made);
         Assert.IsTrue(IsKnown(array, 9));
@@ -151,8 +160,8 @@ public sealed class VBArrayValueCellTests
     {
         var array = NewArray(9);
 
-        array.ForgetElements(VBIntegerType.TypeInfo.DefaultValue.RuntimeValue);
-        array.ForgetElements(new VBIntegerValue(2).RuntimeValue);
+        array.ForgetElements(VBStringType.TypeInfo.DefaultValue.RuntimeValue);
+        array.ForgetElements(new VBStringValue("2").RuntimeValue);
 
         Assert.IsFalse(IsKnown(array, 9));
     }
@@ -161,7 +170,7 @@ public sealed class VBArrayValueCellTests
     public void ForgettingTheElements_ForAnotherValue_KeepsTheElementsThatHoldIt()
     {
         var array = NewArray(9);
-        var two = new VBIntegerValue(2);
+        var two = new VBStringValue("2");
         Assert.IsTrue(array.TryLetElementAt(1, two));
 
         array.ForgetElements(two.RuntimeValue);
@@ -190,11 +199,11 @@ public sealed class VBArrayValueCellTests
         var array = NewArray(9);
         var forgotten = NewArray(9);
         forgotten.ForgetElements();
-        Assert.IsTrue(forgotten.TryLetElementAt(4, new VBIntegerValue(8)));
+        Assert.IsTrue(forgotten.TryLetElementAt(4, new VBStringValue("8")));
 
         Assert.IsTrue(array.TryLetFrom(forgotten.DataCopy()));
 
-        Assert.AreEqual((short)8, Read(array, 4));
+        Assert.AreEqual("8", Read(array, 4));
         Assert.IsTrue(IsKnown(array, 4));
         Assert.IsFalse(IsKnown(array, 5));
     }

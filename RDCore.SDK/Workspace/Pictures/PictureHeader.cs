@@ -106,7 +106,19 @@ public readonly record struct PictureInfo(PictureFormat Format, int Width, int H
 /// <param name="BitCount">The image's bits per pixel: its DIB header's, or 32 for an image stored as a PNG.</param>
 /// <param name="Offset">Where the image starts in the file.</param>
 /// <param name="Length">How many bytes the image has.</param>
-public readonly record struct IconImage(int Width, int Height, int BitCount, int Offset, int Length);
+public readonly record struct IconImage(int Width, int Height, int BitCount, int Offset, int Length)
+{
+    /// <summary>
+    /// The column of the image's hot spot, in pixels from its left edge, as a cursor's directory entry states it. The hot spot is the pixel a
+    /// mouse pointer made from the image points with. 0 for an icon's image, whose directory entry states no hot spot.
+    /// </summary>
+    public int HotSpotX { get; init; }
+
+    /// <summary>
+    /// The row of the image's hot spot, in pixels from its top edge, as a cursor's directory entry states it. 0 for an icon's image.
+    /// </summary>
+    public int HotSpotY { get; init; }
+}
 
 /// <summary>
 /// Reads what a picture's header says about it before anything decodes it, and refuses a picture too large or too malformed to decode safely.
@@ -383,6 +395,8 @@ public static class PictureHeader
             return null;
         }
 
+        // a cursor's directory entry holds its hot spot where an icon's holds its planes and bit count.
+        var cursor = U16(b, 2) == 2;
         var images = ImmutableArray.CreateBuilder<IconImage>(count);
         for (var i = 0; i < count; i++)
         {
@@ -404,7 +418,11 @@ public static class PictureHeader
 
             // a DIB's bits per pixel: a BITMAPCOREHEADER's at 10, a later header's at 14.
             var bits = png is not null ? 32 : U32(image, 0) == 12 ? U16(image, 10) : U16(image, 14);
-            images.Add(new IconImage(found.Width, found.Height, bits, (int)offset, (int)length));
+            images.Add(new IconImage(found.Width, found.Height, bits, (int)offset, (int)length)
+            {
+                HotSpotX = cursor ? U16(entry, 4) : 0,
+                HotSpotY = cursor ? U16(entry, 6) : 0,
+            });
         }
 
         return images.MoveToImmutable();

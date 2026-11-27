@@ -45,7 +45,8 @@ public interface IVariableDefaults
     /// </summary>
     /// <remarks>
     /// What an element is, its default value and how it is read, written and passed by reference are the same either way: this only says where it is
-    /// kept. The cell starts as the type's default value. An element that is a record is not kept in one: <see cref="ElementDefaultOf"/> makes it.
+    /// kept. The cell starts as the type's default value. An element that is a record is not kept in one: <see cref="ElementDefaultOf"/> makes it. Nor is
+    /// an element of a fixed-width intrinsic type, which the array holds as bytes (<see cref="VBArrayValue.ElementEncoding"/>).
     /// </remarks>
     /// <param name="itemType">The element type of the array.</param>
     /// <returns>Makes one cell; <see langword="null"/>, the default, for a cell that holds the value as it is.</returns>

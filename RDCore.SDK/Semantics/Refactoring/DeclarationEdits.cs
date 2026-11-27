@@ -22,7 +22,9 @@ public static partial class DeclarationEdits
     /// <summary>
     /// Where declarations are added to the declaration section of a module (<strong>MS-VBAL §5.2</strong>): at the start of the line after the last line
     /// that is not blank before the whole text of the first procedure (<see cref="MemberEdits.Extent"/>), so the comments directly above that procedure stay
-    /// its own. In a module with no procedure, it is the end of the text.
+    /// its own. In a module with no procedure, it is after the last line of the module that is not blank: the module's lines are the whole text, or, for
+    /// a block's module (<see cref="ModuleParseResult.BlockRange"/>), the lines between the block's header and its end, so that what is added stays inside
+    /// the block. A block with nothing but blank lines between them has it at the start of the line after its header.
     /// </summary>
     /// <param name="parse">The module, parsed: its syntax tree, its trivia (the comments) and its precompiler trivia (the <c>#If</c> blocks).</param>
     /// <param name="text">The text the module was parsed from.</param>
@@ -38,14 +40,15 @@ public static partial class DeclarationEdits
         var module = parse.SyntaxTree ?? throw new ArgumentException("The module has no syntax tree.", nameof(parse));
 
         var lines = TextLines.Of(text);
+        var (first, end) = LinesOf(parse, lines);
         var procedure = module.Children.OfType<MemberDeclarationNode>().FirstOrDefault(IsProcedure);
-        var last = (procedure is null ? lines.Count : MemberEdits.Extent(parse, text, procedure).Range.Start.Line) - 1;
-        while (last >= 0 && lines.IsBlank(last))
+        var last = (procedure is null ? end : MemberEdits.Extent(parse, text, procedure).Range.Start.Line) - 1;
+        while (last >= first && lines.IsBlank(last))
         {
             last--;
         }
 
-        var at = last < 0 ? SourcePosition.Zero : lines.StartOfLineAfter(last);
+        var at = last < first ? new SourcePosition(first, 0) : lines.StartOfLineAfter(last);
         var insertion = new SourceLocation(module.SourceLocation.Uri, new SourceRange(at, at));
         return ConditionalCompilationBlocks.Of(parse.PrecompilerTrivia).IsConditional(insertion) ? null : at;
     }
@@ -69,13 +72,18 @@ public static partial class DeclarationEdits
 
         var lines = TextLines.Of(text);
 
-        // the last line of a text that ends no line is ended before them; a procedure that starts on the line they go on gets a blank line before it.
+        // the last line of a text that ends no line is ended before them; a procedure that starts on the line they go on gets a blank line before it, and
+        // the end line of a block does not.
         var endsNoLine = at.Character != 0;
-        var procedureFollows = !endsNoLine && at.Line < lines.Count && !lines.IsBlank(at.Line);
+        var procedureFollows = !endsNoLine && at.Line < LinesOf(parse, lines).End && !lines.IsBlank(at.Line);
         var newText = (endsNoLine ? lines.NewLine : string.Empty) + TextLines.Unended(declarations) + (endsNoLine ? string.Empty : lines.NewLine)
             + (procedureFollows ? lines.NewLine : string.Empty);
         return new RefactorTextEdit { Range = new SourceRange(at, at), NewText = newText };
     }
+
+    // the lines of the module, the first and the one after the last: a block's are between its header and its end line, and a file's are all of them.
+    private static (int First, int End) LinesOf(ModuleParseResult parse, TextLines lines)
+        => parse.BlockRange is { } block ? (block.Start.Line + 1, block.End.Line) : (0, lines.Count);
 
     /// <summary>
     /// The edits that remove one variable of a declaration statement, at module level (<strong>MS-VBAL §5.2.3.1</strong>) or in a procedure, and keep the others

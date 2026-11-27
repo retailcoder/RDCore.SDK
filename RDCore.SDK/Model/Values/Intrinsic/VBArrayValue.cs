@@ -26,6 +26,17 @@ namespace RDCore.SDK.Model.Values.Intrinsic;
 /// an array of millions of elements costs nothing until its elements are used. A cell is made as the array's constructor would have made it, holding
 /// the element type's default value, so when it is made is not something a caller sees.
 /// </para>
+/// <para>
+/// The elements of an array of a fixed-width intrinsic type (<see cref="ElementEncoding"/>) are bytes of one <see cref="ValueBlock"/>, side by side in the
+/// same order. An element's cell is a <see cref="BlockBytesCell"/> of the block, made when the element is read or given to a caller and kept. Writing an
+/// element (<see cref="TryWriteElementAt"/>, <see cref="TryLetElementAt"/>, <see cref="TrySetElementAt"/>) makes none, nor does copying, letting,
+/// resetting, forgetting or preserving the array.
+/// </para>
+/// <para>
+/// The elements of an array of a user-defined type are records of one <see cref="ValueBlock"/>, laid end to end in the same order. An element's cell holds a
+/// view of the block at the element's offsets (<see cref="VBUserDefinedTypeValue"/>), made as other cells are and kept, and a copy of the array
+/// (<see cref="DataCopy"/>) copies each record into the copy's block.
+/// </para>
 /// </remarks>
 public abstract record class VBArrayValue : VBTypedValue
 {
@@ -43,10 +54,12 @@ public abstract record class VBArrayValue : VBTypedValue
     /// <param name="dimensions">The lower and upper bound of each dimension, outermost first.</param>
     /// <param name="itemType">The element type. Use <see cref="VBVariantType"/> when unspecified.</param>
     /// <param name="elementDefault">What each element starts as, when it is more than the element type's own default value can say
-    /// (<see cref="IVariableDefaults.ElementDefaultOf"/>); <see langword="null"/> for that default.</param>
+    /// (<see cref="IVariableDefaults.ElementDefaultOf"/>); <see langword="null"/> for that default. For an array of records it is called once, when the
+    /// first element is made, and each element starts as the record it gives.</param>
     /// <param name="elementCell">Makes the cell each element is stored in, holding the element type's default value, when the runtime stores elements of
     /// <paramref name="itemType"/> in cells of its own (<see cref="IVariableDefaults.ElementCellOf"/>); <see langword="null"/> for a cell that holds the
-    /// default value as it is. Not used for an element that is a record, which <paramref name="elementDefault"/> makes.</param>
+    /// default value as it is. Not used for an element that is a record, which starts as <paramref name="elementDefault"/> says, nor for an element held as
+    /// bytes (<see cref="ElementEncoding"/>).</param>
     protected VBArrayValue((int lBound, int uBound)[] dimensions, VBType itemType, Func<VBTypedValue>? elementDefault = null, Func<IBindingHandle>? elementCell = null)
         : base(VBArrayType.TypeInfo)
     {
@@ -98,13 +111,21 @@ public abstract record class VBArrayValue : VBTypedValue
     /// </summary>
     /// <remarks>
     /// Each element is a copy in a cell of its own, deep through what a <c>Variant</c> element holds, and the copy is bound to no storage: it is
-    /// whichever variable it is assigned to that gives it an address.
+    /// whichever variable it is assigned to that gives it an address. Elements held as bytes (<see cref="ElementEncoding"/>) are a copy of the bytes, and
+    /// of what is known of them, with no cell made.
     /// </remarks>
     public VBArrayValue DataCopy()
     {
         var copy = this with { Handle = InvalidBindingHandle.Default };
         copy._store = _store.Fresh();
         copy._own = null;
+        if (_store.IsBytes)
+        {
+            // a copy of the bytes, and of what is known of them: no cell is made of either array.
+            copy._store.BlockFrom(_store.BlockOrNone);
+            return copy;
+        }
+
         if (!AnyMade)
         {
             return copy;
@@ -115,7 +136,7 @@ public abstract record class VBArrayValue : VBTypedValue
         {
             if (MadeCell(index) is { } cell)
             {
-                copy._store.Adopt(index, DataValues.CopyCell(cell));
+                copy._store.AdoptCopyOf(index, cell);
             }
         }
 
@@ -145,6 +166,13 @@ public abstract record class VBArrayValue : VBTypedValue
         if (!Equals(ItemType, source.ItemType) || !Dimensions.SequenceEqual(source.Dimensions) || _length != source._length)
         {
             return false;
+        }
+
+        if (_store.IsBytes)
+        {
+            // the bytes are written where they are, which each cell made of an element reads.
+            LetBytesFrom(source, _length);
+            return true;
         }
 
         if (AnyMade || source.AnyMade)
@@ -184,6 +212,12 @@ public abstract record class VBArrayValue : VBTypedValue
     /// </remarks>
     public void ResetElements()
     {
+        if (_store.IsBytes)
+        {
+            _store.BlockOrNone?.Clear(_length, _store.Width);
+            return;
+        }
+
         // an element whose cell is not made holds the default, which is then known, as a cell written the default is; a record's cell is not written, but
         // its fields.
         if (ItemType is not VBUserDefinedType)
@@ -226,7 +260,8 @@ public abstract record class VBArrayValue : VBTypedValue
     /// </summary>
     /// <remarks>
     /// An element whose cell cannot be written, one never assigned, is given the cell of <paramref name="value"/> instead, which must share no cell with
-    /// anything else.
+    /// anything else. An element held as bytes (<see cref="ElementEncoding"/>) is written what <paramref name="value"/> holds, where it is, and no cell is
+    /// made of it.
     /// </remarks>
     /// <param name="flatIndex">From 0 to <see cref="Length"/> - 1.</param>
     /// <param name="value">The value to assign, of the array's element type.</param>
@@ -238,9 +273,173 @@ public abstract record class VBArrayValue : VBTypedValue
             return false;
         }
 
-        if (!IsWrittenInItsCell(Cell(flatIndex), value.Handle))
+        if (_store.IsBytes)
+        {
+            WriteBytes(flatIndex, value.Handle);
+        }
+        else if (!IsWrittenInItsCell(Cell(flatIndex), value.Handle))
         {
             SetCell(flatIndex, value.Handle);
+        }
+
+        return true;
+    }
+
+    // an element held as bytes written what a binding holds, as IsWrittenInItsCell writes a cell: the default for a binding that cannot be read. The cell made
+    // of the element, if any, is written, so that it reads what it holds; otherwise the bytes are, and no cell is made.
+    private void WriteBytes(int index, IBindingHandle from)
+    {
+        var (value, isKnown) = from.BindingCapabilities.HasFlag(BindingCapabilities.GetValue)
+            ? (from.Value, from is not IKnowledgeBinding { IsKnown: false })
+            : (ItemType.DefaultValue.RuntimeValue, true);
+        if (_store.MadeOrNone(index) is BlockBytesCell cell)
+        {
+            cell.Store(value, isKnown);
+            return;
+        }
+
+        var block = _store.Block;
+        BlockBytesCell.Encode(value, block.Bytes.AsSpan(index * _store.Width), _store.Encoding);
+        block.Know(index, isKnown);
+    }
+
+    // the first elements of this array let what those of source hold, both held as bytes of the same encoding: what source never wrote is zero, and known.
+    private void LetBytesFrom(VBArrayValue source, int count)
+    {
+        if (source._store.BlockOrNone is { } from)
+        {
+            _store.Block.LetFrom(from, count, _store.Width);
+        }
+        else
+        {
+            _store.BlockOrNone?.Clear(count, _store.Width);
+        }
+    }
+
+    /// <summary>
+    /// How an element of this array is held as bytes: an element of a fixed-width intrinsic type (<c>Byte</c>, <c>Integer</c>, <c>Boolean</c>, <c>Long</c>,
+    /// <c>LongLong</c>, <c>LongPtr</c>, <c>Single</c>, <c>Double</c>, <c>Currency</c>, <c>Date</c>, or an <c>Enum</c>) as the field of a record of the type
+    /// is (<see cref="RecordShape"/>); <see cref="RecordFieldEncoding.None"/> for an element held in a cell of its own.
+    /// </summary>
+    public RecordFieldEncoding ElementEncoding => _store.Encoding;
+
+    /// <summary>
+    /// Reads the element at a flat index, held as bytes encoded as <paramref name="encoding"/>, as its payload: an integer, a <c>Boolean</c> as its -1 or 0
+    /// and a <c>Currency</c> as its ten-thousandths in <paramref name="integral"/>; a <c>Single</c>, a <c>Double</c> or the serial of a <c>Date</c> in
+    /// <paramref name="floating"/>, the other being 0.
+    /// </summary>
+    /// <remarks>
+    /// The element's bytes are read where the array holds them: no cell is made of the element and no value is boxed. Whether the element is known is not
+    /// read; an array that is not known (<see cref="VBTypedValue.IsIndeterminate"/>) is read as it holds its bytes.
+    /// </remarks>
+    /// <param name="flatIndex">From 0 to <see cref="Length"/> - 1, in the order <see cref="ElementAt"/> reads the elements.</param>
+    /// <param name="encoding">How the element is encoded, which the caller expects (<see cref="ElementEncoding"/>).</param>
+    /// <param name="integral">The payload of an encoding of an integer, a <c>Boolean</c> or a <c>Currency</c>.</param>
+    /// <param name="floating">The payload of an encoding of a <c>Single</c> or a <c>Double</c>.</param>
+    /// <returns><see langword="false"/> when there is no element at the index, or the elements are not held as bytes encoded as
+    /// <paramref name="encoding"/>.</returns>
+    public bool TryReadElementAt(int flatIndex, RecordFieldEncoding encoding, out long integral, out double floating)
+    {
+        if (encoding == RecordFieldEncoding.None || encoding != _store.Encoding || flatIndex < 0 || flatIndex >= _length)
+        {
+            (integral, floating) = (0, 0);
+            return false;
+        }
+
+        if (_store.BlockOrNone is not { } block)
+        {
+            (integral, floating) = (0, 0);
+            return true;
+        }
+
+        BlockBytesCell.Read(block.Bytes.AsSpan(flatIndex * _store.Width), encoding, out integral, out floating);
+        return true;
+    }
+
+    /// <summary>
+    /// Let-assigns a payload to the element at a flat index, held as bytes encoded as <paramref name="encoding"/>, as <see cref="TryReadElementAt"/> reads
+    /// one: the element is known, and its cell, if one was made, reads what was written.
+    /// </summary>
+    /// <remarks>
+    /// The payload is a value of the element type: what a let-coercion to that type makes (<strong>MS-VBAL §5.5.1.2</strong>). No cell is made of the
+    /// element and no value is boxed.
+    /// </remarks>
+    /// <param name="flatIndex">From 0 to <see cref="Length"/> - 1, in the order <see cref="ElementAt"/> reads the elements.</param>
+    /// <param name="encoding">How the element is encoded, which the caller expects (<see cref="ElementEncoding"/>).</param>
+    /// <param name="integral">The payload of an encoding of an integer, a <c>Boolean</c> or a <c>Currency</c>.</param>
+    /// <param name="floating">The payload of an encoding of a <c>Single</c> or a <c>Double</c>.</param>
+    /// <returns><see langword="false"/> when there is no element at the index, or the elements are not held as bytes encoded as <paramref name="encoding"/>:
+    /// nothing is written.</returns>
+    /// <exception cref="OverflowException"><paramref name="integral"/> is out of the range of <paramref name="encoding"/>.</exception>
+    public bool TryWriteElementAt(int flatIndex, RecordFieldEncoding encoding, long integral, double floating)
+    {
+        if (encoding == RecordFieldEncoding.None || encoding != _store.Encoding || flatIndex < 0 || flatIndex >= _length)
+        {
+            return false;
+        }
+
+        var block = _store.Block;
+        BlockBytesCell.Write(block.Bytes.AsSpan(flatIndex * _store.Width), encoding, integral, floating);
+        if (_store.MadeOrNone(flatIndex) is BlockBytesCell cell)
+        {
+            cell.Reread();
+        }
+
+        block.Know(flatIndex, isKnown: true);
+        return true;
+    }
+
+    /// <summary>
+    /// Gives this array the elements of <paramref name="source"/> that a <c>ReDim Preserve</c> keeps (<strong>MS-VBAL §5.4.3.3</strong>): this array is the
+    /// one the statement makes, of <paramref name="source"/>'s element type and rank, and of its bounds but the last dimension's upper bound.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The last subscript varies slowest (<strong>MS-VBAL §5.4.2.4.1</strong>), so each element still in the bounds is at the flat index it has in
+    /// <paramref name="source"/>, and the kept elements are the first of either array. An element this array gains holds its type's default value.
+    /// </para>
+    /// <para>
+    /// Elements held as bytes are copied, with what is known of them, and no cell is made. Otherwise each cell made of a kept element becomes the cell of
+    /// this array's element; when the elements of <paramref name="source"/> that have no cell are not known, each kept element is given its cell, so that
+    /// what is not known of it is kept.
+    /// </para>
+    /// </remarks>
+    /// <param name="source">The array the <c>ReDim Preserve</c> resizes.</param>
+    /// <returns><see langword="false"/> when <paramref name="source"/> has another element type, another rank, or other bounds than the last upper one:
+    /// nothing is kept.</returns>
+    public bool TryPreserveFrom(VBArrayValue source)
+    {
+        if (!Equals(ItemType, source.ItemType) || Rank != source.Rank || Rank == 0
+            || !Dimensions.Take(Rank - 1).SequenceEqual(source.Dimensions.Take(Rank - 1))
+            || Dimensions[^1].LowerBound != source.Dimensions[^1].LowerBound)
+        {
+            return false;
+        }
+
+        var kept = Math.Min(_length, source._length);
+        if (_store.IsBytes)
+        {
+            LetBytesFrom(source, kept);
+            return true;
+        }
+
+        if (!source.AnyMade && !source._store.Unmade.IsForgotten)
+        {
+            return true;
+        }
+
+        // every element without a cell holds the same default value, so what one of them is known to hold, each does.
+        var unmadeForgotten = source._store.Unmade.IsForgotten;
+        for (var index = 0; index < kept; index++)
+        {
+            if (source.MadeCell(index) is { } cell)
+            {
+                _store.Adopt(index, cell);
+            }
+            else if (unmadeForgotten && source.Cell(index) is { } forgotten)
+            {
+                _store.Adopt(index, forgotten);
+            }
         }
 
         return true;
@@ -304,10 +503,10 @@ public abstract record class VBArrayValue : VBTypedValue
     /// The most elements an array holds in RD-VBA: 16,777,216 (2<sup>24</sup>), in every dimension together.
     /// </summary>
     /// <remarks>
-    /// Each element of an array is a cell of its own (<see cref="IBindingHandle"/>), where an element of an MS-VBA array is the bytes of its data type in one
-    /// block of memory: MS-VBA (64-bit) allocates <c>ReDim b(2147483647) As Byte</c> as long as the memory is there, and RD-VBA refuses an array that size
-    /// before making a cell of it. A <c>ReDim</c> of more elements is run-time error 7, <em>Out of memory</em>
-    /// (<strong>RD-VBAL §5.4.3.3</strong>).
+    /// An element of an array of a type other than a fixed-width intrinsic one is a cell of its own (<see cref="IBindingHandle"/>), where an element of an
+    /// MS-VBA array is the bytes of its data type in one block of memory: MS-VBA (64-bit) allocates <c>ReDim b(2147483647) As Byte</c> as long as the
+    /// memory is there, and RD-VBA refuses an array that size, of any element type, before making a cell or a byte of it. A <c>ReDim</c> of more elements
+    /// is run-time error 7, <em>Out of memory</em> (<strong>RD-VBAL §5.4.3.3</strong>).
     /// </remarks>
     public const long MaximumLength = 1 << 24;
 
@@ -375,6 +574,20 @@ public abstract record class VBArrayValue : VBTypedValue
     /// </remarks>
     public void ForgetElements(IRuntimeValue? assigned = null)
     {
+        if (_store.IsBytes)
+        {
+            var block = _store.Block;
+            for (var index = 0; index < _length; index++)
+            {
+                if (block.IsKnown(index) && !(assigned is not null && Equals(HeldAt(block, index).BoxedValue, assigned.BoxedValue)))
+                {
+                    block.Know(index, isKnown: false);
+                }
+            }
+
+            return;
+        }
+
         // an element whose cell is not made holds the default, as a cell made now would: it is forgotten as that cell would be, once it is made.
         _store.Unmade = _store.Unmade.Forget(assigned);
         if (!AnyMade)
@@ -390,6 +603,9 @@ public abstract record class VBArrayValue : VBTypedValue
             }
         }
     }
+
+    // what the element held as bytes at an index holds.
+    private IRuntimeValue HeldAt(ValueBlock block, int index) => BlockBytesCell.Decode(block.Bytes.AsSpan(index * _store.Width), _store.Encoding);
 
     private static bool IsForgotten(IBindingHandle cell, IRuntimeValue? assigned)
         => cell is IKnowledgeBinding { IsKnown: true } known && !(assigned is not null && Equals(known.Value.BoxedValue, assigned.BoxedValue));
@@ -443,6 +659,10 @@ public abstract record class VBArrayValue : VBTypedValue
     /// or for what is bound to it, walks these instead and makes no cell for the others.
     /// </para>
     /// <para>
+    /// An element held as bytes (<see cref="ElementEncoding"/>) is given its cell only when it is read or given to a caller, and one without a cell holds
+    /// what its bytes hold (<see cref="TryReadElementAt"/>). It holds no object either.
+    /// </para>
+    /// <para>
     /// The elements come in increasing flat index, the column-major order <see cref="ElementAt"/> reads them in (<strong>MS-VBAL §5.4.2.4.1</strong>).
     /// A view of the array made with <c>with</c> yields the cells it was given in place of the shared ones (<see cref="TrySetElementAt"/>), and the shared
     /// cells at every other index.
@@ -476,6 +696,10 @@ public abstract record class VBArrayValue : VBTypedValue
     /// Rebinds the element at a flat index, in the order <see cref="ElementAt"/> reads them, to <paramref name="value"/>: what writes an element at its
     /// address in memory, which is where it is in that order.
     /// </summary>
+    /// <remarks>
+    /// An element held as bytes (<see cref="ElementEncoding"/>) is not rebound: it is written what <paramref name="value"/> holds, where it is, and its cell
+    /// reads it.
+    /// </remarks>
     /// <param name="flatIndex">From 0 to <see cref="Length"/> - 1.</param>
     /// <param name="value">The element's new binding.</param>
     /// <returns><c>false</c> when there is no element at the index.</returns>
@@ -486,15 +710,19 @@ public abstract record class VBArrayValue : VBTypedValue
             return false;
         }
 
-        SetCell(flatIndex, value);
+        SetOrWrite(flatIndex, value);
         return true;
     }
 
     /// <summary>
-    /// Rebinds the element at the given subscripts to <paramref name="value"/>. Mutates the cell in
-    /// place — array element storage is mutable. Returns <c>false</c> when the subscripts are out of
-    /// bounds or their count does not match the array rank.
+    /// Rebinds the element at the given subscripts to <paramref name="value"/>, in place: array element storage is mutable.
     /// </summary>
+    /// <remarks>
+    /// An element held as bytes (<see cref="ElementEncoding"/>) is written what <paramref name="value"/> holds, as <see cref="TrySetElementAt"/> writes it.
+    /// </remarks>
+    /// <param name="value">The element's new binding.</param>
+    /// <param name="subscripts">One subscript per dimension of the array.</param>
+    /// <returns><c>false</c> when the subscripts are out of bounds or their count does not match the array's rank.</returns>
     public bool TrySetElement(IBindingHandle value, params int[] subscripts)
     {
         var index = LinearIndex(subscripts);
@@ -503,8 +731,20 @@ public abstract record class VBArrayValue : VBTypedValue
             return false;
         }
 
-        SetCell(index, value);
+        SetOrWrite(index, value);
         return true;
+    }
+
+    private void SetOrWrite(int index, IBindingHandle value)
+    {
+        if (_store.IsBytes)
+        {
+            WriteBytes(index, value);
+        }
+        else
+        {
+            SetCell(index, value);
+        }
     }
 
     /// <summary>
@@ -584,10 +824,33 @@ public abstract record class VBArrayValue : VBTypedValue
     }
 
     // the cells of an array and of the views a `with` makes of it, each made the first time it is needed, as the array's constructor was told to make
-    // it: by elementCell where it was given one, holding the element type's default value.
+    // it: by elementCell where it was given one, holding the element type's default value. The elements of a fixed-width intrinsic type are bytes of one
+    // block instead, made on the first write, and a cell of one of them is the cell of its bytes. The elements that are records are records of one block
+    // too, laid end to end, each a view of the block in a cell of its own.
     private sealed class ElementStore(int length, VBType itemType, Func<VBTypedValue>? elementDefault, Func<IBindingHandle>? elementCell)
     {
         private IBindingHandle?[]? _made;
+        private ValueBlock? _block;
+
+        // what makes an element beyond its type's default: the shape of an element that is a record and the record each starts as, or else elementCell,
+        // which an array of records is never given. One field for either, so that an array of another type pays nothing for records.
+        private object? _making = itemType is VBUserDefinedType record ? new RecordStart(RecordShape.Of(record)) : elementCell;
+
+        // how an element is held as bytes; None for an element held in a cell, as an element that something other than its type's default starts as is.
+        public RecordFieldEncoding Encoding { get; } = elementDefault is null ? RecordShape.EncodingOf(itemType) : RecordFieldEncoding.None;
+
+        public int Width => RecordShape.WidthOf(Encoding);
+
+        public bool IsBytes => Encoding != RecordFieldEncoding.None;
+
+        // the shape of an element that is a record; null for an element of another type.
+        public RecordShape? Records => (_making as RecordStart)?.Shape;
+
+        // the block of the elements held as bytes, or of the records, made on first need: an array none of whose elements is written holds zero bytes, each
+        // known.
+        public ValueBlock Block => _block ??= Records is { } shape ? new ValueBlock(shape, length) : new ValueBlock(length, Width);
+
+        public ValueBlock? BlockOrNone => _block;
 
         // what is known of the elements not made yet, which a cell made from now on is told.
         public UnmadeKnowledge Unmade { get; set; } = UnmadeKnowledge.Known;
@@ -601,7 +864,14 @@ public abstract record class VBArrayValue : VBTypedValue
             var made = _made ??= new IBindingHandle?[length];
             if (made[index] is not { } cell)
             {
-                cell = made[index] = elementCell?.Invoke() ?? CreateDefaultCell(itemType, elementDefault);
+                if (IsBytes)
+                {
+                    return made[index] = new BlockBytesCell(Block, index * Width, index, Encoding);
+                }
+
+                cell = made[index] = Records is { } shape
+                    ? RecordCell(RecordAt(index, shape), isKnown: true)
+                    : (_making as Func<IBindingHandle>)?.Invoke() ?? CreateDefaultCell(itemType);
                 if (Unmade.IsForgotten && IsForgotten(cell, Unmade.UnlessHolding) && cell is IKnowledgeBinding known)
                 {
                     known.Forget();
@@ -611,11 +881,59 @@ public abstract record class VBArrayValue : VBTypedValue
             return cell;
         }
 
+        // the record at an index, a view of the block, its fields as those of the record each element starts as. A record of another shape than the
+        // element type's, which a start of a type equal by its declarations would be, is a record of its own.
+        private VBUserDefinedTypeValue RecordAt(int index, RecordShape shape)
+        {
+            var start = ((RecordStart)_making!).StartOf(elementDefault);
+            return start is null || ReferenceEquals(start.Shape, shape)
+                ? VBUserDefinedTypeValue.ElementOf(Block, shape, index, start)
+                : (VBUserDefinedTypeValue)elementDefault!.Invoke();
+        }
+
+        // an element that is a record is boxed as a variable stores one: its fields are written where they are, which an element built again at each read
+        // would lose.
+        private static ValueBindingHandle RecordCell(VBUserDefinedTypeValue record, bool isKnown)
+            => BindingKnowledge.NewCell(new VBRuntimeValue<VBRuntimeUserDefinedTypeValue>(new VBRuntimeUserDefinedTypeValue(record)), isKnown);
+
         // keeps a cell made elsewhere as the one at an index: the copy of an element of another array.
         public void Adopt(int index, IBindingHandle cell) => (_made ??= new IBindingHandle?[length])[index] = cell;
 
+        // keeps a copy of the cell of another array's element as the one at an index, as DataValues.CopyCell makes it: a record of the source's shape is
+        // copied into this store's block.
+        public void AdoptCopyOf(int index, IBindingHandle cell)
+            => Adopt(index, Records is { } shape && cell is IKnowledgeBinding { IsKnown: var isKnown } and not ICopyableBinding
+                && cell.BindingCapabilities.HasFlag(BindingCapabilities.GetValue)
+                && cell.Value is VBRuntimeValue<VBRuntimeUserDefinedTypeValue> { StoredValue.UserDefinedType: { } record }
+                && ReferenceEquals(record.Shape, shape)
+                    ? RecordCell(VBUserDefinedTypeValue.ElementCopyOf(Block, index, record), isKnown)
+                    : DataValues.CopyCell(cell));
+
+        // the elements held as bytes become a copy of another block's, which no cell is made of yet.
+        public void BlockFrom(ValueBlock? block) => _block = block?.Copy();
+
         // a store of the same length and element type, none of whose cells is made, which knows of its elements what this one knows of those not made.
-        public ElementStore Fresh() => new(length, itemType, elementDefault, elementCell) { Unmade = Unmade };
+        public ElementStore Fresh() => new(length, itemType, elementDefault, _making as Func<IBindingHandle>) { Unmade = Unmade, _making = _making };
+    }
+
+    // the shape of an array's records, and the record each of them starts as (elementDefault), made once, when the first element is: an array's copies
+    // share it, and start their records as it does.
+    private sealed class RecordStart(RecordShape shape)
+    {
+        private VBUserDefinedTypeValue? _start;
+        private bool _isMade;
+
+        public RecordShape Shape { get; } = shape;
+
+        public VBUserDefinedTypeValue? StartOf(Func<VBTypedValue>? elementDefault)
+        {
+            if (!_isMade)
+            {
+                (_start, _isMade) = (elementDefault?.Invoke() as VBUserDefinedTypeValue, true);
+            }
+
+            return _start;
+        }
     }
 
     // what is known of the elements whose cells are not made, all of which hold the same default value: each is known, or each is forgotten as
@@ -633,17 +951,10 @@ public abstract record class VBArrayValue : VBTypedValue
         };
     }
 
-    // A fresh binding per cell so an element write never aliases another cell. An element that is a record is a record of its own,
-    // boxed as a variable stores one: its fields are written where they are, which an element built again at each read would lose. Other
-    // complex element types (Variant, Object) whose default value has no readable binding get an inert cell, which a write replaces.
-    private static IBindingHandle CreateDefaultCell(VBType itemType, Func<VBTypedValue>? elementDefault)
+    // A fresh binding per cell so an element write never aliases another cell. Complex element types (Variant, Object) whose default value has no
+    // readable binding get an inert cell, which a write replaces.
+    private static IBindingHandle CreateDefaultCell(VBType itemType)
     {
-        if (itemType is VBUserDefinedType record)
-        {
-            var element = elementDefault?.Invoke() as VBUserDefinedTypeValue ?? new VBUserDefinedTypeValue(record);
-            return BindingKnowledge.NewCell(new VBRuntimeValue<VBRuntimeUserDefinedTypeValue>(new VBRuntimeUserDefinedTypeValue(element)), isKnown: true);
-        }
-
         var defaultValue = itemType.DefaultValue;
         return defaultValue.Handle.BindingCapabilities.HasFlag(BindingCapabilities.GetValue)
             ? new ValueBindingHandle(defaultValue.RuntimeValue)

@@ -60,5 +60,16 @@ public record class ModuleParseResult
     /// </remarks>
     public ImmutableArray<BlockModule> BlockModules { get; init; } = [];
 
+    /// <summary>
+    /// Where the block that declares the module is in its file (<see cref="BlockModule.Range"/>), from the start of its header to the end of its
+    /// <c>End Class</c> or <c>End Module</c>, when this is the parse of a block's module (<see cref="Workspace.RDCoreDocument.ParseOf"/>);
+    /// <see langword="null"/> for the parse of a file, and for a file's own module.
+    /// </summary>
+    /// <remarks>
+    /// The lines of a block's module are those between its header and its end: what an edit adds to the module is written on them, before the end line
+    /// (<see cref="Semantics.Refactoring.DeclarationEdits.SectionEnd"/>).
+    /// </remarks>
+    public Source.SourceRange? BlockRange { get; init; }
+
     public bool IsSuccess => SyntaxTree is not null && SyntaxErrors.Length == 0;
 }

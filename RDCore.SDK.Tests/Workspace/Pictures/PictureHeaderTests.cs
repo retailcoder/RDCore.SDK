@@ -135,6 +135,24 @@ public sealed class PictureHeaderTests
             images.ToArray());
     }
 
+    // A cursor's directory entry holds its image's hot spot where an icon's holds its planes and bit count: here 3,4 and 10,12.
+    [TestMethod]
+    [DataRow((short)2, 3, 4, 10, 12, DisplayName = "a cursor: the hot spots its directory states")]
+    [DataRow((short)1, 0, 0, 0, 0, DisplayName = "an icon: none")]
+    public void AnImagesHotSpot_IsTheOneItsCursorsDirectoryStates(short type, int firstX, int firstY, int secondX, int secondY)
+    {
+        var file = Icon(type, PngHeader(16, 16), PngHeader(32, 32));
+        foreach (var (entry, x, y) in new[] { (6, 3, 4), (22, 10, 12) })
+        {
+            BinaryPrimitives.WriteUInt16LittleEndian(file.AsSpan(entry + 4), (ushort)x);
+            BinaryPrimitives.WriteUInt16LittleEndian(file.AsSpan(entry + 6), (ushort)y);
+        }
+
+        Assert.IsTrue(PictureHeader.TryReadIconImages(file, out var images));
+
+        Assert.AreEqual((firstX, firstY, secondX, secondY), (images[0].HotSpotX, images[0].HotSpotY, images[1].HotSpotX, images[1].HotSpotY));
+    }
+
     [TestMethod]
     public void APictureThatIsNoIcon_HasNoIconImages()
     {
