@@ -39,6 +39,16 @@ public interface IPlatformEnvironment
     string LogsDirectory { get; }
 
     /// <summary>
+    /// Absolute path of the folder the audit log writes its files to, <c>&lt;Root&gt;/Logs/Audits</c> (<see cref="PlatformEnvironment.AuditsFolder"/>). Not
+    /// created: nothing is kept there until an entry is written.
+    /// </summary>
+    /// <remarks>
+    /// Under the platform root, and not under <see cref="LogsDirectory"/>: the audit is the administrator's, so <c>RDCORE_LOGS_DIRECTORY</c>, which a user
+    /// can set, does not move it. The platform's configuration can name another folder (<see cref="Server.Configuration.SdkAuditFileOptions.Directory"/>).
+    /// </remarks>
+    string AuditsDirectory => Resolve(PlatformEnvironment.AuditsFolder);
+
+    /// <summary>
     /// Resolves a root-relative path (either slash style) to an absolute path under <see cref="Root"/>.
     /// </summary>
     /// <param name="rootRelativePath">A path relative to <see cref="Root"/>, using either <c>/</c> or <c>\</c>.</param>
@@ -68,6 +78,11 @@ public sealed class PlatformEnvironment : IPlatformEnvironment
     /// (<see cref="Runtime.Libraries.DirectoryLibrarySource"/>).
     /// </summary>
     public const string SymbolsDirectory = "Symbols";
+
+    /// <summary>
+    /// The folder of the audit log's files, relative to the platform root (<see cref="IPlatformEnvironment.AuditsDirectory"/>).
+    /// </summary>
+    public const string AuditsFolder = "Logs/Audits";
 
     /// <summary>
     /// Name of the environment variable that overrides the folder of the platform's user (<see cref="UserDataDirectory"/>): what a test sets, so that it never reads
@@ -114,6 +129,8 @@ public sealed class PlatformEnvironment : IPlatformEnvironment
             : _fileSystem.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "RDCore");
 
     public string ManifestPath => _fileSystem.Path.Combine(Root, PlatformManifest.FileName);
+
+    public string AuditsDirectory => Resolve(AuditsFolder);
 
     public string LogsDirectory
     {

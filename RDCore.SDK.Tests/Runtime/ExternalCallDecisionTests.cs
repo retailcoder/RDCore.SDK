@@ -28,6 +28,21 @@ public sealed class ExternalCallDecisionTests
     }
 
     [TestMethod]
+    public void Block_IsNotHalted()
+        => Assert.IsFalse(ExternalCallDecision.Block("refused").IsHalted);
+
+    [TestMethod]
+    public void Halt_IsBlockedAndHalted_AndNotAnswered()
+    {
+        var decision = ExternalCallDecision.Halt("refused");
+
+        Assert.IsTrue(decision.IsBlocked);
+        Assert.IsTrue(decision.IsHalted);
+        Assert.IsFalse(decision.IsAnswered);
+        Assert.AreEqual("refused", decision.Reason);
+    }
+
+    [TestMethod]
     public void Answered_IsAnswered_AndNotBlocked()
     {
         var answer = ExternalCallAnswer.Returning(new VBLongValue(6));

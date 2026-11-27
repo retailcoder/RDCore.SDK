@@ -120,6 +120,10 @@ public interface IRuntimeEnvironmentProfile
     /// 🎯 Whether a <c>Declare</c>'d library import may actually be called. <c>true</c> unless an
     /// administrator said otherwise.
     /// </summary>
+    /// <remarks>
+    /// Obsolete: the rule of <see cref="ExecutionCategory.LibraryImports"/> in <see cref="ExecutionPolicy"/> says it, and Block or Halt as well.
+    /// </remarks>
+    [Obsolete("Read ExecutionPolicy.LibraryImports, which says whether a call is blocked or halted and whether it is audited.")]
     bool AllowDllImports { get; }
 
     /// <summary>
@@ -129,8 +133,23 @@ public interface IRuntimeEnvironmentProfile
     /// <remarks>
     /// Its own switch, apart from <see cref="AllowDllImports"/>: automating a spreadsheet and calling an arbitrary export are not the same risk, and one
     /// switch for both would be of no use to anyone who needs one and not the other.
+    /// Obsolete: the rule of <see cref="ExecutionCategory.Automation"/> in <see cref="ExecutionPolicy"/> says it, and Block or Halt as well.
     /// </remarks>
+    [Obsolete("Read ExecutionPolicy.Automation, which says whether a call is blocked or halted and whether it is audited.")]
     bool AllowAutomation { get; }
+
+    /// <summary>
+    /// The execution policy of the session: for each category of call that reaches outside the program, whether it is made, and whether the audit log
+    /// records it. It never changes while the session runs.
+    /// </summary>
+    /// <remarks>
+    /// Where <see cref="AllowDllImports"/> or <see cref="AllowAutomation"/> is <see langword="false"/>, the rule of its category is at least
+    /// <see cref="ExecutionPolicyMode.Block"/>. A profile that says nothing else has <see cref="Runtime.ExecutionPolicy.Default"/> with those two switches
+    /// applied (<see cref="Runtime.ExecutionPolicy.Allowing"/>).
+    /// </remarks>
+#pragma warning disable CS0618 // the two switches a profile that knows no policy has
+    RDCore.SDK.Runtime.ExecutionPolicy ExecutionPolicy => RDCore.SDK.Runtime.ExecutionPolicy.Default.Allowing(AllowDllImports, AllowAutomation);
+#pragma warning restore CS0618
 
     /// <summary>
     /// 🎯 What runs the code of a program: the interpreter, or IL compiled from it where every instruction can be.

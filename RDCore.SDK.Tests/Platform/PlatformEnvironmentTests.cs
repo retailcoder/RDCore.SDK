@@ -63,6 +63,19 @@ public class PlatformEnvironmentTests
         Assert.IsTrue(_fileSystem.Directory.Exists(logs));
     }
 
+    // the audit log is the deployment's record: under the platform root, where a user's logs override does not move it, and made when it is first written.
+    [TestMethod]
+    public void AuditsDirectory_IsUnderTheRoot_WhereverTheLogsAre_AndNotMadeWhenAskedFor()
+    {
+        var elsewhere = _fileSystem.Path.GetFullPath(_fileSystem.Path.Combine(_fileSystem.Path.GetTempPath(), "rdcore-logs-elsewhere"));
+        using var _ = Override(PlatformEnvironment.LogsEnvironmentVariable, elsewhere);
+
+        var audits = CreateSut().AuditsDirectory;
+
+        Assert.AreEqual(_fileSystem.Path.Combine(_root, "Logs", "Audits"), audits);
+        Assert.IsFalse(_fileSystem.Directory.Exists(audits));
+    }
+
     [TestMethod]
     [OSCondition(OperatingSystems.Linux)]
     [DataRow("/var/xdg-state", "/var/xdg-state/rdcore/logs", DisplayName = "XDG_STATE_HOME set")]

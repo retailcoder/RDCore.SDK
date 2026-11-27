@@ -10,6 +10,7 @@ using RDCore.SDK.Extensibility;
 using RDCore.SDK.Platform;
 using RDCore.SDK.Runtime;
 using RDCore.SDK.Runtime.Abstract.Execution;
+using RDCore.SDK.Server.Auditing;
 using RDCore.SDK.Server.Configuration;
 using RDCore.SDK.Server.Logging;
 using RDCore.SDK.Server.Services;
@@ -432,6 +433,8 @@ public abstract class AppHost<TApp>() : IDisposable
             .AddSingleton<IProjectFileLoader, ProjectFileLoader>()
             .AddSingleton<IProjectFileWriter, ProjectFileWriter>()
             .AddSingleton<IPlatformEnvironment, PlatformEnvironment>()
+            // the calls the execution policy decides are recorded where the platform's Audit settings say, from every component alike.
+            .AddAuditLog()
             // the descriptions of the libraries a project can reference ship with the platform, in its Symbols folder, and with what the application adds.
             .AddSingleton(provider => LibrarySource(provider, new RDCore.SDK.Runtime.Libraries.DirectoryLibrarySource(
                 provider.GetRequiredService<IFileSystem>(), provider.GetRequiredService<IPlatformEnvironment>().Resolve(PlatformEnvironment.SymbolsDirectory))))
