@@ -5,7 +5,7 @@ namespace RDCore.SDK.Extensibility.Annotations;
 
 /// <summary>
 /// What an annotation is: its name, where it is legal, its parameters, and whether it is deprecated. Each extension declares its own
-/// (<see cref="ExtensionAnnotationsAttribute"/>), and the language server knows every one from the extensions' manifests (<see cref="AnnotationCatalogue"/>).
+/// (<see cref="ExtensionAnnotationsAttribute"/>), and a catalogue holds every extension's (<see cref="AnnotationCatalogue"/>).
 /// </summary>
 /// <remarks>
 /// The declaration says what an annotation looks like, and nothing of what it does: that is its provider's. Its description and its parameters' are strings of

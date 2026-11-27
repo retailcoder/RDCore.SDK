@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <root>
+  <!-- Fixture_Label is left out on purpose: the test reads its fallback. -->
   <resheader name="resmimetype">
     <value>text/microsoft-resx</value>
   </resheader>

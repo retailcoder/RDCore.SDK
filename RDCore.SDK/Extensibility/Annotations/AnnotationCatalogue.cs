@@ -4,7 +4,7 @@ using RDCore.SDK.Server.Configuration;
 namespace RDCore.SDK.Extensibility.Annotations;
 
 /// <summary>
-/// Every annotation the platform knows: the ones each extension declares in its manifest (<see cref="ExtensionAnnotationsAttribute"/>), the core extension's
+/// Every annotation the platform knows: the ones each extension declares (<see cref="ExtensionAnnotationsAttribute"/>), the core extension's
 /// among them. It answers what an annotation is called, where it is legal, and how it is described.
 /// </summary>
 /// <remarks>
