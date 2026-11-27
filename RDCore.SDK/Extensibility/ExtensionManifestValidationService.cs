@@ -62,9 +62,9 @@ public enum ExtensionValidationFlags
     /// </remarks>
     IncompatibleSdk = 1 << 5,
     /// <summary>
-    /// The <c>Annotations</c> specified in the extension manifest are not valid: two of them share a name or an alias, one's parameters are not in the order a
-    /// declaration requires (<see cref="AnnotationDeclaration.IsWellFormed"/>), or <c>AnnotationDescriptions</c> describes an annotation or a parameter none of
-    /// them declares.
+    /// The <c>Annotations</c> specified in the extension manifest are not valid: two of them share a name or an alias, one's parameters are not in the order
+    /// a declaration requires (<see cref="AnnotationDeclaration.IsWellFormed"/>), or <c>AnnotationDescriptions</c> describes an annotation or a parameter
+    /// none of them declares.
     /// </summary>
     /// <remarks>
     /// A catalogue takes an extension's annotations from its manifest (<see cref="AnnotationCatalogue"/>), so an extension whose manifest's annotations
