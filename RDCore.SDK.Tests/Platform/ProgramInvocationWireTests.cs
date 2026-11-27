@@ -1,4 +1,5 @@
 using OmniSharp.Extensions.LanguageServer.Protocol.Serialization;
+using RDCore.SDK.Client;
 using RDCore.SDK.Platform.Protocol;
 using RDCore.SDK.Server.Serialization;
 using System.Text.Json;
