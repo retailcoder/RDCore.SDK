@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Configuration;
+using RDCore.SDK.Platform;
 using RDCore.SDK.Runtime;
 using RDCore.SDK.Server.Auditing;
 using RDCore.SDK.Server.Configuration;
@@ -7,7 +8,7 @@ using System.IO.Abstractions.TestingHelpers;
 namespace RDCore.Tests.Server.Configuration;
 
 /// <summary>
-/// The execution policy (<c>Environment:ExecutionPolicy</c>) and the audit log (<c>Audit</c>) are the deployment's settings: bound from its configuration, and
+/// The execution policy (<c>Environment:ExecutionPolicy</c>) and the audit log (<c>Audit</c>) are the platform's settings: bound from its settings file, and
 /// set by neither a user nor a workspace.
 /// </summary>
 [TestClass]
@@ -118,14 +119,64 @@ public sealed class ExecutionPolicySettingsTests
 
     [TestMethod]
     [DynamicData(nameof(PolicyAndAuditSettings))]
-    public void APolicyOrAuditSetting_IsTheDeployments_AndAUserSetsNoneOfThem(string key)
+    public void APolicyOrAuditSetting_IsThePlatforms_AndAUserSetsNoneOfThem(string key)
     {
         Assert.IsTrue(SettingsSchema.Platform.TryFind(key, out var setting));
-        Assert.AreEqual(SettingReach.Deployment, setting.Reach);
+        Assert.AreEqual(SettingReach.Platform, setting.Reach);
         Assert.IsFalse(setting.IsSettable);
 
         var user = new UserSettingsStore(new MockFileSystem(), Path.Combine(Folder, "user.json"), SettingsSchema.Platform);
         Assert.AreEqual(UserSettingProblem.NotSettable, user.Set(key, setting.Choices.FirstOrDefault() ?? "1").Problem);
+    }
+
+    // the sandbox an administrator sets: what the platform's file says, or the default where it says nothing, whatever a component's own file, an
+    // environment variable or the command line says.
+    [TestMethod]
+    public void ThePlatformsFile_SetsThePolicyAndTheAuditLog_AndNothingElseChangesThem()
+    {
+        var folder = Path.Combine(Path.GetTempPath(), "RDCore", $"execution-policy-settings-{Guid.NewGuid():N}");
+        var prefix = $"RDCTEST{Guid.NewGuid():N}_";
+        var platformFile = Path.Combine(folder, PlatformEnvironment.SettingsFileName);
+        var appFile = Path.Combine(folder, "app", "appsettings.json");
+        Directory.CreateDirectory(Path.GetDirectoryName(appFile)!);
+        try
+        {
+            File.WriteAllText(platformFile, """
+                { "Configuration": {
+                    "Environment": { "ExecutionPolicy": { "LibraryImports": { "Mode": "Halt", "Audit": "All" } } },
+                    "Audit": { "Capacity": 16 }
+                } }
+                """);
+            File.WriteAllText(appFile, """
+                { "Configuration": {
+                    "Environment": { "ExecutionPolicy": { "Automation": { "Mode": "Block" } } },
+                    "Audit": { "File": { "Enabled": false } }
+                } }
+                """);
+            Environment.SetEnvironmentVariable($"{prefix}Configuration__Environment__ExecutionPolicy__LibraryImports__Mode", "Allow");
+            Environment.SetEnvironmentVariable($"{prefix}Configuration__Audit__Capacity", "1");
+
+            var configuration = new ConfigurationBuilder()
+                .AddJsonFile(appFile, optional: false)
+                .AddEnvironmentVariables(prefix)
+                .AddCommandLine(["--Configuration:Environment:ExecutionPolicy:LibraryImports:Audit=None", "--Configuration:Audit:Arguments=Values"])
+                .AddPlatformSettings(platformFile, SettingsSchema.Platform)
+                .Build();
+            var bound = new SdkAppOptions();
+            configuration.GetSection(SettingsSchema.Root).Bind(bound);
+
+            Assert.AreEqual(new ExecutionRule(ExecutionPolicyMode.Halt, ExecutionAuditLevel.All), bound.Environment.ExecutionPolicy.ToPolicy().LibraryImports);
+            Assert.AreEqual(ExecutionRule.PassThrough, bound.Environment.ExecutionPolicy.ToPolicy().Automation, "the component's own file sets no rule");
+            Assert.AreEqual(16, bound.Audit.Capacity);
+            Assert.AreEqual(AuditArguments.Types, bound.Audit.Arguments, "the command line sets nothing of the audit log");
+            Assert.IsTrue(bound.Audit.File.Enabled, "the component's own file sets nothing of the audit log");
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable($"{prefix}Configuration__Environment__ExecutionPolicy__LibraryImports__Mode", null);
+            Environment.SetEnvironmentVariable($"{prefix}Configuration__Audit__Capacity", null);
+            Directory.Delete(folder, recursive: true);
+        }
     }
 
     [TestMethod]

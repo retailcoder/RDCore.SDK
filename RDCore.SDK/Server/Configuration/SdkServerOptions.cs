@@ -233,14 +233,15 @@ public record class SdkAppOptions
     /// A change takes effect with the next hints a client asks for, while the platform runs.
     /// </remarks>
     public SdkInlayHintOptions InlayHints { get; set; } = new();
+
     /// <summary>
     /// The audit log: what it records of a call's arguments, and where its entries go (<see cref="Auditing.IAuditLog"/>).
     /// </summary>
     /// <remarks>
-    /// Only the deployed configuration sets it (<see cref="SettingReach.Deployment"/>): where the audit goes, and what it records, is the administrator's
+    /// Only the platform's settings file sets it (<see cref="SettingReach.Platform"/>): where the audit goes, and what it records, is the administrator's
     /// alone. Which calls it records, the execution policy says (<see cref="SdkEnvironmentOptions.ExecutionPolicy"/>).
     /// </remarks>
-    [Setting(SettingReach.Deployment)]
+    [Setting(SettingReach.Platform)]
     public SdkAuditOptions Audit { get; set; } = new();
 }
 
@@ -348,14 +349,15 @@ public record class SdkEnvironmentOptions
     /// </summary>
     /// <remarks>
     /// <para>
-    /// Only the deployed configuration sets it (<see cref="SettingReach.Deployment"/>): neither a user's settings nor a workspace's do.
+    /// Only the platform's settings file sets it (<see cref="SettingReach.Platform"/>): neither a component's own configuration, a user's settings, a
+    /// workspace's, an environment variable nor the command line changes it.
     /// </para>
     /// <para>
     /// Where <see cref="AllowDllImports"/> or <see cref="AllowAutomation"/> is <c>false</c>, the rule of its category is at least
     /// <c>Block</c> (<see cref="Runtime.ExecutionPolicy.Allowing"/>).
     /// </para>
     /// </remarks>
-    [Setting(SettingReach.Deployment)]
+    [Setting(SettingReach.Platform)]
     public SdkExecutionPolicyOptions ExecutionPolicy { get; set; } = new();
 
     /// <summary>
