@@ -496,11 +496,9 @@ public sealed class RDCorePlatformJsonWireTests
             // an extension package is a zip file and its manifest a file in it; the class a designer's Begin line names is read from a module's header.
             typeof(ExtensionPackageManifest), typeof(ExtensionTarget), typeof(CarriedExtensions), typeof(PlatformVersionJsonConverter),
             typeof(RDCore.SDK.Workspace.Forms.FormControlClass),
-            // a program's invocation result is what an in-process host gets back from a program machine: no message carries it.
-            typeof(ProgramInvocationResult),
             // the arguments of the refactoring commands travel as the JSON of an LSP Command's arguments: RefactoringCommandArgumentsTests has them all.
             typeof(CommandLocation), typeof(RenameCommandArguments), typeof(ShowReferencesCommandArguments), typeof(GoToLocationCommandArguments),
-            // an invocation's result holds the procedure's value as JSON: ProgramInvocationWireTests has it.
+            // an invocation's result holds the procedure's value as JSON, and its message is ProgramInvocationReply: ProgramInvocationWireTests has it.
             typeof(ProgramInvocationResult),
         ];
         // the project file model is a workspace's .rdproj, which a client reads from disk: it is no message either.
