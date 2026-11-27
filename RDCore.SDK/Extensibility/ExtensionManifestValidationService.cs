@@ -67,7 +67,7 @@ public enum ExtensionValidationFlags
     /// them declares.
     /// </summary>
     /// <remarks>
-    /// The language server reads every extension's annotations from its manifest (<see cref="AnnotationCatalogue"/>), so a manifest whose own annotations
+    /// A catalogue takes an extension's annotations from its manifest (<see cref="AnnotationCatalogue"/>), so an extension whose manifest's annotations
     /// disagree is not started.
     /// </remarks>
     InvalidAnnotations = 1 << 6,

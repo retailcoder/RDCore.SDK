@@ -119,8 +119,8 @@ public record class ExtensionInfo
     /// <see cref="AnnotationDescriptions"/>; none for an extension that provides none.
     /// </summary>
     /// <remarks>
-    /// The language server knows them from the manifest without starting the extension (<see cref="AnnotationCatalogue"/>). A manifest whose
-    /// annotations are not valid is not started (<see cref="ExtensionValidationFlags.InvalidAnnotations"/>).
+    /// A catalogue takes them from the manifest, without starting the extension (<see cref="AnnotationSet"/>, <see cref="AnnotationCatalogue"/>). An
+    /// extension whose manifest's annotations are not valid is not started (<see cref="ExtensionValidationFlags.InvalidAnnotations"/>).
     /// </remarks>
     public AnnotationDeclaration[] Annotations { get; init; } = [];
 
@@ -132,7 +132,7 @@ public record class ExtensionInfo
     public Dictionary<string, Dictionary<string, string>> AnnotationDescriptions { get; init; } = [];
 
     /// <summary>
-    /// The annotations the extension provides, with their descriptions, as the language server's catalogue takes them
+    /// The annotations the extension provides, with their descriptions, as a catalogue takes them
     /// (<see cref="AnnotationCatalogue(IEnumerable{AnnotationSet})"/>).
     /// </summary>
     [System.Text.Json.Serialization.JsonIgnore]
@@ -140,7 +140,7 @@ public record class ExtensionInfo
 
     /// <summary>
     /// The manifest, with the annotations the extension's assembly says it provides (<see cref="ExtensionAnnotationsAttribute.Read"/>) and their
-    /// descriptions in each language of the platform.
+    /// descriptions in each language of the platform; a description the extension has none of in a language is the one its resources fall back on.
     /// </summary>
     /// <param name="assembly">The extension's assembly.</param>
     /// <returns>The manifest as it is, for an assembly that says nothing of any annotations.</returns>

@@ -16,8 +16,8 @@ namespace RDCore.SDK.Extensibility.Annotations;
 /// </para>
 /// <para>
 /// What this says is written into the extension's manifest when it is described (<see cref="IExtensionsProvider.Describe"/>,
-/// <see cref="ExtensionInfo.Annotations"/>), so that the language server knows every extension's annotations without starting any of them: an extension
-/// that is slow to start, or that has stopped, does not make its annotations unknown.
+/// <see cref="ExtensionInfo.Annotations"/>), so that a catalogue made from the manifests (<see cref="AnnotationCatalogue"/>) knows every extension's
+/// annotations without starting any of them: an extension that is slow to start, or that has stopped, does not make its annotations unknown.
 /// </para>
 /// </remarks>
 /// <param name="declarationsType">
