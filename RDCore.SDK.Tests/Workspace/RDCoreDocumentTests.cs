@@ -2,6 +2,7 @@ using RDCore.SDK.Model;
 using RDCore.SDK.Model.AST;
 using RDCore.SDK.Model.AST.Abstract;
 using RDCore.SDK.Model.AST.Declarations;
+using RDCore.SDK.Model.AST.Statements;
 using RDCore.SDK.Model.Errors;
 using RDCore.SDK.Model.Source;
 using RDCore.SDK.Workspace;
@@ -66,20 +67,20 @@ public sealed class RDCoreDocumentTests
     [TestMethod]
     public void EachModulesParse_HasTheFilesItemsThatStartOnItsLines_AndNoBoundaryOfABlock()
     {
-        // 0 own comment, and a #If the file's own text leaves open, to the end; 1 the header, and its comment; 2 a comment of the block; 3 a directive and an
-        // error of the block; 4 the end; 5 an error of the file's own module.
+        // 0 own comment, and a #If the file's own text leaves open, to the end; 1 blank; 2 the header, and its comment; 3 a comment of the block; 4 a
+        // directive and an error of the block; 5 the end; 6 an error of the file's own module.
         var logger = RDCoreDocument.BlockUri(File, "Logger");
-        var block = new BlockModule("Logger", ModuleType.ClassModule, logger, new SourceRange(1, 0, 4, 9), Module(logger, File, 2, 3));
+        var block = new BlockModule("Logger", ModuleType.ClassModule, logger, new SourceRange(2, 0, 5, 9), Module(logger, File, 3, 4));
         var ownComment = Comment(File, 0, 0);
-        var headerComment = Comment(File, 1, 14);
-        var blockComment = Comment(logger, 2, 4);
+        var headerComment = Comment(File, 2, 14);
+        var blockComment = Comment(logger, 3, 4);
         var openIf = Directive(File, new SourceRange(0, 20, 9, 0));
-        var blockDirective = Directive(logger, new SourceRange(3, 0, 3, 12));
-        var blockError = Error(3, 4);
-        var ownError = Error(5, 0);
+        var blockDirective = Directive(logger, new SourceRange(4, 0, 4, 12));
+        var blockError = Error(4, 4);
+        var ownError = Error(6, 0);
         var parse = ModuleParseResult.Success(Module(File, File, 0, 9)) with
         {
-            Trivia = [ownComment, Boundary(logger, 1, false), headerComment, blockComment, Boundary(logger, 4, true)],
+            Trivia = [ownComment, Boundary(logger, 2, false), headerComment, blockComment, Boundary(logger, 5, true)],
             PrecompilerTrivia = [openIf, blockDirective],
             SyntaxErrors = [blockError, ownError],
             LineEnding = "\n",
@@ -101,6 +102,83 @@ public sealed class RDCoreDocumentTests
         CollectionAssert.AreEqual(new[] { blockError }, ofTheBlock.SyntaxErrors.ToArray());
         Assert.AreEqual(("\n", 0), (ofTheBlock.LineEnding, ofTheBlock.BlockModules.Length));
     }
+
+    [TestMethod]
+    public void TheCommentLinesDirectlyAboveABlocksHeader_AreThatBlocksModules_AndEveryOtherCommentOutsideTheBlocksIsTheFilesOwn()
+    {
+        // 0 own comment; 1 blank; 2-3 comments above Logger's header; 4 Logger's header; 5 a comment of Logger; 6 Logger's end, and its comment;
+        // 7 a comment above Other's header; 8 Other's header; 9 Other's end; 10 own code, and its comment; 11 Third's header; 12 Third's end.
+        var logger = RDCoreDocument.BlockUri(File, "Logger");
+        var other = RDCoreDocument.BlockUri(File, "Other");
+        var third = RDCoreDocument.BlockUri(File, "Third");
+        var ownComment = Comment(File, 0, 0);
+        var aboveLogger = new[] { Comment(File, 2, 0), Comment(File, 3, 4) };
+        var loggerComment = Comment(logger, 5, 4);
+        var endComment = Comment(File, 6, 12);
+        var aboveOther = Comment(File, 7, 0);
+        var codeComment = Comment(File, 10, 12);
+        var ownCode = new VariableDeclarationNode(new SyntaxNodeId(File.AbsolutePath, [10]), new SourceLocation(File, new SourceRange(10, 0, 10, 10)), "x", []);
+        var parse = ModuleParseResult.Success(new ModuleNode(new SyntaxNodeId(File.AbsolutePath, [0]), new SourceLocation(File, new SourceRange(0, 0, 12, 0)),
+            [ownCode])) with
+        {
+            Trivia =
+            [
+                ownComment, .. aboveLogger, Boundary(logger, 4, false), loggerComment, Boundary(logger, 6, true), endComment, aboveOther,
+                Boundary(other, 8, false), Boundary(other, 9, true), codeComment, Boundary(third, 11, false), Boundary(third, 12, true),
+            ],
+            BlockModules =
+            [
+                new BlockModule("Logger", ModuleType.ClassModule, logger, new SourceRange(4, 0, 6, 9), Module(logger, File, 5, 5)),
+                new BlockModule("Other", ModuleType.StdModule, other, new SourceRange(8, 0, 9, 9), Module(other, File, 9, 9)),
+                new BlockModule("Third", ModuleType.StdModule, third, new SourceRange(11, 0, 12, 9), Module(third, File, 12, 12)),
+            ],
+        };
+        var document = new RDCoreDocument(File, parse);
+
+        CollectionAssert.AreEqual(new SyntaxNode[] { ownComment, endComment, codeComment }, document.ParseOf(File)!.Trivia.ToArray(),
+            "a blank line, an end line and code each end the comment lines above a header");
+        CollectionAssert.AreEqual(new SyntaxNode[] { aboveLogger[0], aboveLogger[1], loggerComment }, document.ParseOf(logger)!.Trivia.ToArray());
+        CollectionAssert.AreEqual(new SyntaxNode[] { aboveOther }, document.ParseOf(other)!.Trivia.ToArray());
+        Assert.IsEmpty(document.ParseOf(third)!.Trivia);
+    }
+
+    [TestMethod]
+    public void AScriptWithNoCode_WritesNoLine_SoACommentOnTheFirstLineAboveAHeaderIsTheBlocks()
+    {
+        // 0 a comment above Shape's header; 1 Shape's header; 2 Shape's end. The script has no code: its procedure is of no width, where the file starts.
+        var shape = RDCoreDocument.BlockUri(File, "Shape");
+        var aboveShape = Comment(File, 0, 0);
+        var script = new MemberDeclarationNode(new SyntaxNodeId(File.AbsolutePath, [1]), new SourceLocation(File, new SourceRange(0, 0, 0, 0)), [],
+            ProgramEntryPoint.ScriptName, MemberKind.Procedure, AccessModifier.Public);
+        var document = new RDCoreDocument(File, Script([script], [aboveShape, Boundary(shape, 1, false), Boundary(shape, 2, true)],
+            new BlockModule("Shape", ModuleType.ClassModule, shape, new SourceRange(1, 0, 2, 9), Module(shape, File, 2, 2))));
+
+        CollectionAssert.AreEqual(new SyntaxNode[] { aboveShape }, document.ParseOf(shape)!.Trivia.ToArray());
+        Assert.IsEmpty(document.ParseOf(File)!.Trivia);
+    }
+
+    [TestMethod]
+    public void AScriptsCode_IsOnItsStatementsLines_SoACommentBetweenThemAboveAHeaderIsTheBlocks()
+    {
+        // 0 the script's code; 1 a comment above Shape's header; 2 Shape's header; 3 Shape's end; 4 the script's code. The script's procedure runs from
+        // its first statement to its last, across the block.
+        var shape = RDCoreDocument.BlockUri(File, "Shape");
+        var aboveShape = Comment(File, 1, 0);
+        DebugPrintStatementNode Statement(int line) => new(new SyntaxNodeId(File.AbsolutePath, [1, line]), new SourceLocation(File, new SourceRange(line, 0,
+            line, 11)), []);
+        var script = new MemberDeclarationNode(new SyntaxNodeId(File.AbsolutePath, [1]), new SourceLocation(File, new SourceRange(0, 0, 4, 11)),
+            [Statement(0), Statement(4)], ProgramEntryPoint.ScriptName, MemberKind.Procedure, AccessModifier.Public);
+        var document = new RDCoreDocument(File, Script([script], [aboveShape, Boundary(shape, 2, false), Boundary(shape, 3, true)],
+            new BlockModule("Shape", ModuleType.ClassModule, shape, new SourceRange(2, 0, 3, 9), Module(shape, File, 3, 3))));
+
+        CollectionAssert.AreEqual(new SyntaxNode[] { aboveShape }, document.ParseOf(shape)!.Trivia.ToArray());
+        Assert.IsEmpty(document.ParseOf(File)!.Trivia);
+    }
+
+    // a script file's parse: the file's own tree, its trivia, and its blocks.
+    private static ModuleParseResult Script(SyntaxNode[] children, SyntaxNode[] trivia, params BlockModule[] blocks)
+        => ModuleParseResult.Success(new ModuleNode(new SyntaxNodeId(File.AbsolutePath, [0]), new SourceLocation(File, new SourceRange(0, 0, 5, 0)),
+            [.. children])) with { Trivia = [.. trivia], BlockModules = [.. blocks] };
 
     [TestMethod]
     public void AnAddressThatIsNoModuleOfTheFile_HasNoParse_AndAFileWithoutBlocksIsItsOwnModulesParse()

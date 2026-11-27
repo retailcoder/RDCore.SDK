@@ -122,11 +122,15 @@ public static class ExpressionWriter
 
     /// <summary>
     /// The literal that writes a value the one way the writer has (<strong>MS-VBAL §3.3</strong>): with the type-declaration character that keeps its
-    /// type, so that it reads back as the value it is.
+    /// type, so that it reads back as the value it is. A string is written between double quotes, each double quote it holds written twice:
+    /// <c>"say ""hi"""</c>.
     /// </summary>
     /// <param name="value">The value.</param>
-    /// <returns>The literal, or <see langword="null"/> when no literal writes the value.</returns>
-    internal static string? LiteralOf(VBTypedValue value) => value switch
+    /// <returns>
+    /// The literal, or <see langword="null"/> when no literal writes the value: a <c>Byte</c>, a <c>Decimal</c>, an object other than <c>Nothing</c>, or a
+    /// string that holds a line break, which a string literal cannot hold (<strong>MS-VBAL §3.3.4</strong>).
+    /// </returns>
+    public static string? LiteralOf(VBTypedValue value) => value switch
     {
         VBBooleanValue boolean => boolean.Value.Equals(VBBooleanValue.True.Value) ? Tokens.True : Tokens.False,
         VBIntegerValue integer => integer.Value.ToString(CultureInfo.InvariantCulture),
@@ -135,13 +139,25 @@ public static class ExpressionWriter
         VBSingleValue single => single.Value.ToString("R", CultureInfo.InvariantCulture) + "!",
         VBDoubleValue @double => @double.Value.ToString("R", CultureInfo.InvariantCulture) + "#",
         VBCurrencyValue currency => currency.Value.Value.ToString(CultureInfo.InvariantCulture) + "@",
-        VBStringValue text when !text.Value.Contains('\r') && !text.Value.Contains('\n') => $"\"{text.Value.Replace("\"", "\"\"")}\"",
+        VBStringValue text when !text.Value.Contains('\r') && !text.Value.Contains('\n') => Quoted(text.Value),
         VBDateValue date => $"#{DateOf(date.Value)}#",
         VBEmptyValue => Tokens.Empty,
         VBNullValue => Tokens.Null,
         VBObjectValue @object when @object.IsNothing() => Tokens.Nothing,
         _ => null,
     };
+
+    /// <summary>
+    /// Text between double quotes, each double quote it holds written twice, and each line break it holds kept as it is: <c>"say ""hi"""</c>.
+    /// </summary>
+    /// <remarks>
+    /// Where <see cref="LiteralOf"/> gives <see langword="null"/> for a string that holds a line break, which no string literal holds
+    /// (<strong>MS-VBAL §3.3.4</strong>), this method quotes every text. Its result is for text that is not read back as a VBA literal: a value shown to the
+    /// user, or a constant of a library that its reader takes from between the quotes.
+    /// </remarks>
+    /// <param name="text">The text.</param>
+    /// <returns>The quoted text.</returns>
+    public static string Quoted(string text) => $"\"{text.Replace("\"", "\"\"")}\"";
 
     // a date literal of the date alone, of the time alone (on the date of a time, 30 December 1899), or of both.
     private static string DateOf(DateTime value)

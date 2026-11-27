@@ -7,6 +7,7 @@ using RDCore.SDK.Model.AST.Expressions;
 using RDCore.SDK.Model.Source;
 using RDCore.SDK.Model.Values.Abstract;
 using RDCore.SDK.Model.Values.Intrinsic;
+using RDCore.SDK.Workspace;
 
 namespace RDCore.Tests.Model.AST;
 
@@ -252,5 +253,66 @@ public sealed class DocStringsTests
         Assert.AreEqual("Gets the value.", aboveEach.GetMemberDescription("Value"));
         Assert.AreEqual("Sets the value.", inTheSecond.GetMemberDescription("Value"));
         Assert.AreEqual("Gets the value.", inEach.GetMemberDescription("Value"));
+    }
+
+    [TestMethod]
+    public void InAFileOfSeveralBlocks_ADescriptionAnnotationAboveABlocksHeader_DescribesThatBlocksModule_TheFirstWrittenCounting()
+    {
+        // 0-1 above Logger; 2 Logger's header; 3 Logger's end. 4 above Counter; 5 Counter's header; 6 above Count; 7-8 Count; 9 Counter's end. 10 Third's
+        // header; 11 a description of nothing; 12 Third's own description; 13 Third's end.
+        var file = new Uri("file:///c:/ws/Backup.vbs");
+        BlockModule Block(string name, int header, int end, params SyntaxNode[] children)
+            => new(name, ModuleType.StdModule, RDCoreDocument.BlockUri(file, name), new SourceRange(header, 0, end, 10),
+                new ModuleNode(Id(), Lines(header + 1, end), [.. children]));
+        BlockBoundaryTriviaNode Boundary(int line, bool isEnd) => new(Id(), Lines(line, line), FileBlockKind.Module, isEnd, "Module");
+
+        var blocks = new[] { Block("Logger", 2, 3), Block("Counter", 5, 9, Procedure("Count", 7, 8)), Block("Third", 10, 13) };
+        var parse = new ModuleParseResult
+        {
+            SyntaxTree = new ModuleNode(Id(), Lines(0, 13), []),
+            Trivia =
+            [
+                .. Annotated(0, DocStrings.MemberDescriptionAnnotation, "Logs."), .. Annotated(1, DocStrings.MemberDescriptionAnnotation, "Logs again."),
+                Boundary(2, false), Boundary(3, true),
+                .. Annotated(4, DocStrings.ModuleDescriptionAnnotation, "Counts."), Boundary(5, false),
+                .. Annotated(6, DocStrings.MemberDescriptionAnnotation, "Counts once."), Boundary(9, true),
+                Boundary(10, false), .. Annotated(11, DocStrings.MemberDescriptionAnnotation, "Of nothing."),
+                .. Annotated(12, DocStrings.ModuleDescriptionAnnotation, "The third."), Boundary(13, true),
+            ],
+            BlockModules = [.. blocks],
+        };
+        var document = new RDCoreDocument(file, parse);
+
+        Assert.IsNull(document.ParseOf(file)!.GetModuleDescription());
+        Assert.AreEqual("Logs.", document.ParseOf(blocks[0].Uri)!.GetModuleDescription());
+        var counter = document.ParseOf(blocks[1].Uri)!;
+        Assert.AreEqual("Counts.", counter.GetModuleDescription());
+        Assert.AreEqual("Counts once.", counter.GetMemberDescription("Count"));
+        Assert.AreEqual("The third.", document.ParseOf(blocks[2].Uri)!.GetModuleDescription(), "inside a block, a '@Description is a member's");
+    }
+
+    [TestMethod]
+    public void InAScriptWithNoCode_ADescriptionAnnotationOnTheFirstLineAboveABlocksHeader_DescribesThatBlocksModule()
+    {
+        // 0 above Shape; 1 Shape's header; 2 Shape's end. The script has no code: its procedure is of no width, where the file starts.
+        var file = new Uri("file:///c:/ws/Backup.vbs");
+        var shape = new BlockModule("Shape", ModuleType.ClassModule, RDCoreDocument.BlockUri(file, "Shape"), new SourceRange(1, 0, 2, 9),
+            new ModuleNode(Id(), Lines(2, 2), []));
+        var script = new MemberDeclarationNode(Id(), Lines(0, 0, endCharacter: 0), [], ProgramEntryPoint.ScriptName, MemberKind.Procedure);
+        var parse = new ModuleParseResult
+        {
+            SyntaxTree = new ModuleNode(Id(), Lines(0, 2), [script]),
+            Trivia =
+            [
+                .. Annotated(0, DocStrings.MemberDescriptionAnnotation, "A shape."),
+                new BlockBoundaryTriviaNode(Id(), Lines(1, 1), FileBlockKind.Class, false, "Class Shape"),
+                new BlockBoundaryTriviaNode(Id(), Lines(2, 2), FileBlockKind.Class, true, "End Class"),
+            ],
+            BlockModules = [shape],
+        };
+        var document = new RDCoreDocument(file, parse);
+
+        Assert.AreEqual("A shape.", document.ParseOf(shape.Uri)!.GetModuleDescription());
+        Assert.IsNull(document.ParseOf(file)!.GetModuleDescription());
     }
 }
