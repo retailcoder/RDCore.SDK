@@ -2,10 +2,13 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NSubstitute;
 using RDCore.SDK.Extensibility;
+using RDCore.SDK.Extensibility.Annotations;
 using RDCore.SDK.Platform;
 using RDCore.SDK.Server.Configuration;
+using System.Globalization;
 using System.IO.Abstractions;
 using System.Security.Cryptography;
+using System.Text.Json;
 
 namespace RDCore.Tests.Extensibility;
 
@@ -69,5 +72,58 @@ public sealed class ExtensionsClientDescribeTests
         Assert.AreEqual(Title, info.Title);
         Assert.AreEqual(Convert.ToBase64String(SHA512.HashData(apphost)), info.FileHash);
         Assert.AreEqual(typeof(ExtensionsClientDescribeTests).Assembly.GetName().Version, info.Version);
+    }
+
+    // this test assembly, the extension's here, references the SDK it runs with: its manifest says an SDK the platform can start it with.
+    [TestMethod]
+    public void AnExtensionsSdkVersion_IsTheSdkItsAssemblyReferences()
+    {
+        File.WriteAllBytes(Path.Combine(_folder, $"{Title}.exe"), [1, 2, 3]);
+        var referenced = typeof(ExtensionInfo).Assembly.GetName().Version!;
+
+        var info = CreateSut().Describe($"{Title}.exe", "described");
+
+        Assert.IsNotNull(info?.SdkVersion);
+        Assert.AreEqual(new Version(referenced.Major, referenced.Minor, referenced.Build), info.SdkVersion.Core);
+        var platform = ExtensionManifestValidationService.SdkVersion;
+        Assert.IsTrue(info.SdkVersion.IsCompatibleWith(platform), $"{info.SdkVersion.Text} works with {platform.Text}");
+    }
+
+    // this test assembly declares one annotation, Fixture(Label), described in English, and in French without its parameter (AnnotationFixtures).
+    // The language server reads them back from the manifest file without starting the extension.
+    [TestMethod]
+    public void AnExtensionsAnnotations_AreWrittenIntoItsManifest_DescribedInEachLanguage()
+    {
+        File.WriteAllBytes(Path.Combine(_folder, $"{Title}.exe"), [1, 2, 3]);
+
+        var described = CreateSut().Describe($"{Title}.exe", "described");
+        Assert.IsNotNull(described);
+        var info = JsonSerializer.Deserialize<ExtensionInfo>(JsonSerializer.Serialize(described))!;
+
+        var fixture = Assert.ContainsSingle(info.Annotations);
+        Assert.AreEqual("Fixture", fixture.Name);
+        Assert.AreEqual(AnnotationTargets.Member, fixture.Targets);
+        Assert.AreEqual("Label", Assert.ContainsSingle(fixture.Parameters).Name);
+        Assert.AreEqual("Marks a fixture.", info.AnnotationDescriptions["en"]["Fixture"]);
+        Assert.AreEqual("The fixture's label.", info.AnnotationDescriptions["en"]["Fixture_Label"]);
+        Assert.AreEqual("Marque un montage.", info.AnnotationDescriptions["fr"]["Fixture"]);
+        Assert.AreEqual("Marque un montage.", new AnnotationCatalogue([info.AnnotationSet]).DescriptionOf(fixture, CultureInfo.GetCultureInfo("fr-CA")));
+    }
+
+    // the manifest describe writes is the one an extension package carries: installing reads its runtime identifier from it.
+    [TestMethod]
+    [DataRow("linux-arm64", DisplayName = "published for a runtime")]
+    [DataRow(null, DisplayName = "published for none")]
+    public void ADescribedExtensionsRuntimeIdentifier_IsTheOneItsPackageIsInstalledBy(string? runtimeIdentifier)
+    {
+        File.WriteAllBytes(Path.Combine(_folder, $"{Title}.exe"), [1, 2, 3]);
+
+        var info = CreateSut().Describe($"{Title}.exe", "described", runtimeIdentifier);
+
+        Assert.IsNotNull(info);
+        Assert.AreEqual(runtimeIdentifier, info.RuntimeIdentifier);
+        var packaged = ExtensionPackageManifest.Parse(JsonSerializer.SerializeToUtf8Bytes(info));
+        Assert.AreEqual(runtimeIdentifier, packaged.RuntimeIdentifier);
+        Assert.AreEqual(Title, packaged.Title);
     }
 }

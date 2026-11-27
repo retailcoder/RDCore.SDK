@@ -1,4 +1,6 @@
 ﻿using RDCore.SDK.Client;
+using RDCore.SDK.Extensibility.Annotations;
+using RDCore.SDK.Platform;
 
 namespace RDCore.SDK.Extensibility;
 
@@ -78,9 +80,28 @@ public record class ExtensionInfo
     public bool IsCoreExtension { get; init; }
 
     /// <summary>
-    /// The version of <c>RDCore.SDK</c> the extension was built against, as its assembly references it; <c>null</c> when the manifest does not say.
+    /// The version of <c>RDCore.SDK</c> the extension was built against, as its assembly references it; <c>null</c> when the manifest does not
+    /// say, or names something that is not a version.
     /// </summary>
-    public Version? SdkVersion { get; init; }
+    /// <remarks>
+    /// The manifest writes it as a <see cref="PlatformVersion"/>, such as <c>0.2.1</c>: an assembly reference holds the major, minor and patch
+    /// numbers, and no prerelease. <see cref="PlatformVersion.IsCompatibleWith"/> reads only the major and minor numbers. A manifest that writes a
+    /// four-part version, such as <c>0.2.1.0</c>, is read by its first three numbers (<see cref="PlatformVersionJsonConverter"/>). An extension
+    /// with no <c>SdkVersion</c> compatible with <see cref="ExtensionManifestValidationService.SdkVersion"/> is not started
+    /// (<see cref="ExtensionValidationFlags.IncompatibleSdk"/>).
+    /// </remarks>
+    [System.Text.Json.Serialization.JsonConverter(typeof(PlatformVersionJsonConverter))]
+    public PlatformVersion? SdkVersion { get; init; }
+
+    /// <summary>
+    /// The runtime identifier the extension was published for, such as <c>win-x64</c>, in the form
+    /// <see cref="PlatformManifest.RuntimeIdentifier"/> takes; <c>null</c> when the manifest does not say.
+    /// </summary>
+    /// <remarks>
+    /// An extension package is installed only into a platform of its runtime identifier, or into one whose manifest names none
+    /// (<see cref="ExtensionPackage.Install"/>): a package whose manifest names none is installed only there.
+    /// </remarks>
+    public string? RuntimeIdentifier { get; init; }
 
     /// <summary>
     /// The settings the extension is configured with (<see cref="ExtensionSettingsAttribute"/>), without their descriptions, which are in
@@ -93,6 +114,46 @@ public record class ExtensionInfo
     /// (<see cref="Server.Configuration.SettingsSchema.Languages"/>).
     /// </summary>
     public Dictionary<string, Dictionary<string, string>> SettingDescriptions { get; init; } = [];
+
+    /// <summary>
+    /// The annotations the extension provides (<see cref="ExtensionAnnotationsAttribute"/>), without their descriptions, which are in
+    /// <see cref="AnnotationDescriptions"/>; none for an extension that provides none.
+    /// </summary>
+    /// <remarks>
+    /// A catalogue takes them from the manifest, without starting the extension (<see cref="AnnotationSet"/>, <see cref="AnnotationCatalogue"/>). An
+    /// extension whose manifest's annotations are not valid is not started (<see cref="ExtensionValidationFlags.InvalidAnnotations"/>).
+    /// </remarks>
+    public AnnotationDeclaration[] Annotations { get; init; } = [];
+
+    /// <summary>
+    /// The description of each annotation of <see cref="Annotations"/> and of each of its parameters, by its key
+    /// (<see cref="AnnotationSet.KeyOf(AnnotationDeclaration)"/>, <see cref="AnnotationSet.KeyOf(AnnotationDeclaration, AnnotationParameter)"/>), in each
+    /// language of the platform, by its two-letter name (<see cref="Server.Configuration.SettingsSchema.Languages"/>).
+    /// </summary>
+    public Dictionary<string, Dictionary<string, string>> AnnotationDescriptions { get; init; } = [];
+
+    /// <summary>
+    /// The annotations the extension provides, with their descriptions, as a catalogue takes them
+    /// (<see cref="AnnotationCatalogue(IEnumerable{AnnotationSet})"/>).
+    /// </summary>
+    [System.Text.Json.Serialization.JsonIgnore]
+    public AnnotationSet AnnotationSet => new() { Declarations = Annotations, Descriptions = AnnotationDescriptions };
+
+    /// <summary>
+    /// The manifest, with the annotations the extension's assembly says it provides (<see cref="ExtensionAnnotationsAttribute.Read"/>) and their
+    /// descriptions in each language of the platform; a description the extension has none of in a language is the one its resources fall back on.
+    /// </summary>
+    /// <param name="assembly">The extension's assembly.</param>
+    /// <returns>The manifest as it is, for an assembly that says nothing of any annotations.</returns>
+    /// <exception cref="InvalidOperationException">
+    /// The assembly's <see cref="ExtensionAnnotationsAttribute"/> names a type that does not implement <see cref="IAnnotationDeclarations"/>, or that has no
+    /// parameterless constructor.
+    /// </exception>
+    /// <exception cref="System.Resources.MissingManifestResourceException">The assembly has no resources of the name the attribute gives.</exception>
+    public ExtensionInfo WithAnnotationsOf(System.Reflection.Assembly assembly)
+        => ExtensionAnnotationsAttribute.Read(assembly) is { } provided
+            ? this with { Annotations = provided.Declarations, AnnotationDescriptions = provided.Descriptions }
+            : this;
 
     /// <summary>
     /// The manifest, with the settings the extension's assembly says it is configured with (<see cref="ExtensionSettingsAttribute"/>) and their descriptions in

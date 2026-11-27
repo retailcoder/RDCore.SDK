@@ -232,4 +232,82 @@
   <data name="InlayHints_ImplicitTypes" xml:space="preserve">
     <value>Si une variable ou un paramètre déclaré sans type affiche celui qu'il a, après son nom : Dim First [As Variant].</value>
   </data>
+  <data name="Environment_ExecutionPolicy_LibraryImports_Mode" xml:space="preserve">
+    <value>Ce que la politique d'exécution fait d'un appel à une procédure qu'une instruction Declare importe d'une bibliothèque native : Allow le fait, Block lève l'erreur d'exécution 70, qu'un gestionnaire peut intercepter, et Halt arrête le programme. Allow par défaut. Seul le fichier de paramètres de la plateforme le définit.</value>
+  </data>
+  <data name="Environment_ExecutionPolicy_LibraryImports_Audit" xml:space="preserve">
+    <value>Si le journal d'audit enregistre un appel à une procédure qu'une instruction Declare importe d'une bibliothèque native : None, Refused (quand le mode le refuse) ou All. None par défaut. Seul le fichier de paramètres de la plateforme le définit.</value>
+  </data>
+  <data name="Environment_ExecutionPolicy_Automation_Mode" xml:space="preserve">
+    <value>Ce que la politique d'exécution fait d'un appel qui crée ou utilise un objet d'un serveur d'automatisation (New d'une bibliothèque COM référencée, CreateObject, GetObject), dont ceux d'une application hôte : Allow le fait, Block lève l'erreur d'exécution 70, qu'un gestionnaire peut intercepter, et Halt arrête le programme. Allow par défaut. Seul le fichier de paramètres de la plateforme le définit.</value>
+  </data>
+  <data name="Environment_ExecutionPolicy_Automation_Audit" xml:space="preserve">
+    <value>Si le journal d'audit enregistre un appel qui crée ou utilise un objet d'un serveur d'automatisation (New d'une bibliothèque COM référencée, CreateObject, GetObject), dont ceux d'une application hôte : None, Refused (quand le mode le refuse) ou All. None par défaut. Seul le fichier de paramètres de la plateforme le définit.</value>
+  </data>
+  <data name="Environment_ExecutionPolicy_ProcessLaunch_Mode" xml:space="preserve">
+    <value>Ce que la politique d'exécution fait d'un appel qui lance un programme (Shell) : Allow le fait, Block lève l'erreur d'exécution 70, qu'un gestionnaire peut intercepter, et Halt arrête le programme. Allow par défaut. Seul le fichier de paramètres de la plateforme le définit.</value>
+  </data>
+  <data name="Environment_ExecutionPolicy_ProcessLaunch_Audit" xml:space="preserve">
+    <value>Si le journal d'audit enregistre un appel qui lance un programme (Shell) : None, Refused (quand le mode le refuse) ou All. None par défaut. Seul le fichier de paramètres de la plateforme le définit.</value>
+  </data>
+  <data name="Environment_ExecutionPolicy_Keystrokes_Mode" xml:space="preserve">
+    <value>Ce que la politique d'exécution fait d'un appel qui envoie des touches à une autre fenêtre (SendKeys, AppActivate) : Allow le fait, Block lève l'erreur d'exécution 70, qu'un gestionnaire peut intercepter, et Halt arrête le programme. Allow par défaut. Seul le fichier de paramètres de la plateforme le définit.</value>
+  </data>
+  <data name="Environment_ExecutionPolicy_Keystrokes_Audit" xml:space="preserve">
+    <value>Si le journal d'audit enregistre un appel qui envoie des touches à une autre fenêtre (SendKeys, AppActivate) : None, Refused (quand le mode le refuse) ou All. None par défaut. Seul le fichier de paramètres de la plateforme le définit.</value>
+  </data>
+  <data name="Environment_ExecutionPolicy_FileSystemWrite_Mode" xml:space="preserve">
+    <value>Ce que la politique d'exécution fait d'un appel qui écrit, déplace ou supprime un fichier ou un dossier : Allow le fait, Block lève l'erreur d'exécution 70, qu'un gestionnaire peut intercepter, et Halt arrête le programme. Allow par défaut. Seul le fichier de paramètres de la plateforme le définit.</value>
+  </data>
+  <data name="Environment_ExecutionPolicy_FileSystemWrite_Audit" xml:space="preserve">
+    <value>Si le journal d'audit enregistre un appel qui écrit, déplace ou supprime un fichier ou un dossier : None, Refused (quand le mode le refuse) ou All. None par défaut. Seul le fichier de paramètres de la plateforme le définit.</value>
+  </data>
+  <data name="Environment_ExecutionPolicy_FileSystemRead_Mode" xml:space="preserve">
+    <value>Ce que la politique d'exécution fait d'un appel qui lit un fichier ou liste un dossier : Allow le fait, Block lève l'erreur d'exécution 70, qu'un gestionnaire peut intercepter, et Halt arrête le programme. Allow par défaut. Seul le fichier de paramètres de la plateforme le définit.</value>
+  </data>
+  <data name="Environment_ExecutionPolicy_FileSystemRead_Audit" xml:space="preserve">
+    <value>Si le journal d'audit enregistre un appel qui lit un fichier ou liste un dossier : None, Refused (quand le mode le refuse) ou All. None par défaut. Seul le fichier de paramètres de la plateforme le définit.</value>
+  </data>
+  <data name="Environment_ExecutionPolicy_Registry_Mode" xml:space="preserve">
+    <value>Ce que la politique d'exécution fait d'un appel au Registre Windows : Allow le fait, Block lève l'erreur d'exécution 70, qu'un gestionnaire peut intercepter, et Halt arrête le programme. Allow par défaut. Seul le fichier de paramètres de la plateforme le définit.</value>
+  </data>
+  <data name="Environment_ExecutionPolicy_Registry_Audit" xml:space="preserve">
+    <value>Si le journal d'audit enregistre un appel au Registre Windows : None, Refused (quand le mode le refuse) ou All. None par défaut. Seul le fichier de paramètres de la plateforme le définit.</value>
+  </data>
+  <data name="Environment_ExecutionPolicy_Environment_Mode" xml:space="preserve">
+    <value>Ce que la politique d'exécution fait d'un appel aux variables d'environnement du processus (Environ) : Allow le fait, Block lève l'erreur d'exécution 70, qu'un gestionnaire peut intercepter, et Halt arrête le programme. Allow par défaut. Seul le fichier de paramètres de la plateforme le définit.</value>
+  </data>
+  <data name="Environment_ExecutionPolicy_Environment_Audit" xml:space="preserve">
+    <value>Si le journal d'audit enregistre un appel aux variables d'environnement du processus (Environ) : None, Refused (quand le mode le refuse) ou All. None par défaut. Seul le fichier de paramètres de la plateforme le définit.</value>
+  </data>
+  <data name="Environment_ExecutionPolicy_FileIO_Mode" xml:space="preserve">
+    <value>Si un programme a un système de fichiers pour les instructions et fonctions de fichier du langage lui-même (Open, Print #, Kill, Dir) : Allow par défaut. Block ou Halt n'en donne aucun à la session, et une instruction qui en a besoin est refusée comme le mode le dit. Seul le fichier de paramètres de la plateforme le définit.</value>
+  </data>
+  <data name="Environment_ExecutionPolicy_FileIO_Audit" xml:space="preserve">
+    <value>Les utilisations des instructions et fonctions de fichier du langage lui-même que le journal d'audit enregistre : None, Refused ou All. None par défaut. Seul le fichier de paramètres de la plateforme le définit.</value>
+  </data>
+  <data name="Audit_Capacity" xml:space="preserve">
+    <value>Les entrées que le journal d'audit garde en attendant qu'elles soient écrites : 4096 par défaut. Une entrée enregistrée quand il est plein est abandonnée, comptée, et signalée dans une entrée à part. Seul le fichier de paramètres de la plateforme le définit.</value>
+  </data>
+  <data name="Audit_ShutdownTimeoutSeconds" xml:space="preserve">
+    <value>Combien de temps, en secondes, le journal d'audit continue d'écrire les entrées qu'il garde quand le processus se termine : 5 par défaut. Seul le fichier de paramètres de la plateforme le définit.</value>
+  </data>
+  <data name="Audit_Arguments" xml:space="preserve">
+    <value>Ce qu'une entrée dit des arguments d'un appel : None, Types (leur nombre et leurs types déclarés, par défaut) ou Values. Une valeur peut être un mot de passe. Seul le fichier de paramètres de la plateforme le définit.</value>
+  </data>
+  <data name="Audit_File_Enabled" xml:space="preserve">
+    <value>Si les entrées sont écrites dans un fichier, une ligne JSON chacune, dans un fichier pour chaque processus et chaque jour : activé par défaut. Seul le fichier de paramètres de la plateforme le définit.</value>
+  </data>
+  <data name="Audit_File_Directory" xml:space="preserve">
+    <value>Le dossier des fichiers d'audit : vide par défaut, pour Logs/Audits sous la racine de la plateforme. Un dossier relatif est sous la racine de la plateforme. Seul le fichier de paramètres de la plateforme le définit.</value>
+  </data>
+  <data name="Audit_EventLog_Enabled" xml:space="preserve">
+    <value>Si les entrées sont écrites dans le journal des événements Windows, sous Windows : désactivé par défaut. Seul le fichier de paramètres de la plateforme le définit.</value>
+  </data>
+  <data name="Audit_EventLog_LogName" xml:space="preserve">
+    <value>Le journal des événements Windows où les entrées sont écrites : Application par défaut. Seul le fichier de paramètres de la plateforme le définit.</value>
+  </data>
+  <data name="Audit_EventLog_Source" xml:space="preserve">
+    <value>La source sous laquelle les entrées sont écrites dans le journal des événements Windows : RDCore par défaut. Seul le fichier de paramètres de la plateforme le définit.</value>
+  </data>
 </root>

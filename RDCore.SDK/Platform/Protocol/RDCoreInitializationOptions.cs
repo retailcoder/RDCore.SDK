@@ -38,7 +38,7 @@ public sealed record class RDCoreInitializationOptions
 
     /// <summary>
     /// Whether the client answers what the server asks its user (<strong>LSP 3.17</strong> <c>window/showMessageRequest</c>) before <c>initialize</c> is
-    /// answered, with a choice or with none, and never with an error.
+    /// answered, with a choice or with none.
     /// </summary>
     /// <remarks>
     /// <para>
@@ -47,10 +47,10 @@ public sealed record class RDCoreInitializationOptions
     /// <c>initialize</c> unanswered for good, and the client waits for that answer: neither side moves again.
     /// </para>
     /// <para>
-    /// A client built on OmniSharp's language client (0.19.9) is such a client, unless it answers with a choice. Until it is initialized, OmniSharp's language
-    /// client writes no message except the <c>initialize</c> request, the <c>initialized</c> notification and a response with a result, and holds every other
-    /// one until it is. Error responses are held as well, including the one it answers with when its handler fails, when its user cannot be asked, or when it has
-    /// no handler for the request at all.
+    /// A client built on OmniSharp's language client (0.19.9) is such a client when it answers with an error: when its handler fails, when its user cannot be
+    /// asked, or when it has no handler for the request at all. Until it is initialized, OmniSharp's language client writes no message except the
+    /// <c>initialize</c> request, the <c>initialized</c> notification and a response with a result: it holds an error response for good. A client built on
+    /// <see cref="Client.RDCoreClientApp"/> writes its error responses as well (<see cref="Client.ClientAnswers.WithErrorAnswersDuringInitialize"/>).
     /// </para>
     /// <para>
     /// A server asks nothing before <c>initialize</c> is answered of a client that does not say <see langword="true"/>, nor of one that runs

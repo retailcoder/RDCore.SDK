@@ -552,7 +552,26 @@ public static class CompletionCandidates
     /// <param name="moduleUri">The module's own URI.</param>
     /// <param name="position">The position, in the module's source.</param>
     /// <returns>The URI of the symbol the lookup originates from.</returns>
-    public static Uri OriginAt(ScopeTree tree, Uri moduleUri, SourcePosition position)
+    /// <remarks>
+    /// Every procedure of the module is looked at, whatever document it is written in. For a module written in several documents, whose procedures can be on
+    /// the same lines of different documents, use <see cref="OriginAt(ScopeTree, Uri, SourcePosition, Uri)"/>, with the document the position is in.
+    /// </remarks>
+    public static Uri OriginAt(ScopeTree tree, Uri moduleUri, SourcePosition position) => OriginAt(tree, moduleUri, position, document: null);
+
+    /// <summary>
+    /// Where a name written at <paramref name="position"/> of <paramref name="document"/> is looked up from, in a module that may be written in several
+    /// documents (<strong>RD-VBAL §5.1</strong>): the procedure of that document the position is in, or the module itself when it is in none.
+    /// </summary>
+    /// <param name="tree">The scope tree of the composed workspace.</param>
+    /// <param name="moduleUri">The module's own URI.</param>
+    /// <param name="position">The position, in the source of <paramref name="document"/>.</param>
+    /// <param name="document">
+    /// The document the position is in, as the <see cref="SourceLocation.Uri"/> of its nodes names it: only the procedures written there
+    /// (<see cref="WorkspaceSymbol.DocumentUri"/>) and those read from no document are looked at. <see langword="null"/> looks at every procedure of the
+    /// module.
+    /// </param>
+    /// <returns>The URI of the symbol the lookup originates from.</returns>
+    public static Uri OriginAt(ScopeTree tree, Uri moduleUri, SourcePosition position, Uri? document)
     {
         if (!tree.TryGetScope(moduleUri, out var module) || module.Kind != LexicalScopeKind.Module)
         {
@@ -566,6 +585,12 @@ public static class CompletionCandidates
         foreach (var declaration in module.Declarations.OfType<WorkspaceSymbol>())
         {
             if (!tree.TryGetScope(declaration.Uri, out var scope) || scope.Kind != LexicalScopeKind.Procedure || scope.Uri.AbsoluteUri != declaration.Uri.AbsoluteUri)
+            {
+                continue;
+            }
+
+            // a procedure of another document of the module: its lines are that document's, not the position's.
+            if (document is not null && declaration.DocumentUri is { } written && written.AbsoluteUri != document.AbsoluteUri)
             {
                 continue;
             }
@@ -592,7 +617,7 @@ public static class CompletionCandidates
     /// (<see cref="VBClassModuleSymbol.BaseClass"/>). The keywords are not names; which of them can be written where is <see cref="CompletionRules"/>' to say.
     /// </summary>
     /// <param name="tree">The scope tree of the composed workspace.</param>
-    /// <param name="origin">Where the lookup originates (<see cref="OriginAt"/>).</param>
+    /// <param name="origin">Where the lookup originates (<see cref="OriginAt(ScopeTree, Uri, SourcePosition, Uri)"/>).</param>
     public static IReadOnlyList<CompletionCandidate> Names(ScopeTree tree, Uri origin)
     {
         var candidates = new Candidates();
@@ -649,7 +674,7 @@ public static class CompletionCandidates
     /// projects and the libraries. Nothing that is no type is offered - not a procedural module, not a local, not a keyword but <c>New</c>.
     /// </summary>
     /// <param name="tree">The scope tree of the composed workspace.</param>
-    /// <param name="origin">Where the lookup originates (<see cref="OriginAt"/>).</param>
+    /// <param name="origin">Where the lookup originates (<see cref="OriginAt(ScopeTree, Uri, SourcePosition, Uri)"/>).</param>
     /// <param name="creatable">Whether only the classes that <c>New</c> can create are offered.</param>
     public static IReadOnlyList<CompletionCandidate> Types(ScopeTree tree, Uri origin, bool creatable)
     {
@@ -683,7 +708,7 @@ public static class CompletionCandidates
     /// of a <c>TypeOf ... Is</c> (<strong>§5.6.9.8.1</strong>): the class modules of the project, and the classes of the libraries.
     /// </summary>
     /// <param name="tree">The scope tree of the composed workspace.</param>
-    /// <param name="origin">Where the lookup originates (<see cref="OriginAt"/>).</param>
+    /// <param name="origin">Where the lookup originates (<see cref="OriginAt(ScopeTree, Uri, SourcePosition, Uri)"/>).</param>
     public static IReadOnlyList<CompletionCandidate> Classes(ScopeTree tree, Uri origin)
         => [.. Types(tree, origin, creatable: false).Where(candidate => candidate.Kind is CompletionItemKind.Class or CompletionItemKind.Interface or CompletionItemKind.Folder)];
 
@@ -691,7 +716,7 @@ public static class CompletionCandidates
     /// The events the class module that <paramref name="origin"/> is in declares: what a <c>RaiseEvent</c> raises (<strong>MS-VBAL §5.4.2.20</strong>).
     /// </summary>
     /// <param name="tree">The scope tree of the composed workspace.</param>
-    /// <param name="origin">Where the lookup originates (<see cref="OriginAt"/>).</param>
+    /// <param name="origin">Where the lookup originates (<see cref="OriginAt(ScopeTree, Uri, SourcePosition, Uri)"/>).</param>
     public static IReadOnlyList<CompletionCandidate> EventsOf(ScopeTree tree, Uri origin)
     {
         var candidates = new Candidates();
@@ -737,7 +762,9 @@ public static class CompletionCandidates
     /// </summary>
     /// <param name="tree">The scope tree of the composed workspace.</param>
     /// <param name="owner">The project or the module.</param>
-    /// <param name="origin">Where the lookup originates (<see cref="OriginAt"/>), which decides what is accessible.</param>
+    /// <param name="origin">
+    /// Where the lookup originates (<see cref="OriginAt(ScopeTree, Uri, SourcePosition, Uri)"/>), which decides what is accessible.
+    /// </param>
     public static IReadOnlyList<CompletionCandidate> MembersOf(ScopeTree tree, Symbol owner, Uri origin)
     {
         var candidates = new Candidates();
@@ -860,7 +887,7 @@ public static class CompletionCandidates
     /// is a namespace and not a value, and whose members are its declarations (<see cref="MembersOf(ScopeTree, Symbol, Uri)"/>).
     /// </summary>
     /// <param name="resolver">The resolver of the composed workspace.</param>
-    /// <param name="origin">Where the lookup originates (<see cref="OriginAt"/>).</param>
+    /// <param name="origin">Where the lookup originates (<see cref="OriginAt(ScopeTree, Uri, SourcePosition, Uri)"/>).</param>
     /// <param name="qualifier">The qualifier, as it is written: names separated by <c>.</c>.</param>
     /// <param name="typeContext">
     /// Whether the qualifier is the one of a qualified type name, which is bound in the type binding context (<see cref="ISymbolResolver.ResolveQualifier"/>);

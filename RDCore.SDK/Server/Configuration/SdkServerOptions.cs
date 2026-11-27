@@ -233,6 +233,16 @@ public record class SdkAppOptions
     /// A change takes effect with the next hints a client asks for, while the platform runs.
     /// </remarks>
     public SdkInlayHintOptions InlayHints { get; set; } = new();
+
+    /// <summary>
+    /// The audit log: what it records of a call's arguments, and where its entries go (<see cref="Auditing.IAuditLog"/>).
+    /// </summary>
+    /// <remarks>
+    /// Only the platform's settings file sets it (<see cref="SettingReach.Platform"/>): where the audit goes, and what it records, is the administrator's
+    /// alone. Which calls it records, the execution policy says (<see cref="SdkEnvironmentOptions.ExecutionPolicy"/>).
+    /// </remarks>
+    [Setting(SettingReach.Platform)]
+    public SdkAuditOptions Audit { get; set; } = new();
 }
 
 /// <summary>
@@ -331,6 +341,24 @@ public record class SdkEnvironmentOptions
     /// </remarks>
     [TrustSensitiveSetting]
     public bool AllowAutomation { get; set; } = true;
+
+    /// <summary>
+    /// The execution policy: for each category of call that reaches outside the program, whether it is made, refused with an error a handler can trap, or
+    /// refused with the program stopped, and which of the calls the audit log records (<see cref="Runtime.ExecutionPolicy"/>). Every call is made and none is
+    /// recorded by default.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Only the platform's settings file sets it (<see cref="SettingReach.Platform"/>): neither a component's own configuration, a user's settings, a
+    /// workspace's, an environment variable nor the command line changes it.
+    /// </para>
+    /// <para>
+    /// Where <see cref="AllowDllImports"/> or <see cref="AllowAutomation"/> is <c>false</c>, the rule of its category is at least
+    /// <c>Block</c> (<see cref="Runtime.ExecutionPolicy.Allowing"/>).
+    /// </para>
+    /// </remarks>
+    [Setting(SettingReach.Platform)]
+    public SdkExecutionPolicyOptions ExecutionPolicy { get; set; } = new();
 
     /// <summary>
     /// 🎯 Whether <c>SaveSetting</c>, <c>GetSetting</c>, <c>GetAllSettings</c> and <c>DeleteSetting</c> use the <em>Windows Registry</em>
@@ -601,7 +629,8 @@ public record class SdkWorkspaceOptions
     /// <remarks>
     /// Off by default: in VBA and VB6 such a statement is a syntax error (<strong>MS-VBAL §5.1</strong>). A language whose files always have them has them
     /// whatever this says (<see cref="Workspace.SupportedLanguage.HasFileLevelStatements"/>), and so does a document of such a language in a workspace of
-    /// another (a <c>.vbs</c>): <see cref="AllowsFileLevelStatements"/> says which documents do.
+    /// another (a <c>.vbs</c>): <see cref="AllowsFileLevelStatements"/> says which documents do, and <see cref="AlwaysHasFileLevelStatements"/> which
+    /// have them whatever this says.
     /// </remarks>
     [Setting(SettingReach.NextStart)]
     public bool FileLevelStatements { get; set; }
@@ -615,8 +644,20 @@ public record class SdkWorkspaceOptions
     /// <returns><see langword="true"/> when its statements outside procedures are the module's own code.</returns>
     /// <exception cref="InvalidOperationException"><see cref="Language"/> is not the identifier of a language the platform serves.</exception>
     public bool AllowsFileLevelStatements(string document)
+        => FileLevelStatements ? Workspace.RDCoreDocument.FileOf(document).Length == document.Length : AlwaysHasFileLevelStatements(document);
+
+    /// <summary>
+    /// Whether a document has statements outside its procedures whatever <see cref="FileLevelStatements"/> says: its language always has them, or the
+    /// document is the source file of a language that always has them (<see cref="Workspace.SupportedLanguage.HasFileLevelStatements"/>), as a
+    /// <c>.vbs</c> is. Such a document is a script even when it writes no such statement. A module that a block of a file declares
+    /// (<see cref="Workspace.RDCoreDocument.BlockUri"/>) has none.
+    /// </summary>
+    /// <param name="document">The document's URI, or its path.</param>
+    /// <returns><see langword="true"/> when the document has them in a workspace with the setting off.</returns>
+    /// <exception cref="InvalidOperationException"><see cref="Language"/> is not the identifier of a language the platform serves.</exception>
+    public bool AlwaysHasFileLevelStatements(string document)
         => Workspace.RDCoreDocument.FileOf(document).Length == document.Length
-            && (FileLevelStatements || SupportedLanguage.HasFileLevelStatements
+            && (SupportedLanguage.HasFileLevelStatements
                 || Workspace.SupportedLanguages.All.Any(language => language.HasFileLevelStatements && language.IsSourceFile(document)));
 
     /// <summary>

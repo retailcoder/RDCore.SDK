@@ -417,12 +417,12 @@ public abstract class RDCoreClientApp : IRDCoreClientApp
 
     /// <summary>
     /// Whether this client answers what the language server asks its user before <c>initialize</c> is answered (<c>window/showMessageRequest</c>), with a
-    /// choice or with none, and never with an error (<see cref="RDCoreInitializationOptions.AnswersDuringInitialize"/>).
+    /// choice or with none (<see cref="RDCoreInitializationOptions.AnswersDuringInitialize"/>).
     /// </summary>
     /// <remarks>
-    /// 🧩 The base implementation says it does not: a client that has no handler for the request answers it with an error, which the language client this
-    /// one is built on holds until it is initialized, and the server is not asked to wait for it. A client that answers, and is there to, overrides this; one
-    /// that runs unattended says it does not, whatever this says.
+    /// 🧩 The base implementation says it does not, and the server does not ask: a client that has no handler for the request answers it with an error, and
+    /// its user is asked nothing. A client that answers, and is there to, overrides this; one that runs unattended says it does not, whatever this says. An
+    /// error it answers with, when its handler fails, reaches the server as any answer does (<see cref="ClientAnswers.WithErrorAnswersDuringInitialize"/>).
     /// </remarks>
     protected virtual bool AnswersDuringInitialize => false;
 
@@ -468,6 +468,9 @@ public abstract class RDCoreClientApp : IRDCoreClientApp
         // nor is a request of the server given up on because it runs long (a MsgBox the program waits at, which waits for the user) and answered
         // RequestCancelled after five minutes (ServerRequestScheduling.NoRequestBudget).
         options.WithNoRequestBudget();
+
+        // what the server asks while it answers initialize is answered, with an error as well: OmniSharp 0.19.9 would hold that one for good.
+        options.WithErrorAnswersDuringInitialize();
 
         // the server asks for the live settings (workspace/configuration).
         OmniSharp.Extensions.LanguageServer.Protocol.Workspace.ConfigurationExtensions.OnConfiguration(options, (request, _) => Task.FromResult(AnswerConfiguration(request)));

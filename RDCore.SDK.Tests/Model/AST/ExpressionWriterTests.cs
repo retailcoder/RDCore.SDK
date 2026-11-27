@@ -96,6 +96,32 @@ public sealed class ExpressionWriterTests
         Assert.AreEqual("Nothing", ExpressionWriter.Write(Literal(VBObjectValue.Nothing)));
     }
 
+    // what a fix writes for a value it holds, such as a folder name: between double quotes, each double quote written twice.
+    [TestMethod]
+    public void AString_IsWrittenAsTheLiteralThatReadsBackAsIt()
+    {
+        Assert.AreEqual("\"Parent.Child\"", ExpressionWriter.LiteralOf(new VBStringValue("Parent.Child")));
+        Assert.AreEqual("\"say \"\"hi\"\"\"", ExpressionWriter.LiteralOf(new VBStringValue("say \"hi\"")));
+        Assert.AreEqual("\"\"", ExpressionWriter.LiteralOf(new VBStringValue(string.Empty)));
+    }
+
+    [TestMethod]
+    [DataRow("one\r\ntwo", DisplayName = "a CR LF")]
+    [DataRow("one\ntwo", DisplayName = "a LF")]
+    [DataRow("one\rtwo", DisplayName = "a CR")]
+    public void AStringThatHoldsALineBreak_HasNoLiteral(string value)
+        => Assert.IsNull(ExpressionWriter.LiteralOf(new VBStringValue(value)));
+
+    // what a display or a library's constant writes: quoted like a literal, and a line break kept where no literal could hold it.
+    [TestMethod]
+    [DataRow("word", "\"word\"", DisplayName = "a word")]
+    [DataRow("say \"hi\"", "\"say \"\"hi\"\"\"", DisplayName = "a double quote")]
+    [DataRow("one\r\ntwo", "\"one\r\ntwo\"", DisplayName = "a CR LF")]
+    [DataRow("one\ntwo", "\"one\ntwo\"", DisplayName = "a LF")]
+    [DataRow("", "\"\"", DisplayName = "no text")]
+    public void QuotedText_DoublesItsQuotes_AndKeepsItsLineBreaks(string text, string quoted)
+        => Assert.AreEqual(quoted, ExpressionWriter.Quoted(text));
+
     [TestMethod]
     public void AnExpressionThePartsOfWhichAreNotAllWritten_IsNotWritten()
     {

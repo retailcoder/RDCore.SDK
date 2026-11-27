@@ -102,6 +102,13 @@ public enum ReferenceUse
 public sealed record class SymbolReference(Uri Module, SourceRange Range, ReferenceForm Form, ReferenceUse Use)
 {
     /// <summary>
+    /// The document the name is written in, as the <c>SourceLocation.Uri</c> of its nodes names it (<see cref="WorkspaceSymbol.DocumentUri"/>):
+    /// <see cref="Range"/> is a position of its text. A module written in several documents (<strong>RD-VBAL §5.1</strong>) has a part in each, all at
+    /// <see cref="Module"/>, and two of them can name a symbol at the same position. <see langword="null"/> where it is not known.
+    /// </summary>
+    public Uri? Document { get; init; }
+
+    /// <summary>
     /// The symbol the name refers to: one of <see cref="SymbolReferences.Symbols"/>, the procedure of a property it calls among them.
     /// <see langword="null"/> for a reference of <see cref="SymbolReferences.Unknown"/>, whose meaning is not known.
     /// </summary>

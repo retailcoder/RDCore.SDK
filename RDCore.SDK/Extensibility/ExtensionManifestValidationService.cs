@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Options;
+using RDCore.SDK.Extensibility.Annotations;
 using RDCore.SDK.Platform;
 using RDCore.SDK.Server.Configuration;
 using System.IO.Abstractions;
@@ -51,6 +52,24 @@ public enum ExtensionValidationFlags
     /// The server executable may have been tampered with.
     /// </remarks>
     FileHashMismatch = 1 << 4,
+    /// <summary>
+    /// The <c>SdkVersion</c> specified in the extension manifest is missing, or is not compatible with the <c>RDCore.SDK</c> the platform runs
+    /// with (<see cref="PlatformVersion.IsCompatibleWith"/>).
+    /// </summary>
+    /// <remarks>
+    /// An extension built against another minor version before 1.0, or another major version from 1.0, is not started.
+    /// </remarks>
+    IncompatibleSdk = 1 << 5,
+    /// <summary>
+    /// The <c>Annotations</c> specified in the extension manifest are not valid: two of them share a name or an alias, one's parameters are not in the order
+    /// a declaration requires (<see cref="AnnotationDeclaration.IsWellFormed"/>), or <c>AnnotationDescriptions</c> describes an annotation or a parameter
+    /// none of them declares.
+    /// </summary>
+    /// <remarks>
+    /// A catalogue takes an extension's annotations from its manifest (<see cref="AnnotationCatalogue"/>), so an extension whose manifest's annotations
+    /// disagree is not started.
+    /// </remarks>
+    InvalidAnnotations = 1 << 6,
 
 }
 
@@ -100,13 +119,23 @@ public class ExtensionManifestValidationService(IOptions<SdkAppOptions> options,
     private IDirectoryInfo ExtensionsFolder => fileSystem.DirectoryInfo.New(environment.Resolve(options.Value.Platform.Extensions.Path));
 
     /// <summary>
+    /// The RDCore.SDK version the platform runs with, which an extension's <see cref="ExtensionInfo.SdkVersion"/> must be compatible with
+    /// (<see cref="PlatformVersion.IsCompatibleWith"/>): the version of RDCore.SDK's own assembly, such as <c>0.2.1-alpha</c>.
+    /// </summary>
+    /// <remarks>
+    /// It is RDCore.SDK's version, which an extension's assembly references, and not RDCore.SDK.Protocols' (<see cref="RDCoreSdk.Version"/>):
+    /// the two packages are versioned apart. It is read as any RDCore package's assembly is (<see cref="RDCoreSdk.VersionOf"/>).
+    /// </remarks>
+    public static PlatformVersion SdkVersion { get; } = RDCoreSdk.VersionOf(typeof(ExtensionInfo).Assembly);
+
+    /// <summary>
     /// Validates the specified <see cref="ExtensionInfo"/>.
     /// </summary>
     /// <param name="manifest">The deserialized <em>extension manifest</em> metadata.</param>
     /// <returns>A <see cref="ExtensionValidationFlags"/> value that encodes any <em>validation flags</em> (use <c>HasFlags</c>), or <see cref="ExtensionValidationFlags.NoFlags"/> if there are no issues.</returns>
     public ExtensionValidationFlags Validate(ExtensionInfo manifest)
     {
-        var flags = FlagNotAllowed(manifest) | FlagBlocked(manifest);
+        var flags = FlagNotAllowed(manifest) | FlagBlocked(manifest) | FlagIncompatibleSdk(manifest) | FlagInvalidAnnotations(manifest);
         if (flags == ExtensionValidationFlags.NoFlags)
         {// configuration allows the extension to run.
 
@@ -131,6 +160,29 @@ public class ExtensionManifestValidationService(IOptions<SdkAppOptions> options,
         => !options.Value.Platform.Extensions.Blocked.Any(e => e.Title == manifest.Title)
             ? ExtensionValidationFlags.NoFlags
             : ExtensionValidationFlags.Blocked;
+
+    // a manifest that does not say which SDK the extension was built against is not one this platform can vouch for.
+    private static ExtensionValidationFlags FlagIncompatibleSdk(ExtensionInfo manifest)
+        => manifest.SdkVersion is { } built && built.IsCompatibleWith(SdkVersion)
+            ? ExtensionValidationFlags.NoFlags
+            : ExtensionValidationFlags.IncompatibleSdk;
+
+    private static ExtensionValidationFlags FlagInvalidAnnotations(ExtensionInfo manifest)
+    {
+        // names and aliases compare as VBA names do, without case (AnnotationDeclaration.IsCalled).
+        var names = manifest.Annotations.SelectMany(annotation => annotation.Aliases.Prepend(annotation.Name)).ToArray();
+        var keys = manifest.Annotations
+            .SelectMany(annotation => annotation.Parameters
+                .Select(parameter => AnnotationSet.KeyOf(annotation, parameter))
+                .Prepend(AnnotationSet.KeyOf(annotation)))
+            .ToHashSet(StringComparer.Ordinal);
+
+        return names.Distinct(StringComparer.OrdinalIgnoreCase).Count() == names.Length
+            && manifest.Annotations.All(annotation => annotation.IsWellFormed)
+            && manifest.AnnotationDescriptions.Values.All(described => described.Keys.All(keys.Contains))
+                ? ExtensionValidationFlags.NoFlags
+                : ExtensionValidationFlags.InvalidAnnotations;
+    }
 
     private ExtensionValidationFlags FlagLocationMismatch(ExtensionInfo manifest)
         => ExtensionsFolder.GetDirectories(manifest.Title, new EnumerationOptions() { MatchCasing = MatchCasing.CaseInsensitive, RecurseSubdirectories = false })

@@ -24,6 +24,12 @@ public interface IPlatformEnvironment
     string ManifestPath { get; }
 
     /// <summary>
+    /// Absolute path of the platform's settings file, <c>&lt;Root&gt;/platform-settings.json</c> (<see cref="PlatformEnvironment.SettingsFileName"/>): what
+    /// every component of the platform is deployed with (<see cref="Server.Configuration.PlatformSettingsConfiguration"/>).
+    /// </summary>
+    string SettingsPath => Resolve(PlatformEnvironment.SettingsFileName);
+
+    /// <summary>
     /// Absolute path of the folder the platform's components write their logs to, created if missing: the user's, not the platform root's, so that a
     /// platform can be installed where its user can't write (<c>Program Files</c>, <c>/opt</c>).
     /// </summary>
@@ -37,6 +43,16 @@ public interface IPlatformEnvironment
     /// <c>RDCORE_LOGS_DIRECTORY</c> (<see cref="PlatformEnvironment.LogsEnvironmentVariable"/>) overrides it everywhere.
     /// </remarks>
     string LogsDirectory { get; }
+
+    /// <summary>
+    /// Absolute path of the folder the audit log writes its files to, <c>&lt;Root&gt;/Logs/Audits</c> (<see cref="PlatformEnvironment.AuditsFolder"/>). Not
+    /// created: nothing is kept there until an entry is written.
+    /// </summary>
+    /// <remarks>
+    /// Under the platform root, and not under <see cref="LogsDirectory"/>: the audit is the administrator's, so <c>RDCORE_LOGS_DIRECTORY</c>, which a user
+    /// can set, does not move it. The platform's configuration can name another folder (<see cref="Server.Configuration.SdkAuditFileOptions.Directory"/>).
+    /// </remarks>
+    string AuditsDirectory => Resolve(PlatformEnvironment.AuditsFolder);
 
     /// <summary>
     /// Resolves a root-relative path (either slash style) to an absolute path under <see cref="Root"/>.
@@ -68,6 +84,17 @@ public sealed class PlatformEnvironment : IPlatformEnvironment
     /// (<see cref="Runtime.Libraries.DirectoryLibrarySource"/>).
     /// </summary>
     public const string SymbolsDirectory = "Symbols";
+
+    /// <summary>
+    /// The folder of the audit log's files, relative to the platform root (<see cref="IPlatformEnvironment.AuditsDirectory"/>).
+    /// </summary>
+    public const string AuditsFolder = "Logs/Audits";
+
+    /// <summary>
+    /// Name of the platform's settings file at the platform root (<see cref="IPlatformEnvironment.SettingsPath"/>). It does not begin with
+    /// <c>appsettings</c>, the name a component's own settings file is found by.
+    /// </summary>
+    public const string SettingsFileName = "platform-settings.json";
 
     /// <summary>
     /// Name of the environment variable that overrides the folder of the platform's user (<see cref="UserDataDirectory"/>): what a test sets, so that it never reads
@@ -114,6 +141,8 @@ public sealed class PlatformEnvironment : IPlatformEnvironment
             : _fileSystem.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "RDCore");
 
     public string ManifestPath => _fileSystem.Path.Combine(Root, PlatformManifest.FileName);
+
+    public string AuditsDirectory => Resolve(AuditsFolder);
 
     public string LogsDirectory
     {

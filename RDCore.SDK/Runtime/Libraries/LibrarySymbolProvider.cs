@@ -58,7 +58,8 @@ public sealed class LibrarySymbolProvider : ISymbolProvider
 
     /// <summary>
     /// Loads the libraries a project references: the ones its language and its modules reference implicitly
-    /// (<see cref="SupportedLanguage.ImplicitReferencesOf"/>), then the ones its project file lists.
+    /// (<see cref="SupportedLanguage.ImplicitReferencesOf"/>), then the ones its project file lists, then the ones its modules reference implicitly after
+    /// them (<see cref="SupportedLanguage.TrailingImplicitReferencesOf"/>: Windows Script Host's, for a script).
     /// </summary>
     /// <param name="source">Where the descriptions are.</param>
     /// <param name="project">
@@ -71,12 +72,13 @@ public sealed class LibrarySymbolProvider : ISymbolProvider
     /// </param>
     /// <returns>The libraries, and the ones that could not be loaded.</returns>
     public static ReferencedLibraries Load(ILibrarySource source, RDCoreProject project, SupportedLanguage? language = null)
-        => Load(source, project.References ?? [], ImplicitReferencesOf(project, language));
+        => Load(source, project.References ?? [], ImplicitReferencesOf(project, language), TrailingImplicitReferencesOf(project, language));
 
     /// <summary>
     /// The libraries a project references, by name, each at its position in the list of its references, as a session ranks them
     /// (<see cref="IRuntimeSession.References"/>): the standard library at <c>0</c>, then the ones its language and its modules reference implicitly
-    /// (<see cref="SupportedLanguage.ImplicitReferencesOf"/>), then the ones its project file lists, in the order
+    /// (<see cref="SupportedLanguage.ImplicitReferencesOf"/>), then the ones its project file lists, then the ones its modules reference implicitly after them
+    /// (<see cref="SupportedLanguage.TrailingImplicitReferencesOf"/>), in the order
     /// <see cref="Load(ILibrarySource, RDCoreProject, SupportedLanguage?)"/> loads them.
     /// </summary>
     /// <remarks>
@@ -92,34 +94,47 @@ public sealed class LibrarySymbolProvider : ISymbolProvider
     /// <returns>The references, the standard library first.</returns>
     public static IReadOnlyList<ReferencePriorityInfo> ReferencePriorities(RDCoreProject project, SupportedLanguage? language = null)
         => [new ReferencePriorityInfo(StandardLibrary.LibraryName, 0),
-            .. Referenced((project.References ?? []).Where(reference => !reference.IsStandardLibrary), ImplicitReferencesOf(project, language))
+            .. Referenced(
+                    (project.References ?? []).Where(reference => !reference.IsStandardLibrary), ImplicitReferencesOf(project, language),
+                    TrailingImplicitReferencesOf(project, language))
                 .Select(reference => reference.Name)
                 .Where(name => !string.Equals(name, StandardLibrary.LibraryName, StringComparison.OrdinalIgnoreCase))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .Select((name, rank) => new ReferencePriorityInfo(name, rank + 1))];
 
     private static IReadOnlyList<string> ImplicitReferencesOf(RDCoreProject project, SupportedLanguage? language)
-        => (language ?? SupportedLanguages.RDVBA).ImplicitReferencesOf((project.Modules ?? []).Select(module => module?.RelativeUri));
+        => (language ?? SupportedLanguages.RDVBA).ImplicitReferencesOf(ModulePathsOf(project));
 
-    // the references to other projects are told to the loader by their positions in the whole list, after the implicit references.
-    private static ReferencedLibraries Load(ILibrarySource source, IEnumerable<RDCoreReference> references, IReadOnlyList<string> implicitReferences)
+    private static IReadOnlyList<string> TrailingImplicitReferencesOf(RDCoreProject project, SupportedLanguage? language)
+        => (language ?? SupportedLanguages.RDVBA).TrailingImplicitReferencesOf(ModulePathsOf(project));
+
+    private static IEnumerable<string?> ModulePathsOf(RDCoreProject project) => (project.Modules ?? []).Select(module => module?.RelativeUri);
+
+    // the references to other projects are told to the loader by their positions in the whole list, after the implicit references; the trailing implicit
+    // references come after every listed one, so the positions of the listed ones are the same with them or without.
+    private static ReferencedLibraries Load(
+        ILibrarySource source, IEnumerable<RDCoreReference> references, IReadOnlyList<string> implicitReferences,
+        IReadOnlyList<string>? trailingReferences = null)
     {
         var listed = references.ToArray();
         return ReferencedLibraries.Load(
             source,
-            Referenced(listed, implicitReferences),
+            Referenced(listed, implicitReferences, trailingReferences ?? []),
             [StandardLibrary.LibraryName],
             listed.Select((reference, position) => (reference, position)).Where(entry => entry.reference.IsProject)
                 .Select(entry => implicitReferences.Count + entry.position).ToHashSet());
     }
 
-    // the implicit references come before the ones the project lists (RD-VBAL §2.3.1.3); a project is identified by its name alone.
-    private static IEnumerable<LibraryIdentity> Referenced(IEnumerable<RDCoreReference> references, IEnumerable<string> implicitReferences)
+    // the implicit references come before the ones the project lists, and the trailing ones after them (RD-VBAL §2.3.1.3); a project is identified by its
+    // name alone.
+    private static IEnumerable<LibraryIdentity> Referenced(
+        IEnumerable<RDCoreReference> references, IEnumerable<string> implicitReferences, IEnumerable<string> trailingReferences)
         => [
             .. implicitReferences.Select(name => new LibraryIdentity(name)),
             .. references.Select(reference => reference.IsProject
                 ? new LibraryIdentity(reference.Name)
                 : new LibraryIdentity(reference.Name, reference.Guid, reference.Major, reference.Minor)),
+            .. trailingReferences.Select(name => new LibraryIdentity(name)),
         ];
 
     /// <summary>

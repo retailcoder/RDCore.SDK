@@ -245,7 +245,7 @@ public sealed record class CompletionSite(CompletionSiteKind Kind, string Prefix
     }
 
     // `Rem` is a comment where a statement starts, and followed by a space or nothing: `Remark = 1` is an assignment.
-    private static bool IsRemAt(string text, int index)
+    internal static bool IsRemAt(string text, int index)
         => index + 3 <= text.Length
             && text.AsSpan(index, 3).Equals("Rem", StringComparison.OrdinalIgnoreCase)
             && (index + 3 == text.Length || char.IsWhiteSpace(text[index + 3]))

@@ -108,6 +108,19 @@ public sealed record class ModuleSemanticModel(
     public bool? OptionExplicit { get; init; }
 
     /// <summary>
+    /// The directives the module is under (<see cref="Model.Symbols.ModuleDirectives"/>): its options (<strong>MS-VBAL §5.2.1</strong>), which are
+    /// <c>Option Base</c>, <c>Option Compare</c>, <c>Option Explicit</c> and <c>Option Private Module</c>, RD-VBA's <c>'@OptionStrict</c> annotation, and
+    /// what its attributes and its block headers state of it.
+    /// </summary>
+    /// <remarks>
+    /// The directives are the module's, whichever of its parts states them: a module whose <c>Partial</c> parts are written in several files has one set,
+    /// and an option that one part states holds in the code of every part. An analyzer reads them here: a part's own syntax tree
+    /// (<see cref="Model.AST.Declarations.ModuleNodeExtensions.GetModuleDirectives"/>) has only the directives that part writes.
+    /// <see langword="null"/> when the host does not say.
+    /// </remarks>
+    public Model.Symbols.ModuleDirectives? Directives { get; init; }
+
+    /// <summary>
     /// The identifier of the language the module is loaded as (<see cref="Workspace.SupportedLanguage.Id"/>): what is idiomatic in a module depends on it, and the
     /// host is what knows it. <see langword="null"/> when the host has not said.
     /// </summary>

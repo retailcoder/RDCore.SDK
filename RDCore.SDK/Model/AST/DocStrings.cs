@@ -54,14 +54,19 @@ public static class DocStrings
 
     /// <summary>
     /// Where the module writes its description: its own <c>Attribute VB_Description</c> directive (an <see cref="AttributeDirectiveNode"/>,
-    /// <see cref="ModuleNodeExtensions.GetModuleDescriptionDirective"/>), else its first <c>'@ModuleDescription</c> annotation (an
-    /// <see cref="AnnotationTriviaNode"/>). <see langword="null"/> when it writes neither.
+    /// <see cref="ModuleNodeExtensions.GetModuleDescriptionDirective"/>), else its first description annotation (an <see cref="AnnotationTriviaNode"/>):
+    /// a <c>'@ModuleDescription</c>, or, above the header of a block's module, a <c>'@Description</c>. <see langword="null"/> when it writes none.
     /// </summary>
     /// <param name="parse">The module's parse.</param>
     /// <remarks>
     /// A module annotation binds in the module's declarations section (<strong>RD-VBAL §3.0.1.1</strong>): one written after the start of the module's
     /// first procedure does not describe the module. One written on the line right above that procedure still does, because <c>@ModuleDescription</c>
     /// binds to a module only. In a tree that holds the nodes of several files, each annotation is in the declarations section of its own file.
+    /// <para>
+    /// The module of a block of a file also binds the annotations on the comment lines directly above its header
+    /// (<see cref="Annotations.GetHeaderAnnotations"/>). A <c>'@Description</c> there describes the block's module, as one above a member describes the
+    /// member; inside the block, it is a member's. Of the description annotations of the module, the first written counts.
+    /// </para>
     /// </remarks>
     public static SyntaxNode? GetModuleDescriptionNode(this ModuleParseResult parse)
     {
@@ -75,11 +80,10 @@ public static class DocStrings
             return attribute;
         }
 
-        var procedures = module.Children.OfType<MemberDeclarationNode>().Where(IsProcedure).Select(procedure => procedure.SourceLocation).ToArray();
-        return parse.Trivia.OfType<AnnotationTriviaNode>().FirstOrDefault(annotation => Is(annotation, ModuleDescriptionAnnotation)
-            && TextOf(annotation) is not null
-            && !procedures.Any(procedure => procedure.Uri == annotation.SourceLocation.Uri
-                && procedure.Range.Start <= annotation.SourceLocation.Range.Start));
+        var header = parse.GetHeaderAnnotations();
+        return parse.GetModuleAnnotations().FirstOrDefault(annotation
+            => (annotation.IsNamed(ModuleDescriptionAnnotation) || (annotation.IsNamed(MemberDescriptionAnnotation) && header.Contains(annotation)))
+                && TextOf(annotation) is not null);
     }
 
     /// <summary>
@@ -127,24 +131,9 @@ public static class DocStrings
                 return described;
             }
 
-            var comments = new HashSet<(Uri File, int Line)>();
-            foreach (var comment in parse.Trivia.OfType<CommentTriviaNode>())
-            {
-                var range = comment.SourceLocation.Range;
-                for (var line = range.Start.Line; line <= range.End.Line; line++)
-                {
-                    comments.Add((comment.SourceLocation.Uri, line));
-                }
-            }
-
-            var annotations = parse.Trivia.OfType<AnnotationTriviaNode>()
-                .Where(annotation => TextOf(annotation) is not null)
-                .ToLookup(annotation => (annotation.SourceLocation.Uri, annotation.SourceLocation.Range.Start.Line));
-
-            // the declarations of each file in the order they are written, and the last line of the code before each one.
+            // the declarations of each file in the order they are written: the first one of a name that has a description gives it.
             foreach (var file in module.Children.GroupBy(child => child.SourceLocation.Uri))
             {
-                var codeEnds = -1;
                 foreach (var child in file.OrderBy(child => child.SourceLocation.Range.Start))
                 {
                     (string? Name, string? Annotation) declared = child switch
@@ -154,35 +143,17 @@ public static class DocStrings
                         _ => (null, null),
                     };
 
-                    if (declared is ({ } name, { } annotationName) && !described.ContainsKey(name))
+                    if (declared is ({ } name, { } annotationName) && !described.ContainsKey(name)
+                        && parse.GetAnnotations(child).Select(annotation => annotation.IsNamed(annotationName) ? TextOf(annotation) : null)
+                            .FirstOrDefault(text => text is not null) is { } text)
                     {
-                        // up the comment lines above the declaration: the last annotation found is the first one written.
-                        string? text = null;
-                        for (var line = child.SourceLocation.Range.Start.Line - 1; line > codeEnds && comments.Contains((file.Key, line)); line--)
-                        {
-                            if (annotations[(file.Key, line)].FirstOrDefault(candidate => Is(candidate, annotationName)) is { } annotation)
-                            {
-                                text = TextOf(annotation);
-                            }
-                        }
-
-                        if (text is not null)
-                        {
-                            described[name] = text;
-                        }
+                        described[name] = text;
                     }
-
-                    codeEnds = Math.Max(codeEnds, child.SourceLocation.Range.End.Line);
                 }
             }
 
             return described;
         });
-
-    private static bool IsProcedure(MemberDeclarationNode member)
-        => member.MemberKind is MemberKind.Procedure or MemberKind.Function or MemberKind.PropertyGet or MemberKind.PropertyLet or MemberKind.PropertySet;
-
-    private static bool Is(AnnotationTriviaNode annotation, string name) => string.Equals(annotation.Name, name, StringComparison.OrdinalIgnoreCase);
 
     // the text of a description attribute or annotation; null for one that describes nothing.
     private static string? TextOf(SyntaxNode node)

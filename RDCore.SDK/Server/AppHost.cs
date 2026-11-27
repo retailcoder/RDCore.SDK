@@ -10,6 +10,7 @@ using RDCore.SDK.Extensibility;
 using RDCore.SDK.Platform;
 using RDCore.SDK.Runtime;
 using RDCore.SDK.Runtime.Abstract.Execution;
+using RDCore.SDK.Server.Auditing;
 using RDCore.SDK.Server.Configuration;
 using RDCore.SDK.Server.Logging;
 using RDCore.SDK.Server.Services;
@@ -312,11 +313,13 @@ public abstract class AppHost<TApp>() : IDisposable
         // the builder reads appsettings.json, then the environment and the command line; what the user set goes between the first and the others. The
         // deployed file is not added again: added after them, it would say what a Configuration__ environment variable is meant to override. The deployed
         // file is the one in the application's own folder, wherever the process was started from: the generic host's default is the working directory.
+        // The platform's settings file goes below all of them, and above all of them for the settings only the platform sets.
         HostApplicationBuilder? builder = null;
         System.Runtime.ExceptionServices.ExceptionDispatchInfo? unreadable = null;
         try
         {
             builder = Host.CreateApplicationBuilder(new HostApplicationBuilderSettings { ContentRootPath = AppContext.BaseDirectory });
+            builder.Configuration.AddPlatformSettings(PlatformEnvironment.Default.SettingsPath, Settings);
             builder.Configuration.AddUserSettings(UserSettingsStore.PathIn(PlatformEnvironment.Default), Settings);
 
             // the language of the user interface comes first: everything the application writes is in it, the help a command line asks for included.
@@ -432,6 +435,8 @@ public abstract class AppHost<TApp>() : IDisposable
             .AddSingleton<IProjectFileLoader, ProjectFileLoader>()
             .AddSingleton<IProjectFileWriter, ProjectFileWriter>()
             .AddSingleton<IPlatformEnvironment, PlatformEnvironment>()
+            // the calls the execution policy decides are recorded where the platform's Audit settings say, from every component alike.
+            .AddAuditLog()
             // the descriptions of the libraries a project can reference ship with the platform, in its Symbols folder, and with what the application adds.
             .AddSingleton(provider => LibrarySource(provider, new RDCore.SDK.Runtime.Libraries.DirectoryLibrarySource(
                 provider.GetRequiredService<IFileSystem>(), provider.GetRequiredService<IPlatformEnvironment>().Resolve(PlatformEnvironment.SymbolsDirectory))))

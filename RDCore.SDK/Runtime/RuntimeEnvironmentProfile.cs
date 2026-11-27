@@ -26,6 +26,10 @@ namespace RDCore.SDK.Runtime;
 /// <param name="Win64OnlySetOnWindows">
 /// Whether <c>Win64</c> is <c>1</c> on 64-bit Windows only; <c>false</c> unless said otherwise, and then it is <c>1</c> on a 64-bit Mac too.
 /// </param>
+/// <param name="Policy">
+/// The execution policy; <see cref="Runtime.ExecutionPolicy.Default"/> unless said otherwise. <paramref name="AllowDllImports"/> and
+/// <paramref name="AllowAutomation"/> apply over it (<see cref="ExecutionPolicy"/>).
+/// </param>
 public sealed record class RuntimeEnvironmentProfile(
     bool Is64Bit,
     int Lcid,
@@ -43,8 +47,40 @@ public sealed record class RuntimeEnvironmentProfile(
     bool ReleaseDropsDebugStatements = false,
     VBErlAfterErrClear ErlAfterErrClear = VBErlAfterErrClear.Reset,
     VBOperatingSystem OperatingSystem = VBOperatingSystem.Windows,
-    bool Win64OnlySetOnWindows = false) : IRuntimeEnvironmentProfile
+    bool Win64OnlySetOnWindows = false,
+    ExecutionPolicy? Policy = null) : IRuntimeEnvironmentProfile
 {
+    // the two switches as they were given, which the policy applies; the properties of the same names read the policy.
+    private readonly bool _allowDllImports = AllowDllImports;
+    private readonly bool _allowAutomation = AllowAutomation;
+
+    /// <inheritdoc/>
+    public ExecutionPolicy ExecutionPolicy => (Policy ?? ExecutionPolicy.Default).Allowing(_allowDllImports, _allowAutomation);
+
+    /// <summary>
+    /// Whether <see cref="ExecutionPolicy"/> makes the call of a library import: <see langword="false"/> when its rule of
+    /// <see cref="ExecutionCategory.LibraryImports"/> blocks or halts it. Given as <see langword="false"/>, it makes that rule at least
+    /// <see cref="ExecutionPolicyMode.Block"/>; given as <see langword="true"/>, it leaves the rule as it is.
+    /// </summary>
+    [Obsolete("Read ExecutionPolicy.LibraryImports, which says whether a call is blocked or halted and whether it is audited.")]
+    public bool AllowDllImports
+    {
+        get => ExecutionPolicy.LibraryImports.Mode == ExecutionPolicyMode.Allow;
+        init => _allowDllImports = value;
+    }
+
+    /// <summary>
+    /// Whether <see cref="ExecutionPolicy"/> makes the calls of an automation server's objects: <see langword="false"/> when its rule of
+    /// <see cref="ExecutionCategory.Automation"/> blocks or halts it. Given as <see langword="false"/>, it makes that rule at least
+    /// <see cref="ExecutionPolicyMode.Block"/>; given as <see langword="true"/>, it leaves the rule as it is.
+    /// </summary>
+    [Obsolete("Read ExecutionPolicy.Automation, which says whether a call is blocked or halted and whether it is audited.")]
+    public bool AllowAutomation
+    {
+        get => ExecutionPolicy.Automation.Mode == ExecutionPolicyMode.Allow;
+        init => _allowAutomation = value;
+    }
+
     /// <summary>
     /// The operating system this process runs on: what the environment host's profile says (<see cref="From"/>).
     /// </summary>
@@ -80,7 +116,7 @@ public sealed record class RuntimeEnvironmentProfile(
         => new(options.Is64Bit, options.Lcid, options.AnsiCodePage, options.SupportsOptionCompareDatabase, options.DatabaseCompare,
             options.ErlLineNumbering, options.AllowDllImports, language, options.AllowAutomation,
             options.LegacyRegistrySettings, options.Regional.ToSettings(), options.ExecutionEngine, options.Configuration,
-            options.ReleaseDropsDebugStatements, options.ErlAfterErrClear, Running, options.Win64OnlySetOnWindows);
+            options.ReleaseDropsDebugStatements, options.ErlAfterErrClear, Running, options.Win64OnlySetOnWindows, options.ExecutionPolicy.ToPolicy());
 
     /// <summary>
     /// The profile <paramref name="environment"/> is, as a <see cref="RuntimeEnvironmentProfile"/>: itself when it is one, and otherwise one with each of its
@@ -88,11 +124,12 @@ public sealed record class RuntimeEnvironmentProfile(
     /// </summary>
     /// <param name="environment">Any profile.</param>
     public static RuntimeEnvironmentProfile Of(IRuntimeEnvironmentProfile environment)
+        // its policy has its two switches applied already, so they are given as true.
         => environment as RuntimeEnvironmentProfile ?? new(
             environment.Is64Bit, environment.Lcid, environment.AnsiCodePage, environment.SupportsOptionCompareDatabase, environment.DatabaseCompare,
-            environment.ErlLineNumbering, environment.AllowDllImports, environment.Language, environment.AllowAutomation, environment.LegacyRegistrySettings,
+            environment.ErlLineNumbering, AllowDllImports: true, environment.Language, AllowAutomation: true, environment.LegacyRegistrySettings,
             environment.Regional, environment.ExecutionEngine, environment.Configuration, environment.ReleaseDropsDebugStatements,
-            environment.ErlAfterErrClear, environment.OperatingSystem, environment.Win64OnlySetOnWindows);
+            environment.ErlAfterErrClear, environment.OperatingSystem, environment.Win64OnlySetOnWindows, environment.ExecutionPolicy);
 
     /// <inheritdoc/>
     /// <remarks>

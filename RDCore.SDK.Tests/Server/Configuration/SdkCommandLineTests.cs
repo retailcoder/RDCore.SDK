@@ -40,6 +40,25 @@ public sealed class SdkCommandLineTests
         => Assert.IsFalse(SdkCommandLine.TryAnswer(["--workspace", "C:/ws"], out _));
 
     [TestMethod]
+    public void TheCommandLineThePlatformStartsAServerWith_IsAServerLaunch()
+    {
+        var args = CommandLineArguments(RDCore.SDK.Client.RDCoreServerProcess.ServerArguments(42, "rdcore-pipe", "C:/ws", default, verbose: true));
+
+        Assert.IsTrue(SdkCommandLine.IsServerLaunch(args));
+    }
+
+    [TestMethod]
+    [DataRow(new string[0], DisplayName = "no arguments")]
+    [DataRow(new[] { "--urls", "http://localhost:5000" }, DisplayName = "a web host's")]
+    [DataRow(new[] { "--workspace", "C:/ws" }, DisplayName = "a platform application's with no pipe")]
+    public void AnyOtherCommandLine_IsNotAServerLaunch(string[] args)
+        => Assert.IsFalse(SdkCommandLine.IsServerLaunch(args));
+
+    // the arguments a process receives from a command line: split at the spaces outside quotes, the quotes taken off.
+    private static string[] CommandLineArguments(string commandLine)
+        => [.. System.Text.RegularExpressions.Regex.Matches(commandLine, "\"[^\"]*\"|\\S+").Select(match => match.Value.Trim('"'))];
+
+    [TestMethod]
     public void NoArguments_AreNotAnswered()
         // the interactive shell's own command line: nothing at all is not a question.
         => Assert.IsFalse(SdkCommandLine.TryAnswer([], out _));

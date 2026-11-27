@@ -185,6 +185,24 @@ namespace RDCore.SDK {
                 return ResourceManager.GetString("ValidationFlags_FileHashMismatch", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   Looks up a localized string similar to The &apos;SdkVersion&apos; specified in the extension manifest is missing, or is not compatible with the RDCore.SDK this platform runs with..
+        /// </summary>
+        internal static string ValidationFlags_IncompatibleSdk {
+            get {
+                return ResourceManager.GetString("ValidationFlags_IncompatibleSdk", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to The &apos;Annotations&apos; specified in the extension manifest are not valid: two share a name or an alias, one&apos;s parameters are out of order, or &apos;AnnotationDescriptions&apos; describes an annotation or a parameter none of them declares..
+        /// </summary>
+        internal static string ValidationFlags_InvalidAnnotations {
+            get {
+                return ResourceManager.GetString("ValidationFlags_InvalidAnnotations", resourceCulture);
+            }
+        }
         
         /// <summary>
         ///   Looks up a localized string similar to Evaluation stack:.
@@ -390,6 +408,15 @@ namespace RDCore.SDK {
         internal static string WorkspaceEdit_DocumentEditedTwice {
             get {
                 return ResourceManager.GetString("WorkspaceEdit_DocumentEditedTwice", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to &apos;{0}&apos; declares no annotations: it must implement {1} and have a parameterless constructor..
+        /// </summary>
+        internal static string ExtensionAnnotations_NoDeclarations {
+            get {
+                return ResourceManager.GetString("ExtensionAnnotations_NoDeclarations", resourceCulture);
             }
         }
     }

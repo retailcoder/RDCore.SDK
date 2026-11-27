@@ -69,8 +69,11 @@ public sealed record class SettingDescriptor
     /// <summary>What it does, in the language of the user interface; <see langword="null"/> when nothing describes it.</summary>
     public string? Description { get; init; }
 
-    /// <summary>Whether a client can change it: every setting but the ones only the deployed configuration sets (<see cref="SettingReach.Deployment"/>).</summary>
-    public bool IsSettable => Reach != SettingReach.Deployment;
+    /// <summary>
+    /// Whether a client can change it: every setting but the ones only the deployed configuration sets (<see cref="SettingReach.Deployment"/>) and the
+    /// ones only the platform's settings file sets (<see cref="SettingReach.Platform"/>).
+    /// </summary>
+    public bool IsSettable => Reach is not (SettingReach.Deployment or SettingReach.Platform);
 }
 
 /// <summary>
@@ -85,8 +88,8 @@ public sealed record class SettingDescriptor
 /// </para>
 /// <para>
 /// When a change takes effect is what <see cref="SettingAttribute"/> says, of the setting or of the section it is in; a setting that nothing says it of is
-/// <see cref="SettingReach.Live"/>. A setting only the deployed configuration sets (<see cref="SettingReach.Deployment"/>) is in the schema too, so that a
-/// client can say why it is not changed.
+/// <see cref="SettingReach.Live"/>. A setting only the deployed configuration sets (<see cref="SettingReach.Deployment"/>), or only the platform's
+/// settings file (<see cref="SettingReach.Platform"/>), is in the schema too, so that a client can say why it is not changed.
 /// </para>
 /// <para>
 /// The description of a setting is the string of its key in <c>descriptions</c>, its dots written as underscores: <c>Server_Verbose</c>.
@@ -103,9 +106,10 @@ public sealed class SettingsSchema
 
     private readonly Dictionary<string, SettingDescriptor> _byKey;
 
-    private SettingsSchema(IEnumerable<SettingDescriptor> settings)
+    private SettingsSchema(IEnumerable<SettingDescriptor> settings, IReadOnlyDictionary<string, string?>? defaultTexts = null)
     {
         Settings = [.. settings];
+        _defaultTexts = defaultTexts ?? new Dictionary<string, string?>();
         _byKey = new(StringComparer.OrdinalIgnoreCase);
         foreach (var setting in Settings)
         {
@@ -163,8 +167,10 @@ public sealed class SettingsSchema
     public static SettingsSchema For(Type optionsType, string section, ResourceManager? descriptions = null)
     {
         var settings = new List<SettingDescriptor>();
-        Read(optionsType, section, SettingReach.Live, isTrustSensitive: false, descriptions, settings, [optionsType]);
-        return new SettingsSchema(settings);
+        var defaultTexts = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+        var defaults = optionsType.GetConstructor(Type.EmptyTypes) is null ? null : Activator.CreateInstance(optionsType);
+        Read(optionsType, defaults, section, SettingReach.Live, isTrustSensitive: false, descriptions, settings, defaultTexts, [optionsType]);
+        return new SettingsSchema(settings, defaultTexts);
     }
 
     /// <summary>
@@ -172,7 +178,16 @@ public sealed class SettingsSchema
     /// </summary>
     /// <param name="other">The other schema.</param>
     /// <exception cref="ArgumentException">Both schemas have a setting of the same key.</exception>
-    public SettingsSchema Combine(SettingsSchema other) => new([.. Settings, .. other.Settings]);
+    public SettingsSchema Combine(SettingsSchema other)
+        => new(
+            [.. Settings, .. other.Settings],
+            new Dictionary<string, string?>([.. _defaultTexts, .. other._defaultTexts], StringComparer.OrdinalIgnoreCase));
+
+    private readonly IReadOnlyDictionary<string, string?> _defaultTexts;
+
+    // the value of a setting when nothing sets it, as configuration text (its key: Server.Verbose); null for a list, for a setting whose type has none, and
+    // for a schema read from descriptors (From), which say none.
+    internal string? DefaultTextOf(SettingDescriptor setting) => _defaultTexts.TryGetValue(setting.Key, out var text) ? text : null;
 
     /// <summary>
     /// Gets the setting of a key, without regard to case.
@@ -263,8 +278,10 @@ public sealed class SettingsSchema
         }
     }
 
+    // defaults: an instance of the type as it is made, whose values are the settings' own when nothing sets them; null when there is none.
     private static void Read(
-        Type type, string section, SettingReach reach, bool isTrustSensitive, ResourceManager? descriptions, List<SettingDescriptor> settings, HashSet<Type> reading)
+        Type type, object? defaults, string section, SettingReach reach, bool isTrustSensitive, ResourceManager? descriptions,
+        List<SettingDescriptor> settings, Dictionary<string, string?> defaultTexts, HashSet<Type> reading)
     {
         foreach (var property in type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
         {
@@ -277,6 +294,7 @@ public sealed class SettingsSchema
             var propertyReach = property.GetCustomAttribute<SettingAttribute>()?.Reach ?? reach;
             var propertyIsTrustSensitive = isTrustSensitive || property.IsDefined(typeof(TrustSensitiveSettingAttribute));
             var valueType = Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType;
+            var value = defaults is not null && property.GetMethod is { IsPublic: true } ? property.GetValue(defaults) : null;
 
             if (KindOf(valueType) is { } typed)
             {
@@ -298,10 +316,16 @@ public sealed class SettingsSchema
                     IsTrustSensitive = propertyIsTrustSensitive,
                     Description = descriptions?.GetString(key.Replace('.', '_'), CultureInfo.CurrentUICulture),
                 });
+                defaultTexts[key] = value switch
+                {
+                    null or IEnumerable<string> => null,
+                    IFormattable formattable => formattable.ToString(null, CultureInfo.InvariantCulture),
+                    _ => value.ToString(),
+                };
             }
             else if (IsSection(valueType) && reading.Add(valueType))
             {
-                Read(valueType, key, propertyReach, propertyIsTrustSensitive, descriptions, settings, reading);
+                Read(valueType, value, key, propertyReach, propertyIsTrustSensitive, descriptions, settings, defaultTexts, reading);
                 reading.Remove(valueType);
             }
         }

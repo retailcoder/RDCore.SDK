@@ -106,6 +106,23 @@ public class AppHostRegistrationTests
         Assert.AreSame(source, provider.GetRequiredService<RDCore.SDK.Runtime.Libraries.ILibrarySource>());
     }
 
+    // the shipped default: every call made and none audited, which is what a platform that states no policy runs with.
+    [TestMethod]
+    public void AComponentThatStatesNoPolicy_AllowsEveryCall_AndAuditsNone()
+    {
+        var services = new ServiceCollection();
+        var configuration = new ConfigurationBuilder().Build();
+        services.AddSingleton<IConfiguration>(configuration);
+        new TestAppHost().Configure(services, configuration);
+        using var provider = services.BuildServiceProvider();
+
+        var policy = provider.GetRequiredService<RDCore.SDK.Runtime.Abstract.Execution.IRuntimeEnvironmentProfile>().ExecutionPolicy;
+
+        Assert.IsTrue(policy.IsPassThrough);
+        Assert.AreEqual(RDCore.SDK.Runtime.ExecutionPolicy.Default, policy);
+        Assert.IsNotNull(provider.GetService<RDCore.SDK.Server.Auditing.IAuditLog>(), "the component has an audit log for a policy that audits");
+    }
+
     // exposes AppHost's protected external-service registration for assertions.
     private sealed class TestAppHost(string? logFileName = null,
         Func<RDCore.SDK.Runtime.Libraries.ILibrarySource, RDCore.SDK.Runtime.Libraries.ILibrarySource>? libraries = null) : AppHost<TestAppHost.FakeApp>

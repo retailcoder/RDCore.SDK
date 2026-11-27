@@ -38,9 +38,20 @@ public readonly record struct ExternalCallDecision(string? Reason, ExternalCallA
     public static ExternalCallDecision Block(string reason) => new(reason);
 
     /// <summary>
-    /// Whether the call was refused.
+    /// Refuse the call and stop the program: no error handler runs (<see cref="ExecutionPolicyMode.Halt"/>).
+    /// </summary>
+    /// <param name="reason">Why: it is the verbose half of the error the program stops with, so it should say what was refused and on what grounds.</param>
+    public static ExternalCallDecision Halt(string reason) => new(reason) { IsHalted = true };
+
+    /// <summary>
+    /// Whether the call was refused, halted or not.
     /// </summary>
     public bool IsBlocked => Reason is not null;
+
+    /// <summary>
+    /// Whether the call was refused with the program stopped (<see cref="Halt"/>): <see cref="IsBlocked"/> is then <see langword="true"/> too.
+    /// </summary>
+    public bool IsHalted { get; init; }
 
     /// <summary>
     /// Whether the call was answered (<see cref="Answer"/>), and is not to be run.
@@ -142,6 +153,24 @@ public interface IExternalCallProvider
     /// </summary>
     /// <param name="request">The call to consider.</param>
     bool CanDispatch(ExternalCallRequest request);
+
+    /// <summary>
+    /// What a call this provider runs reaches outside the program, which the execution policy decides by: <see cref="ExecutionCategory.Workspace"/>, which
+    /// the policy never refuses, unless the provider says otherwise.
+    /// </summary>
+    /// <remarks>
+    /// The platform decides it once for a member and keeps it, from a request without arguments, unless <see cref="CategoryDependsOnArguments"/> says the
+    /// member's calls are decided one by one. It is the provider's to say, never a library description's: a workspace can bring a description.
+    /// </remarks>
+    /// <param name="request">A call that <see cref="CanDispatch"/> accepts.</param>
+    ExecutionCategory CategoryOf(ExternalCallRequest request) => ExecutionCategory.Workspace;
+
+    /// <summary>
+    /// Whether the category of a call of <paramref name="member"/> depends on its arguments, as a file opened for reading or for writing does, so that
+    /// <see cref="CategoryOf"/> is asked of each call rather than once for the member. <see langword="false"/> unless the provider says otherwise.
+    /// </summary>
+    /// <param name="member">A member whose calls this provider runs.</param>
+    bool CategoryDependsOnArguments(Model.Symbols.Abstract.VBTypeMemberSymbol member) => false;
 
     /// <summary>
     /// Runs it, and returns what it yielded: an error in the result rather than thrown, as everywhere else

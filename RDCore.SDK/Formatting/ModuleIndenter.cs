@@ -73,6 +73,11 @@ public static partial class ModuleIndenter
     /// The edits that indent the lines of a module, from its first line to its last, or of the lines from <paramref name="firstLine"/> to
     /// <paramref name="lastLine"/>; none for a line that is indented as it should be.
     /// </summary>
+    /// <remarks>
+    /// A file of blocks (<see cref="ModuleParseResult.BlockModules"/>) is indented module by module, each as it would be alone in a file
+    /// (<see cref="Workspace.RDCoreDocument.ParseOf"/>): the lines between a block's header and its end as the block's module has them, from the margin, and
+    /// every other line, the header and the end of each block included, as the file's own module has them.
+    /// </remarks>
     /// <param name="parse">The module, as it was parsed from <paramref name="text"/>.</param>
     /// <param name="text">The text of the module. A line ends with a carriage return, a line feed, or both, as the Language Server Protocol counts them.</param>
     /// <param name="options">How code is indented.</param>
@@ -92,10 +97,55 @@ public static partial class ModuleIndenter
         return IndentLines(parse, text, LinesOf(text), options, firstLine, lastLine);
     }
 
-    // what Indent has for the lines of a module whose lines are read already; its work counted with what was counted before it.
+    // what Indent has for the lines of a module whose lines are read already; its work counted with what was counted before it. A file of blocks is indented
+    // module by module (ModulesOf).
     internal static IReadOnlyList<IndentationEdit> IndentLines(ModuleParseResult parse, string text, string[] lines, CodeFormattingOptions options, int firstLine,
         int lastLine)
-        => IndentIn(parse, text, new ModuleLines(lines), options, firstLine, lastLine, Scope.Of(parse, lines));
+    {
+        if (parse.BlockModules.IsEmpty)
+        {
+            return IndentIn(parse, text, new ModuleLines(lines), options, firstLine, lastLine, Scope.Of(parse, lines));
+        }
+
+        var (own, blocks) = ModulesOf(parse);
+        bool InABlock(int line) => blocks.Any(block => block.First <= line && line <= block.Last);
+        var edits = IndentIn(own, text, new ModuleLines(lines), options, firstLine, lastLine, Scope.Of(own, lines))
+            .Where(edit => !InABlock(edit.Line) && !InABlock(edit.EndLine)).ToList();
+        foreach (var (module, first, last) in blocks)
+        {
+            if (Math.Max(firstLine, first) is var from && Math.Min(lastLine, last) is var to && from <= to)
+            {
+                edits.AddRange(IndentIn(module, text, new ModuleLines(lines), options, from, to, Scope.Of(module, lines))
+                    .Where(edit => edit.Line >= first && edit.EndLine <= last));
+            }
+        }
+
+        return [.. edits.OrderBy(edit => edit.Line).ThenBy(edit => edit.Character)];
+    }
+
+    // the parse of the module a line of a file is in (ModulesOf): the file's own module's for the header and the end of a block.
+    internal static ModuleParseResult ModuleAt(ModuleParseResult parse, int line)
+    {
+        if (parse.BlockModules.IsEmpty)
+        {
+            return parse;
+        }
+
+        var (own, blocks) = ModulesOf(parse);
+        return blocks.FirstOrDefault(block => block.First <= line && line <= block.Last).Parse ?? own;
+    }
+
+    // the modules of a file of blocks: the file's own module, which has every line but those of its blocks, the header and the end of each block included;
+    // and each block's module, which has the lines between its header and its end, from its own parse (RDCoreDocument.ParseOf). Each module is indented as
+    // it would be alone in a file, so that a block's code starts at the margin, as its header does in the file's own module.
+    private static (ModuleParseResult Own, (ModuleParseResult Parse, int First, int Last)[] Blocks) ModulesOf(ModuleParseResult parse)
+    {
+        var document = new Workspace.RDCoreDocument(Workspace.RDCoreDocument.FileOf(parse.BlockModules[0].Uri), parse);
+
+        // two blocks of one name have the first's parse (ParseOf): the second one's lines have no nodes there.
+        return (document.ParseOf(document.File)!,
+            [.. parse.BlockModules.Select(block => (document.ParseOf(block.Uri)!, block.Range.Start.Line + 1, block.Range.End.Line - 1))]);
+    }
 
     /// <summary>
     /// The edits <see cref="Indent(ModuleParseResult, string, CodeFormattingOptions, int, int)"/> has for lines of one procedure of a module, worked out from

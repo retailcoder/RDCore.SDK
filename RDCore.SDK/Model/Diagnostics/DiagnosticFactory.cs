@@ -58,14 +58,22 @@ public interface ICoreDiagnosticsFactory
     /// </summary>
     /// <param name="finding">What an <see cref="IModuleAnalyzer"/> found.</param>
     /// <returns>
-    /// A diagnostic coded as the finding is (<c>RDC00000</c> for a Rubberduck Core one), with the severity the analyzer gave it; it links to the code's page in
-    /// the platform's documentation when the code is one of the platform's own.
+    /// A diagnostic coded as the finding is (<c>RDC00000</c> for a Rubberduck Core one), with the severity the analyzer gave it. It links to the code's
+    /// page in the platform's documentation when the code is one of the platform's own, and to the extension's page of it when the code is of the prefix
+    /// the extension declares with a <see cref="DiagnosticPrefixAttribute.HelpBaseUri"/>.
     /// </returns>
     Diagnostic FromAnalyzerFinding(AnalyzerFinding finding);
 }
 
 public class DiagnosticFactory : ICoreDiagnosticsFactory
 {
+    /// <summary>
+    /// The prefix that the extension making the diagnostics declares (<see cref="DiagnosticPrefixAttribute"/>): a finding of that prefix links to the
+    /// extension's page of its code (<see cref="DiagnosticPrefixAttribute.HelpBaseUri"/>). <see langword="null"/>, as for the core extension, whose codes all
+    /// link to the platform's documentation.
+    /// </summary>
+    public DiagnosticPrefixAttribute? DeclaredPrefix { get; init; }
+
     public Diagnostic FromVBSyntaxError(VBSyntaxErrorInfo info) => CreateDiagnostic(info);
     public Diagnostic FromVBCompileError(VBCompileErrorInfo info) => CreateDiagnostic(info);
     public Diagnostic FromVBRuntimeError(VBRuntimeErrorInfo info) => CreateDiagnostic(info);
@@ -77,7 +85,10 @@ public class DiagnosticFactory : ICoreDiagnosticsFactory
         return new()
         {
             Code = new DiagnosticCode(code),
-            CodeDescription = finding.Code.IsFirstParty ? CreateCodeDescription(code) : null,
+            CodeDescription = finding.Code.IsFirstParty ? CreateCodeDescription(code)
+                : DeclaredPrefix is { HelpBaseUri: { } help } declared && declared.Prefix == finding.Code.Prefix
+                    ? new() { Href = new Uri($"{help.TrimEnd('/')}/{code.ToLowerInvariant()}.html") }
+                    : null,
             Message = finding.Message,
             Severity = finding.Severity,
             Source = nameof(RDCore),

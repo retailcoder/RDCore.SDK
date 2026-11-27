@@ -40,6 +40,10 @@ public static class ModuleBlocks
     /// <summary>
     /// The blocks a line of a module is in that the module has no closer for: the line's own block when it opens one, and each block it is in.
     /// </summary>
+    /// <remarks>
+    /// In a file of blocks (<see cref="ModuleParseResult.BlockModules"/>), the blocks are those of the module the line is in
+    /// (<see cref="Workspace.RDCoreDocument.ParseOf"/>): a block's module for a line between its header and its end, and the file's own module otherwise.
+    /// </remarks>
     /// <param name="parse">The module, as it was parsed from <paramref name="text"/>.</param>
     /// <param name="text">The text of the module. A line ends with a carriage return, a line feed, or both, as the Language Server Protocol counts them.</param>
     /// <param name="line">The line, from 0.</param>
@@ -51,7 +55,13 @@ public static class ModuleBlocks
         ArgumentNullException.ThrowIfNull(text);
         ModuleIndenter.ResetWork();
         var lines = ModuleIndenter.LinesIn(text);
-        return line < 0 || line >= lines.Length ? [] : OpenAt(parse, lines, line, ModuleIndenter.ProcedureAround(parse, lines, line, line));
+        if (line < 0 || line >= lines.Length)
+        {
+            return [];
+        }
+
+        var module = ModuleIndenter.ModuleAt(parse, line);
+        return OpenAt(module, lines, line, ModuleIndenter.ProcedureAround(module, lines, line, line));
     }
 
     // the open blocks at a line, from the blocks of the procedure the line is in when it is in one that nothing outside reaches into: no block outside a
@@ -97,6 +107,11 @@ public static class ModuleBlocks
     /// with the closer in it, from its first line to its closer. Anywhere else (the declarations of the module, a procedure that has no closer yet, one an
     /// <c>#If</c> block reaches into), the whole module is, as the indentation of its lines can depend on the rest of it. The edits are the same either way.
     /// </para>
+    /// <para>
+    /// In a file of blocks (<see cref="ModuleParseResult.BlockModules"/>), the block to close and the procedure are those of the module the line the break
+    /// ends is in, and the lines are indented as <see cref="ModuleIndenter.Indent"/> indents a file of blocks. The whole file is parsed again where the whole
+    /// module would be.
+    /// </para>
     /// </remarks>
     /// <param name="parse">The module, as it was parsed from <paramref name="text"/>, the line break in it.</param>
     /// <param name="text">The text of the module, the line break in it. A line ends with a carriage return, a line feed, or both, as the Language Server
@@ -125,12 +140,14 @@ public static class ModuleBlocks
 
         // the empty line indented as the code around it is; the procedures left as they are spaced, which a line break does not change.
         var indenting = options with { EmptyLineHandlingMethod = EmptyLineHandlingMethod.Indent, VerticallySpaceProcedures = false };
-        var procedure = ModuleIndenter.ProcedureAround(parse, lines, line - 1, line);
-        if (!Blanks.IsAll(lines[line]) || OpenAt(parse, lines, line - 1, procedure) is not [{ Opener: var opener, HasBody: false } block, ..]
+        // in a file of blocks, the blocks and the procedure are those of the module the line the break ends is in.
+        var module = ModuleIndenter.ModuleAt(parse, line - 1);
+        var procedure = ModuleIndenter.ProcedureAround(module, lines, line - 1, line);
+        if (!Blanks.IsAll(lines[line]) || OpenAt(module, lines, line - 1, procedure) is not [{ Opener: var opener, HasBody: false } block, ..]
             || opener != line - 1)
         {
             var edits = procedure is { } around
-                ? ModuleIndenter.IndentWithin(parse, text, lines, indenting, line - 1, line, around)
+                ? ModuleIndenter.IndentWithin(module, text, lines, indenting, line - 1, line, around)
                 : ModuleIndenter.IndentLines(parse, text, lines, indenting, line - 1, line);
             return [.. edits.Select(edit => Edit(edit, 0))];
         }

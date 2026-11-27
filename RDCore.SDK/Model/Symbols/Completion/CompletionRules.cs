@@ -48,7 +48,7 @@ public static class CompletionRules
     /// What can be written as the name at <paramref name="site"/> (<see cref="CompletionSiteKind.Name"/>).
     /// </summary>
     /// <param name="tree">The scope tree of the composed workspace.</param>
-    /// <param name="origin">Where the lookup originates (<see cref="CompletionCandidates.OriginAt"/>).</param>
+    /// <param name="origin">Where the lookup originates (<see cref="CompletionCandidates.OriginAt(ScopeTree, Uri, Source.SourcePosition, Uri)"/>).</param>
     /// <param name="site">What is being written.</param>
     /// <param name="placement">Where the line is in its module.</param>
     /// <param name="language">What the module is.</param>

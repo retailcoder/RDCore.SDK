@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Configuration.Json;
 using RDCore.SDK.Platform;
+using System.Globalization;
 using System.IO.Abstractions;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -18,7 +19,10 @@ public enum UserSettingProblem
     /// <summary>No setting has the key.</summary>
     UnknownSetting = 1,
 
-    /// <summary>Only the deployed configuration sets the setting (<see cref="SettingReach.Deployment"/>).</summary>
+    /// <summary>
+    /// Only the deployed configuration sets the setting (<see cref="SettingReach.Deployment"/>), or only the platform's settings file does
+    /// (<see cref="SettingReach.Platform"/>).
+    /// </summary>
     NotSettable = 2,
 
     /// <summary>The value is not one the setting can be (<see cref="SettingsSchema.TryParse"/>).</summary>
@@ -32,6 +36,14 @@ public enum UserSettingProblem
     /// not a list.
     /// </summary>
     NotAList = 5,
+
+    /// <summary>
+    /// An item was to be removed from a list (<see cref="UserSettingsStore.Remove"/>) that holds it, and the user did not add it: a layer below the user's
+    /// settings did, such as the platform's settings file or the deployed <c>appsettings.json</c>. A user's list adds to the list below it and takes nothing
+    /// from it (<see cref="UserSettingsConfiguration.AddUserSettings"/>), so nothing is removed. An extension the user does not want to load is one they block
+    /// (<see cref="ExtensionsOptions.Blocked"/>).
+    /// </summary>
+    NotTheUsers = 6,
 }
 
 /// <summary>
@@ -71,7 +83,11 @@ public sealed record class UserSettingValue(SettingDescriptor Setting, string Va
 /// <param name="fileSystem">The file system the file is in.</param>
 /// <param name="path">The path of the file.</param>
 /// <param name="schema">The settings that can be set.</param>
-public sealed class UserSettingsStore(IFileSystem fileSystem, string path, SettingsSchema schema)
+/// <param name="configuration">
+/// The configuration the user's settings are a layer of, which says the lists the user's add to: what an item to remove that the user did not add is checked
+/// against (<see cref="UserSettingProblem.NotTheUsers"/>). Without it, such an item is not there to remove, and nothing is.
+/// </param>
+public sealed class UserSettingsStore(IFileSystem fileSystem, string path, SettingsSchema schema, IConfiguration? configuration = null)
 {
     /// <summary>
     /// The name of the file.
@@ -174,6 +190,10 @@ public sealed class UserSettingsStore(IFileSystem fileSystem, string path, Setti
     /// Removes items from the list the user set for a setting whose value is a list (<see cref="SettingValueKind.TextList"/>,
     /// <see cref="SettingValueKind.DiagnosticCodeList"/>), without regard to case. The last item removed leaves an empty list, which the user set.
     /// </summary>
+    /// <remarks>
+    /// An item the user did not add is not the user's to remove (<see cref="UserSettingProblem.NotTheUsers"/>): when the configuration the store was given
+    /// holds one of the items, and the user's list does not, nothing is removed.
+    /// </remarks>
     /// <param name="key">The key of the setting, without regard to case: <c>analysis.disabledDiagnostics</c>.</param>
     /// <param name="value">The item, or items, as they are written (<see cref="SettingsSchema.TryParse"/>): <c>RDC01001</c>.</param>
     /// <returns>What became of the value: it is set when the list does not hold the items, and the file is written only when it did.</returns>
@@ -210,6 +230,12 @@ public sealed class UserSettingsStore(IFileSystem fileSystem, string path, Setti
         var items = (string[])parsed;
         var list = Find(root, setting) is JsonArray held ? held.Select(item => item is null ? string.Empty : TextOf(item)).ToList() : [];
         var count = list.Count;
+        if (remove && configuration is not null && LayeredLists.ItemsOf(configuration, setting, SettingsSchema.ConfigurationPathOf(setting))
+            .Any(held => items.Contains(held, StringComparer.OrdinalIgnoreCase) && !list.Contains(held, StringComparer.OrdinalIgnoreCase)))
+        {
+            return new(UserSettingProblem.NotTheUsers, setting);
+        }
+
         if (remove)
         {
             list.RemoveAll(item => items.Contains(item, StringComparer.OrdinalIgnoreCase));
@@ -398,6 +424,11 @@ public static class UserSettingsConfiguration
     /// another application's to check.
     /// </para>
     /// <para>
+    /// A list is the items of the layers below the user's (<c>appsettings.json</c>, and the platform's settings file under it), followed by the user's own
+    /// that are not among them, as a workspace's list is (<see cref="WorkspaceSettingsConfiguration.AddWorkspaceSettings"/>): a user adds to the list the
+    /// platform was deployed with and takes nothing from it. A value of any other kind takes the place of the one below it.
+    /// </para>
+    /// <para>
     /// A component reads the file when it starts, and not again: what a user set takes effect the next time the component starts
     /// (<see cref="SettingReach.NextStart"/>), unless it is a live setting, which the component's client says while it runs (<see cref="ILiveSettings"/>).
     /// </para>
@@ -438,11 +469,12 @@ public static class UserSettingsConfiguration
         public override IConfigurationProvider Build(IConfigurationBuilder builder)
         {
             EnsureDefaults(builder);
-            return new UserSettingsConfigurationProvider(this, schema);
+            return new UserSettingsConfigurationProvider(this, schema, LayeredLists.Below(builder, this));
         }
     }
 
-    private sealed class UserSettingsConfigurationProvider(JsonConfigurationSource source, SettingsSchema schema) : JsonConfigurationProvider(source)
+    private sealed class UserSettingsConfigurationProvider(JsonConfigurationSource source, SettingsSchema schema, Func<IConfigurationRoot> below)
+        : JsonConfigurationProvider(source)
     {
         public override void Load(Stream stream)
         {
@@ -470,6 +502,42 @@ public static class UserSettingsConfiguration
                 {
                     Data.Remove(key);
                 }
+            }
+
+            // each list the user set is added to the list of the layers below, as a workspace's is: the user adds to what the platform was deployed with.
+            var lists = new Dictionary<string, IReadOnlyList<string>>(StringComparer.OrdinalIgnoreCase);
+            var stated = Data
+                .Select(pair => (pair.Key, pair.Value, Setting: schema.Governing(pair.Key)))
+                .Where(entry => entry.Setting is { Kind: SettingValueKind.TextList or SettingValueKind.DiagnosticCodeList })
+                .GroupBy(entry => SettingsSchema.ConfigurationPathOf(entry.Setting!), StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            foreach (var list in stated)
+            {
+                List<string> items = [.. list
+                    .Select(entry => (entry.Value, Index: entry.Key.Length > list.Key.Length
+                        && int.TryParse(entry.Key.AsSpan(list.Key.Length + 1), NumberStyles.None, CultureInfo.InvariantCulture, out var index) ? index : -1))
+                    .Where(item => item.Index >= 0 && item.Value is not null)
+                    .OrderBy(item => item.Index)
+                    .Select(item => item.Value!)];
+                if (items.Count == 0 && Data.TryGetValue(list.Key, out var text) && text is { Length: > 0 }
+                    && SettingsSchema.TryParse(list.First().Setting!, text, out var parsed))
+                {
+                    items = [.. (string[])parsed];
+                }
+
+                lists[list.Key] = items;
+                foreach (var entry in list)
+                {
+                    Data.Remove(entry.Key);
+                }
+            }
+
+            LayeredLists.Write(Data, lists, schema, below);
+
+            // a list of none, below as well as the user's: an empty list the user set stays said.
+            foreach (var path in lists.Keys.Where(path => !Data.Keys.Any(key => key.StartsWith(path + ":", StringComparison.OrdinalIgnoreCase))))
+            {
+                Data[path] = string.Empty;
             }
         }
     }

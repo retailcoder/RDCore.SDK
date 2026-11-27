@@ -319,6 +319,22 @@ public sealed class RDCorePlatformClientWireTests
 
     [TestMethod]
     [Timeout(60_000, CooperativeCancellation = true)]
+    public async Task AListSettingValueRequestTheClientRefuses_ComesBackWithTheClientsReason()
+    {
+        using var connected = await ConnectAsync();
+        using var changing = connected.Platform.OnListSettingValue((_, _) =>
+            Task.FromResult(new ListSettingValueResult { Applied = false, Reason = "RDC01001 is not yours to remove." }));
+
+        var answer = await connected.Server.SendRequest(
+            new ListSettingValueRequest { Key = "Analysis.DisabledDiagnostics", Value = "RDC01001", Scope = SettingScope.Platform, Remove = true },
+            CancellationToken.None);
+
+        Assert.IsFalse(answer.Applied);
+        Assert.AreEqual("RDC01001 is not yours to remove.", answer.Reason);
+    }
+
+    [TestMethod]
+    [Timeout(60_000, CooperativeCancellation = true)]
     public async Task ARefactorPrepare_ReachesTheServersHandler_AndItsChoicesNoticesAndRangeComeBackAsTheServerWroteThem()
     {
         var module = new Uri("file:///c:/workspace/Module1.bas");

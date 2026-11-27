@@ -46,9 +46,12 @@ public sealed record class RDCoreDocument(Uri File, ModuleParseResult Parse)
     /// <remarks>
     /// The file's parse holds the trivia (<see cref="ModuleParseResult.Trivia"/>), the directives (<see cref="ModuleParseResult.PrecompilerTrivia"/>) and the
     /// syntax errors (<see cref="ModuleParseResult.SyntaxErrors"/>) of all its modules. An item is the module's whose lines hold its start: a block's module
-    /// has the lines between its header and its end, and the file's own module every other line. An item that runs on past the module's lines (a <c>#If</c>
-    /// left open) is still the module's it starts in. The header and the end lines of a block (<see cref="BlockBoundaryTriviaNode"/>) are the file's, and no
-    /// module's: a comment on either is the file's own module's. Positions are the file's, as in the file's parse.
+    /// has the lines between its header and its end, and the comment lines directly above its header, which hold the annotations of the block's module
+    /// (<see cref="Annotations.GetHeaderAnnotations"/>). Those comment lines end, going up from the header, at a blank line, a line of code (a comment
+    /// written after code included), a directive's line, or a line of another block, its header and its end line included.
+    /// The file's own module has every other line. An item that runs on past the module's lines (a <c>#If</c> left open) is still the module's it starts in.
+    /// The header and the end lines of a block (<see cref="BlockBoundaryTriviaNode"/>) are the file's, and no module's: a comment on either is the file's own
+    /// module's. Positions are the file's, as in the file's parse.
     /// <para>
     /// A block's module has the file's <see cref="ModuleParseResult.LineEnding"/>, and no <see cref="ModuleParseResult.Designer"/>; the file's own module has
     /// the file's line ending and designer. Neither has <see cref="ModuleParseResult.BlockModules"/>. A file with no block has the file's parse as its own
@@ -72,9 +75,12 @@ public sealed record class RDCoreDocument(Uri File, ModuleParseResult Parse)
             return null;
         }
 
+        var headerComments = HeaderCommentLines();
+        bool IsBlocks(BlockModule each, SourcePosition start)
+            => IsInside(each, start) || (start.Line >= headerComments[each] && start.Line < each.Range.Start.Line);
         bool Holds(SourcePosition start) => block is null
-            ? !Parse.BlockModules.Any(each => IsInside(each, start))
-            : IsInside(block, start);
+            ? !Parse.BlockModules.Any(each => IsBlocks(each, start))
+            : IsBlocks(block, start);
 
         return new ModuleParseResult
         {
@@ -87,9 +93,74 @@ public sealed record class RDCoreDocument(Uri File, ModuleParseResult Parse)
         };
     }
 
+    /// <summary>
+    /// The name of one of the file's modules, as RD-VBA names a module (<strong>MS-VBAL §4.2</strong>). The file's own module is named by its
+    /// <c>Attribute VB_Name</c> (<see cref="ModuleNodeExtensions.GetDeclaredName"/>), or by the file's name without its extension when it declares none
+    /// or could not be read (<see cref="ModuleName.FromFileName"/>), as <see cref="ModuleName.Resolve"/> names it from the file's text. A block's module
+    /// is named by its header (<see cref="BlockModule.Name"/>).
+    /// </summary>
+    /// <param name="module">The address of the module: the file's (<see cref="File"/>), or a block's (<see cref="BlockUri"/>).</param>
+    /// <returns>
+    /// The module's name; <see langword="null"/> when the file holds no module at that address. When two blocks have one name, the first block's.
+    /// </returns>
+    public string? NameOf(Uri module)
+        => module == File
+            ? Parse.SyntaxTree?.GetDeclaredName() ?? ModuleName.FromFileName(File.IsAbsoluteUri ? File.LocalPath : File.OriginalString)
+            : Parse.BlockModules.FirstOrDefault(block => block.Uri == module)?.Name;
+
     // whether a position is on a line between a block's header and its end.
     private static bool IsInside(BlockModule block, SourcePosition position)
         => position.Line > block.Range.Start.Line && position.Line < block.Range.End.Line;
+
+    // the first of the comment lines directly above each block's header: no blank line and no code is between them and the header, and no code is before
+    // the comment on its line. A block with none has its header's line. Code is what the file's own tree writes (CodeLines), a directive's line, a header
+    // or an end line, and the lines of a block.
+    private Dictionary<BlockModule, int> HeaderCommentLines()
+    {
+        var comments = new HashSet<int>();
+        var code = new HashSet<int>();
+        foreach (var node in Parse.Trivia)
+        {
+            var range = node.SourceLocation.Range;
+            var lines = node is CommentTriviaNode ? comments : node is BlockBoundaryTriviaNode ? code : null;
+            for (var line = range.Start.Line; lines is not null && line <= range.End.Line; line++)
+            {
+                lines.Add(line);
+            }
+        }
+
+        foreach (var child in Parse.SyntaxTree?.Children ?? [])
+        {
+            code.UnionWith(CodeLines(child));
+        }
+
+        code.UnionWith(Parse.PrecompilerTrivia.Select(directive => directive.SourceLocation.Range.Start.Line));
+        var first = new Dictionary<BlockModule, int>(ReferenceEqualityComparer.Instance);
+        foreach (var block in Parse.BlockModules)
+        {
+            var line = block.Range.Start.Line;
+            while (line > 0 && comments.Contains(line - 1) && !code.Contains(line - 1)
+                && !Parse.BlockModules.Any(each => IsInside(each, new SourcePosition(line - 1, 0))))
+            {
+                line--;
+            }
+
+            first[block] = line;
+        }
+
+        return first;
+    }
+
+    // the lines a node of the file's own tree writes code on. A script's procedure (ProgramEntryPoint.ScriptName) writes its code on its statements'
+    // lines, and none when the script has no code: its range runs from its first statement to its last, across the blocks and the comments between them,
+    // and is of no width where the file starts when there is none.
+    private static IEnumerable<int> CodeLines(SyntaxNode node)
+    {
+        var range = node.SourceLocation.Range;
+        return node is MemberDeclarationNode { MemberKind: MemberKind.Procedure, Name: ProgramEntryPoint.ScriptName }
+            ? node.Children.SelectMany(CodeLines)
+            : Enumerable.Range(range.Start.Line, range.End.Line - range.Start.Line + 1);
+    }
 
     /// <inheritdoc cref="FileBlocks.BlockUri(Uri, string)"/>
     public static Uri BlockUri(Uri file, string name) => FileBlocks.BlockUri(file, name);

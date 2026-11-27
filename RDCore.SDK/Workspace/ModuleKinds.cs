@@ -1,6 +1,7 @@
 using RDCore.SDK.Model;
 using RDCore.SDK.Model.AST.Declarations;
 using RDCore.SDK.Model.Symbols;
+using RDCore.SDK.Server.Configuration;
 
 namespace RDCore.SDK.Workspace;
 
@@ -79,12 +80,13 @@ public static class ModuleKinds
     public static ModuleType Of(FileBlockKind kind) => kind == FileBlockKind.Class ? ModuleType.ClassModule : ModuleType.StdModule;
 
     /// <summary>
-    /// Every module a file of a project declares, read from its text without parsing it, in the order they are written: the file's own module, then the
-    /// module of each of its blocks (<see cref="FileBlocks"/>).
+    /// Every module a file of a project declares in a workspace of the default options, read from its text without parsing it: the file's own module,
+    /// then the module of each of its blocks when the file is the source file of a language that always has statements outside its procedures (a
+    /// <c>.vbs</c>).
     /// </summary>
     /// <remarks>
-    /// The file's own module is named as <see cref="ModuleName.Resolve"/> names it, and its kind is <see cref="Of(RDCoreModule?, string?)"/>'s. A block's
-    /// module is named as its header writes it, and its kind is its block's (<see cref="Of(FileBlockKind)"/>). A file of one module declares that one.
+    /// This is <see cref="ModulesOf(RDCoreModule, string?, SdkWorkspaceOptions)"/> with <c>new SdkWorkspaceOptions()</c>: an RD-VBA workspace, with the
+    /// <see cref="SdkWorkspaceOptions.FileLevelStatements"/> setting off.
     /// </remarks>
     /// <param name="module">The file's entry in the project.</param>
     /// <param name="source">The file's text, or <see langword="null"/> when it could not be read.</param>
@@ -92,19 +94,69 @@ public static class ModuleKinds
     /// The modules, the file's own first; the file's own module alone, named for its file, when <paramref name="source"/> is <see langword="null"/>.
     /// </returns>
     /// <exception cref="ArgumentNullException"><paramref name="module"/> is <see langword="null"/>.</exception>
-    public static IReadOnlyList<DeclaredModule> ModulesOf(RDCoreModule module, string? source)
+    public static IReadOnlyList<DeclaredModule> ModulesOf(RDCoreModule module, string? source) => ModulesOf(module, source, new SdkWorkspaceOptions());
+
+    /// <summary>
+    /// Every module a file of a project declares, read from its text without parsing it, in the order they are written: the file's own module, then the
+    /// module of each of its blocks (<see cref="FileBlocks"/>).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A file declares modules in blocks only where it may have statements outside its procedures
+    /// (<see cref="SdkWorkspaceOptions.AllowsFileLevelStatements"/>). Elsewhere a block's header and end lines are lines of the file's own module, and
+    /// syntax errors there. The source file of a language that always has such statements (a <c>.vbs</c>) has blocks whatever the setting says.
+    /// </para>
+    /// <para>
+    /// The file's own module is named as <see cref="ModuleName.Resolve"/> names it, and its kind is <see cref="Of(RDCoreModule?, string?)"/>'s. A block's
+    /// module is named as its header writes it, and its kind is its block's (<see cref="Of(FileBlockKind)"/>). A file of one module declares that one.
+    /// </para>
+    /// </remarks>
+    /// <param name="module">The file's entry in the project.</param>
+    /// <param name="source">The file's text, or <see langword="null"/> when it could not be read.</param>
+    /// <param name="workspace">The workspace's options, which say whether the file may have statements outside its procedures.</param>
+    /// <returns>
+    /// The modules, the file's own first; the file's own module alone, named for its file, when <paramref name="source"/> is <see langword="null"/>, or
+    /// when the file may have no statements outside its procedures.
+    /// </returns>
+    /// <exception cref="ArgumentNullException"><paramref name="module"/> or <paramref name="workspace"/> is <see langword="null"/>.</exception>
+    /// <exception cref="InvalidOperationException">
+    /// The workspace's <see cref="SdkWorkspaceOptions.Language"/> is not the identifier of a language the platform serves.
+    /// </exception>
+    public static IReadOnlyList<DeclaredModule> ModulesOf(RDCoreModule module, string? source, SdkWorkspaceOptions workspace)
     {
         ArgumentNullException.ThrowIfNull(module);
+        ArgumentNullException.ThrowIfNull(workspace);
+        DeclaredModule own = new(ModuleName.Resolve(source, module.RelativeUri), Of(module, source), IsBlock: false);
         return
         [
-            new DeclaredModule(ModuleName.Resolve(source, module.RelativeUri), Of(module, source), IsBlock: false),
-            .. FileBlocks.Find(source).Select(block => new DeclaredModule(block.Name, Of(block.Kind), IsBlock: true)
+            own,
+            .. BlocksOf(module.RelativeUri, source, workspace).Select(block => new DeclaredModule(block.Name, Of(block.Kind), IsBlock: true)
             {
                 IsPartial = block.IsPartial,
                 IsCreatable = block.IsCreatable,
                 Visibility = block.Visibility,
             }),
         ];
+    }
+
+    /// <summary>
+    /// The blocks of a file in a workspace (<see cref="FileBlocks.Find"/>), in the order they are written: none where the file may have no statements
+    /// outside its procedures (<see cref="SdkWorkspaceOptions.AllowsFileLevelStatements"/>), whose block headers and end lines are then lines of the
+    /// file's own module, and syntax errors there.
+    /// </summary>
+    /// <param name="document">The file's URI, its path, or its relative URI in its project.</param>
+    /// <param name="source">The file's text, or <see langword="null"/> when it could not be read.</param>
+    /// <param name="workspace">The workspace's options, which say whether the file may have statements outside its procedures.</param>
+    /// <returns>The blocks; none when <paramref name="source"/> is <see langword="null"/>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="document"/> or <paramref name="workspace"/> is <see langword="null"/>.</exception>
+    /// <exception cref="InvalidOperationException">
+    /// The workspace's <see cref="SdkWorkspaceOptions.Language"/> is not the identifier of a language the platform serves.
+    /// </exception>
+    public static IReadOnlyList<FileBlock> BlocksOf(string document, string? source, SdkWorkspaceOptions workspace)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        ArgumentNullException.ThrowIfNull(workspace);
+        return workspace.AllowsFileLevelStatements(document) ? FileBlocks.Find(source) : [];
     }
 
     /// <summary>
@@ -139,7 +191,8 @@ public static class ModuleKinds
 public sealed record class DocumentHostClass(string Library, string ClassName);
 
 /// <summary>
-/// A module that a file of a project declares (<see cref="ModuleKinds.ModulesOf"/>): the file's own module, or the module of one of its blocks.
+/// A module that a file of a project declares (<see cref="ModuleKinds.ModulesOf(RDCoreModule, string?, SdkWorkspaceOptions)"/>): the file's own module, or
+/// the module of one of its blocks.
 /// </summary>
 /// <param name="Name">The module's name: its <c>Attribute VB_Name</c> or its file's name for the file's own module, its header's for a block's.</param>
 /// <param name="Kind">The kind of module.</param>

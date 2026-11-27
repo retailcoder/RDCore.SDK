@@ -232,4 +232,82 @@
   <data name="InlayHints_ImplicitTypes" xml:space="preserve">
     <value>Whether a variable or a parameter declared without a type shows the one it has, after its name: Dim First [As Variant].</value>
   </data>
+  <data name="Environment_ExecutionPolicy_LibraryImports_Mode" xml:space="preserve">
+    <value>What the execution policy does with a call to a procedure a Declare statement imports from a native library: Allow makes it, Block raises run-time error 70, which a handler can trap, and Halt stops the program. Allow by default. Only the platform's settings file sets it.</value>
+  </data>
+  <data name="Environment_ExecutionPolicy_LibraryImports_Audit" xml:space="preserve">
+    <value>Whether the audit log records a call to a procedure a Declare statement imports from a native library: None, Refused (when the mode refuses it) or All. None by default. Only the platform's settings file sets it.</value>
+  </data>
+  <data name="Environment_ExecutionPolicy_Automation_Mode" xml:space="preserve">
+    <value>What the execution policy does with a call that creates or uses an object of an automation server (New of a referenced COM library, CreateObject, GetObject), a host application's among them: Allow makes it, Block raises run-time error 70, which a handler can trap, and Halt stops the program. Allow by default. Only the platform's settings file sets it.</value>
+  </data>
+  <data name="Environment_ExecutionPolicy_Automation_Audit" xml:space="preserve">
+    <value>Whether the audit log records a call that creates or uses an object of an automation server (New of a referenced COM library, CreateObject, GetObject), a host application's among them: None, Refused (when the mode refuses it) or All. None by default. Only the platform's settings file sets it.</value>
+  </data>
+  <data name="Environment_ExecutionPolicy_ProcessLaunch_Mode" xml:space="preserve">
+    <value>What the execution policy does with a call that starts a program (Shell): Allow makes it, Block raises run-time error 70, which a handler can trap, and Halt stops the program. Allow by default. Only the platform's settings file sets it.</value>
+  </data>
+  <data name="Environment_ExecutionPolicy_ProcessLaunch_Audit" xml:space="preserve">
+    <value>Whether the audit log records a call that starts a program (Shell): None, Refused (when the mode refuses it) or All. None by default. Only the platform's settings file sets it.</value>
+  </data>
+  <data name="Environment_ExecutionPolicy_Keystrokes_Mode" xml:space="preserve">
+    <value>What the execution policy does with a call that sends keys to another window (SendKeys, AppActivate): Allow makes it, Block raises run-time error 70, which a handler can trap, and Halt stops the program. Allow by default. Only the platform's settings file sets it.</value>
+  </data>
+  <data name="Environment_ExecutionPolicy_Keystrokes_Audit" xml:space="preserve">
+    <value>Whether the audit log records a call that sends keys to another window (SendKeys, AppActivate): None, Refused (when the mode refuses it) or All. None by default. Only the platform's settings file sets it.</value>
+  </data>
+  <data name="Environment_ExecutionPolicy_FileSystemWrite_Mode" xml:space="preserve">
+    <value>What the execution policy does with a call that writes, moves or deletes a file or a folder: Allow makes it, Block raises run-time error 70, which a handler can trap, and Halt stops the program. Allow by default. Only the platform's settings file sets it.</value>
+  </data>
+  <data name="Environment_ExecutionPolicy_FileSystemWrite_Audit" xml:space="preserve">
+    <value>Whether the audit log records a call that writes, moves or deletes a file or a folder: None, Refused (when the mode refuses it) or All. None by default. Only the platform's settings file sets it.</value>
+  </data>
+  <data name="Environment_ExecutionPolicy_FileSystemRead_Mode" xml:space="preserve">
+    <value>What the execution policy does with a call that reads a file or lists a folder: Allow makes it, Block raises run-time error 70, which a handler can trap, and Halt stops the program. Allow by default. Only the platform's settings file sets it.</value>
+  </data>
+  <data name="Environment_ExecutionPolicy_FileSystemRead_Audit" xml:space="preserve">
+    <value>Whether the audit log records a call that reads a file or lists a folder: None, Refused (when the mode refuses it) or All. None by default. Only the platform's settings file sets it.</value>
+  </data>
+  <data name="Environment_ExecutionPolicy_Registry_Mode" xml:space="preserve">
+    <value>What the execution policy does with a call to the Windows Registry: Allow makes it, Block raises run-time error 70, which a handler can trap, and Halt stops the program. Allow by default. Only the platform's settings file sets it.</value>
+  </data>
+  <data name="Environment_ExecutionPolicy_Registry_Audit" xml:space="preserve">
+    <value>Whether the audit log records a call to the Windows Registry: None, Refused (when the mode refuses it) or All. None by default. Only the platform's settings file sets it.</value>
+  </data>
+  <data name="Environment_ExecutionPolicy_Environment_Mode" xml:space="preserve">
+    <value>What the execution policy does with a call to the environment variables of the process (Environ): Allow makes it, Block raises run-time error 70, which a handler can trap, and Halt stops the program. Allow by default. Only the platform's settings file sets it.</value>
+  </data>
+  <data name="Environment_ExecutionPolicy_Environment_Audit" xml:space="preserve">
+    <value>Whether the audit log records a call to the environment variables of the process (Environ): None, Refused (when the mode refuses it) or All. None by default. Only the platform's settings file sets it.</value>
+  </data>
+  <data name="Environment_ExecutionPolicy_FileIO_Mode" xml:space="preserve">
+    <value>Whether a program has a file system for the language's own file statements and functions (Open, Print #, Kill, Dir): Allow by default. Block or Halt gives the session none, and a statement that needs one is refused as the mode says. Only the platform's settings file sets it.</value>
+  </data>
+  <data name="Environment_ExecutionPolicy_FileIO_Audit" xml:space="preserve">
+    <value>Which uses of the language's own file statements and functions the audit log records: None, Refused or All. None by default. Only the platform's settings file sets it.</value>
+  </data>
+  <data name="Audit_Capacity" xml:space="preserve">
+    <value>The entries the audit log holds while they wait to be written: 4096 by default. An entry recorded while it is full is dropped, counted, and reported in an entry of its own. Only the platform's settings file sets it.</value>
+  </data>
+  <data name="Audit_ShutdownTimeoutSeconds" xml:space="preserve">
+    <value>How long, in seconds, the audit log goes on writing the entries it holds when the process ends: 5 by default. Only the platform's settings file sets it.</value>
+  </data>
+  <data name="Audit_Arguments" xml:space="preserve">
+    <value>What an entry says of a call's arguments: None, Types (their number and declared types, the default) or Values. A value can be a password. Only the platform's settings file sets it.</value>
+  </data>
+  <data name="Audit_File_Enabled" xml:space="preserve">
+    <value>Whether the entries are written to a file, a line of JSON each, in a file for each process and each day: on by default. Only the platform's settings file sets it.</value>
+  </data>
+  <data name="Audit_File_Directory" xml:space="preserve">
+    <value>The folder of the audit files: empty by default, for Logs/Audits under the platform root. A relative folder is under the platform root. Only the platform's settings file sets it.</value>
+  </data>
+  <data name="Audit_EventLog_Enabled" xml:space="preserve">
+    <value>Whether the entries are written to the Windows Event Log, on Windows: off by default. Only the platform's settings file sets it.</value>
+  </data>
+  <data name="Audit_EventLog_LogName" xml:space="preserve">
+    <value>The Windows event log the entries are written to: Application by default. Only the platform's settings file sets it.</value>
+  </data>
+  <data name="Audit_EventLog_Source" xml:space="preserve">
+    <value>The source the entries are written as in the Windows Event Log: RDCore by default. Only the platform's settings file sets it.</value>
+  </data>
 </root>

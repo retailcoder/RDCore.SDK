@@ -27,6 +27,16 @@ public sealed class FileLevelStatementsTests
         => Assert.IsTrue(new SdkWorkspaceOptions { Language = language, FileLevelStatements = true }
             .AllowsFileLevelStatements("file:///c:/ws/Module1.bas"));
 
+    // the setting allows them in a VBA or VB6 module, which is then a script only when it writes one; a document of a language that always has them is one
+    // whatever it writes.
+    [TestMethod]
+    [DataRow("vba", "file:///c:/ws/Module1.bas", false, DisplayName = "a VBA module, the setting on")]
+    [DataRow("vba", "file:///c:/ws/Backup.vbs", true, DisplayName = "a script in a VBA workspace")]
+    [DataRow("vbscript", "file:///c:/ws/Module1.bas", true, DisplayName = "any module of a VBScript workspace")]
+    [DataRow("vbscript", "file:///c:/ws/Backup.vbs/Logger", false, DisplayName = "the module of a block of a script")]
+    public void ADocument_AlwaysHasThem_OnlyWhereItsLanguageDoes(string language, string document, bool expected)
+        => Assert.AreEqual(expected, new SdkWorkspaceOptions { Language = language, FileLevelStatements = true }.AlwaysHasFileLevelStatements(document));
+
     [TestMethod]
     public void OnlyVBScript_AlwaysHasThem()
         => CollectionAssert.AreEqual(new[] { SupportedLanguages.VBScript },
