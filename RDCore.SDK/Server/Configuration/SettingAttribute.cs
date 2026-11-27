@@ -20,6 +20,16 @@ public enum SettingReach
     /// client never changes it, because a bad value would keep the platform from starting, and with it the client that could put it back.
     /// </summary>
     Deployment = 2,
+
+    /// <summary>
+    /// The setting is the platform's, the same for every component of it: only the platform's settings file sets it
+    /// (<see cref="PlatformSettingsConfiguration"/>). A value any other source gives it - a component's own <c>appsettings.json</c>, a user's settings, a
+    /// workspace's, the environment, the command line - is not read, and a setting the file does not say is its default.
+    /// </summary>
+    /// <remarks>
+    /// What a program may do on the machine it runs on is such a setting: a sandbox the sandboxed user can switch off is none.
+    /// </remarks>
+    Platform = 3,
 }
 
 /// <summary>

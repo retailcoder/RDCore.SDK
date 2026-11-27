@@ -11,7 +11,8 @@ namespace RDCore.SDK.Server.Configuration;
 /// </summary>
 /// <remarks>
 /// <para>
-/// A workspace sets only what <see cref="CanSet"/> says it can: no setting of the deployment (<see cref="SettingReach.Deployment"/>), and none that decides
+/// A workspace sets only what <see cref="CanSet"/> says it can: no setting of the deployment (<see cref="SettingReach.Deployment"/>) or of the platform
+/// (<see cref="SettingReach.Platform"/>), and none that decides
 /// what a program may do to the machine it runs on (<see cref="SettingDescriptor.IsTrustSensitive"/>). A workspace can come from anywhere, a cloned
 /// repository included, and it grants itself no rights. Nothing else of the file is read: not a setting the schema does not have, not a value the setting
 /// cannot be, and not the program's own settings (<c>ProgramSettings</c>), which are kept in the same file.
@@ -272,25 +273,7 @@ public static class WorkspaceSettingsConfiguration
     private sealed class WorkspaceSettingsConfigurationSource(IFileSystem fileSystem, string path, SettingsSchema schema) : IConfigurationSource
     {
         public IConfigurationProvider Build(IConfigurationBuilder builder)
-        {
-            var below = builder.Sources.TakeWhile(source => !ReferenceEquals(source, this)).ToList();
-            var properties = builder.Properties.ToList();
-            return new WorkspaceSettingsConfigurationProvider(fileSystem, path, schema, () =>
-            {
-                var lower = new ConfigurationBuilder();
-                foreach (var (key, value) in properties)
-                {
-                    lower.Properties[key] = value;
-                }
-
-                foreach (var source in below)
-                {
-                    lower.Add(source);
-                }
-
-                return lower.Build();
-            });
-        }
+            => new WorkspaceSettingsConfigurationProvider(fileSystem, path, schema, LayeredLists.Below(builder, this));
     }
 
     private sealed class WorkspaceSettingsConfigurationProvider(IFileSystem fileSystem, string path, SettingsSchema schema, Func<IConfigurationRoot> below)
@@ -305,49 +288,9 @@ public static class WorkspaceSettingsConfiguration
                 data[key] = value;
             }
 
-            if (read.Lists.Count > 0)
-            {
-                // the lists of the layers below, as they are when the workspace's file is read: a plain overlay would put the workspace's items in the place
-                // of theirs, index by index.
-                var lower = below();
-                try
-                {
-                    foreach (var (settingPath, items) in read.Lists)
-                    {
-                        var setting = schema.Governing(settingPath)!;
-                        List<string> list = [.. ItemsBelow(lower, setting, settingPath)];
-                        list.AddRange(items.Where(item => !list.Contains(item, StringComparer.OrdinalIgnoreCase)));
-                        for (var index = 0; index < list.Count; index++)
-                        {
-                            data[$"{settingPath}:{index.ToString(CultureInfo.InvariantCulture)}"] = list[index];
-                        }
-                    }
-                }
-                finally
-                {
-                    (lower as IDisposable)?.Dispose();
-                }
-            }
-
+            // the lists of the layers below, as they are when the workspace's file is read.
+            LayeredLists.Write(data, read.Lists, schema, below);
             Data = data;
-        }
-
-        // the items of a list as the layers below say it: one by one, by their index; or as text, "i, j", when none is given one by one.
-        private static IEnumerable<string> ItemsBelow(IConfiguration lower, SettingDescriptor setting, string settingPath)
-        {
-            var section = lower.GetSection(settingPath);
-            var items = section.GetChildren()
-                .Select(child => (Child: child, Index: int.TryParse(child.Key, NumberStyles.None, CultureInfo.InvariantCulture, out var index) ? index : -1))
-                .Where(pair => pair.Index >= 0 && pair.Child.Value is not null)
-                .OrderBy(pair => pair.Index)
-                .Select(pair => pair.Child.Value!)
-                .ToList();
-            if (items.Count == 0 && section.Value is { Length: > 0 } text && SettingsSchema.TryParse(setting, text, out var parsed))
-            {
-                return (string[])parsed;
-            }
-
-            return items;
         }
     }
 }

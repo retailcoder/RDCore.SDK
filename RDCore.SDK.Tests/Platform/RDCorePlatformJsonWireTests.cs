@@ -169,7 +169,7 @@ public sealed class RDCorePlatformJsonWireTests
 
         var listed = new ListSettingValueParams { Key = "Analysis.DisabledDiagnostics", Value = "RDC01001", Scope = SettingScope.Workspace, Remove = true, Document = Module };
         yield return (listed, new ListSettingValueRequest(listed));
-        yield return Same(new ListSettingValueResult { Applied = true });
+        yield return Same(new ListSettingValueResult { Applied = false, Reason = "Not the user's." });
         yield return Same(new ListSettingValue(true));
 
         yield return (new RefactorPrepareParams { Kind = RefactoringKinds.ExtractMethod, Uri = Module, Range = Range },
@@ -334,7 +334,7 @@ public sealed class RDCorePlatformJsonWireTests
         ("RubberduckIndenterSettingsApplyParams", """{"source":"RubberduckConfig","settings":{"Formatting.IndentSpaces":"2"}}"""),
         ("RubberduckIndenterSettingsApplyResult", """{"applied":1,"refused":["Formatting.Nope"]}"""),
         ("ListSettingValueParams", """{"key":"Analysis.DisabledDiagnostics","value":"RDC01001","scope":1,"remove":true,"document":"file:///c:/workspace/Module1.bas"}"""),
-        ("ListSettingValueResult", """{"applied":true}"""),
+        ("ListSettingValueResult", """{"applied":false,"reason":"Not the user's."}"""),
         ("ListSettingValue", """{"isSupported":true}"""),
         ("RefactorPrepareParams", """{"kind":"refactor.extract.method","uri":"file:///c:/workspace/Module1.bas","range":{"start":{"line":1,"character":2},"end":{"line":3,"character":4},"isEmpty":false}}"""),
         ("RefactorPrepareResult", """{"choices":[{"id":"name","kind":0,"label":"Name","description":null,"default":"NewMethod","options":[],"items":[],"canReorder":false},{"id":"access","kind":1,"label":"Access","description":"Who can call it","default":"Private","options":[{"value":"Private","label":"Private","description":"This module"}],"items":[],"canReorder":false},{"id":"parameters","kind":3,"label":"Parameters","description":null,"default":null,"options":[],"items":[{"id":"total","label":"ByRef total As Long","reason":"The selection assigns it","location":null,"choices":[{"id":"byRef","kind":2,"label":"ByRef","description":null,"default":"true","options":[],"items":[],"canReorder":false}]}],"canReorder":true}],"notices":[{"code":"extractMethod.writeBack","kind":1,"message":"m","location":{"uri":"file:///c:/workspace/Module1.bas","range":{"start":{"line":1,"character":2},"end":{"line":3,"character":4},"isEmpty":false}},"related":{"uri":"file:///c:/workspace/Module1.bas","range":{"start":{"line":1,"character":2},"end":{"line":3,"character":4},"isEmpty":false}},"choice":null,"item":null}],"range":{"start":{"line":1,"character":2},"end":{"line":3,"character":4},"isEmpty":false}}"""),
