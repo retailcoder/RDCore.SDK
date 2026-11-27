@@ -24,6 +24,12 @@ public interface IPlatformEnvironment
     string ManifestPath { get; }
 
     /// <summary>
+    /// Absolute path of the platform's settings file, <c>&lt;Root&gt;/platform-settings.json</c> (<see cref="PlatformEnvironment.SettingsFileName"/>): what
+    /// every component of the platform is deployed with (<see cref="Server.Configuration.PlatformSettingsConfiguration"/>).
+    /// </summary>
+    string SettingsPath => Resolve(PlatformEnvironment.SettingsFileName);
+
+    /// <summary>
     /// Absolute path of the folder the platform's components write their logs to, created if missing: the user's, not the platform root's, so that a
     /// platform can be installed where its user can't write (<c>Program Files</c>, <c>/opt</c>).
     /// </summary>
@@ -68,6 +74,12 @@ public sealed class PlatformEnvironment : IPlatformEnvironment
     /// (<see cref="Runtime.Libraries.DirectoryLibrarySource"/>).
     /// </summary>
     public const string SymbolsDirectory = "Symbols";
+
+    /// <summary>
+    /// Name of the platform's settings file at the platform root (<see cref="IPlatformEnvironment.SettingsPath"/>). It does not begin with
+    /// <c>appsettings</c>, the name a component's own settings file is found by.
+    /// </summary>
+    public const string SettingsFileName = "platform-settings.json";
 
     /// <summary>
     /// Name of the environment variable that overrides the folder of the platform's user (<see cref="UserDataDirectory"/>): what a test sets, so that it never reads
