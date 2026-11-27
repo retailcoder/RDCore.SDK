@@ -239,10 +239,10 @@
     <value>Whether the audit log records a call to a procedure a Declare statement imports from a native library: None, Refused (when the mode refuses it) or All. None by default. Only the platform's settings file sets it.</value>
   </data>
   <data name="Environment_ExecutionPolicy_Automation_Mode" xml:space="preserve">
-    <value>What the execution policy does with a call to an object of a referenced library, a host application's among them: Allow makes it, Block raises run-time error 70, which a handler can trap, and Halt stops the program. Allow by default. Only the platform's settings file sets it.</value>
+    <value>What the execution policy does with a call that creates or uses an object of an automation server (New of a referenced COM library, CreateObject, GetObject), a host application's among them: Allow makes it, Block raises run-time error 70, which a handler can trap, and Halt stops the program. Allow by default. Only the platform's settings file sets it.</value>
   </data>
   <data name="Environment_ExecutionPolicy_Automation_Audit" xml:space="preserve">
-    <value>Whether the audit log records a call to an object of a referenced library, a host application's among them: None, Refused (when the mode refuses it) or All. None by default. Only the platform's settings file sets it.</value>
+    <value>Whether the audit log records a call that creates or uses an object of an automation server (New of a referenced COM library, CreateObject, GetObject), a host application's among them: None, Refused (when the mode refuses it) or All. None by default. Only the platform's settings file sets it.</value>
   </data>
   <data name="Environment_ExecutionPolicy_ProcessLaunch_Mode" xml:space="preserve">
     <value>What the execution policy does with a call that starts a program (Shell): Allow makes it, Block raises run-time error 70, which a handler can trap, and Halt stops the program. Allow by default. Only the platform's settings file sets it.</value>

@@ -239,10 +239,10 @@
     <value>Si le journal d'audit enregistre un appel à une procédure qu'une instruction Declare importe d'une bibliothèque native : None, Refused (quand le mode le refuse) ou All. None par défaut. Seul le fichier de paramètres de la plateforme le définit.</value>
   </data>
   <data name="Environment_ExecutionPolicy_Automation_Mode" xml:space="preserve">
-    <value>Ce que la politique d'exécution fait d'un appel à un objet d'une bibliothèque référencée, dont ceux d'une application hôte : Allow le fait, Block lève l'erreur d'exécution 70, qu'un gestionnaire peut intercepter, et Halt arrête le programme. Allow par défaut. Seul le fichier de paramètres de la plateforme le définit.</value>
+    <value>Ce que la politique d'exécution fait d'un appel qui crée ou utilise un objet d'un serveur d'automatisation (New d'une bibliothèque COM référencée, CreateObject, GetObject), dont ceux d'une application hôte : Allow le fait, Block lève l'erreur d'exécution 70, qu'un gestionnaire peut intercepter, et Halt arrête le programme. Allow par défaut. Seul le fichier de paramètres de la plateforme le définit.</value>
   </data>
   <data name="Environment_ExecutionPolicy_Automation_Audit" xml:space="preserve">
-    <value>Si le journal d'audit enregistre un appel à un objet d'une bibliothèque référencée, dont ceux d'une application hôte : None, Refused (quand le mode le refuse) ou All. None par défaut. Seul le fichier de paramètres de la plateforme le définit.</value>
+    <value>Si le journal d'audit enregistre un appel qui crée ou utilise un objet d'un serveur d'automatisation (New d'une bibliothèque COM référencée, CreateObject, GetObject), dont ceux d'une application hôte : None, Refused (quand le mode le refuse) ou All. None par défaut. Seul le fichier de paramètres de la plateforme le définit.</value>
   </data>
   <data name="Environment_ExecutionPolicy_ProcessLaunch_Mode" xml:space="preserve">
     <value>Ce que la politique d'exécution fait d'un appel qui lance un programme (Shell) : Allow le fait, Block lève l'erreur d'exécution 70, qu'un gestionnaire peut intercepter, et Halt arrête le programme. Allow par défaut. Seul le fichier de paramètres de la plateforme le définit.</value>

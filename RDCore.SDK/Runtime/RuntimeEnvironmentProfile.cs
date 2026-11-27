@@ -70,7 +70,7 @@ public sealed record class RuntimeEnvironmentProfile(
     }
 
     /// <summary>
-    /// Whether <see cref="ExecutionPolicy"/> makes the call of an object of a referenced library: <see langword="false"/> when its rule of
+    /// Whether <see cref="ExecutionPolicy"/> makes the calls of an automation server's objects: <see langword="false"/> when its rule of
     /// <see cref="ExecutionCategory.Automation"/> blocks or halts it. Given as <see langword="false"/>, it makes that rule at least
     /// <see cref="ExecutionPolicyMode.Block"/>; given as <see langword="true"/>, it leaves the rule as it is.
     /// </summary>

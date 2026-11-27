@@ -4,7 +4,8 @@ namespace RDCore.SDK.Runtime;
 /// What a call reaches outside the program: the category of a member, which the platform's execution policy decides by (<see cref="ExecutionPolicy"/>).
 /// </summary>
 /// <remarks>
-/// Every member has exactly one category. A member that nobody marks is <see cref="Workspace"/>, the default value.
+/// Every call has exactly one category: a member's, or, for a member whose calls differ by their arguments (an <c>Open</c> for reading or for writing),
+/// the call's own. A member that nobody marks is <see cref="Workspace"/>, the default value.
 /// </remarks>
 public enum ExecutionCategory
 {
