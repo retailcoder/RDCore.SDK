@@ -59,7 +59,7 @@ public static class AnnotationEdits
     /// <summary>
     /// The edits that move the annotation onto a comment line of its own before the line a range starts on, with its arguments as they are written, and
     /// remove it where it is (<see cref="RemovalOf"/>), such as a module annotation moved above the header of a block
-    /// (<see cref="Annotations.GetHeaderAnnotations"/>).
+    /// (<see cref="Model.AST.Annotations.GetHeaderAnnotations"/>).
     /// </summary>
     /// <remarks>
     /// The line is written without indentation, as <see cref="LineEdits"/> writes lines.
