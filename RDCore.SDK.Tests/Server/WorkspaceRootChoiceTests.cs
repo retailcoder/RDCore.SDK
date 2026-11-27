@@ -53,28 +53,33 @@ public sealed class WorkspaceRootChoiceTests
             Assert.Inconclusive("a drive is Windows' own");
         }
 
-        var started = char.IsUpper(Project[0]) ? char.ToLowerInvariant(Project[0]) + Project[1..] : char.ToUpperInvariant(Project[0]) + Project[1..];
+        // the drive of the folder as the request gives it, in the other case.
+        var requested = WorkspaceRootChoice.Of(Request(UriOf(Project)), null).Requested!;
+        var drive = char.IsUpper(requested[0]) ? char.ToLowerInvariant(requested[0]) : char.ToUpperInvariant(requested[0]);
+        Assert.IsTrue(char.IsLetter(drive) && requested[1] == ':', requested);
 
-        Assert.IsFalse(WorkspaceRootChoice.Of(Request(UriOf(Project)), started).Differs);
+        Assert.IsFalse(WorkspaceRootChoice.Of(Request(UriOf(Project)), drive + requested[1..]).Differs);
     }
 
     [TestMethod]
     public void TwoFolders_AreTwo_AndTheOneTheClientOpenedIsTheRoot()
     {
-        var root = WorkspaceRootChoice.Of(Request(UriOf(Parent)), Project);
+        var other = Path.Combine(Parent, "Project2");
+
+        var root = WorkspaceRootChoice.Of(Request(UriOf(Project)), other);
 
         Assert.IsTrue(root.Differs);
-        Assert.IsTrue(RDCore.SDK.Workspace.WorkspacePaths.Same(Parent, root.Root!), root.Root);
-        StringAssert.Contains(root.Message, Parent);
-        StringAssert.Contains(root.Message, Project);
+        Assert.IsTrue(RDCore.SDK.Workspace.WorkspacePaths.Same(Project, root.Root!), root.Root);
+        StringAssert.Contains(root.Message, root.Requested, "the folder the client opened");
+        StringAssert.Contains(root.Message, other, "the folder the server was started on");
     }
 
     [TestMethod]
     public void ARequestWithNoRootUri_GivesItsFirstWorkspaceFolder()
     {
-        var root = WorkspaceRootChoice.Of(Request(null, UriOf(Parent), UriOf(Project)), Parent);
+        var root = WorkspaceRootChoice.Of(Request(null, UriOf(Parent), UriOf(Project)), Project);
 
-        Assert.IsFalse(root.Differs);
+        Assert.IsTrue(root.Differs, "the server was started on its second folder");
         Assert.IsTrue(RDCore.SDK.Workspace.WorkspacePaths.Same(Parent, root.Root!), root.Root);
     }
 
