@@ -52,7 +52,8 @@ public sealed class ExtensionAnnotationsAttribute(Type declarationsType, string 
         if (!typeof(IAnnotationDeclarations).IsAssignableFrom(declared.DeclarationsType) || declared.DeclarationsType.GetConstructor(Type.EmptyTypes) is null)
         {
             throw new InvalidOperationException(
-                string.Format(CultureInfo.CurrentCulture, Exceptions.ExtensionAnnotations_NoDeclarations, declared.DeclarationsType.FullName, nameof(IAnnotationDeclarations)));
+                string.Format(CultureInfo.CurrentCulture, Exceptions.ExtensionAnnotations_NoDeclarations,
+                    declared.DeclarationsType.FullName, nameof(IAnnotationDeclarations)));
         }
 
         var declarations = ((IAnnotationDeclarations)Activator.CreateInstance(declared.DeclarationsType)!).Declarations.ToArray();
