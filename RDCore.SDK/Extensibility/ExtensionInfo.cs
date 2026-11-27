@@ -125,9 +125,9 @@ public record class ExtensionInfo
     public AnnotationDeclaration[] Annotations { get; init; } = [];
 
     /// <summary>
-    /// The description of each annotation of <see cref="Annotations"/> and of each of its parameters, by its key (<see cref="AnnotationSet.KeyOf(AnnotationDeclaration)"/>,
-    /// <see cref="AnnotationSet.KeyOf(AnnotationDeclaration, AnnotationParameter)"/>), in each language of the platform, by its two-letter name
-    /// (<see cref="Server.Configuration.SettingsSchema.Languages"/>).
+    /// The description of each annotation of <see cref="Annotations"/> and of each of its parameters, by its key
+    /// (<see cref="AnnotationSet.KeyOf(AnnotationDeclaration)"/>, <see cref="AnnotationSet.KeyOf(AnnotationDeclaration, AnnotationParameter)"/>), in each
+    /// language of the platform, by its two-letter name (<see cref="Server.Configuration.SettingsSchema.Languages"/>).
     /// </summary>
     public Dictionary<string, Dictionary<string, string>> AnnotationDescriptions { get; init; } = [];
 
@@ -139,8 +139,8 @@ public record class ExtensionInfo
     public AnnotationSet AnnotationSet => new() { Declarations = Annotations, Descriptions = AnnotationDescriptions };
 
     /// <summary>
-    /// The manifest, with the annotations the extension's assembly says it provides (<see cref="ExtensionAnnotationsAttribute.Read"/>) and their descriptions in
-    /// each language of the platform.
+    /// The manifest, with the annotations the extension's assembly says it provides (<see cref="ExtensionAnnotationsAttribute.Read"/>) and their
+    /// descriptions in each language of the platform.
     /// </summary>
     /// <param name="assembly">The extension's assembly.</param>
     /// <returns>The manifest as it is, for an assembly that says nothing of any annotations.</returns>

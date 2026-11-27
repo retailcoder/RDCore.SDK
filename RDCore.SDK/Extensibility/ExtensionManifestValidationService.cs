@@ -176,7 +176,9 @@ public class ExtensionManifestValidationService(IOptions<SdkAppOptions> options,
         // names and aliases compare as VBA names do, without case (AnnotationDeclaration.IsCalled).
         var names = manifest.Annotations.SelectMany(annotation => annotation.Aliases.Prepend(annotation.Name)).ToArray();
         var keys = manifest.Annotations
-            .SelectMany(annotation => annotation.Parameters.Select(parameter => AnnotationSet.KeyOf(annotation, parameter)).Prepend(AnnotationSet.KeyOf(annotation)))
+            .SelectMany(annotation => annotation.Parameters
+                .Select(parameter => AnnotationSet.KeyOf(annotation, parameter))
+                .Prepend(AnnotationSet.KeyOf(annotation)))
             .ToHashSet(StringComparer.Ordinal);
 
         return names.Distinct(StringComparer.OrdinalIgnoreCase).Count() == names.Length
