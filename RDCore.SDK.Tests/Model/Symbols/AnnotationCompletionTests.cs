@@ -202,7 +202,7 @@ public sealed class AnnotationCompletionTests
     {
         var place = new AnnotationPlace(File, AnnotationModuleKinds.Standard, AnnotationTargets.Member);
 
-        var route = AnnotationCompletion.CandidatesAt(Catalogue, place, CultureInfo.GetCultureInfo(culture)).Single();
+        var route = AnnotationCompletion.CandidatesAt(Catalogue, place, CultureInfo.GetCultureInfo(culture)).Single(candidate => candidate.Label == Route.Name);
 
         Assert.AreEqual(description, route.Documentation);
         Assert.AreEqual("@Route(Path, ParamArray Verbs())", route.Detail);
