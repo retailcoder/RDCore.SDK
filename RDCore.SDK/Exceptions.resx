@@ -228,4 +228,7 @@
   <data name="WorkspaceEdit_DocumentEditedTwice" xml:space="preserve">
     <value>The editor can&apos;t apply this change: it edits {0} in more than one step, which the editor did not say it can apply.</value>
   </data>
+  <data name="ExtensionAnnotations_NoDeclarations" xml:space="preserve">
+    <value>&apos;{0}&apos; declares no annotations: it must implement {1} and have a parameterless constructor.</value>
+  </data>
 </root>

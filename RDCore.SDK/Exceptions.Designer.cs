@@ -392,5 +392,14 @@ namespace RDCore.SDK {
                 return ResourceManager.GetString("WorkspaceEdit_DocumentEditedTwice", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   Looks up a localized string similar to &apos;{0}&apos; declares no annotations: it must implement {1} and have a parameterless constructor..
+        /// </summary>
+        internal static string ExtensionAnnotations_NoDeclarations {
+            get {
+                return ResourceManager.GetString("ExtensionAnnotations_NoDeclarations", resourceCulture);
+            }
+        }
     }
 }
