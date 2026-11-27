@@ -29,6 +29,43 @@ public sealed class ExecutionPolicySettingsTests
             || setting.Key.StartsWith("Audit.", StringComparison.Ordinal))
         .Select(setting => new object[] { setting.Key });
 
+    // the description of each of those settings, by its key, in a language.
+    private static Dictionary<string, string?> DescriptionsIn(string language)
+    {
+        var previous = System.Globalization.CultureInfo.CurrentUICulture;
+        try
+        {
+            System.Globalization.CultureInfo.CurrentUICulture = System.Globalization.CultureInfo.GetCultureInfo(language);
+            var keys = PolicyAndAuditSettings.Select(row => (string)row[0]).ToHashSet();
+            return SettingsSchema.Platform.Settings.Where(setting => keys.Contains(setting.Key))
+                .ToDictionary(setting => setting.Key, setting => setting.Description);
+        }
+        finally
+        {
+            System.Globalization.CultureInfo.CurrentUICulture = previous;
+        }
+    }
+
+    // a client lists them too, as settings it cannot change, so each says what it does in each language the platform describes its settings in.
+    [TestMethod]
+    public void EveryPolicyAndAuditSetting_IsDescribedInEachLanguage_AndTranslated()
+    {
+        var first = DescriptionsIn(SettingsSchema.Languages[0]);
+        Assert.IsNotEmpty(first, "the schema holds the policy's and the audit log's settings");
+
+        foreach (var language in SettingsSchema.Languages)
+        {
+            var descriptions = DescriptionsIn(language);
+            var undescribed = descriptions.Where(each => string.IsNullOrWhiteSpace(each.Value)).Select(each => each.Key).ToArray();
+            CollectionAssert.AreEqual(Array.Empty<string>(), undescribed, $"not described in {language}: {string.Join(", ", undescribed)}");
+            if (language != SettingsSchema.Languages[0])
+            {
+                var untranslated = first.Keys.Where(key => first[key] == descriptions[key]).ToArray();
+                CollectionAssert.AreEqual(Array.Empty<string>(), untranslated, $"not translated to {language}: {string.Join(", ", untranslated)}");
+            }
+        }
+    }
+
     [TestMethod]
     public void ThePolicy_IsBoundFromTheEnvironmentSection()
     {
