@@ -2,7 +2,7 @@ namespace RDCore.SDK.Extensibility.Annotations;
 
 /// <summary>
 /// The annotations one extension provides, with their descriptions in each language of the platform, as its assembly declares them
-/// (<see cref="ExtensionAnnotationsAttribute.Read"/>).
+/// (<see cref="ExtensionAnnotationsAttribute.Read"/>) and its manifest carries them (<see cref="ExtensionInfo.AnnotationSet"/>).
 /// </summary>
 public sealed record class AnnotationSet
 {

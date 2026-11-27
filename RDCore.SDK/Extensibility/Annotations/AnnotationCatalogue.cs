@@ -4,8 +4,9 @@ using RDCore.SDK.Server.Configuration;
 namespace RDCore.SDK.Extensibility.Annotations;
 
 /// <summary>
-/// Every annotation the platform knows: the ones each extension declares (<see cref="ExtensionAnnotationsAttribute"/>), the core extension's
-/// among them. It answers what an annotation is called, where it is legal, and how it is described.
+/// Every annotation the platform knows: the ones each extension declares (<see cref="ExtensionAnnotationsAttribute"/>) and its manifest carries
+/// (<see cref="ExtensionInfo.AnnotationSet"/>), the core extension's among them. It answers what an annotation is called, where it is legal, and how it is
+/// described.
 /// </summary>
 /// <remarks>
 /// An annotation that two extensions declare, under a name or an alias, is the first one's: the extensions in the order they are given.
