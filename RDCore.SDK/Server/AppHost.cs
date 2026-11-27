@@ -415,7 +415,10 @@ public abstract class AppHost<TApp>() : IDisposable
             })
             // the settings a workspace keeps for itself, in the same file the configuration reads them from.
             .AddSingleton(sp => new WorkspaceSettingsStore(sp.GetRequiredService<IFileSystem>(), Settings))
-            .AddSingleton<IWorkspaceSettings>(sp => sp.GetRequiredService<WorkspaceSettingsStore>());
+            .AddSingleton<IWorkspaceSettings>(sp => sp.GetRequiredService<WorkspaceSettingsStore>())
+            // and the folder they are read from, which the component moves to the workspace its client opened when that is another (WorkspaceRootChoice).
+            .AddSingleton(sp => new WorkspaceSettingsFolder(configuration, Settings, _workspaceFolder, sp.GetRequiredService<ILiveSettings>() as LiveSettings,
+                sp.GetRequiredService<WorkspaceSettingsStore>()));
 
         services
             .AddSingleton<IRuntimeEnvironmentProfile>(sp =>

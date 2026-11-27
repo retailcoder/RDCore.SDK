@@ -28,4 +28,7 @@
   <data name="WorkspaceFolder_Missing" xml:space="preserve">
     <value>The folder '{0}' that {1} lists is not loaded: there is no such folder under the workspace root.</value>
   </data>
+  <data name="WorkspaceRoot_Differs" xml:space="preserve">
+    <value>The client opened the folder '{0}', and the server was started on '{1}': the workspace is '{0}', its settings included.</value>
+  </data>
 </root>
