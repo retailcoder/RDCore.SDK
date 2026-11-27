@@ -78,8 +78,8 @@ public sealed class LibrarySymbolProvider : ISymbolProvider
     /// The libraries a project references, by name, each at its position in the list of its references, as a session ranks them
     /// (<see cref="IRuntimeSession.References"/>): the standard library at <c>0</c>, then the ones its language and its modules reference implicitly
     /// (<see cref="SupportedLanguage.ImplicitReferencesOf"/>), then the ones its project file lists, then the ones its modules reference implicitly after them
-    /// (<see cref="SupportedLanguage.TrailingImplicitReferencesOf"/>), in the order <see cref="Load(ILibrarySource, RDCoreProject, SupportedLanguage?)"/> loads
-    /// them.
+    /// (<see cref="SupportedLanguage.TrailingImplicitReferencesOf"/>), in the order
+    /// <see cref="Load(ILibrarySource, RDCoreProject, SupportedLanguage?)"/> loads them.
     /// </summary>
     /// <remarks>
     /// A second reference to a library already in the list is left out, as <see cref="Load(ILibrarySource, RDCoreProject, SupportedLanguage?)"/> leaves
