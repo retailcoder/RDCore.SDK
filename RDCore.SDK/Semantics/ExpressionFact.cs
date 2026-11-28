@@ -26,14 +26,14 @@ public enum ExpressionClassification
     Unknown,
 
     /// <summary>
-    /// A value expression: an immutable data value, with a declared type. It is not something that can be assigned to: a literal, the result of an operator,
-    /// of a call or of an index.
+    /// A value expression: an immutable data value, with a declared type. It is not something that can be assigned to: a literal, or the result of an
+    /// operator or of a call.
     /// </summary>
     Value,
 
     /// <summary>
-    /// A variable expression: it references a variable declaration, and has an argument list queue and a declared type. A local, a parameter, a field, which
-    /// has storage and can be assigned to.
+    /// A variable expression: it references a variable declaration, and has an argument list queue and a declared type. A local, a parameter, a field, or an
+    /// element of an array variable (<strong>MS-VBAL §5.6.13</strong>): it has storage and can be assigned to.
     /// </summary>
     Variable,
 
