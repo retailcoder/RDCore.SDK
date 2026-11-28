@@ -15,25 +15,27 @@ public interface IProgramMachine : IAsyncDisposable
     /// <summary>
     /// Runs one procedure of the program with the invocation's arguments. A procedure of a class whose <c>VB_PredeclaredId</c> is <c>True</c> runs on the
     /// class's default instance, which keeps its state between invocations; a procedure of any other class module runs on a new object of the class,
-    /// initialized before it and terminated once it returns (<see cref="ProgramInvocation"/>). The invocation's calls and its factory run before it, in
-    /// the same run (<see cref="ProgramInvocation.Calls"/>, <see cref="ProgramInvocation.Factory"/>).
+    /// initialized before it and terminated once the run has its value (<see cref="ProgramInvocation"/>). The invocation's calls, guards, factory, hooks
+    /// and result calls run in the same run.
     /// </summary>
-    /// <param name="invocation">The procedure, its arguments as JSON values, and the calls and the factory that run before it.</param>
+    /// <param name="invocation">The procedure, its arguments, and the calls, guards, factory, hooks and result calls that run with it.</param>
     /// <param name="cancellationToken">
     /// Interrupts the invocation between two instructions: the result is <see cref="ExecutionOutcome.Interrupted"/>. A call outside the program (a
     /// <c>Declare</c> or a COM object) returns before the interruption is seen.
     /// </param>
     /// <returns>
-    /// The value the procedure returned, as JSON, or how it ended otherwise: a run-time error that nothing handled
-    /// (<see cref="ExecutionOutcome.RuntimeError"/>), including one that the <c>Class_Initialize</c> of the object of a class module left unhandled, a
-    /// standard module or a class module the program does not have, or a procedure its module does not declare <c>Public</c>
+    /// The invocation's value, as JSON: the procedure's, or that of the guard or the hook that answered for it, or that of the last result call. Or how it
+    /// ended otherwise: a run-time error that nothing handled (<see cref="ExecutionOutcome.RuntimeError"/>), including one that the
+    /// <c>Class_Initialize</c> of the object of a class module left unhandled, a module, a procedure or an interface the program does not have
     /// (<see cref="ExecutionOutcome.NotFound"/>), an <c>End</c> statement (<see cref="ExecutionOutcome.Halted"/>), or an invocation while another runs
-    /// (<see cref="ExecutionOutcome.Refused"/>). None of these is an exception. A call or a factory ends the invocation as the procedure does: its value
-    /// is not returned.
+    /// (<see cref="ExecutionOutcome.Refused"/>). None of these is an exception. A call, a guard, the factory, a hook or a result call ends the invocation
+    /// as the procedure does.
     /// </returns>
     /// <exception cref="ArgumentException">
-    /// Two calls of the invocation have one <see cref="ProgramCall.Name"/>, or a <see cref="ProgramCallArgument"/> names no call made before the one it is
-    /// of. Nothing runs.
+    /// The invocation is not one a machine can run, and nothing runs: two of its calls, guards and result calls have one <see cref="ProgramCall.Name"/>;
+    /// a <see cref="ProgramCallArgument"/> names none of the calls made before the one it is of; a guard or a result call is machine-held or has no
+    /// <see cref="ProgramCall.Procedure"/>; a call with no <see cref="ProgramCall.Procedure"/> has arguments; a <see cref="ProgramErrorArgument"/> is not
+    /// an argument of <see cref="ProgramInvocation.OnError"/>; or a <see cref="ProgramResultArgument"/> is not an argument of a result call.
     /// </exception>
     /// <exception cref="ObjectDisposedException">The machine was disposed.</exception>
     Task<ProgramInvocationResult> InvokeAsync(ProgramInvocation invocation, CancellationToken cancellationToken);

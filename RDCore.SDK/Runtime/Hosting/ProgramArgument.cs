@@ -1,8 +1,9 @@
 namespace RDCore.SDK.Runtime.Hosting;
 
 /// <summary>
-/// An argument of a <see cref="ProgramCall"/> or a <see cref="ProgramFactoryCall"/>, by the name of the parameter it is passed to: a JSON value
-/// (<see cref="ProgramValueArgument"/>), or the value of an earlier call of the invocation (<see cref="ProgramCallArgument"/>).
+/// An argument of a call of an invocation, by the name of the parameter it is passed to: a JSON value (<see cref="ProgramValueArgument"/>), the value of
+/// one of the invocation's calls (<see cref="ProgramCallArgument"/>), a part of an error (<see cref="ProgramErrorArgument"/>), or the run's value
+/// (<see cref="ProgramResultArgument"/>).
 /// </summary>
 public abstract record class ProgramArgument
 {
