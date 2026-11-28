@@ -34,9 +34,9 @@ public enum AnnotationArgumentKind
     Literal,
 
     /// <summary>
-    /// A run-time error: the code of a run-time error, written without quotes, whose number is the error's number (<c>'@ExpectedError VBR00013</c>), or
-    /// a number or a constant expression (<strong>MS-VBAL §5.6.16.2</strong>) for an error the project raises itself (<c>'@ExpectedError 13</c>,
-    /// <c>'@ExpectedError vbObjectError + 513</c>).
+    /// A run-time error: the diagnostic code of a run-time error, written without quotes, whose digits are the error's number (<c>'@ExpectedError VBR00013</c>
+    /// is error 13), or a number or a constant expression (<strong>MS-VBAL §5.6.16.1</strong>) for an error the project raises itself
+    /// (<c>'@ExpectedError 13</c>, <c>'@ExpectedError vbObjectError + 513</c>).
     /// </summary>
     ErrorNumber,
 }
