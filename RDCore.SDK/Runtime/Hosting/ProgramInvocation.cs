@@ -19,12 +19,20 @@ namespace RDCore.SDK.Runtime.Hosting;
 /// <item><description>a value that does not convert is error 13 (Type mismatch).</description></item>
 /// </list>
 /// <para>
-/// A procedure of a class module runs on a new object of the class, made for the invocation as <c>New</c> makes one (<strong>MS-VBAL §5.6.8</strong>),
-/// also for a class whose <c>VB_PredeclaredId</c> is <c>True</c>. Its <c>Class_Initialize</c> runs before the procedure, and its <c>Class_Terminate</c>
-/// once the procedure has returned and its value is taken, before the invocation ends (<strong>MS-VBAL §5.3.1.10</strong>). An error that the procedure
-/// leaves unhandled, or an <c>End</c>, ends the run, and the run's end lets go of the object. An error that <c>Class_Initialize</c> leaves unhandled ends
-/// the invocation with that run-time error, and the procedure does not run. An argument named <c>Me</c> names no parameter. A document module is not
-/// invoked: its object is its host's document.
+/// A procedure of a class whose <c>VB_PredeclaredId</c> is <c>True</c> runs on the class's default instance (<strong>MS-VBAL §5.2.4.1.2</strong>), the
+/// program's own: the first reference to it, from the program or from an invocation, makes it, and its <c>Class_Initialize</c> runs then. It keeps its
+/// state from one invocation to the next, and no invocation terminates it. A <c>Set</c> of it to <c>Nothing</c> lets go of it, and so does
+/// <see cref="IProgramMachine.ResetAsync"/>; the next reference makes another.
+/// </para>
+/// <para>
+/// A procedure of any other class module runs on a new object of the class, made for the invocation as <c>New</c> makes one
+/// (<strong>MS-VBAL §5.6.8</strong>). Its <c>Class_Initialize</c> runs before the procedure, and its <c>Class_Terminate</c> once the procedure has
+/// returned and its value is taken, before the invocation ends (<strong>MS-VBAL §5.3.1.10</strong>). An error that the procedure leaves unhandled, or an
+/// <c>End</c>, ends the run, and the run's end lets go of the object.
+/// </para>
+/// <para>
+/// An error that <c>Class_Initialize</c> leaves unhandled ends the invocation with that run-time error, and the procedure does not run. An argument named
+/// <c>Me</c> names no parameter. A document module is not invoked: its object is its host's document.
 /// </para>
 /// </remarks>
 /// <param name="Module">

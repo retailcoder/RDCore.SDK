@@ -13,8 +13,9 @@ namespace RDCore.SDK.Runtime.Hosting;
 public interface IProgramMachine : IAsyncDisposable
 {
     /// <summary>
-    /// Runs one procedure of the program with the invocation's arguments. A procedure of a class module runs on a new object of the class, initialized
-    /// before it and terminated once it returns (<see cref="ProgramInvocation"/>).
+    /// Runs one procedure of the program with the invocation's arguments. A procedure of a class whose <c>VB_PredeclaredId</c> is <c>True</c> runs on the
+    /// class's default instance, which keeps its state between invocations; a procedure of any other class module runs on a new object of the class,
+    /// initialized before it and terminated once it returns (<see cref="ProgramInvocation"/>).
     /// </summary>
     /// <param name="invocation">The procedure, and its arguments as JSON values.</param>
     /// <param name="cancellationToken">
