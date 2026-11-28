@@ -66,7 +66,7 @@ public record class SdkAppCommandLineArgs
     /// <c>RDCORE_PLATFORM_ROOT</c> environment variable says (<see cref="SdkCommandLine.ApplyPlatformRoot(string[])"/>).
     /// </summary>
     /// <remarks>
-    /// 👉 This argument has <strong>no alias</strong>. A relative path is read against the current directory.
+    /// This argument has <strong>no alias</strong>. A relative path is read against the current directory.
     /// </remarks>
     [Option("platform-root")]
     public string? PlatformRoot { get; set; }
