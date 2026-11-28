@@ -13,6 +13,11 @@ namespace RDCore.SDK.Semantics;
 /// <summary>
 /// What an expression is classified as (<strong>MS-VBAL §5.6.1</strong>): what it names, which decides what may be done with it.
 /// </summary>
+/// <remarks>
+/// Every expression has one of MS-VBAL's nine classifications. <see cref="Constant"/> is a value expression whose value is known where it is written;
+/// <see cref="Namespace"/> is a project expression or a procedural module expression; <see cref="Unknown"/> is none of them, for an expression the static
+/// pass could not classify.
+/// </remarks>
 public enum ExpressionClassification
 {
     /// <summary>
@@ -21,47 +26,52 @@ public enum ExpressionClassification
     Unknown,
 
     /// <summary>
-    /// A value, which is not something that can be assigned to: a literal, the result of an operator, of a call or of an index.
+    /// A value expression: an immutable data value, with a declared type. It is not something that can be assigned to: a literal, the result of an operator,
+    /// of a call or of an index.
     /// </summary>
     Value,
 
     /// <summary>
-    /// A variable: a local, a parameter, a field, which has storage and can be assigned to.
+    /// A variable expression: it references a variable declaration, and has an argument list queue and a declared type. A local, a parameter, a field, which
+    /// has storage and can be assigned to.
     /// </summary>
     Variable,
 
     /// <summary>
-    /// A constant: its value is known where it is written, and is substituted there.
+    /// A value expression whose value is a constant's: it is known where it is written, and is substituted there.
     /// </summary>
     Constant,
 
     /// <summary>
-    /// A <c>Function</c>.
+    /// A function expression: it references a <c>Function</c>, and has an argument list queue and a declared type.
     /// </summary>
     Function,
 
     /// <summary>
-    /// A <c>Property</c>.
+    /// A property expression: it references a <c>Property</c>, and has an argument list queue and a declared type.
     /// </summary>
     Property,
 
     /// <summary>
-    /// A <c>Sub</c>.
+    /// A subroutine expression: it references a <c>Sub</c>, and has an argument list queue, but no declared type.
     /// </summary>
     Subroutine,
 
     /// <summary>
-    /// A type: a class, a <c>Type</c> or an <c>Enum</c>.
+    /// A type expression: it references a declared type, a class, a <c>Type</c> or an <c>Enum</c>.
     /// </summary>
     Type,
 
     /// <summary>
-    /// A project or a procedural module, which a member is looked up in (<strong>MS-VBAL §5.6.12</strong>).
+    /// A project expression or a procedural module expression: it references a project or a procedural module, which a member is looked up in
+    /// (<strong>MS-VBAL §5.6.12</strong>).
     /// </summary>
     Namespace,
 
     /// <summary>
-    /// A member of an object whose type does not say what it has: it is bound when the expression runs.
+    /// An unbound member expression: it references a variable, a property, a subroutine or a function whose classification or target cannot be told
+    /// statically, and has an optional member name and an argument list queue. A member of an object whose type does not say what it has: it is bound when
+    /// the expression runs.
     /// </summary>
     UnboundMember,
 }

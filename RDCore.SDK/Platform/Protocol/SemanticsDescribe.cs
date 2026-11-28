@@ -8,7 +8,6 @@ using RDCore.SDK.Model.Values;
 using RDCore.SDK.Semantics;
 using RDCore.SDK.Semantics.Flags;
 using System.Text.Json.Serialization;
-using ExpressionClassification = RDCore.SDK.Semantics.ExpressionClassification;
 using NewtonsoftConverter = Newtonsoft.Json.JsonConverterAttribute;
 
 namespace RDCore.SDK.Platform.Protocol;
