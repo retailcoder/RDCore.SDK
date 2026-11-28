@@ -53,9 +53,10 @@ public record class HostRunSessionOpenResult
 /// <see cref="ExecuteResult.Output"/>. A dialog that no fake answers fails the run.
 /// </para>
 /// <para>
-/// An unhandled run-time or internal error ends the program as <c>End</c> does: the session's module-level variables are reset and its files closed, and the
-/// answer says so (<see cref="HostRunSessionExecuteResult.SessionReset"/>). Cancelling the request (<c>$/cancelRequest</c>) ends the program the same way,
-/// and the answer is <see cref="ExecutionOutcome.Halted"/>.
+/// An unhandled run-time or internal error ends only the procedure: the runner is its caller and handles the error, which is in the answer
+/// (<see cref="ExecuteResult.Outcome"/>, <see cref="ExecuteResult.ErrorNumber"/>). The session's module-level variables and open files are kept for the next
+/// procedure, and <see cref="HostRunSessionExecuteResult.SessionReset"/> is <see langword="false"/>. An <c>End</c> statement resets the session, and so does
+/// cancelling the request (<c>$/cancelRequest</c>), whose answer is <see cref="ExecutionOutcome.Halted"/>.
 /// </para>
 /// <para>
 /// One program runs on the host at a time. A request while the shell's session or another run session runs a program is refused with
@@ -112,8 +113,8 @@ public record class HostRunSessionExecuteResult : ExecuteResult
     public IReadOnlyList<FakeInvocationRecord> Invocations { get; init; } = [];
 
     /// <summary>
-    /// Whether the run ended the program as <c>End</c> does (an <c>End</c> statement, an unhandled error, or the request being cancelled), and reset the
-    /// session's module-level variables: a runner initializes the module again before it runs the next procedure that depends on them.
+    /// Whether the run reset the session's module-level variables and closed its files: an <c>End</c> statement, or the request being cancelled. A runner then
+    /// initializes the module again before it runs the next procedure that depends on them. An unhandled error does not reset the session.
     /// </summary>
     public bool SessionReset { get; init; }
 }
