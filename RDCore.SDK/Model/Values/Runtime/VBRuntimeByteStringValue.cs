@@ -66,8 +66,8 @@ public readonly record struct VBRuntimeByteStringValue(string Text, byte Trailin
     /// <paramref name="index"/>: what <see cref="FromBytes"/> makes of that part of <see cref="BytesOf"/>, read where the value holds its data.
     /// </summary>
     /// <remarks>
-    /// Whole characters from the start of a character are the characters themselves, and a part that ends in the trailing byte is the only one made
-    /// of a copy, of its own bytes.
+    /// A part of whole characters from the start of a character is a substring of the characters. Any other part is made from its own bytes, read where
+    /// the value holds them; one that ends in the trailing byte, from a copy of its own bytes. None of the rest of the data is copied.
     /// </remarks>
     /// <param name="value">The runtime value of a <c>String</c>.</param>
     /// <param name="index">The 0-based position of the first byte.</param>

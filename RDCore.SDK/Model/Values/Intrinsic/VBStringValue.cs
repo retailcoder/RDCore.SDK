@@ -152,8 +152,8 @@ public record class VBStringValue : VBTypedValue, IVBTypedValue<VBStringValue, s
     /// of that part of <see cref="GetBytes"/>, read where the string holds its data, so that none of the rest is copied.
     /// </summary>
     /// <remarks>
-    /// What <c>MidB</c>, <c>LeftB</c> and <c>RightB</c> give (<strong>MS-VBAL §6.1.2.11.1.25</strong>, <strong>§6.1.2.11.1.20</strong>,
-    /// <strong>§6.1.2.11.1.31</strong>): a part can begin or end inside a character.
+    /// What <c>MidB</c>, <c>LeftB</c> and <c>RightB</c> give (<strong>MS-VBAL §6.1.2.11.1.25</strong>, <strong>§6.1.2.11.1.19</strong>,
+    /// <strong>§6.1.2.11.1.30</strong>): a part can begin or end inside a character.
     /// </remarks>
     /// <param name="index">The 0-based position of the first byte.</param>
     /// <param name="count">How many bytes to take.</param>
