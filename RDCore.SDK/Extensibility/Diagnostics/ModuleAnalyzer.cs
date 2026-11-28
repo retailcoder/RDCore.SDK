@@ -49,7 +49,7 @@ public sealed record class ModuleAnalysisContext(Uri Document, ModuleParseResult
     /// The language server says it (<see cref="DiagnoseDocumentPayload.ModuleKind"/>). When it does not, the module is a document module when the
     /// environment host says so (<see cref="ModuleSemanticsDto.Document"/>), a class module when the host says so (<see cref="ModuleSemanticsDto.Class"/>) or
     /// when its parse has a designer, a <c>VERSION</c> header (<see cref="ModuleHeader.IsClassModule"/>) or the file is an RDForms form's code
-    /// (<see cref="ProjectModuleKinds.IsRDFormsModule"/>), and a standard module otherwise: a document module or a class block that neither says is one then.
+    /// (<see cref="ProjectModuleKinds.IsRDFormsModule"/>), and a standard module otherwise, as a document module or a class block is when none of these says it.
     /// </remarks>
     public ModuleType ModuleKind
     {
