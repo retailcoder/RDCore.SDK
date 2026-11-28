@@ -7,8 +7,8 @@ using RDCore.SDK.Semantics;
 namespace RDCore.Tests.Platform;
 
 /// <summary>
-/// The names a procedure uses that nothing declares travel with the procedure's model, from the environment host to the language server and an analyzer:
-/// each part of each fact is read back as it was written.
+/// The names a procedure uses that nothing declares, and the members it accesses that no declared type has, travel with the procedure's model, from the
+/// environment host to the language server and an analyzer: each part of each fact is read back as it was written.
 /// </summary>
 [TestClass]
 public sealed class DeferredSymbolFactWireTests
@@ -64,5 +64,33 @@ public sealed class DeferredSymbolFactWireTests
 
     [TestMethod]
     public void AProcedureThatUsesNoUndeclaredName_HasNone()
-        => Assert.IsNull(RoundTrip(new ProcedureSemanticModel(new SemanticId(Procedure), [])).DeferredSymbols);
+    {
+        var read = RoundTrip(new ProcedureSemanticModel(new SemanticId(Procedure), []));
+
+        Assert.IsNull(read.DeferredSymbols);
+        Assert.IsNull(read.DeferredMembers);
+    }
+
+    [TestMethod]
+    public void AMemberTheReceiversTypeDoesNotDeclare_IsReadBackWithItsUsesAndCandidates()
+    {
+        var call = new DeferredUseFact(DeferredUseKind.Call, At(3, 9, 12)) { ArgumentTypes = ["Integer"] };
+        var read = new DeferredUseFact(DeferredUseKind.Read, At(4, 13, 16));
+        var fact = new DeferredMemberFact("items", "Add", At(3, 9, 12), [call, read], ["Long"])
+        {
+            ReceiverType = "Object", ReceiverVariable = Total, Resolved = "Long",
+        };
+
+        var member = RoundTrip(new ProcedureSemanticModel(new SemanticId(Procedure), []) { DeferredMembers = [fact] }).DeferredMembers!.Value.Single();
+
+        Assert.AreEqual("items", member.Receiver);
+        Assert.AreEqual("Add", member.Member);
+        Assert.AreEqual(fact.Location, member.Location);
+        Assert.AreEqual("Object", member.ReceiverType);
+        Assert.AreEqual(Total.AbsoluteUri, member.ReceiverVariable?.AbsoluteUri);
+        Assert.AreEqual("Long", member.Resolved);
+        CollectionAssert.AreEqual(new[] { "Long" }, member.Candidates.ToArray());
+        CollectionAssert.AreEqual(new[] { DeferredUseKind.Call, DeferredUseKind.Read }, member.Uses.Select(use => use.Kind).ToArray());
+        CollectionAssert.AreEqual(new[] { "Integer" }, member.Uses[0].ArgumentTypes.ToArray());
+    }
 }

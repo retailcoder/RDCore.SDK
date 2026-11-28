@@ -73,6 +73,13 @@ public sealed record class ProcedureSemanticModel(SemanticId Procedure, Immutabl
     public ImmutableArray<DeferredSymbolFact> DeferredSymbols { get; init; } = [];
 
     /// <summary>
+    /// The members the procedure accesses on objects whose declared type does not say they have them, with how each is used and the types its uses give
+    /// its value (<see cref="DeferredMemberFact"/>), by receiver and member, in the order of their first access. Empty when there are none, and when the
+    /// pass had no workspace to resolve names in.
+    /// </summary>
+    public ImmutableArray<DeferredMemberFact> DeferredMembers { get; init; } = [];
+
+    /// <summary>
     /// The statements of the procedure that jump from outside a <c>For</c> or a <c>For Each</c> loop to a label inside it
     /// (<see cref="Flow.JumpIntoLoopFact"/>), in the order they are written in. The list is empty when there is none, and when the language core could not
     /// tell.

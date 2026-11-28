@@ -402,12 +402,16 @@ public record class RuntimeFactsDto(
 /// The names it uses that nothing declares, with their uses and candidates (<see cref="ProcedureSemanticModel.DeferredSymbols"/>); <see langword="null"/>
 /// when there are none.
 /// </param>
+/// <param name="DeferredMembers">
+/// The members it accesses on objects whose declared type does not say they have them, with their uses and candidates
+/// (<see cref="ProcedureSemanticModel.DeferredMembers"/>); <see langword="null"/> when there are none.
+/// </param>
 public record class ProcedureSemanticsDto(
     Uri Procedure, bool IsFullyAnalyzed, ImmutableArray<CompileErrorDto> CompileErrors, ImmutableArray<ExpressionFactDto> Expressions, ReturnValueFact? ReturnValue = null,
     RuntimeFactsDto? Runtime = null, ImmutableArray<EmptiedControlReadFact>? EmptiedControlReads = null, ImmutableArray<ArgumentFact>? Arguments = null,
     ImmutableArray<InitialValueReadFact>? InitialValueReads = null, ImmutableArray<UnreadAssignmentFact>? UnreadAssignments = null,
     ImmutableArray<JumpIntoLoopFact>? JumpsIntoLoops = null, ImmutableArray<VariantReadFact>? VariantReads = null,
-    ImmutableArray<DeferredSymbolFact>? DeferredSymbols = null);
+    ImmutableArray<DeferredSymbolFact>? DeferredSymbols = null, ImmutableArray<DeferredMemberFact>? DeferredMembers = null);
 
 /// <summary>
 /// A <see cref="DeclarationFact"/>, as it travels.
@@ -563,7 +567,8 @@ public record class ModuleSemanticsDto(
             procedure.UnreadAssignments.IsDefaultOrEmpty ? null : procedure.UnreadAssignments,
             procedure.JumpsIntoLoops.IsDefaultOrEmpty ? null : procedure.JumpsIntoLoops,
             procedure.VariantReads.IsDefaultOrEmpty ? null : procedure.VariantReads,
-            procedure.DeferredSymbols.IsDefaultOrEmpty ? null : procedure.DeferredSymbols))],
+            procedure.DeferredSymbols.IsDefaultOrEmpty ? null : procedure.DeferredSymbols,
+            procedure.DeferredMembers.IsDefaultOrEmpty ? null : procedure.DeferredMembers))],
         [.. model.Declarations.Select(declaration => new DeclarationFactDto(
             declaration.Symbol.Uri, declaration.Name, declaration.Kind, declaration.Access, declaration.IsImplicit, declaration.Location, declaration.References, declaration.Role,
             declaration.DeclaredBy, declaration.Hides, declaration.ReferencedFrom, declaration.TypeKind, declaration.IsArray,
