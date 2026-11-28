@@ -6,23 +6,18 @@ using System.Collections.Immutable;
 namespace RDCore.SDK.Model.Types.Complex;
 
 /// <summary>
-/// The candidate-type merge and resolution rules an <see cref="IVBInferableType"/> follows, per its
-/// own static-semantics note (<see cref="IVBInferableType"/> xmldoc remarks).
+/// How the candidates of an <see cref="IVBInferableType"/> are added and resolved to one type.
 /// </summary>
-internal static class IVBInferableTypeExtensions
+public static class IVBInferableTypeExtensions
 {
     /// <summary>
-    /// Resolves the single data type <paramref name="inferable"/>'s candidates currently agree on, or
-    /// <c>null</c> when they don't agree on one yet.
+    /// The one type the candidates of an inferable type resolve to; <see langword="null"/> when they resolve to none.
     /// </summary>
-    /// <remarks>
-    /// A lone candidate resolves to itself. Two or more resolve to <c>Variant</c> when every candidate
-    /// is a plain value type (numeric, <c>String</c>, <c>Boolean</c>, …) — never when one of them is
-    /// <c>Object</c> or a class-ish type (<see cref="IVBMemberOwnerType"/>): those don't blend into a
-    /// <c>Variant</c> guess, and what they <em>do</em> resolve to isn't decided yet (the algorithm's
-    /// own doc trails into "TODO continue this" at exactly this point) — such a set currently resolves
-    /// to <c>null</c>, same as no candidates at all.
-    /// </remarks>
+    /// <param name="inferable">The inferable type.</param>
+    /// <returns>
+    /// <see langword="null"/> when there is no candidate; the candidate when there is one; <c>Variant</c> when there are several and none of them is
+    /// <c>Object</c>, a type with members (<see cref="IVBMemberOwnerType"/>) or an inferable type; <see langword="null"/> otherwise.
+    /// </returns>
     public static VBType? Resolve(this IVBInferableType inferable) => inferable.CandidateTypes.Count switch
     {
         0 => null,
@@ -31,18 +26,15 @@ internal static class IVBInferableTypeExtensions
     };
 
     /// <summary>
-    /// Adds <paramref name="vbType"/> as a new candidate, applying the widening / merge rules a newly
-    /// found candidate goes through before joining the set.
+    /// A set of candidates with a candidate added.
     /// </summary>
-    /// <remarks>
-    /// An integral candidate (<see cref="IIntegralNumericType"/> — <c>Byte</c>/<c>Integer</c>/
-    /// <c>Long</c>/<c>LongLong</c>) widens to <see cref="VBLongType"/>; a floating-point candidate
-    /// (<see cref="IFloatingPointNumericType"/>) widens to <see cref="VBDoubleType"/>; a fixed-point
-    /// candidate (<see cref="IFixedPointNumericType"/>) widens to <see cref="VBCurrencyType"/> — so
-    /// differently-sized numeric candidates bucket together instead of manufacturing spurious
-    /// conflicts. A candidate that is itself inferable contributes its own candidate set (already
-    /// widened) rather than joining as one opaque entry.
-    /// </remarks>
+    /// <param name="candidates">The candidates.</param>
+    /// <param name="vbType">The candidate to add.</param>
+    /// <returns>
+    /// The candidates, with <see cref="VBLongType"/> added for an integral candidate (<see cref="IIntegralNumericType"/>), <see cref="VBDoubleType"/> for a
+    /// floating-point one (<see cref="IFloatingPointNumericType"/>), <see cref="VBCurrencyType"/> for a fixed-point one (<see cref="IFixedPointNumericType"/>),
+    /// the candidates of an inferable candidate (<see cref="IVBInferableType"/>), and any other candidate as it is.
+    /// </returns>
     public static ImmutableHashSet<VBType> MergeCandidate(this ImmutableHashSet<VBType> candidates, VBType vbType) => vbType switch
     {
         IVBInferableType inferable => candidates.Union(inferable.CandidateTypes),
