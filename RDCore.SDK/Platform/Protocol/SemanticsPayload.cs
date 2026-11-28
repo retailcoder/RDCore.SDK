@@ -443,12 +443,17 @@ public record class ProcedureSemanticsDto(
 /// For a parameter of an interface member or of an event, whether an implementation or a handler writes its parameter at the same position, or passes it on
 /// by reference (<see cref="DeclarationFact.IsWrittenByABoundMember"/>); <see langword="null"/> when that is not stated.
 /// </param>
+/// <param name="DeclaredClasses">
+/// For a parameter, a function or a property whose declared type is a class of the workspace, that class and its public members, then each class the
+/// types of their members name (<see cref="DeclarationFact.DeclaredClasses"/>); <see langword="null"/> for any other declaration.
+/// </param>
 public record class DeclarationFactDto(
     Uri Symbol, string Name, DeclarationKind Kind, AccessModifier Access, bool IsImplicit, SourceLocation Location, DeclarationReferences? References,
     DeclarationRole Role = DeclarationRole.None, LocalDeclarationKind? DeclaredBy = null, HiddenDeclaration? Hides = null,
     ImmutableArray<DeclarationReference>? ReferencedFrom = null, DeclaredTypeKind? TypeKind = null, bool IsArray = false, Uri? AutoInstantiates = null,
     CompiledPlatforms? CompiledOn = null, ImmutableArray<CompiledPlatforms>? StatementsCompiledOn = null, DeclarationBindingDto? Binding = null,
-    bool IsUsedByReferencingProjects = false, bool? IsReferredToByABoundMember = null, bool? IsWrittenByABoundMember = null);
+    bool IsUsedByReferencingProjects = false, bool? IsReferredToByABoundMember = null, bool? IsWrittenByABoundMember = null,
+    ImmutableArray<DeclaredClassFact>? DeclaredClasses = null);
 
 /// <summary>
 /// A <see cref="DeclarationBinding"/>, as it travels: the member it binds is the declaration it is the binding of, and its role is the declaration's
@@ -552,7 +557,8 @@ public record class ModuleSemanticsDto(
                 ? new DeclarationBindingDto(
                     binding.Source.Uri, binding.Bound?.Uri, binding.BoundLibrary, binding.IsBoundInSourceProject, binding.IsSourceAControl)
                 : null,
-            declaration.IsUsedByReferencingProjects, declaration.IsReferredToByABoundMember, declaration.IsWrittenByABoundMember))],
+            declaration.IsUsedByReferencingProjects, declaration.IsReferredToByABoundMember, declaration.IsWrittenByABoundMember,
+            declaration.DeclaredClasses.IsDefaultOrEmpty ? null : declaration.DeclaredClasses))],
         model.Language,
         model.Class,
         model.Document,
