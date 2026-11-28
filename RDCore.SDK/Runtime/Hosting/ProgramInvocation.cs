@@ -19,10 +19,11 @@ namespace RDCore.SDK.Runtime.Hosting;
 /// <item><description>a value that does not convert is error 13 (Type mismatch).</description></item>
 /// </list>
 /// <para>
-/// A procedure of a class module runs on a new object of the class, made for the invocation as <c>New</c> makes one (<strong>MS-VBAL §5.3.1.10</strong>),
-/// also for a class whose <c>VB_PredeclaredId</c> is <c>True</c>: its <c>Class_Initialize</c> runs before the procedure, and its <c>Class_Terminate</c>
-/// once the procedure has returned and its value is taken, before the invocation ends. An error that <c>Class_Initialize</c> leaves unhandled ends the
-/// invocation with that run-time error, and the procedure does not run. An argument named <c>Me</c> names no parameter. A document module is not
+/// A procedure of a class module runs on a new object of the class, made for the invocation as <c>New</c> makes one (<strong>MS-VBAL §5.6.8</strong>),
+/// also for a class whose <c>VB_PredeclaredId</c> is <c>True</c>. Its <c>Class_Initialize</c> runs before the procedure, and its <c>Class_Terminate</c>
+/// once the procedure has returned and its value is taken, before the invocation ends (<strong>MS-VBAL §5.3.1.10</strong>). An error that the procedure
+/// leaves unhandled, or an <c>End</c>, ends the run, and the run's end lets go of the object. An error that <c>Class_Initialize</c> leaves unhandled ends
+/// the invocation with that run-time error, and the procedure does not run. An argument named <c>Me</c> names no parameter. A document module is not
 /// invoked: its object is its host's document.
 /// </para>
 /// </remarks>

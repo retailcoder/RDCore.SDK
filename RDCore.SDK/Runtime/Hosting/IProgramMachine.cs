@@ -14,7 +14,7 @@ public interface IProgramMachine : IAsyncDisposable
 {
     /// <summary>
     /// Runs one procedure of the program with the invocation's arguments. A procedure of a class module runs on a new object of the class, initialized
-    /// before it and terminated before the invocation ends (<see cref="ProgramInvocation"/>).
+    /// before it and terminated once it returns (<see cref="ProgramInvocation"/>).
     /// </summary>
     /// <param name="invocation">The procedure, and its arguments as JSON values.</param>
     /// <param name="cancellationToken">
