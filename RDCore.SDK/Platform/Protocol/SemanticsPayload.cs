@@ -452,8 +452,8 @@ public record class ProcedureSemanticsDto(
 /// types of their members name (<see cref="DeclarationFact.DeclaredClasses"/>); <see langword="null"/> for any other declaration.
 /// </param>
 /// <param name="AssignedSubtypes">
-/// For a <c>Variant</c> automatic local, the subtypes its writes give it (<see cref="DeclarationFact.AssignedSubtypes"/>); <see langword="null"/> for any other
-/// declaration, and when that is not stated.
+/// For a <c>Variant</c> automatic local, the subtypes its writes give it (<see cref="DeclarationFact.AssignedSubtypes"/>);
+/// <see langword="null"/> for any other declaration, and when that is not stated.
 /// </param>
 public record class DeclarationFactDto(
     Uri Symbol, string Name, DeclarationKind Kind, AccessModifier Access, bool IsImplicit, SourceLocation Location, DeclarationReferences? References,
