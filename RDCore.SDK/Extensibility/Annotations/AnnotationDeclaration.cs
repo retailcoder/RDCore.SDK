@@ -8,8 +8,9 @@ namespace RDCore.SDK.Extensibility.Annotations;
 /// (<see cref="ExtensionAnnotationsAttribute"/>), and a catalogue holds every extension's (<see cref="AnnotationCatalogue"/>).
 /// </summary>
 /// <remarks>
-/// The declaration says what an annotation looks like, and nothing of what it does: that is its provider's. Its description and its parameters' are strings of
-/// the provider's resources, in each language of the platform (<see cref="AnnotationSet.Descriptions"/>).
+/// The declaration says what an annotation looks like, and whether the member it annotates is called from outside the project (<see cref="IsEntryPoint"/>);
+/// what else it does is its provider's. Its description and its parameters' are strings of the provider's resources, in each language of the platform
+/// (<see cref="AnnotationSet.Descriptions"/>).
 /// </remarks>
 public sealed record class AnnotationDeclaration
 {
@@ -54,6 +55,13 @@ public sealed record class AnnotationDeclaration
     public string? ReplacedBy { get; init; }
 
     /// <summary>
+    /// Whether the member it annotates is called from outside the project, by the extension that declares it: a test its runner runs. The member's role is
+    /// then <see cref="Semantics.DeclarationRole.ExtensionEntryPoint"/>, and its having no reference in the project's code is not a sign that it is unused.
+    /// Only an annotation of a member (<see cref="AnnotationTargets.Member"/>) can be one (<see cref="IsWellFormed"/>).
+    /// </summary>
+    public bool IsEntryPoint { get; init; }
+
+    /// <summary>
     /// The fewest arguments it takes: one for each parameter that is not optional, a list among them.
     /// </summary>
     [JsonIgnore]
@@ -66,13 +74,15 @@ public sealed record class AnnotationDeclaration
     public int? MaxArguments => Parameters is [.., { Repeats: true }] ? null : Parameters.Length;
 
     /// <summary>
-    /// Whether its parameters are in the order the declaration requires: no required parameter after an optional one, and only the last one repeated.
+    /// Whether the declaration is one an extension can make: its parameters are in the order it requires (no required parameter after an optional one, and
+    /// only the last one repeated), and an entry point (<see cref="IsEntryPoint"/>) annotates a member.
     /// </summary>
     [JsonIgnore]
     public bool IsWellFormed
-        => Parameters.Select((parameter, index) => (parameter, index)).All(item
-            => (!item.parameter.Repeats || item.index == Parameters.Length - 1)
-                && (item.parameter.IsOptional || Parameters.Take(item.index).All(before => !before.IsOptional)));
+        => (!IsEntryPoint || Targets.HasFlag(AnnotationTargets.Member))
+            && Parameters.Select((parameter, index) => (parameter, index)).All(item
+                => (!item.parameter.Repeats || item.index == Parameters.Length - 1)
+                    && (item.parameter.IsOptional || Parameters.Take(item.index).All(before => !before.IsOptional)));
 
     /// <summary>
     /// Whether a name is the annotation's own or one of its aliases. Case does not matter, as in any VBA name (<strong>MS-VBAL §3.3.5.1</strong>).
