@@ -17,6 +17,11 @@ public interface IRDCoreServerProcess : IDisposable
     /// <summary>
     /// Runs a server executable with command-line arguments mapping the specified <c>LanguageClientSettings</c>.
     /// </summary>
+    /// <remarks>
+    /// The child's environment names the platform root this process resolved, as <c>RDCORE_PLATFORM_ROOT</c>
+    /// (<see cref="RDCoreLanguageServerLaunch.PlatformRootEnvironmentVariable"/>), so that every process of the platform has the same root
+    /// (<see cref="Platform.IPlatformEnvironment.Root"/>), wherever its own folder is.
+    /// </remarks>
     /// <param name="relativePath">
     /// The path of the server executable, relative to the platform root, with or without <c>.exe</c>: a manifest written on Windows names
     /// <c>RDCore.ParseServer.exe</c>, which is <c>RDCore.ParseServer</c> elsewhere. The executable is started as named when it is there, and in the other
@@ -171,6 +176,9 @@ public class RDCoreServerProcess(
             Environment.ProcessId, pipeName, workspace, trace, verbose, Options.Value.Workspace.Language, Options.Value.Workspace.Defines,
             Options.Value.Workspace.FileLevelStatements);
         var info = CreateProcessStartInfo(fullPath, arguments);
+
+        // the child is told the root this process resolved, so it never derives one again from its own folder: an extension is two folders below the root.
+        info.Environment[RDCoreLanguageServerLaunch.PlatformRootEnvironmentVariable] = PlatformEnvironment.Root;
         if (mode is not null)
         {
             info.Environment[ModeEnvironmentVariable] = mode;

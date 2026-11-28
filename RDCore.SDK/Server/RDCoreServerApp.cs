@@ -498,6 +498,16 @@ public abstract class RDCoreServerApp(
             LogIfEnabled(LogLevel.Warning, $"The client's locale '{locale}' is not a culture the platform knows; '{System.Globalization.CultureInfo.CurrentUICulture.Name}' stands.");
         }
 
+        // the workspace is the folder the client opened, and the one the server was started on only when it opened none; the user is told, in the language
+        // just taken, when the two are different folders.
+        var root = WorkspaceRootChoice.Of(request, options.Value.Workspace.WorkspaceUri);
+        WorkspaceRoot = root.Root;
+        if (TakeWorkspaceRoot(root, options.Value.Workspace, ExternalServices?.GetService<Configuration.WorkspaceSettingsFolder>()) is { } differs)
+        {
+            LogIfEnabled(LogLevel.Warning, differs);
+            server.Window.ShowMessage(new ShowMessageParams { Type = MessageType.Warning, Message = differs });
+        }
+
         var clientProcessId = ResolveClientProcessId(request);
         if (clientProcessId != 0)
         {
@@ -515,6 +525,31 @@ public abstract class RDCoreServerApp(
 
         await OnLanguageServerInitializeAsync(server, request, token);
         LogIfEnabled(LogLevel.Information, TraceMessages.LanguageServerInitialize_HandlerCompleted);
+    }
+
+    /// <summary>
+    /// The root folder of the workspace the server works on, as the client's <c>initialize</c> request and the server's start say it
+    /// (<see cref="WorkspaceRootChoice.Root"/>): the folder the client opened, or else the one the server was started on.
+    /// </summary>
+    /// <remarks>
+    /// <see langword="null"/> before the request is received, and when neither names a folder. A server's own handler of the request
+    /// (<see cref="OnLanguageServerInitializeAsync"/>) loads the workspace from it.
+    /// </remarks>
+    protected string? WorkspaceRoot { get; private set; }
+
+    // the folder the client opened is the workspace when the server was started on another: the settings of the server are that folder's, and so is the
+    // workspace its children are started on, which they are once initialize is answered. What the server tells its user; nothing when the two are one.
+    internal static string? TakeWorkspaceRoot(WorkspaceRootChoice root, SdkWorkspaceOptions workspace, Configuration.WorkspaceSettingsFolder? settings)
+    {
+        if (!root.Differs)
+        {
+            return null;
+        }
+
+        // the settings first: a workspace's settings say nothing of which workspace it is, and the configuration names the one started on.
+        _ = settings?.MoveTo(root.Requested!);
+        workspace.WorkspaceUri = root.Requested!;
+        return root.Message;
     }
 
     // the language the client says the workspace is written in wins over the server's own setting (the command line a client started it

@@ -28,4 +28,7 @@
   <data name="WorkspaceFolder_Missing" xml:space="preserve">
     <value>Le dossier « {0} » que liste {1} n'est pas chargé : il n'y a aucun dossier de ce nom sous la racine de l'espace de travail.</value>
   </data>
+  <data name="WorkspaceRoot_Differs" xml:space="preserve">
+    <value>Le client a ouvert le dossier « {0} », et le serveur a été démarré sur « {1} » : l'espace de travail est « {0} », ses paramètres compris.</value>
+  </data>
 </root>

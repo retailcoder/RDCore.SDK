@@ -44,13 +44,25 @@ public sealed class LiveSettingsTarget(SettingsSchema schema, string section, ob
     public object Root { get; } = root;
 
     /// <summary>The live settings of the object, each with the property it is set on, and the value it had when the component started.</summary>
-    internal IReadOnlyList<(SettingDescriptor Setting, PropertyInfo Property, object Owner, object? Started)> Settings { get; } = Read(schema, section, root);
+    internal IReadOnlyList<(SettingDescriptor Setting, PropertyInfo Property, object Owner, object? Started)> Settings { get; private set; }
+        = Read(schema, section, root, IsLive);
 
-    private static List<(SettingDescriptor, PropertyInfo, object, object?)> Read(SettingsSchema schema, string section, object root)
+    // the settings of the object a workspace can set, live or not, each with its property: what a component that moves to another workspace sets again.
+    internal IReadOnlyList<(SettingDescriptor Setting, PropertyInfo Property, object Owner, object? Started)> WorkspaceSettings
+        => Read(schema, section, Root, WorkspaceSettingsStore.CanSet);
+
+    // the live settings take the values they have now for the ones they started with: what a component that moves to another workspace would have started
+    // with there.
+    internal void Restart() => Settings = Read(schema, section, Root, IsLive);
+
+    private static bool IsLive(SettingDescriptor setting) => setting.Reach == SettingReach.Live;
+
+    private static List<(SettingDescriptor, PropertyInfo, object, object?)> Read(
+        SettingsSchema schema, string section, object root, Func<SettingDescriptor, bool> which)
     {
         var prefix = section.Length == 0 ? string.Empty : section + ".";
         var settings = new List<(SettingDescriptor, PropertyInfo, object, object?)>();
-        foreach (var setting in schema.Settings.Where(setting => setting.Reach == SettingReach.Live && setting.Key.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)))
+        foreach (var setting in schema.Settings.Where(setting => which(setting) && setting.Key.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)))
         {
             object? owner = root;
             PropertyInfo? property = null;
@@ -209,7 +221,43 @@ public sealed class LiveSettings(IEnumerable<LiveSettingsTarget> targets, Settin
     /// what its user set: a live setting the workspace sets keeps the workspace's value, whatever the client says, and a list the client says is the client's
     /// items followed by the workspace's own that are not among them.
     /// </remarks>
-    public IReadOnlyDictionary<string, string> Workspace { get; init; } = new Dictionary<string, string>();
+    public IReadOnlyDictionary<string, string> Workspace { get => _workspace; init => _workspace = value; }
+
+    private volatile IReadOnlyDictionary<string, string> _workspace = new Dictionary<string, string>();
+
+    // the component's workspace is another folder than the one it started with: every setting of its objects a workspace can set takes the value the
+    // configuration gives it now, with the other folder's settings as its layer, or else the value its object has when it is made; the live ones take those
+    // values for the ones they started with, and what the client said is set again, under the other folder's settings.
+    internal void MoveWorkspace(IReadOnlyDictionary<string, string> configured, IReadOnlyDictionary<string, string> workspace)
+    {
+        lock (_applying)
+        {
+            foreach (var target in _targets)
+            {
+                foreach (var (setting, property, owner, _) in target.WorkspaceSettings)
+                {
+                    property.SetValue(owner, ValueOf(setting, configured, property.PropertyType) ?? DefaultOf(owner, property));
+                }
+
+                target.Restart();
+            }
+
+            _workspace = workspace;
+            if (_snapshot is { } said)
+            {
+                Set(said.Received);
+            }
+
+            _unannounced.Enqueue(new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously));
+        }
+
+        Announce();
+    }
+
+    // what a property of a settings object is when nothing sets it: its value in a new object of the type, or the one it has, for a type that is made
+    // otherwise.
+    private static object? DefaultOf(object owner, PropertyInfo property)
+        => owner.GetType().GetConstructor(Type.EmptyTypes) is { } made ? property.GetValue(made.Invoke(null)) : property.GetValue(owner);
 
     /// <inheritdoc/>
     public IReadOnlyDictionary<string, string> Current => _snapshot?.Received ?? UserLiveSettings();

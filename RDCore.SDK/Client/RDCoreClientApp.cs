@@ -224,6 +224,14 @@ public abstract class RDCoreClientApp : IRDCoreClientApp
             OnWorkspaceFolderRefused(refused, _workspaceFolders!.WorkspaceFilePath);
         }
 
+        // the workspace of a .rdworkspace that names its primary project is that project's folder, the rootUri the server is sent: its settings are this
+        // app's, and the server is started on it, as it would take it.
+        if (PrimaryFolderOf(_workspaceFolders, _options.Value.Workspace.WorkspaceUri) is { } primary)
+        {
+            _ = provider.GetService<WorkspaceSettingsFolder>()?.MoveTo(primary);
+            _options.Value.Workspace.WorkspaceUri = primary;
+        }
+
         await StartLanguageClientAsync(provider.GetRequiredService<IPlatformCompositionService>());
     }
 
@@ -275,6 +283,14 @@ public abstract class RDCoreClientApp : IRDCoreClientApp
         => workspace is not { Length: > 0 } ? null
             : fileSystem.Path.IsPathFullyQualified(workspace) || !Uri.TryCreate(workspace, UriKind.Absolute, out var uri) ? workspace
             : uri.IsFile ? DocumentUri.From(uri).GetFileSystemPath()
+            : null;
+
+    // the folder of the primary project of a workspace its .rdworkspace describes, when it is not the workspace folder the app was opened on: the rootUri the
+    // server is sent (InitializeWorkspaceOf), and the folder it is to be started on.
+    internal static string? PrimaryFolderOf(WorkspaceFolderList? workspace, string workspaceUri)
+        => workspace?.Primary is { } primary
+            && !(WorkspaceSettingsStore.FolderOf(workspaceUri) is { } opened && WorkspacePaths.Same(opened, primary.Path))
+            ? primary.Path
             : null;
 
     // the root and the folders of the initialize request: the primary project of a workspace its .rdworkspace describes, and every folder of it in the file's
