@@ -49,7 +49,7 @@ public sealed class ExtensionInfoTests
         "Description":"An extension.","FileHash":"aGFzaA==","Capabilities":[{"Name":"Diagnostics","IsSupported":true}],"DiagnosticPrefix":"EXT",
         "SdkVersion":"0.2.1-alpha","RuntimeIdentifier":"linux-x64","Settings":[],"SettingDescriptions":{},
         "Annotations":[{"Name":"Fixture","Aliases":[],"Targets":"Member","ModuleKinds":"All","Repeats":false,
-        "Parameters":[{"Name":"Label","Takes":"Text","IsOptional":false,"Repeats":false}],"IsDeprecated":false,"ReplacedBy":null}],
+        "Parameters":[{"Name":"Label","Takes":"Text","IsOptional":false,"Repeats":false}],"IsDeprecated":false,"ReplacedBy":null,"IsEntryPoint":false}],
         "AnnotationDescriptions":{"en":{"Fixture":"Marks a fixture.","Fixture_Label":"The label."},"fr":{"Fixture":"Marque un montage."}}}
         """.ReplaceLineEndings(string.Empty);
 
