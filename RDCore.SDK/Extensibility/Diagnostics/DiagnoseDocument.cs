@@ -60,6 +60,13 @@ public record class DiagnoseDocumentPayload(
     /// otherwise.
     /// </summary>
     public IReadOnlyList<RDCoreDiagnosticCode> DisabledCodes { get; init; } = [];
+
+    /// <summary>
+    /// The kind of the module, as the language server's workspace has it (<see cref="Workspace.ModuleKinds"/>): what the project says of a document module,
+    /// the kind of a block (<see cref="BlockModule.Kind"/>), the text and the file of any other module. <see langword="null"/> when the language server does
+    /// not say: the analyzers' context reads it from what it is given (<see cref="ModuleAnalysisContext.ModuleKind"/>).
+    /// </summary>
+    public Model.AST.Declarations.ModuleType? ModuleKind { get; init; }
 }
 
 /// <summary>
