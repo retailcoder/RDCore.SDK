@@ -20,8 +20,8 @@ public static class IVBInferableTypeExtensions
     /// <item>the widest, by <c>Double</c>, <c>Single</c>, <c>Long</c>, <c>Integer</c>, <c>Byte</c>, when each is one of those;</item>
     /// <item><c>Object</c>, when each is <c>Object</c> or a class;</item>
     /// <item><c>Variant</c> otherwise: <c>Boolean</c>, <c>String</c>, <c>Date</c>, <c>Currency</c>, <c>Decimal</c>, <c>LongLong</c>, a record and an
-    /// enumeration resolve to themselves only alone. A <c>Boolean</c> is not widened to a number, which would change the value the code gives it (<c>True</c> held by an
-    /// <c>Integer</c> is <c>-1</c>).</item>
+    /// enumeration resolve to themselves only alone. A <c>Boolean</c> is not widened to a number, which would change the value the code gives it
+    /// (<c>True</c> held by an <c>Integer</c> is <c>-1</c>).</item>
     /// </list>
     /// </returns>
     public static VBType? Resolve(this IVBInferableType inferable)
