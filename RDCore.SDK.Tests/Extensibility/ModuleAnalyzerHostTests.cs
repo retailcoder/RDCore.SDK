@@ -232,7 +232,8 @@ public sealed class ModuleAnalyzerHostTests
     private static int _node;
 
     private static ModuleHeaderTriviaNode Header(string source)
-        => new(new SyntaxNodeId(Document.ToString(), [Interlocked.Increment(ref _node)]), new SourceLocation { Uri = Document, Range = new(0, 0, 0, 1) }, source);
+        => new(new SyntaxNodeId(Document.ToString(), [Interlocked.Increment(ref _node)]),
+            new SourceLocation { Uri = Document, Range = new(0, 0, 0, 1) }, source);
 
     private static ModuleSemanticsDto Semantics(ClassModuleSemanticFlags? flags = null, DocumentModuleFact? document = null)
         => new(Document, true, [], [], [], Class: flags, Document: document);

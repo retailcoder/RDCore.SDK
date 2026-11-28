@@ -31,7 +31,10 @@ public static class ModuleAnalyzerHost
     /// <returns>The findings of every analyzer that was run, in the order of the analyzers.</returns>
     public static IReadOnlyList<AnalyzerFinding> Run(IEnumerable<IModuleAnalyzer> analyzers, DiagnoseDocumentPayload payload, ILogger logger)
     {
-        var context = new ModuleAnalysisContext(payload.DocumentUri, payload.ParseResult, payload.Semantics) { DisabledCodes = payload.DisabledCodes.ToHashSet() };
+        var context = new ModuleAnalysisContext(payload.DocumentUri, payload.ParseResult, payload.Semantics)
+        {
+            DisabledCodes = payload.DisabledCodes.ToHashSet(),
+        };
         return Run(analyzers, payload.ModuleKind is { } kind ? context with { ModuleKind = kind } : context, payload.Phase, logger);
     }
 
