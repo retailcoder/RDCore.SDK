@@ -60,8 +60,8 @@ public sealed record class ProcedureSemanticModel(SemanticId Procedure, Immutabl
     public ImmutableArray<Flow.UnreadAssignmentFact> UnreadAssignments { get; init; } = [];
 
     /// <summary>
-    /// The reads of the procedure's <c>Variant</c> automatic local variables, with the subtypes of the values that may reach each (<see cref="Flow.VariantReadFact"/>),
-    /// in the order they are written in. The list is empty when the language core could not tell, so an empty list says nothing about the procedure's reads.
+    /// The reads of the procedure's <c>Variant</c> automatic local variables, with the subtypes of the values that may reach each
+    /// (<see cref="Flow.VariantReadFact"/>), in the order they are written in. The list is empty when the language core could not tell, so an empty list says nothing about the procedure's reads.
     /// </summary>
     public ImmutableArray<Flow.VariantReadFact> VariantReads { get; init; } = [];
 

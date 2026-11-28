@@ -8,8 +8,8 @@ namespace RDCore.SDK.Semantics.Flow;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <strong>RD-VBA addition.</strong> <c>If c Then v = 1 Else v = "a"</c> followed by a read of <c>v</c> gives the read <c>Integer</c> and <c>String</c>, whichever
-/// branch is written first; <c>If c Then v = 1</c> gives it <c>Integer</c> and <c>Empty</c>.
+/// <strong>RD-VBA addition.</strong> <c>If c Then v = 1 Else v = "a"</c> followed by a read of <c>v</c> gives the read <c>Integer</c> and
+/// <c>String</c>, whichever branch is written first; <c>If c Then v = 1</c> gives it <c>Integer</c> and <c>Empty</c>.
 /// </para>
 /// <para>
 /// What may happen counts as happening: an error on the way, a jump, and a loop that runs no time are code paths. A read is stated only when the language core

@@ -15,7 +15,9 @@ namespace RDCore.SDK.Semantics.Flow;
 /// The names of the subtypes (<see cref="Model.Types.Abstract.VBType.Name"/>), each once, in ordinal order: the order the code is written in does not change
 /// them.
 /// </param>
-/// <param name="IsComplete">Whether every value the code gives has a known subtype: the variable holds one of <paramref name="Subtypes"/>, and nothing else.</param>
+/// <param name="IsComplete">
+/// Whether every value the code gives has a known subtype: the variable holds one of <paramref name="Subtypes"/>, and nothing else.
+/// </param>
 public sealed record class VariantSubtypes(ImmutableArray<string> Subtypes, bool IsComplete)
 {
     /// <summary>
