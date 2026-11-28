@@ -23,7 +23,8 @@ namespace RDCore.SDK.Server;
 /// </remarks>
 /// <param name="Requested">The folder the request gives; <see langword="null"/> when it gives none, or a URI that is not a <c>file</c> URI.</param>
 /// <param name="Started">
-/// The folder the server was started with; <see langword="null"/> when it was started with none, or with a URI that is not a <c>file</c> URI.
+/// The folder the server was started with, written as the request writes a folder (<see cref="DocumentUri.GetFileSystemPath"/>: on Windows, the drive in
+/// lower case); <see langword="null"/> when it was started with none, or with a URI that is not a <c>file</c> URI.
 /// </param>
 public sealed record class WorkspaceRootChoice(string? Requested, string? Started)
 {
@@ -55,8 +56,11 @@ public sealed record class WorkspaceRootChoice(string? Requested, string? Starte
     /// <param name="workspace">The workspace the server was started with, a path or a URI (<see cref="SdkWorkspaceOptions.WorkspaceUri"/>).</param>
     public static WorkspaceRootChoice Of(InitializeParams request, string? workspace) => new(
         FolderOf(request.RootUri) ?? FolderOf(request.WorkspaceFolders?.FirstOrDefault()?.Uri),
-        workspace is { Length: > 0 } ? WorkspaceSettingsStore.FolderOf(workspace) : null);
+        workspace is { Length: > 0 } && WorkspaceSettingsStore.FolderOf(workspace) is { } started ? FolderOf(DocumentUri.FromFileSystemPath(started)) : null);
 
+    // the folder as a file URI names it to every process of the platform: the language server's documents, and the modules the environment host composes, are
+    // addressed by it. The folder the server was started on is written the same way, or the root a client that opens no folder gets would be another
+    // spelling of it (the case of the drive on Windows), and a module defined under it would not be the host's module of that name.
     private static string? FolderOf(DocumentUri? uri)
         => uri is not null && string.Equals(uri.Scheme, Uri.UriSchemeFile, StringComparison.OrdinalIgnoreCase) ? uri.GetFileSystemPath() : null;
 }

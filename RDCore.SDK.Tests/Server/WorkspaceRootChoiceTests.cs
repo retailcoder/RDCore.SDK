@@ -71,7 +71,8 @@ public sealed class WorkspaceRootChoiceTests
         Assert.IsTrue(root.Differs);
         Assert.IsTrue(RDCore.SDK.Workspace.WorkspacePaths.Same(Project, root.Root!), root.Root);
         StringAssert.Contains(root.Message, root.Requested, "the folder the client opened");
-        StringAssert.Contains(root.Message, other, "the folder the server was started on");
+        Assert.IsTrue(RDCore.SDK.Workspace.WorkspacePaths.Same(other, root.Started!), root.Started);
+        StringAssert.Contains(root.Message, root.Started, "the folder the server was started on");
     }
 
     [TestMethod]
@@ -92,7 +93,22 @@ public sealed class WorkspaceRootChoiceTests
 
         Assert.IsNull(root.Requested);
         Assert.IsFalse(root.Differs);
-        Assert.AreEqual(Project, root.Root);
+        Assert.IsTrue(RDCore.SDK.Workspace.WorkspacePaths.Same(Project, root.Root!), root.Root);
+    }
+
+    [TestMethod]
+    [DataRow("path", DisplayName = "started on its path")]
+    [DataRow("uri", DisplayName = "started on its file URI")]
+    public void TheFolderTheServerWasStartedOn_IsWrittenAsTheRequestWritesIt(string startedOn)
+    {
+        // a module the language server defines is addressed under the root, and one the environment host composes under the folder as its file URI names it:
+        // one folder written two ways would be two modules of one name (on Windows, the drive in another case).
+        var requested = WorkspaceRootChoice.Of(Request(UriOf(Project)), null).Requested!;
+
+        var root = WorkspaceRootChoice.Of(Request(), startedOn == "path" ? Project : UriOf(Project));
+
+        Assert.AreEqual(requested, root.Started);
+        Assert.AreEqual(requested, root.Root);
     }
 
     // ---- what the server does with it ----
