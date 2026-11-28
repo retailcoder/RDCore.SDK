@@ -42,8 +42,8 @@ public enum DeferredUseKind
 public sealed record class DeferredUseFact(DeferredUseKind Kind, SourceLocation Location)
 {
     /// <summary>
-    /// For a <see cref="DeferredUseKind.Call"/>, the declared type of each argument, by name, in the order they are written; the name of the unknown type for
-    /// an argument whose type is not known. Empty for any other use, and for a call with no arguments.
+    /// For a <see cref="DeferredUseKind.Call"/>, the name of the declared type of each argument, in the order they are written; the name of the unknown type
+    /// for an argument whose type is not known. Empty for any other use, and for a call with no arguments.
     /// </summary>
     public ImmutableArray<string> ArgumentTypes { get; init; } = [];
 }
@@ -54,8 +54,9 @@ public sealed record class DeferredUseFact(DeferredUseKind Kind, SourceLocation 
 /// <remarks>
 /// <para>
 /// <strong>RD-VBA addition.</strong> The fact is stated whatever the module's options say: under <c>Option Explicit</c> the name is also a compile error
-/// (<c>Variable not defined</c>, once per name and procedure), and without it the name is the implicit <c>Variant</c> local MS-VBAL declares
-/// (<see cref="Variable"/>). Tooling reads the fact to offer the name's members and to declare it.
+/// (<c>Variable not defined</c>, once per name and procedure), and without it the name is the implicitly-defined local MS-VBAL declares
+/// (<see cref="Variable"/>), a <c>Variant</c> unless an implicit definition directive gives its first letter another type
+/// (<strong>MS-VBAL §5.2.2</strong>). Tooling reads the fact to offer the name's members and to declare it.
 /// </para>
 /// <para>
 /// A candidate is the declared type of the value a <c>Let</c> or a <c>Set</c> assigns to the name, of a <c>For</c> loop's start value when the name is
