@@ -1,7 +1,10 @@
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
 using RDCore.SDK.Model.AST;
+using RDCore.SDK.Model.AST.Abstract;
+using RDCore.SDK.Model.AST.Declarations;
 using RDCore.SDK.Model.Source;
 using RDCore.SDK.Platform.Protocol;
+using RDCore.SDK.Workspace;
 
 namespace RDCore.SDK.Extensibility.Diagnostics;
 
@@ -35,6 +38,34 @@ public sealed record class ModuleAnalysisContext(Uri Document, ModuleParseResult
     /// </remarks>
     /// <param name="code">The code.</param>
     public bool IsEnabled(RDCoreDiagnosticCode code) => !code.CanBeDisabled || !DisabledCodes.Contains(code);
+
+    private readonly ModuleType? _moduleKind;
+
+    /// <summary>
+    /// The kind of the module: a standard module, a class module, or a host's document module (<see cref="Workspace.ModuleKinds"/>). The code of a form is a
+    /// class module, whose <see cref="ModuleParseResult.Designer"/> the language server sets.
+    /// </summary>
+    /// <remarks>
+    /// The language server says it (<see cref="DiagnoseDocumentPayload.ModuleKind"/>). When it does not, the module is a document module when the
+    /// environment host says so (<see cref="ModuleSemanticsDto.Document"/>), a class module when the host says so (<see cref="ModuleSemanticsDto.Class"/>) or
+    /// when its parse has a designer, a <c>VERSION</c> header (<see cref="ModuleHeader.IsClassModule"/>) or the file is an RDForms form's code
+    /// (<see cref="ProjectModuleKinds.IsRDFormsModule"/>), and a standard module otherwise, as a document module or a class block is when none of these
+    /// says it.
+    /// </remarks>
+    public ModuleType ModuleKind
+    {
+        get => _moduleKind ?? KindOf(Document, ParseResult, Semantics);
+        init => _moduleKind = value;
+    }
+
+    private static ModuleType KindOf(Uri document, ModuleParseResult parse, ModuleSemanticsDto? semantics)
+        => semantics?.Document is not null ? ModuleType.DocumentModule
+            : semantics?.Class is not null
+                || parse.Designer is not null
+                || ProjectModuleKinds.IsRDFormsModule(document.IsAbsoluteUri ? document.LocalPath : document.OriginalString)
+                || parse.Trivia.OfType<ModuleHeaderTriviaNode>().Any(header => ModuleHeader.IsClassModule(header.Source) == true)
+                ? ModuleType.ClassModule
+                : ModuleType.StdModule;
 }
 
 /// <summary>

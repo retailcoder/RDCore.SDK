@@ -2,14 +2,21 @@ using Microsoft.Extensions.Logging;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
 using RDCore.SDK.Extensibility.Diagnostics;
 using RDCore.SDK.Model.AST;
+using RDCore.SDK.Model.AST.Abstract;
+using RDCore.SDK.Model.AST.Declarations;
+using RDCore.SDK.Model.Source;
 using RDCore.SDK.Platform.Protocol;
+using RDCore.SDK.Semantics;
+using RDCore.SDK.Semantics.Flags;
+using RDCore.SDK.Workspace.Forms;
 
 namespace RDCore.Tests.Extensibility;
 
 /// <summary>
 /// The analyzers of a document are run as the platform runs them for every extension: those of the phase asked for, and of a code that is not disabled. An
 /// analyzer is told which of its codes are, and skips their work; one whose every code is disabled is not run. A finding of a disabled code that an analyzer
-/// reports anyway is dropped, and the analyzer named in a warning. A code of the language's own errors cannot be disabled.
+/// reports anyway is dropped, and the analyzer named in a warning. A code of the language's own errors cannot be disabled. An analyzer is told the kind of the
+/// module: the language server's word for it, or what the module's parse and the host's facts say of it.
 /// </summary>
 [TestClass]
 public sealed class ModuleAnalyzerHostTests
@@ -191,5 +198,74 @@ public sealed class ModuleAnalyzerHostTests
     {
         Assert.IsEmpty(new DiagnoseDocumentPayload(Document, 1, new ModuleParseResult()).DisabledCodes);
         Assert.IsTrue(new ModuleAnalysisContext(Document, new ModuleParseResult(), null).IsEnabled(Named));
+    }
+
+    // an analyzer that keeps the kind of the module it is given.
+    private sealed class KindReader : IModuleAnalyzer
+    {
+        public ModuleType? Kind { get; private set; }
+
+        public IReadOnlyList<RDCoreDiagnosticCode> Codes => [];
+
+        public IEnumerable<AnalyzerFinding> Analyze(ModuleAnalysisContext context)
+        {
+            Kind = context.ModuleKind;
+            return [];
+        }
+    }
+
+    [TestMethod]
+    [DataRow(ModuleType.ClassModule)]
+    [DataRow(ModuleType.DocumentModule)]
+    public void TheKindTheLanguageServerSays_TravelsWithItsPayload_ToTheAnalyzersContext(ModuleType kind)
+    {
+        // the parse of a standard module, which a document module's export and a class block's parse look like.
+        var sent = new DiagnoseDocumentPayload(Document, 1, new ModuleParseResult()) { ModuleKind = kind };
+        var payload = PlatformJson.Deserialize<DiagnoseDocumentPayload>(PlatformJson.Serialize(sent));
+        var reader = new KindReader();
+
+        ModuleAnalyzerHost.Run([reader], payload, _logger);
+
+        Assert.AreEqual(kind, reader.Kind);
+    }
+
+    private static int _node;
+
+    private static ModuleHeaderTriviaNode Header(string source)
+        => new(new SyntaxNodeId(Document.ToString(), [Interlocked.Increment(ref _node)]),
+            new SourceLocation { Uri = Document, Range = new(0, 0, 0, 1) }, source);
+
+    private static ModuleSemanticsDto Semantics(ClassModuleSemanticFlags? flags = null, DocumentModuleFact? document = null)
+        => new(Document, true, [], [], [], Class: flags, Document: document);
+
+    [TestMethod]
+    [DataRow("nothing", ModuleType.StdModule)]
+    [DataRow("a header with no VERSION line", ModuleType.StdModule)]
+    [DataRow("a VERSION header", ModuleType.ClassModule)]
+    [DataRow("a designer", ModuleType.ClassModule)]
+    [DataRow("the file of an RDForms form's code", ModuleType.ClassModule)]
+    [DataRow("the host's class flags", ModuleType.ClassModule)]
+    [DataRow("the host's document fact", ModuleType.DocumentModule)]
+    [DataRow("the host's document fact and class flags", ModuleType.DocumentModule)]
+    public void WhenTheLanguageServerDoesNotSay_TheKindIsReadFromWhatTheAnalyzerIsGiven(string given, ModuleType kind)
+    {
+        var designer = new FormDescriptor("Form1", FormDesignerKind.RDForms, new FormControlClass("RDForms", "Form"), new Dictionary<string, string>(), []);
+        var document = new DocumentModuleFact(null, null, []);
+        var context = given switch
+        {
+            "a header with no VERSION line" => Context() with { ParseResult = new() { Trivia = [Header("BEGIN\r\n  MultiUse = -1  'True\r\nEND")] } },
+            "a VERSION header" => Context() with { ParseResult = new() { Trivia = [Header("VERSION 1.0 CLASS\r\n")] } },
+            "a designer" => Context() with { ParseResult = new() { Designer = designer } },
+            "the file of an RDForms form's code" => Context() with { Document = new Uri("file:///c:/ws/Form1.rdform") },
+            "the host's class flags" => Context() with { Semantics = Semantics(flags: ClassModuleSemanticFlags.None) },
+            "the host's document fact" => Context() with { Semantics = Semantics(document: document) },
+            "the host's document fact and class flags" => Context() with { Semantics = Semantics(ClassModuleSemanticFlags.None, document) },
+            _ => Context(),
+        };
+        var reader = new KindReader();
+
+        ModuleAnalyzerHost.Run([reader], new DiagnoseDocumentPayload(context.Document, 1, context.ParseResult, context.Semantics), _logger);
+
+        Assert.AreEqual(kind, reader.Kind);
     }
 }

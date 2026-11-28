@@ -22,15 +22,21 @@ namespace RDCore.SDK.Extensibility.Diagnostics;
 public static class ModuleAnalyzerHost
 {
     /// <summary>
-    /// Runs the analyzers over the document of a <c>rdcore/diagnostics/document</c> request, in the phase it asks for, with the codes it says are disabled.
+    /// Runs the analyzers over the document of a <c>rdcore/diagnostics/document</c> request, in the phase it asks for, with the codes it says are disabled
+    /// and the kind of module it says the document is (<see cref="DiagnoseDocumentPayload.ModuleKind"/>).
     /// </summary>
     /// <param name="analyzers">The analyzers of the extension.</param>
     /// <param name="payload">What the language server sent of the document.</param>
     /// <param name="logger">Where an analyzer that fails, or that reports a disabled code, is named.</param>
     /// <returns>The findings of every analyzer that was run, in the order of the analyzers.</returns>
     public static IReadOnlyList<AnalyzerFinding> Run(IEnumerable<IModuleAnalyzer> analyzers, DiagnoseDocumentPayload payload, ILogger logger)
-        => Run(analyzers, new ModuleAnalysisContext(payload.DocumentUri, payload.ParseResult, payload.Semantics) { DisabledCodes = payload.DisabledCodes.ToHashSet() },
-            payload.Phase, logger);
+    {
+        var context = new ModuleAnalysisContext(payload.DocumentUri, payload.ParseResult, payload.Semantics)
+        {
+            DisabledCodes = payload.DisabledCodes.ToHashSet(),
+        };
+        return Run(analyzers, payload.ModuleKind is { } kind ? context with { ModuleKind = kind } : context, payload.Phase, logger);
+    }
 
     /// <summary>
     /// Runs the analyzers of a phase over a module.
