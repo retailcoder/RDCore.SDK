@@ -13,7 +13,8 @@ namespace RDCore.SDK.Runtime.Hosting;
 public interface IProgramMachine : IAsyncDisposable
 {
     /// <summary>
-    /// Runs one procedure of the program with the invocation's arguments.
+    /// Runs one procedure of the program with the invocation's arguments. A procedure of a class module runs on a new object of the class, initialized
+    /// before it and terminated before the invocation ends (<see cref="ProgramInvocation"/>).
     /// </summary>
     /// <param name="invocation">The procedure, and its arguments as JSON values.</param>
     /// <param name="cancellationToken">
@@ -22,10 +23,10 @@ public interface IProgramMachine : IAsyncDisposable
     /// </param>
     /// <returns>
     /// The value the procedure returned, as JSON, or how it ended otherwise: a run-time error that nothing handled
-    /// (<see cref="ExecutionOutcome.RuntimeError"/>), a module the program does not have, or a procedure its module does not declare <c>Public</c>
-    /// (<see cref="ExecutionOutcome.NotFound"/>), an <c>End</c>
-    /// statement (<see cref="ExecutionOutcome.Halted"/>), or an invocation while another runs (<see cref="ExecutionOutcome.Refused"/>). None of these is an
-    /// exception.
+    /// (<see cref="ExecutionOutcome.RuntimeError"/>), including one that the <c>Class_Initialize</c> of the object of a class module left unhandled, a
+    /// standard module or a class module the program does not have, or a procedure its module does not declare <c>Public</c>
+    /// (<see cref="ExecutionOutcome.NotFound"/>), an <c>End</c> statement (<see cref="ExecutionOutcome.Halted"/>), or an invocation while another runs
+    /// (<see cref="ExecutionOutcome.Refused"/>). None of these is an exception.
     /// </returns>
     /// <exception cref="ObjectDisposedException">The machine was disposed.</exception>
     Task<ProgramInvocationResult> InvokeAsync(ProgramInvocation invocation, CancellationToken cancellationToken);
