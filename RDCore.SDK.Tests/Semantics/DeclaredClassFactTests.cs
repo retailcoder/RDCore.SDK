@@ -83,7 +83,7 @@ public sealed class DeclaredClassFactTests
                     get,
                     set with { Parameters = [Parameter(set.Uri, "value", VBClassType.FromClassModule(PersonModule))] },
                     new VBInstanceFieldVariableMemberSymbol(Root, owner, "Tags", Line(4), Line(4), VBVariantType.TypeInfo, AccessModifier.Public),
-                    // a class module has no Public array variable (MS-VBAL §5.2.3.1): a Property Get returns it.
+                    // a class module has no Public array variable (in MS-VBA, a compile error): a Property Get returns it.
                     new VBPropertyGetMemberSymbol(Root, owner, ScopeKind.Instance, "Members", Line(5), Line(5), AccessModifier.Public)
                     {
                         ResolvedType = new VBResizableArrayType(VBClassType.FromClassModule(PersonModule)),
