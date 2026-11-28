@@ -236,7 +236,9 @@ public static class WorkspaceSettingsConfiguration
     /// </para>
     /// <para>
     /// Only the settings of <paramref name="schema"/> that a workspace can set (<see cref="WorkspaceSettingsStore.CanSet"/>), and values the setting can be,
-    /// are read. A file that is not there sets nothing, and neither does one that cannot be read. A component reads the file when it starts, and not again.
+    /// are read. A file that is not there sets nothing, and neither does one that cannot be read. A component reads the file when it starts, and not again;
+    /// a server whose client opened another folder than the one it was started on reads that folder's instead, before it answers <c>initialize</c>
+    /// (<see cref="WorkspaceRootChoice"/>).
     /// </para>
     /// </remarks>
     /// <param name="builder">The configuration.</param>
@@ -272,16 +274,40 @@ public static class WorkspaceSettingsConfiguration
 
     private sealed class WorkspaceSettingsConfigurationSource(IFileSystem fileSystem, string path, SettingsSchema schema) : IConfigurationSource
     {
+        // the file the layer reads: the one of the workspace the component started with, or of the one it moved to.
+        public string Path { get; set; } = path;
+
         public IConfigurationProvider Build(IConfigurationBuilder builder)
-            => new WorkspaceSettingsConfigurationProvider(fileSystem, path, schema, LayeredLists.Below(builder, this));
+            => new WorkspaceSettingsConfigurationProvider(fileSystem, this, schema, LayeredLists.Below(builder, this));
     }
 
-    private sealed class WorkspaceSettingsConfigurationProvider(IFileSystem fileSystem, string path, SettingsSchema schema, Func<IConfigurationRoot> below)
+    // the layer of a workspace's settings in a configuration that has one, made to read another workspace's: once it has, the configuration says what that
+    // workspace sets. False when the configuration has no such layer.
+    internal static bool MoveTo(IConfigurationRoot configuration, string workspaceFolder)
+    {
+        if (configuration.Providers.OfType<WorkspaceSettingsConfigurationProvider>().LastOrDefault() is not { } layer)
+        {
+            return false;
+        }
+
+        layer.MoveTo(WorkspaceSettingsStore.PathIn(workspaceFolder));
+        return true;
+    }
+
+    private sealed class WorkspaceSettingsConfigurationProvider(
+        IFileSystem fileSystem, WorkspaceSettingsConfigurationSource source, SettingsSchema schema, Func<IConfigurationRoot> below)
         : ConfigurationProvider
     {
+        public void MoveTo(string path)
+        {
+            source.Path = path;
+            Load();
+            OnReload();
+        }
+
         public override void Load()
         {
-            var read = WorkspaceSettingsStore.ReadFile(fileSystem, path, schema);
+            var read = WorkspaceSettingsStore.ReadFile(fileSystem, source.Path, schema);
             var data = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
             foreach (var (key, value) in read.Values)
             {

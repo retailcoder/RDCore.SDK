@@ -71,4 +71,24 @@ public sealed class ClientWorkspaceFoldersTests
         Assert.IsNull(RDCoreClientApp.FolderOf(fileSystem, "untitled:Untitled-1"));
         Assert.IsNull(RDCoreClientApp.FolderOf(fileSystem, ""));
     }
+
+    // the server takes the rootUri it is sent for the workspace (WorkspaceRootChoice): a client opened on the workspace's own folder starts it on the primary
+    // project too, so that it is told one folder.
+    [TestMethod]
+    [DataRow("", "NavalLib", DisplayName = "opened on the workspace's own folder")]
+    [DataRow("NavalConsole", null, DisplayName = "opened on the primary project")]
+    public void TheServerOfAWorkspace_IsStartedOnTheFolderItIsSentAsTheRoot(string opened, string? startedOn)
+    {
+        var workspace = NavalBattle(opened);
+        var openedOn = Path.Combine(Root, opened);
+
+        var primary = RDCoreClientApp.PrimaryFolderOf(workspace, openedOn);
+
+        Assert.AreEqual(startedOn is null ? null : Path.Combine(Root, startedOn), primary);
+        var request = new OmniSharp.Extensions.LanguageServer.Protocol.Models.InitializeParams
+        {
+            RootUri = RDCoreClientApp.InitializeWorkspaceOf(workspace, openedOn).RootUri,
+        };
+        Assert.IsFalse(RDCore.SDK.Server.WorkspaceRootChoice.Of(request, primary ?? openedOn).Differs, "the server is told one folder");
+    }
 }

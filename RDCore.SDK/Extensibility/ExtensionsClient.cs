@@ -75,8 +75,9 @@ public class ExtensionsClient(
     /// Creates a serializable <see cref="ExtensionInfo"/> model for the specified extension executable <c>name</c>, with the specified <c>description</c>.
     /// </summary>
     /// <param name="name">
-    /// The file name of the extension's executable: <c>RDCore.Diagnostics.exe</c> on Windows, <c>RDCore.Diagnostics</c> elsewhere. Its assembly is the
-    /// <c>.dll</c> of the same name beside it.
+    /// The path of the extension's executable, absolute or relative to the working directory: <c>RDCore.Diagnostics.exe</c> on Windows,
+    /// <c>RDCore.Diagnostics</c> elsewhere, which names it in the working directory. Its assembly is the <c>.dll</c> of the same name beside it. The
+    /// manifest names the executable by its file name (<see cref="ExtensionInfo.Name"/>).
     /// </param>
     /// <param name="description">A short description of the extension.</param>
     /// <param name="runtimeIdentifier">
@@ -84,18 +85,21 @@ public class ExtensionsClient(
     /// (<see cref="ExtensionInfo.RuntimeIdentifier"/>); <c>null</c> records none.
     /// </param>
     /// <remarks>
-    /// The implementation validates that it is executing this method inside the target extension folder.
-    /// The folder the current directory is in and the extensions folder are compared as their <see cref="PlatformRootConfinement.RealPath">real paths</see>,
-    /// and an extension is not described when a link on the way to either cannot be followed.
+    /// The executable must be in a folder of the extensions folder (<c>&lt;ExtensionsRoot&gt;/&lt;Title&gt;/</c>), whose name is the extension's title,
+    /// wherever the working directory is. The folder the executable's folder is in and the extensions folder are compared as their
+    /// <see cref="PlatformRootConfinement.RealPath">real paths</see>, and an extension is not described when a link on the way to either cannot be followed.
     /// </remarks>
     /// <returns><c>null</c> if the specified extension cannot be described.</returns>
     public ExtensionInfo? Describe(string name, string description, string? runtimeIdentifier = null)
     {
-        // guard: this must run from inside <ExtensionsRoot>/<ExtensionFolder>/ so the folder name is
-        // the extension title. Compare the resolved extensions root, not a relative path fragment, and both as real paths: the system
-        // gives the current directory as one (getcwd), and the platform root may be named through a link (/var is /private/var on macOS).
-        var currentDirectory = fileSystem.DirectoryInfo.New(fileSystem.Directory.GetCurrentDirectory());
-        if (currentDirectory.Parent is not { } parent)
+        // the executable as a full path: Assembly.LoadFrom and the hash both need one, and a bare file name names it in the working directory.
+        var executablePath = fileSystem.Path.GetFullPath(name);
+
+        // guard: the executable must be in <ExtensionsRoot>/<ExtensionFolder>/, so that the folder's name is the extension's title. Compare the
+        // resolved extensions root, not a relative path fragment, and both as real paths: the platform root may be named through a link (/var is
+        // /private/var on macOS).
+        var extensionFolder = fileSystem.DirectoryInfo.New(fileSystem.Path.GetDirectoryName(executablePath)!);
+        if (extensionFolder.Parent is not { } parent)
         {
             return null;
         }
@@ -114,9 +118,6 @@ public class ExtensionsClient(
             return null;
         }
 
-        // resolve the named executable against the current directory: Assembly.LoadFrom and the hash
-        // both need a real path, and the caller passes a bare filename.
-        var executablePath = fileSystem.Path.GetFullPath(name);
         string fileHash;
         using (var executableStream = fileSystem.File.OpenRead(executablePath))
         {
@@ -132,7 +133,7 @@ public class ExtensionsClient(
         var assemblyName = assembly.GetName();
 
         var version = assemblyName.Version ?? new Version(0, 0, 0);
-        var title = currentDirectory.Name;
+        var title = extensionFolder.Name;
         var publisher = assembly.GetCustomAttribute<AssemblyCompanyAttribute>()?.Company ?? string.Empty;
         var effectiveDescription = string.IsNullOrWhiteSpace(description)
             ? assembly.GetCustomAttribute<AssemblyDescriptionAttribute>()?.Description ?? string.Empty
@@ -150,7 +151,7 @@ public class ExtensionsClient(
 
         return new ExtensionInfo
         {
-            Name = name,
+            Name = fileSystem.Path.GetFileName(executablePath),
             Title = title,
             Version = version,
             Publisher = publisher,

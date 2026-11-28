@@ -91,6 +91,56 @@ public sealed class VBStringValueByteTests
 
     #endregion
 
+    #region slices of bytes
+
+    // every part of an even string, a lone surrogate in it, and of an odd one: the String FromBytes makes of the same bytes of GetBytes.
+    [TestMethod]
+    public void SliceBytes_OfEveryPart_IsWhatFromBytesMakesOfThoseBytes()
+    {
+        foreach (var sut in new[] { new VBStringValue("AŁ\uD800z"), VBStringValue.FromBytes([0x41, 0x00, 0x41, 0x01, 0x42]), VBStringValue.FromBytes([0x43]) })
+        {
+            var bytes = sut.GetBytes();
+            for (var index = 0; index <= bytes.Length; index++)
+            {
+                for (var count = 0; count <= bytes.Length - index; count++)
+                {
+                    var expected = VBStringValue.FromBytes(bytes.AsSpan(index, count));
+                    var slice = sut.SliceBytes(index, count);
+                    var at = $"{count} bytes from {index} of {bytes.Length}";
+                    Assert.AreEqual(expected.Value, slice.Value, at);
+                    Assert.AreEqual(expected.TrailingByte, slice.TrailingByte, at);
+                    CollectionAssert.AreEqual(bytes[index..(index + count)], slice.GetBytes(), at);
+                }
+            }
+        }
+    }
+
+    [TestMethod]
+    [DataRow(-1, 1)]
+    [DataRow(0, -1)]
+    [DataRow(0, 6)]
+    [DataRow(5, 1)]
+    [DataRow(6, 0)]
+    public void SliceBytes_OfBytesNotInTheData_Throws(int index, int count)
+        => Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => VBStringValue.FromBytes([0x41, 0x00, 0x42, 0x00, 0x43]).SliceBytes(index, count));
+
+    // what MidB of a long String is: two bytes of it, and no copy of the rest.
+    [TestMethod]
+    public void SliceBytes_OfALongString_CopiesNoneOfTheRest()
+    {
+        var sut = new VBStringValue(new string('x', 10_000));
+        _ = sut.SliceBytes(1, 2); // the first call pays for what it loads, once
+
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        var slice = sut.SliceBytes(1, 2);
+        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+
+        Assert.AreEqual(2, slice.ByteLength);
+        Assert.IsLessThan(1_000L, allocated, $"two bytes of a 20,000-byte String allocated {allocated:N0} bytes");
+    }
+
+    #endregion
+
     #region size
 
     [TestMethod]

@@ -61,6 +61,52 @@ public readonly record struct VBRuntimeByteStringValue(string Text, byte Trailin
         _ => [],
     };
 
+    /// <summary>
+    /// The runtime value of the <c>String</c> whose data is <paramref name="count"/> bytes of the data of <paramref name="value"/> from
+    /// <paramref name="index"/>: what <see cref="FromBytes"/> makes of that part of <see cref="BytesOf"/>, read where the value holds its data.
+    /// </summary>
+    /// <remarks>
+    /// A part of whole characters from the start of a character is a substring of the characters. Any other part is made from its own bytes, read where
+    /// the value holds them; one that ends in the trailing byte, from a copy of its own bytes. None of the rest of the data is copied.
+    /// </remarks>
+    /// <param name="value">The runtime value of a <c>String</c>.</param>
+    /// <param name="index">The 0-based position of the first byte.</param>
+    /// <param name="count">How many bytes to take.</param>
+    /// <returns>The runtime value of the <c>String</c> of those bytes.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">Some of the bytes are not in the data.</exception>
+    public static IRuntimeValue<string> SliceOf(IRuntimeValue value, int index, int count)
+    {
+        var (text, trailing) = value switch
+        {
+            VBRuntimeByteStringValue odd => (odd.Text, (byte?)odd.TrailingByte),
+            { BoxedValue: string whole } => (whole, null),
+            _ => (string.Empty, null),
+        };
+
+        var characters = MemoryMarshal.AsBytes(text.AsSpan());
+        ArgumentOutOfRangeException.ThrowIfNegative(index);
+        ArgumentOutOfRangeException.ThrowIfNegative(count);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(index, characters.Length + (trailing is null ? 0 : 1));
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(count, characters.Length + (trailing is null ? 0 : 1) - index);
+
+        if (count == 0)
+        {
+            return new VBRuntimeValue<string>(string.Empty);
+        }
+
+        if (index + count <= characters.Length)
+        {
+            return index % 2 == 0 && count % 2 == 0
+                ? new VBRuntimeValue<string>(text.Substring(index / 2, count / 2))
+                : FromBytes(characters.Slice(index, count));
+        }
+
+        Span<byte> bytes = count <= 256 ? stackalloc byte[count] : new byte[count];
+        characters[index..].CopyTo(bytes);
+        bytes[^1] = trailing!.Value;
+        return FromBytes(bytes);
+    }
+
     /// <inheritdoc/>
     public override string ToString() => Text;
 }

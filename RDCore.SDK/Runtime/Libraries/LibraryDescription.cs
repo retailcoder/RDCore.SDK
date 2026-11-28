@@ -14,8 +14,9 @@ namespace RDCore.SDK.Runtime.Libraries;
 /// </para>
 /// <para>
 /// The description is a file because what a library declares is needed where the library is not: a workspace is analyzed on a machine that does not have
-/// Excel, and the symbols it needs are those of a description that ships with the platform. It is written by a tool that reads the library where it is, and by
-/// no one else; it is plain JSON (<see cref="LibraryJson"/>) so that a change to one reads as a change in review.
+/// Excel, and the symbols it needs are those of a description that ships with the platform. It is written by a tool that reads the library where it is,
+/// or by hand for a library the platform defines itself, which no type library describes and which has no <see cref="Origin"/>; it is plain JSON
+/// (<see cref="LibraryJson"/>) so that a change to one reads as a change in review.
 /// </para>
 /// <para>
 /// What it holds is what a VBA project can name: enumerations, and classes with their members and events. A type is named in a description the way VBA source
@@ -40,7 +41,8 @@ public sealed record class LibraryDescription
     public string? Description { get; init; }
 
     /// <summary>
-    /// Where the description was made.
+    /// Where the description was made: the type library it was read from; <see langword="null"/> for a description written by hand, of a library the
+    /// platform defines itself.
     /// </summary>
     public LibraryOrigin? Origin { get; init; }
 

@@ -13,9 +13,9 @@ using System.Text.Json;
 namespace RDCore.Tests.Extensibility;
 
 /// <summary>
-/// An extension is described (<c>rdc describe-ext</c>) from inside its own folder: its executable is hashed, and its assembly, the <c>.dll</c> of the same name
-/// beside it, is reflected. The executable is <c>My.Extension.exe</c> on Windows and <c>My.Extension</c> elsewhere; the assembly is <c>My.Extension.dll</c> on
-/// both.
+/// An extension is described (<c>rdc describe-ext</c>) from its executable, in its own folder: its executable is hashed, and its assembly, the <c>.dll</c> of
+/// the same name beside it, is reflected. The executable is <c>My.Extension.exe</c> on Windows and <c>My.Extension</c> elsewhere; the assembly is
+/// <c>My.Extension.dll</c> on both.
 /// </summary>
 // mutates the RDCORE_PLATFORM_ROOT process environment variable and the working directory.
 [TestClass]
@@ -72,6 +72,36 @@ public sealed class ExtensionsClientDescribeTests
         Assert.AreEqual(Title, info.Title);
         Assert.AreEqual(Convert.ToBase64String(SHA512.HashData(apphost)), info.FileHash);
         Assert.AreEqual(typeof(ExtensionsClientDescribeTests).Assembly.GetName().Version, info.Version);
+    }
+
+    // the executable named by its path, from a working directory that is not its folder: the folder it is in is the extension's, wherever the describe runs.
+    [TestMethod]
+    [DataRow(true, DisplayName = "an absolute path")]
+    [DataRow(false, DisplayName = "a path relative to the working directory")]
+    public void AnExtension_NamedByItsPath_IsDescribedFromItsOwnFolder(bool absolute)
+    {
+        var executable = OperatingSystem.IsWindows() ? $"{Title}.exe" : Title;
+        File.WriteAllBytes(Path.Combine(_folder, executable), [1, 2, 3]);
+        Directory.SetCurrentDirectory(_root);
+        var path = absolute ? Path.Combine(_folder, executable) : Path.Combine("Extensions", Title, executable);
+
+        var info = CreateSut().Describe(path, "described");
+
+        Assert.IsNotNull(info);
+        Assert.AreEqual(executable, info.Name, "the manifest names the executable by its file name");
+        Assert.AreEqual(Title, info.Title);
+    }
+
+    // an executable in a folder that is not one of the extensions folder's is not an extension of the platform, whatever the working directory is: here, the
+    // extension's own folder.
+    [TestMethod]
+    public void AnExecutableOutsideTheExtensionsFolder_IsNotDescribed()
+    {
+        var outside = Directory.CreateDirectory(Path.Combine(_root, "not-extensions", Title)).FullName;
+        File.Copy(Path.Combine(_folder, $"{Title}.dll"), Path.Combine(outside, $"{Title}.dll"));
+        File.WriteAllBytes(Path.Combine(outside, $"{Title}.exe"), [1, 2, 3]);
+
+        Assert.IsNull(CreateSut().Describe(Path.Combine(outside, $"{Title}.exe"), "described"));
     }
 
     // this test assembly, the extension's here, references the SDK it runs with: its manifest says an SDK the platform can start it with.

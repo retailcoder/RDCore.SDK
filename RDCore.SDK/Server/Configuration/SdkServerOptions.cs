@@ -62,6 +62,15 @@ public record class SdkAppCommandLineArgs
     [Option('p', "client-process-id")]
     public int? ClientProcessId { get; set; }
     /// <summary>
+    /// A <em>command-line argument</em> that names the platform root (<see cref="Platform.IPlatformEnvironment.Root"/>), over what the
+    /// <c>RDCORE_PLATFORM_ROOT</c> environment variable says (<see cref="SdkCommandLine.ApplyPlatformRoot(string[])"/>).
+    /// </summary>
+    /// <remarks>
+    /// This argument has <strong>no alias</strong>. A relative path is read against the current directory.
+    /// </remarks>
+    [Option("platform-root")]
+    public string? PlatformRoot { get; set; }
+    /// <summary>
     /// A <em>command-line argument</em> that overrides the <see cref="SdkServerOptions.ShutdownTimeoutSeconds"/> setting.
     /// </summary>
     [Option('s', "shutdown-timeout")]

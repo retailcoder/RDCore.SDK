@@ -148,6 +148,20 @@ public record class VBStringValue : VBTypedValue, IVBTypedValue<VBStringValue, s
     public byte[] GetBytes() => VBRuntimeByteStringValue.BytesOf(RuntimeValue);
 
     /// <summary>
+    /// The <c>String</c> whose data is <paramref name="count"/> bytes of this one's data from <paramref name="index"/>: what <see cref="FromBytes"/> makes
+    /// of that part of <see cref="GetBytes"/>, read where the string holds its data, so that none of the rest is copied.
+    /// </summary>
+    /// <remarks>
+    /// What <c>MidB</c>, <c>LeftB</c> and <c>RightB</c> give (<strong>MS-VBAL §6.1.2.11.1.25</strong>, <strong>§6.1.2.11.1.19</strong>,
+    /// <strong>§6.1.2.11.1.30</strong>): a part can begin or end inside a character.
+    /// </remarks>
+    /// <param name="index">The 0-based position of the first byte.</param>
+    /// <param name="count">How many bytes to take.</param>
+    /// <returns>The <c>String</c> of those bytes, with a <see cref="TrailingByte"/> when they are an odd number.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">Some of the bytes are not in the data.</exception>
+    public VBStringValue SliceBytes(int index, int count) => new(new ValueBindingHandle(VBRuntimeByteStringValue.SliceOf(RuntimeValue, index, count)));
+
+    /// <summary>
     /// The <c>String</c> whose data is <paramref name="bytes"/>, every one of them kept: an odd number leaves a
     /// <see cref="TrailingByte"/>.
     /// </summary>

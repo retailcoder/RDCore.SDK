@@ -359,6 +359,16 @@ public sealed record class DeclarationFact(
     /// <see cref="CompiledOn"/> is <see langword="null"/>.
     /// </remarks>
     public ImmutableArray<CompiledPlatforms> StatementsCompiledOn { get; init; }
+
+    /// <summary>
+    /// For a parameter, a <c>Function</c> or a <c>Property Get</c> whose declared type is a class of the workspace, or an array of one: that class and its
+    /// public members, then each class of the workspace that the type of one of their members names, at any depth, each class once
+    /// (<see cref="DeclaredClassFact.Of"/>). Default for any other declaration.
+    /// </summary>
+    /// <remarks>
+    /// It states what the declaration's own module does not: the members an object of the declared type has, which another module declares.
+    /// </remarks>
+    public ImmutableArray<DeclaredClassFact> DeclaredClasses { get; init; }
 }
 
 /// <summary>
