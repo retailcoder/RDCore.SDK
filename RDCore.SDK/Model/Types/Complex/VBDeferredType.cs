@@ -10,8 +10,9 @@ namespace RDCore.SDK.Model.Types.Complex;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <strong>RD-VBA addition.</strong> MS-VBAL leaves the type of a name that nothing declares to <c>Option Explicit</c> (<strong>MS-VBAL §5.6.10</strong>): an
-/// implicit variable is a <c>Variant</c>. Inference says more of it, for tooling: a candidate is a type the code gives the name, such as the type of a value
+/// <strong>RD-VBA addition.</strong> Without <c>Option Explicit</c>, a name that nothing declares is an implicitly-defined variable
+/// (<strong>MS-VBAL §5.6.10</strong>), whose declared type is <c>Variant</c> unless an implicit definition directive gives its first letter another
+/// (<strong>MS-VBAL §5.2.2</strong>). Inference says more of it, for tooling: a candidate is a type the code gives the name, such as the type of a value
 /// assigned to it, or the type of the target it is assigned to.
 /// </para>
 /// <para>
@@ -55,10 +56,10 @@ public interface IVBDeferrableTypeMember : IVBInferableType
 
 /// <summary>
 /// A type of a module that no statement declares, which is inferred from how the code uses it: the type of a class the code creates or accesses the members
-/// of, before any module declares it (<see cref="VBDeferredClassType"/>, <see cref="VBDeferredModuleType"/>).
+/// of, which no module declares (<see cref="VBDeferredClassType"/>, <see cref="VBDeferredModuleType"/>).
 /// </summary>
 /// <remarks>
-/// <strong>RD-VBA addition.</strong> It is never a declaration (<see cref="IVBInferableType"/>), and it is hidden: no code names it.
+/// <strong>RD-VBA addition.</strong> It is never a declaration (<see cref="IVBInferableType"/>), and it is hidden, as no module declares it.
 /// </remarks>
 public abstract record class VBDeferredType : VBType, IVBInferableType
 {
