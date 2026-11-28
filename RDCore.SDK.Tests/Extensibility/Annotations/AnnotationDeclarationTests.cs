@@ -177,4 +177,29 @@ public sealed class AnnotationDeclarationTests
         var read = JsonSerializer.Deserialize<AnnotationDeclaration>(json)!;
         Assert.AreEqual(json, JsonSerializer.Serialize(read));
     }
+
+    // a manifest names what a parameter takes, and the language server reads the name back: each kind is written as its name, and a manifest written by an
+    // extension on this SDK is read as it was written.
+    [TestMethod]
+    [DataRow(AnnotationArgumentKind.Text, "Text")]
+    [DataRow(AnnotationArgumentKind.Number, "Number")]
+    [DataRow(AnnotationArgumentKind.Identifier, "Identifier")]
+    [DataRow(AnnotationArgumentKind.DiagnosticCode, "DiagnosticCode")]
+    [DataRow(AnnotationArgumentKind.Literal, "Literal")]
+    [DataRow(AnnotationArgumentKind.ErrorNumber, "ErrorNumber")]
+    public void WhatAParameterTakes_IsWrittenInAManifestAsItsName_AndReadBack(AnnotationArgumentKind kind, string name)
+    {
+        var json = JsonSerializer.Serialize(new AnnotationParameter { Name = "Error", Takes = kind });
+
+        Assert.AreEqual($$"""{"Name":"Error","Takes":"{{name}}","IsOptional":false,"Repeats":false}""", json);
+        Assert.AreEqual(kind, JsonSerializer.Deserialize<AnnotationParameter>(json)!.Takes);
+    }
+
+    // every kind has a row above: a kind added without one is a kind whose manifest name nothing checks.
+    [TestMethod]
+    public void EveryArgumentKind_HasARow()
+        => CollectionAssert.AreEquivalent(
+            Enum.GetValues<AnnotationArgumentKind>(),
+            typeof(AnnotationDeclarationTests).GetMethod(nameof(WhatAParameterTakes_IsWrittenInAManifestAsItsName_AndReadBack))!
+                .GetCustomAttributes(typeof(DataRowAttribute), false).Cast<DataRowAttribute>().Select(row => (AnnotationArgumentKind)row.Data[0]!).ToArray());
 }
