@@ -1,4 +1,6 @@
-﻿using RDCore.SDK.Model.Source;
+﻿using RDCore.SDK.Model;
+using RDCore.SDK.Model.Source;
+using RDCore.SDK.Model.Symbols;
 using RDCore.SDK.Model.Symbols.Abstract;
 using RDCore.SDK.Platform.Protocol;
 using RDCore.SDK.Semantics;
@@ -73,5 +75,36 @@ public sealed class FlowFactWireTests
         Assert.IsNull(read.InitialValueReads);
         Assert.IsNull(read.UnreadAssignments);
         Assert.IsNull(read.JumpsIntoLoops);
+        Assert.IsNull(read.VariantReads);
+    }
+
+    [TestMethod]
+    public void TheSubtypesThatReachAVariantRead_AreReadBackAsTheyWereWritten()
+    {
+        var both = new VariantReadFact(Total, "total", At(5, 8, 13), VariantSubtypes.Of(["String", "Integer"], isComplete: true));
+        var open = new VariantReadFact(Total, "total", At(7, 8, 13), VariantSubtypes.Of(["Long"], isComplete: false));
+
+        var read = RoundTrip(new ProcedureSemanticModel(new SemanticId(Procedure), []) { VariantReads = [both, open] }).VariantReads;
+
+        Assert.IsNotNull(read);
+        CollectionAssert.AreEqual(new[] { both, open }, read.Value.ToArray());
+        CollectionAssert.AreEqual(new[] { "Integer", "String" }, read.Value[0].Subtypes.Subtypes.ToArray());
+        Assert.IsFalse(read.Value[1].Subtypes.IsComplete);
+    }
+
+    [TestMethod]
+    public void TheSubtypesTheWritesOfAVariantLocalGiveIt_AreReadBackWithItsDeclaration()
+    {
+        var subtypes = VariantSubtypes.Of(["Integer", "Empty"], isComplete: true);
+        var declaration = new DeclarationFact(new SemanticId(Total), "total", DeclarationKind.Variable, AccessModifier.Private, false, At(2, 8, 13), null)
+        {
+            AssignedSubtypes = subtypes,
+        };
+        var model = new ModuleSemanticModel(Procedure, [], []) { Declarations = [declaration] };
+
+        var read = PlatformJson.Deserialize<SemanticsPayload>(PlatformJson.Serialize(new SemanticsPayload([ModuleSemanticsDto.From(model)]))).Modules.Single()
+            .Declarations.Single();
+
+        Assert.AreEqual(subtypes, read.AssignedSubtypes);
     }
 }

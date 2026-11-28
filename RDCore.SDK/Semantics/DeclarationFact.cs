@@ -329,6 +329,13 @@ public sealed record class DeclarationFact(
     public bool IsArray { get; init; }
 
     /// <summary>
+    /// For an automatic local declared <c>Variant</c>, implicitly or not, the subtypes its writes give it (<see cref="Flow.VariantSubtypes"/>): what declaring
+    /// it as a type of its own would have to hold. <see langword="null"/> for any other declaration, and when the language core could not see every write of
+    /// the variable.
+    /// </summary>
+    public Flow.VariantSubtypes? AssignedSubtypes { get; init; }
+
+    /// <summary>
     /// For a procedure declared by a <c>Declare</c> statement (<strong>MS-VBAL §5.2.3.5</strong>), the platforms it is declared on: the union of those of
     /// each of its statements (<see cref="StatementsCompiledOn"/>).
     /// </summary>

@@ -394,11 +394,15 @@ public record class RuntimeFactsDto(
 /// Its statements that jump into a <c>For</c> or a <c>For Each</c> loop from outside it (<see cref="ProcedureSemanticModel.JumpsIntoLoops"/>);
 /// <see langword="null"/> when there are none, and when the language core could not tell.
 /// </param>
+/// <param name="VariantReads">
+/// The reads of its <c>Variant</c> automatic local variables, with the subtypes that may reach each (<see cref="ProcedureSemanticModel.VariantReads"/>);
+/// <see langword="null"/> when there are none, and when the language core could not tell.
+/// </param>
 public record class ProcedureSemanticsDto(
     Uri Procedure, bool IsFullyAnalyzed, ImmutableArray<CompileErrorDto> CompileErrors, ImmutableArray<ExpressionFactDto> Expressions, ReturnValueFact? ReturnValue = null,
     RuntimeFactsDto? Runtime = null, ImmutableArray<EmptiedControlReadFact>? EmptiedControlReads = null, ImmutableArray<ArgumentFact>? Arguments = null,
     ImmutableArray<InitialValueReadFact>? InitialValueReads = null, ImmutableArray<UnreadAssignmentFact>? UnreadAssignments = null,
-    ImmutableArray<JumpIntoLoopFact>? JumpsIntoLoops = null);
+    ImmutableArray<JumpIntoLoopFact>? JumpsIntoLoops = null, ImmutableArray<VariantReadFact>? VariantReads = null);
 
 /// <summary>
 /// A <see cref="DeclarationFact"/>, as it travels.
@@ -447,13 +451,17 @@ public record class ProcedureSemanticsDto(
 /// For a parameter, a function or a property whose declared type is a class of the workspace, that class and its public members, then each class the
 /// types of their members name (<see cref="DeclarationFact.DeclaredClasses"/>); <see langword="null"/> for any other declaration.
 /// </param>
+/// <param name="AssignedSubtypes">
+/// For a <c>Variant</c> automatic local, the subtypes its writes give it (<see cref="DeclarationFact.AssignedSubtypes"/>); <see langword="null"/> for any other
+/// declaration, and when that is not stated.
+/// </param>
 public record class DeclarationFactDto(
     Uri Symbol, string Name, DeclarationKind Kind, AccessModifier Access, bool IsImplicit, SourceLocation Location, DeclarationReferences? References,
     DeclarationRole Role = DeclarationRole.None, LocalDeclarationKind? DeclaredBy = null, HiddenDeclaration? Hides = null,
     ImmutableArray<DeclarationReference>? ReferencedFrom = null, DeclaredTypeKind? TypeKind = null, bool IsArray = false, Uri? AutoInstantiates = null,
     CompiledPlatforms? CompiledOn = null, ImmutableArray<CompiledPlatforms>? StatementsCompiledOn = null, DeclarationBindingDto? Binding = null,
     bool IsUsedByReferencingProjects = false, bool? IsReferredToByABoundMember = null, bool? IsWrittenByABoundMember = null,
-    ImmutableArray<DeclaredClassFact>? DeclaredClasses = null);
+    ImmutableArray<DeclaredClassFact>? DeclaredClasses = null, VariantSubtypes? AssignedSubtypes = null);
 
 /// <summary>
 /// A <see cref="DeclarationBinding"/>, as it travels: the member it binds is the declaration it is the binding of, and its role is the declaration's
@@ -548,7 +556,8 @@ public record class ModuleSemanticsDto(
             procedure.Arguments.IsDefaultOrEmpty ? null : procedure.Arguments,
             procedure.InitialValueReads.IsDefaultOrEmpty ? null : procedure.InitialValueReads,
             procedure.UnreadAssignments.IsDefaultOrEmpty ? null : procedure.UnreadAssignments,
-            procedure.JumpsIntoLoops.IsDefaultOrEmpty ? null : procedure.JumpsIntoLoops))],
+            procedure.JumpsIntoLoops.IsDefaultOrEmpty ? null : procedure.JumpsIntoLoops,
+            procedure.VariantReads.IsDefaultOrEmpty ? null : procedure.VariantReads))],
         [.. model.Declarations.Select(declaration => new DeclarationFactDto(
             declaration.Symbol.Uri, declaration.Name, declaration.Kind, declaration.Access, declaration.IsImplicit, declaration.Location, declaration.References, declaration.Role,
             declaration.DeclaredBy, declaration.Hides, declaration.ReferencedFrom, declaration.TypeKind, declaration.IsArray,
@@ -558,7 +567,7 @@ public record class ModuleSemanticsDto(
                     binding.Source.Uri, binding.Bound?.Uri, binding.BoundLibrary, binding.IsBoundInSourceProject, binding.IsSourceAControl)
                 : null,
             declaration.IsUsedByReferencingProjects, declaration.IsReferredToByABoundMember, declaration.IsWrittenByABoundMember,
-            declaration.DeclaredClasses.IsDefaultOrEmpty ? null : declaration.DeclaredClasses))],
+            declaration.DeclaredClasses.IsDefaultOrEmpty ? null : declaration.DeclaredClasses, declaration.AssignedSubtypes))],
         model.Language,
         model.Class,
         model.Document,
