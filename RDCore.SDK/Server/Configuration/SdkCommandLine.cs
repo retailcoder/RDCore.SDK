@@ -52,21 +52,66 @@ public static class SdkCommandLine
     /// <summary>
     /// Makes the platform root that <paramref name="args"/> names with <c>--platform-root</c> (<see cref="SdkAppCommandLineArgs.PlatformRoot"/>) this
     /// process's: sets <c>RDCORE_PLATFORM_ROOT</c> (<see cref="Platform.PlatformEnvironment.RootEnvironmentVariable"/>) to it, over what the process
-    /// was started with. Every <see cref="Platform.PlatformEnvironment"/> made after reads it, and every process this one starts inherits it.
+    /// was started with (<see cref="Platform.PlatformEnvironment.ApplyRoot(string)"/>). Every <see cref="Platform.PlatformEnvironment"/> that has not
+    /// read its root yet reads it, and every process this one starts inherits it.
     /// </summary>
     /// <remarks>
-    /// <see cref="AppHost{TApp}.RunAsync(string[])"/> calls this first. A host that does not run through it calls this before anything reads
-    /// <see cref="Platform.PlatformEnvironment.Default"/>, which reads the root once. The argument is found among any others, a verb's included, as
-    /// <c>--platform-root &lt;path&gt;</c> or <c>--platform-root=&lt;path&gt;</c>; a relative path is read against the current directory.
+    /// <see cref="AppHost{TApp}.RunAsync(string[])"/> calls this first: it is how a component in a subfolder of the root is given its root on the
+    /// command line. A host that does not run through it calls this before anything reads the root of
+    /// <see cref="Platform.PlatformEnvironment.Default"/>, which keeps the root it first reads. The argument is found among any others, a verb's
+    /// included, as <c>--platform-root &lt;path&gt;</c> or <c>--platform-root=&lt;path&gt;</c>; a relative path is read against the current
+    /// directory. A process that sits at the root, <c>rdc</c>, applies its root by
+    /// <see cref="Platform.PlatformEnvironment.ApplyOwnFolderAsRoot(string[])"/> instead.
     /// </remarks>
     /// <param name="args">The command-line arguments as received.</param>
     /// <returns>
     /// The full path of the root the argument names; <see langword="null"/> when it names none, and the environment is then as it was.
     /// </returns>
     public static string? ApplyPlatformRoot(string[] args)
+        => PlatformRootOf(args) is { } root ? Platform.PlatformEnvironment.ApplyRoot(root) : null;
+
+    /// <summary>
+    /// The arguments without <c>--platform-root</c> and the path it names: what a verb of a command-line app parses once the root they name is
+    /// applied (<see cref="ApplyPlatformRoot(string[])"/>, <see cref="Platform.PlatformEnvironment.ApplyOwnFolderAsRoot(string[])"/>), so that a
+    /// verb that does not know the argument does not refuse it.
+    /// </summary>
+    /// <remarks>
+    /// Both spellings are taken out, <c>--platform-root &lt;path&gt;</c> and <c>--platform-root=&lt;path&gt;</c>. The other arguments are kept, in
+    /// their order.
+    /// </remarks>
+    /// <param name="args">The command-line arguments as received.</param>
+    /// <returns>The other arguments; <paramref name="args"/> itself when it holds no <c>--platform-root</c>.</returns>
+    public static string[] WithoutPlatformRoot(string[] args)
     {
         ArgumentNullException.ThrowIfNull(args);
-        const string option = "--platform-root";
+        if (!args.Any(arg => arg == PlatformRootOption || arg.StartsWith($"{PlatformRootOption}=", StringComparison.Ordinal)))
+        {
+            return args;
+        }
+
+        var kept = new List<string>(args.Length);
+        for (var index = 0; index < args.Length; index++)
+        {
+            if (args[index] == PlatformRootOption)
+            {
+                index++;
+            }
+            else if (!args[index].StartsWith($"{PlatformRootOption}=", StringComparison.Ordinal))
+            {
+                kept.Add(args[index]);
+            }
+        }
+
+        return [.. kept];
+    }
+
+    private const string PlatformRootOption = "--platform-root";
+
+    // the root that --platform-root names among any other arguments, as a full path; none when it names none.
+    internal static string? PlatformRootOf(string[] args)
+    {
+        ArgumentNullException.ThrowIfNull(args);
+        const string option = PlatformRootOption;
         for (var index = 0; index < args.Length; index++)
         {
             var root = args[index] == option && index + 1 < args.Length ? args[index + 1]
@@ -74,9 +119,7 @@ public static class SdkCommandLine
                 : null;
             if (root is { Length: > 0 })
             {
-                var full = Path.GetFullPath(root);
-                Environment.SetEnvironmentVariable(Platform.PlatformEnvironment.RootEnvironmentVariable, full);
-                return full;
+                return Path.GetFullPath(root);
             }
         }
 

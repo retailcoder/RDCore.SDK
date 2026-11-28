@@ -45,7 +45,7 @@ public sealed class ExtensionsClientDescribeTests
     public void DeleteExtensionFolder()
     {
         Directory.SetCurrentDirectory(_workingDirectory);
-        Environment.SetEnvironmentVariable(PlatformEnvironment.RootEnvironmentVariable, null);
+        Environment.SetEnvironmentVariable(PlatformEnvironment.RootEnvironmentVariable, TestPlatformRoot.Path);
         Directory.Delete(_root, recursive: true);
     }
 

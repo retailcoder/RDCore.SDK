@@ -20,7 +20,7 @@ public class PlatformEnvironmentTests
 
     [TestCleanup]
     public void ClearRootOverride()
-        => Environment.SetEnvironmentVariable(PlatformEnvironment.RootEnvironmentVariable, null);
+        => Environment.SetEnvironmentVariable(PlatformEnvironment.RootEnvironmentVariable, TestPlatformRoot.Path);
 
     private IPlatformEnvironment CreateSut() => new PlatformEnvironment(_fileSystem);
 
@@ -75,6 +75,64 @@ public class PlatformEnvironmentTests
         Assert.AreEqual(_fileSystem.Path.Combine(_root, "Logs", "Audits"), audits);
         Assert.IsFalse(_fileSystem.Directory.Exists(audits));
     }
+
+    // a process is given its root, and none is guessed: with none given, each member under the root is the error that says how to give one.
+    [TestMethod]
+    [DataRow(nameof(IPlatformEnvironment.Root), null)]
+    [DataRow(nameof(IPlatformEnvironment.Root), "   ")]
+    [DataRow(nameof(IPlatformEnvironment.ManifestPath), null)]
+    [DataRow(nameof(IPlatformEnvironment.SettingsPath), null)]
+    [DataRow(nameof(IPlatformEnvironment.AuditsDirectory), null)]
+    [DataRow(nameof(IPlatformEnvironment.Resolve), null)]
+    public void AMemberUnderTheRoot_WithNoRootGiven_IsTheErrorThatNamesBothWaysToGiveOne(string member, string? given)
+    {
+        using var _ = Override(PlatformEnvironment.RootEnvironmentVariable, given);
+        var sut = CreateSut();
+
+        var error = Assert.ThrowsExactly<PlatformRootNotGivenException>(() => Read(sut, member));
+
+        StringAssert.Contains(error.Message, "--platform-root");
+        StringAssert.Contains(error.Message, PlatformEnvironment.RootEnvironmentVariable);
+    }
+
+    // what is the user's and not the platform's is read with no root given: a process that needs no platform path needs no root.
+    [TestMethod]
+    public void TheLogsAndTheUsersFolders_WithNoRootGiven_AreRead()
+    {
+        var logs = _fileSystem.Path.GetFullPath(_fileSystem.Path.Combine(_fileSystem.Path.GetTempPath(), "rdcore-logs-elsewhere"));
+        var user = _fileSystem.Path.GetFullPath(_fileSystem.Path.Combine(_fileSystem.Path.GetTempPath(), "rdcore-user-elsewhere"));
+        using var root = Override(PlatformEnvironment.RootEnvironmentVariable, null);
+        using var logsOverride = Override(PlatformEnvironment.LogsEnvironmentVariable, logs);
+        using var userOverride = Override(PlatformEnvironment.UserDataEnvironmentVariable, user);
+        var sut = CreateSut();
+
+        Assert.AreEqual(logs, sut.LogsDirectory);
+        Assert.AreEqual(user, sut.UserDataDirectory);
+    }
+
+    // the root is read when a member first needs it, not when the environment is made, and a read that found none keeps nothing.
+    [TestMethod]
+    public void TheRootGivenAfterTheEnvironmentIsMade_AndAfterAReadThatFoundNone_IsTheRoot()
+    {
+        IPlatformEnvironment sut;
+        using (Override(PlatformEnvironment.RootEnvironmentVariable, null))
+        {
+            sut = CreateSut();
+            Assert.ThrowsExactly<PlatformRootNotGivenException>(() => sut.Root);
+        }
+
+        Assert.AreEqual(_root, sut.Root);
+    }
+
+    private static string Read(IPlatformEnvironment environment, string member) => member switch
+    {
+        nameof(IPlatformEnvironment.Root) => environment.Root,
+        nameof(IPlatformEnvironment.ManifestPath) => environment.ManifestPath,
+        nameof(IPlatformEnvironment.SettingsPath) => environment.SettingsPath,
+        nameof(IPlatformEnvironment.AuditsDirectory) => environment.AuditsDirectory,
+        nameof(IPlatformEnvironment.Resolve) => environment.Resolve("RDCore.Parsing/RDCore.ParseServer.exe"),
+        _ => throw new ArgumentOutOfRangeException(nameof(member), member, null),
+    };
 
     [TestMethod]
     [OSCondition(OperatingSystems.Linux)]

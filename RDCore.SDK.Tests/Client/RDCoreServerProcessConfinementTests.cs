@@ -40,7 +40,7 @@ public sealed class RDCoreServerProcessConfinementTests
     [TestCleanup]
     public void DeleteRoot()
     {
-        Environment.SetEnvironmentVariable(PlatformEnvironment.RootEnvironmentVariable, null);
+        Environment.SetEnvironmentVariable(PlatformEnvironment.RootEnvironmentVariable, TestPlatformRoot.Path);
         // a link is taken away as a link, before the folders, which Windows does not delete through a junction.
         foreach (var link in Directory.EnumerateDirectories(Path.Combine(_root, "Extensions")).Where(folder => new DirectoryInfo(folder).LinkTarget is not null))
         {

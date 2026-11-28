@@ -419,5 +419,41 @@ namespace RDCore.SDK {
                 return ResourceManager.GetString("ExtensionAnnotations_NoDeclarations", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The platform root is not given: start the process with --platform-root &lt;path&gt;, or set the RDCORE_PLATFORM_ROOT environment variable to the platform&apos;s folder..
+        /// </summary>
+        internal static string PlatformRootNotGivenException_Message {
+            get {
+                return ResourceManager.GetString("PlatformRootNotGivenException_Message", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The platform root is the folder that holds rdcore.json and rdc. A component in a subfolder of it (the language server, the parse server, an extension) is given the root by the process that starts it, or on its command line; it never derives one from the folder of its own files..
+        /// </summary>
+        internal static string PlatformRootNotGivenException_Verbose {
+            get {
+                return ResourceManager.GetString("PlatformRootNotGivenException_Verbose", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to &apos;{0}&apos; is not a platform root: it holds no rdcore.json. Run the rdc that is beside rdcore.json, or name the root with --platform-root &lt;path&gt;..
+        /// </summary>
+        internal static string NotAPlatformRootException_Message {
+            get {
+                return ResourceManager.GetString("NotAPlatformRootException_Message", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to A platform keeps rdc and its files, its manifest (rdcore.json), its settings (platform-settings.json) and its Extensions folder in one folder, the platform root. The language server, the parse server and each extension have a folder of their own under it..
+        /// </summary>
+        internal static string NotAPlatformRootException_Verbose {
+            get {
+                return ResourceManager.GetString("NotAPlatformRootException_Verbose", resourceCulture);
+            }
+        }
     }
 }
