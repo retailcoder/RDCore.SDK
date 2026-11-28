@@ -67,6 +67,12 @@ public sealed record class ProcedureSemanticModel(SemanticId Procedure, Immutabl
     public ImmutableArray<Flow.VariantReadFact> VariantReads { get; init; } = [];
 
     /// <summary>
+    /// The names the procedure uses that nothing declares, with how each is used and the types its uses give it (<see cref="DeferredSymbolFact"/>), in the
+    /// order of their first use. Empty when the procedure uses none, and when the pass had no workspace to resolve names in.
+    /// </summary>
+    public ImmutableArray<DeferredSymbolFact> DeferredSymbols { get; init; } = [];
+
+    /// <summary>
     /// The statements of the procedure that jump from outside a <c>For</c> or a <c>For Each</c> loop to a label inside it
     /// (<see cref="Flow.JumpIntoLoopFact"/>), in the order they are written in. The list is empty when there is none, and when the language core could not
     /// tell.

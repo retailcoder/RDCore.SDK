@@ -398,11 +398,16 @@ public record class RuntimeFactsDto(
 /// The reads of its <c>Variant</c> automatic local variables, with the subtypes that may reach each (<see cref="ProcedureSemanticModel.VariantReads"/>);
 /// <see langword="null"/> when there are none, and when the language core could not tell.
 /// </param>
+/// <param name="DeferredSymbols">
+/// The names it uses that nothing declares, with their uses and candidates (<see cref="ProcedureSemanticModel.DeferredSymbols"/>); <see langword="null"/>
+/// when there are none.
+/// </param>
 public record class ProcedureSemanticsDto(
     Uri Procedure, bool IsFullyAnalyzed, ImmutableArray<CompileErrorDto> CompileErrors, ImmutableArray<ExpressionFactDto> Expressions, ReturnValueFact? ReturnValue = null,
     RuntimeFactsDto? Runtime = null, ImmutableArray<EmptiedControlReadFact>? EmptiedControlReads = null, ImmutableArray<ArgumentFact>? Arguments = null,
     ImmutableArray<InitialValueReadFact>? InitialValueReads = null, ImmutableArray<UnreadAssignmentFact>? UnreadAssignments = null,
-    ImmutableArray<JumpIntoLoopFact>? JumpsIntoLoops = null, ImmutableArray<VariantReadFact>? VariantReads = null);
+    ImmutableArray<JumpIntoLoopFact>? JumpsIntoLoops = null, ImmutableArray<VariantReadFact>? VariantReads = null,
+    ImmutableArray<DeferredSymbolFact>? DeferredSymbols = null);
 
 /// <summary>
 /// A <see cref="DeclarationFact"/>, as it travels.
@@ -557,7 +562,8 @@ public record class ModuleSemanticsDto(
             procedure.InitialValueReads.IsDefaultOrEmpty ? null : procedure.InitialValueReads,
             procedure.UnreadAssignments.IsDefaultOrEmpty ? null : procedure.UnreadAssignments,
             procedure.JumpsIntoLoops.IsDefaultOrEmpty ? null : procedure.JumpsIntoLoops,
-            procedure.VariantReads.IsDefaultOrEmpty ? null : procedure.VariantReads))],
+            procedure.VariantReads.IsDefaultOrEmpty ? null : procedure.VariantReads,
+            procedure.DeferredSymbols.IsDefaultOrEmpty ? null : procedure.DeferredSymbols))],
         [.. model.Declarations.Select(declaration => new DeclarationFactDto(
             declaration.Symbol.Uri, declaration.Name, declaration.Kind, declaration.Access, declaration.IsImplicit, declaration.Location, declaration.References, declaration.Role,
             declaration.DeclaredBy, declaration.Hides, declaration.ReferencedFrom, declaration.TypeKind, declaration.IsArray,
