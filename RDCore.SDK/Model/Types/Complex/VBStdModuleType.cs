@@ -37,8 +37,18 @@ public record class VBStdModuleType : VBType, IVBMemberOwnerType
     ImmutableArray<VBDeferredTypeMemberSymbol> IVBMemberOwnerType.DeferredMembers { get; init; } = [];
 }
 
-internal record class VBDeferredModuleType(string Name, Uri Uri) : VBDeferredType(Name, Uri)
+/// <summary>
+/// A standard module that no module declares, which is inferred from how the code uses it: the procedures the code calls of it, and how
+/// (<see cref="VBDeferredType"/>).
+/// </summary>
+/// <param name="Name">The name the code uses for the module.</param>
+/// <param name="Uri">The location of the standard module that would declare it.</param>
+public record class VBDeferredModuleType(string Name, Uri Uri) : VBDeferredType(Name, Uri)
 {
     private static readonly Lazy<VBVoidValue> _defaultValue = new(() => VBVoidValue.Void, LazyThreadSafetyMode.PublicationOnly);
+
+    /// <summary>
+    /// No value: a module holds none.
+    /// </summary>
     public override VBTypedValue DefaultValue => _defaultValue.Value;
 }

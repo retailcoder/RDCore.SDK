@@ -116,9 +116,22 @@ public record class VBClassType(VBClassModuleSymbol Symbol, ImmutableArray<VBTyp
     public IVBMemberOwnerType WithMembers(IEnumerable<VBTypeMemberSymbol> members) => this with { Members = [.. members] };
 }
 
-internal record class VBDeferredClassType(string Name, Uri Uri): VBDeferredType(Name, Uri)
+/// <summary>
+/// A class that no class module declares, which is inferred from how the code uses its objects: the members the code accesses on them, and how
+/// (<see cref="VBDeferredType"/>).
+/// </summary>
+/// <remarks>
+/// A variable of it holds an object reference, as one declared as a class does (<see cref="VBClassType"/>), and is <c>Nothing</c> until it is set.
+/// </remarks>
+/// <param name="Name">The name the code uses for the class.</param>
+/// <param name="Uri">The location of the class module the class would be declared in.</param>
+public record class VBDeferredClassType(string Name, Uri Uri): VBDeferredType(Name, Uri)
 {
     private static readonly Lazy<VBObjectValue> _defaultValue = new(() => VBNothingValue.Nothing, LazyThreadSafetyMode.PublicationOnly);
+
+    /// <summary>
+    /// <c>Nothing</c>.
+    /// </summary>
     public override VBTypedValue DefaultValue => _defaultValue.Value;
 
     /// <inheritdoc cref="VBClassType.CreateValue"/>
