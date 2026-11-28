@@ -27,6 +27,16 @@ public sealed class DeclarationBindingWireTests
             .Declarations.Single();
     }
 
+    // every role travels, the program's entry point and an extension's alike: an analyzer tells them apart.
+    [TestMethod]
+    public void EveryRoleOfADeclaration_IsReadBackAsItWasWritten()
+    {
+        foreach (var role in Enum.GetValues<DeclarationRole>())
+        {
+            Assert.AreEqual(role, RoundTrip(role, null).Role, role.ToString());
+        }
+    }
+
     [TestMethod]
     public void AHandlersBinding_IsReadBackAsItWasWritten()
     {

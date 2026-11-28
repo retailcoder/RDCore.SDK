@@ -206,6 +206,13 @@ public enum DeclarationRole
     /// <c>Sub Main</c> of the one standard module that declares one. A run calls it, and the project's code need not. A library project has none.
     /// </summary>
     EntryPoint,
+
+    /// <summary>
+    /// An extension calls it from outside the project: it carries an annotation that the extension declares as an entry point
+    /// (<see cref="Extensibility.Annotations.AnnotationDeclaration.IsEntryPoint"/>), such as a test its runner runs. The project's code need not call it.
+    /// A member that handles an event or implements an interface keeps that role.
+    /// </summary>
+    ExtensionEntryPoint,
 }
 
 /// <summary>

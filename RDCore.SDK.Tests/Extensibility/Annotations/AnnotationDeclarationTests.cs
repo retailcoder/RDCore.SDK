@@ -152,6 +152,14 @@ public sealed class AnnotationDeclarationTests
     public void AListThatIsNotTheLastParameter_IsNotWellFormed()
         => Assert.IsFalse((Declared("Bad") with { Parameters = [Parameter("Items", repeats: true), Parameter("B", optional: true)] }).IsWellFormed);
 
+    [TestMethod]
+    [DataRow(AnnotationTargets.Member, true, DisplayName = "a member")]
+    [DataRow(AnnotationTargets.Member | AnnotationTargets.Module, true, DisplayName = "a member or the module")]
+    [DataRow(AnnotationTargets.Module, false, DisplayName = "the module")]
+    [DataRow(AnnotationTargets.Line, false, DisplayName = "a line")]
+    public void AnEntryPoint_IsWellFormed_OnlyWhenItAnnotatesAMember(AnnotationTargets targets, bool wellFormed)
+        => Assert.AreEqual(wellFormed, (Declared("TestMethod", targets) with { IsEntryPoint = true }).IsWellFormed);
+
     // the shape an extension's manifest carries and the language server reads: both sides rely on it.
     [TestMethod]
     public void ADeclaration_IsWrittenInAManifestAsItsFields_AndReadBackAsItself()
@@ -160,20 +168,24 @@ public sealed class AnnotationDeclarationTests
         {
             Name = "IgnoreModule",
             Aliases = ["IgnoreModuleAlias"],
-            Targets = AnnotationTargets.Module,
+            Targets = AnnotationTargets.Module | AnnotationTargets.Member,
             ModuleKinds = AnnotationModuleKinds.Standard | AnnotationModuleKinds.Class,
             Repeats = true,
             Parameters = [new AnnotationParameter { Name = "Codes", Takes = AnnotationArgumentKind.DiagnosticCode, IsOptional = true, Repeats = true }],
             IsDeprecated = true,
             ReplacedBy = "Ignore",
+            IsEntryPoint = true,
         };
 
         var json = JsonSerializer.Serialize(annotation);
 
-        Assert.AreEqual(
-            """{"Name":"IgnoreModule","Aliases":["IgnoreModuleAlias"],"Targets":"Module","ModuleKinds":"Standard, Class","Repeats":true,"Parameters":"""
-            + """[{"Name":"Codes","Takes":"DiagnosticCode","IsOptional":true,"Repeats":true}],"IsDeprecated":true,"ReplacedBy":"Ignore"}""",
-            json);
+        // one line of JSON, written here over several.
+        var expected = """
+            {"Name":"IgnoreModule","Aliases":["IgnoreModuleAlias"],"Targets":"Module, Member","ModuleKinds":"Standard, Class","Repeats":true,
+            "Parameters":[{"Name":"Codes","Takes":"DiagnosticCode","IsOptional":true,"Repeats":true}],
+            "IsDeprecated":true,"ReplacedBy":"Ignore","IsEntryPoint":true}
+            """;
+        Assert.AreEqual(expected.ReplaceLineEndings(string.Empty), json);
         var read = JsonSerializer.Deserialize<AnnotationDeclaration>(json)!;
         Assert.AreEqual(json, JsonSerializer.Serialize(read));
     }

@@ -128,12 +128,17 @@ public sealed class ExtensionManifestValidationServiceTests
             ("en", "Description"), ("en", "Description_Text"), ("fr", "Description"), ("en", "Folder_Path"))));
 
     [TestMethod]
+    public void AManifestsEntryPointOfAMember_IsValid()
+        => Assert.AreEqual(ExtensionValidationFlags.NoFlags, Sut().Validate(Annotated([Annotation("TestMethod") with { IsEntryPoint = true }])));
+
+    [TestMethod]
     [DataRow("two annotations of one name")]
     [DataRow("an annotation named as another's alias, in another case")]
     [DataRow("a required parameter after an optional one")]
     [DataRow("a repeated parameter before the last")]
     [DataRow("a description of an annotation none declares")]
     [DataRow("a description of a parameter its annotation does not declare")]
+    [DataRow("an entry point that annotates no member")]
     public void AManifestsAnnotationsThatDisagree_AreInvalidAnnotations(string disagreement)
     {
         var manifest = disagreement switch
@@ -148,6 +153,8 @@ public sealed class ExtensionManifestValidationServiceTests
             "a description of an annotation none declares" => Annotated([Annotation("Folder")], ("fr", "Folder"), ("fr", "Description")),
             "a description of a parameter its annotation does not declare"
                 => Annotated([Annotation("Folder", null, Parameter("Path"))], ("en", "Folder_Path"), ("en", "Folder_Name")),
+            "an entry point that annotates no member"
+                => Annotated([Annotation("TestModule") with { Targets = AnnotationTargets.Module, IsEntryPoint = true }]),
             _ => throw new ArgumentOutOfRangeException(nameof(disagreement)),
         };
 
