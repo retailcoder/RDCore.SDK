@@ -94,6 +94,13 @@ public sealed record class AnalyzerFinding(RDCoreDiagnosticCode Code, SourceRang
     /// line of a module that one change is to move - says where each of them is, and what it is, instead of being reported at each.
     /// </summary>
     public IReadOnlyList<RelatedFinding> Related { get; init; } = [];
+
+    /// <summary>
+    /// The document the finding is in, when the analyzer is given more than one (<see cref="IProjectModulesAnalyzer"/>): one of the modules of the project,
+    /// which <see cref="Range"/> is a range of. <see langword="null"/> for the document a module analyzer is given and for the project file of a project
+    /// analyzer, the only documents their findings can be in.
+    /// </summary>
+    public Uri? Document { get; init; }
 }
 
 /// <summary>

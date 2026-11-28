@@ -13,6 +13,13 @@ internal static class AnalyzerRun
     // it does not declare or one that is disabled, is named in a warning.
     internal static void Collect(string analyzer, IReadOnlyList<RDCoreDiagnosticCode> codes, Func<IEnumerable<AnalyzerFinding>> analyze,
         Func<RDCoreDiagnosticCode, bool> isEnabled, Uri document, ILogger logger, List<AnalyzerFinding> findings)
+        => Collect(analyzer, codes, analyze, _ => (document, isEnabled), document, logger, findings);
+
+    // the same, for an analyzer given several documents: each finding is of the document it says (placeOf), with the codes disabled there; one of no
+    // document it was given is dropped, and the analyzer named in a warning.
+    internal static void Collect(string analyzer, IReadOnlyList<RDCoreDiagnosticCode> codes, Func<IEnumerable<AnalyzerFinding>> analyze,
+        Func<AnalyzerFinding, (Uri Document, Func<RDCoreDiagnosticCode, bool> IsEnabled)?> placeOf, Uri analyzed, ILogger logger,
+        List<AnalyzerFinding> findings)
     {
         List<AnalyzerFinding> found;
         try
@@ -22,7 +29,7 @@ internal static class AnalyzerRun
         catch (Exception exception)
         {
             // one analyzer failing must not sink the others' findings.
-            logger.LogWarning(exception, "❌ {analyzer} failed for {uri}.", analyzer, document);
+            logger.LogWarning(exception, "❌ {analyzer} failed for {uri}.", analyzer, analyzed);
             return;
         }
 
@@ -34,13 +41,19 @@ internal static class AnalyzerRun
                 logger.LogWarning("⚠️ {analyzer} reported {code}, which is not among the codes it declares.", analyzer, finding.Code);
             }
 
-            if (isEnabled(finding.Code))
+            if (placeOf(finding) is not { } place)
+            {
+                logger.LogWarning("⚠️ {analyzer} reported {code} in {document}, which is not among the documents of {uri}: the finding is dropped.",
+                    analyzer, finding.Code, finding.Document?.ToString() ?? "no document", analyzed);
+            }
+            else if (place.IsEnabled(finding.Code))
             {
                 findings.Add(finding);
             }
             else
             {
-                logger.LogWarning("⚠️ {analyzer} reported {code}, which is disabled for {uri}: the finding is dropped.", analyzer, finding.Code, document);
+                logger.LogWarning(
+                    "⚠️ {analyzer} reported {code}, which is disabled for {uri}: the finding is dropped.", analyzer, finding.Code, place.Document);
             }
         }
     }

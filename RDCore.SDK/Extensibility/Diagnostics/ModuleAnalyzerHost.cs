@@ -30,12 +30,16 @@ public static class ModuleAnalyzerHost
     /// <param name="logger">Where an analyzer that fails, or that reports a disabled code, is named.</param>
     /// <returns>The findings of every analyzer that was run, in the order of the analyzers.</returns>
     public static IReadOnlyList<AnalyzerFinding> Run(IEnumerable<IModuleAnalyzer> analyzers, DiagnoseDocumentPayload payload, ILogger logger)
+        => Run(analyzers, ContextOf(payload), payload.Phase, logger);
+
+    // what an analyzer is given of a module the language server sent: its codes that are disabled, and its kind when the language server says it.
+    internal static ModuleAnalysisContext ContextOf(DiagnoseDocumentPayload payload)
     {
         var context = new ModuleAnalysisContext(payload.DocumentUri, payload.ParseResult, payload.Semantics)
         {
             DisabledCodes = payload.DisabledCodes.ToHashSet(),
         };
-        return Run(analyzers, payload.ModuleKind is { } kind ? context with { ModuleKind = kind } : context, payload.Phase, logger);
+        return payload.ModuleKind is { } kind ? context with { ModuleKind = kind } : context;
     }
 
     /// <summary>

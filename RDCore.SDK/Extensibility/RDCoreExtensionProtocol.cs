@@ -20,4 +20,10 @@ public static class RDCoreExtensionProtocol
     /// <c>.rdproj</c>.
     /// </summary>
     public const string DiagnoseProject = "rdcore/diagnostics/project";
+
+    /// <summary>
+    /// Hands a diagnostics-provider extension every module of a project of the workspace and asks for the diagnostics its project modules analyzers find, each
+    /// in the module it is in.
+    /// </summary>
+    public const string DiagnoseProjectModules = "rdcore/diagnostics/projectModules";
 }

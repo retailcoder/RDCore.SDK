@@ -143,6 +143,7 @@ public sealed class RDCorePlatformJsonWireTests
         // declared by an extension's assembly and read from its manifest, in no capability group: written as they are.
         yield return Same(new DiagnoseDocument(true));
         yield return Same(new DiagnoseProject(true));
+        yield return Same(new DiagnoseProjectModules(true));
         yield return Same(new CliCommand(true));
 
         // a client's opt-out of the dialogs, as the handshake carries it.
@@ -327,6 +328,7 @@ public sealed class RDCorePlatformJsonWireTests
         ("PlatformInitializeResult", """{"component":1,"provided":["SessionExecute","SessionStatus"]}"""),
         ("DiagnoseDocument", """{"isSupported":true}"""),
         ("DiagnoseProject", """{"isSupported":true}"""),
+        ("DiagnoseProjectModules", """{"isSupported":true}"""),
         ("CliCommand", """{"isSupported":true}"""),
         ("Unattended", """{"isSupported":true}"""),
         ("SourceLocation", """{"uri":"file:///c:/workspace/Module1.bas","range":{"start":{"line":1,"character":2},"end":{"line":3,"character":4},"isEmpty":false}}"""),
