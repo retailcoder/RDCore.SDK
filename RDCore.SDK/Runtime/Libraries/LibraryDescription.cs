@@ -41,7 +41,8 @@ public sealed record class LibraryDescription
     public string? Description { get; init; }
 
     /// <summary>
-    /// Where the description was made.
+    /// Where the description was made: the type library it was read from; <see langword="null"/> for a description written by hand, of a library the
+    /// platform defines itself.
     /// </summary>
     public LibraryOrigin? Origin { get; init; }
 
