@@ -310,6 +310,9 @@ public abstract class AppHost<TApp>() : IDisposable
         {
         }
 
+        // the platform root the command line names is this process's before anything reads one: the platform settings below are under it.
+        SdkCommandLine.ApplyPlatformRoot(args);
+
         // the builder reads appsettings.json, then the environment and the command line; what the user set goes between the first and the others. The
         // deployed file is not added again: added after them, it would say what a Configuration__ environment variable is meant to override. The deployed
         // file is the one in the application's own folder, wherever the process was started from: the generic host's default is the working directory.

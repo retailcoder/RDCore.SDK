@@ -49,6 +49,40 @@ public static class SdkCommandLine
         return quiet.ParseArguments<SdkAppCommandLineArgs>(args).Value is { PipeName.Length: > 0 };
     }
 
+    /// <summary>
+    /// Makes the platform root that <paramref name="args"/> names with <c>--platform-root</c> (<see cref="SdkAppCommandLineArgs.PlatformRoot"/>) this
+    /// process's: sets <c>RDCORE_PLATFORM_ROOT</c> (<see cref="Platform.PlatformEnvironment.RootEnvironmentVariable"/>) to it, over what the process
+    /// was started with. Every <see cref="Platform.PlatformEnvironment"/> made after reads it, and every process this one starts inherits it.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="AppHost{TApp}.RunAsync(string[])"/> calls this first. A host that does not run through it calls this before anything reads
+    /// <see cref="Platform.PlatformEnvironment.Default"/>, which reads the root once. The argument is found among any others, a verb's included, as
+    /// <c>--platform-root &lt;path&gt;</c> or <c>--platform-root=&lt;path&gt;</c>; a relative path is read against the current directory.
+    /// </remarks>
+    /// <param name="args">The command-line arguments as received.</param>
+    /// <returns>
+    /// The full path of the root the argument names; <see langword="null"/> when it names none, and the environment is then as it was.
+    /// </returns>
+    public static string? ApplyPlatformRoot(string[] args)
+    {
+        ArgumentNullException.ThrowIfNull(args);
+        const string option = "--platform-root";
+        for (var index = 0; index < args.Length; index++)
+        {
+            var root = args[index] == option && index + 1 < args.Length ? args[index + 1]
+                : args[index].StartsWith($"{option}=", StringComparison.Ordinal) ? args[index][(option.Length + 1)..]
+                : null;
+            if (root is { Length: > 0 })
+            {
+                var full = Path.GetFullPath(root);
+                Environment.SetEnvironmentVariable(Platform.PlatformEnvironment.RootEnvironmentVariable, full);
+                return full;
+            }
+        }
+
+        return null;
+    }
+
     // read as a URI, as the platform reads a workspace, a relative path is rooted at "/": "." is the root, and "Ledger" a folder there.
     private static string? FullWorkspace(string? workspace)
         => workspace is not { Length: > 0 } || Path.IsPathFullyQualified(workspace) || Uri.TryCreate(workspace, UriKind.Absolute, out _)
